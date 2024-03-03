@@ -16,6 +16,8 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 ## Installation
 Installation can be done using [HACS](https://hacs.xyz/) by [adding a custom repository](https://hacs.xyz/docs/faq/custom_repositories/). Alternatively, download a zip of this repository and place the folder `custom_components/bms_ble` in the `config/custom_components` directory of your Home Assistant installation.
 
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=patman15&repository=BLE_BMS-HA&category=Integration)
+
 ## Outlook
 Add further battery types from [Home Assistant Add-on: BatMON](https://github.com/fl4p/batmon-ha)
 
