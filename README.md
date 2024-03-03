@@ -13,6 +13,9 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 ## Supported Devices
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-Axxxxx` or `SmartBat-Bxxxxx`)
 
+## Installation
+Installation can be done using [HACS](https://hacs.xyz/) by [adding a custom repository](https://hacs.xyz/docs/faq/custom_repositories/). Alternatively, download a zip of this repository and place the folder `custom_components/bms_ble` in the `config/custom_components` directory of your Home Assistant installation.
+
 ## Outlook
 Add further battery types from [Home Assistant Add-on: BatMON](https://github.com/fl4p/batmon-ha)
 
