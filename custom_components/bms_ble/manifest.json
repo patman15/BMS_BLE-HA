@@ -12,11 +12,11 @@
   "codeowners": ["@patman15"],
   "config_flow": true,
   "dependencies": ["bluetooth_adapters"],
-  "documentation": "https://www.home-assistant.io/integrations/btbms",
+  "documentation": "https://github.com/patman15/BLE_BMS-HA",
   "integration_type": "device",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/balloob/hue/issues",
+  "issue_tracker": "https://github.com/patman15/BLE_BMS-HA/issues",
   "loggers": ["bms_ble", "ogtbms"],
   "requirements": [],
-  "version": "0.9.0"
+  "version": "0.9.1"
 }

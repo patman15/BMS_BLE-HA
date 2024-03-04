@@ -1,6 +1,6 @@
 # BLE Battery Management Systems for Home Assistant
 
-This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). The integration provides information on the battery
+This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). The integration provides the following information about the battery
 - SoC (state of charge) [%]
 - stored energy [Wh]
 - voltage [V]

@@ -1,3 +1,4 @@
+"""Home Assistant coordinator for BLE Battery Management System integration."""
 from datetime import timedelta
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth import DOMAIN as BLUETOOTH_DOMAIN
@@ -28,33 +29,34 @@ class BTBms(DataUpdateCoordinator[None]):
             logger=logger,
             name=ble_device.name,
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
-            always_update=False, # only update when sensor value has changed
+            always_update=False,  # only update when sensor value has changed
         )
         self._logger = logger
         self._mac = ble_device.address
-        self._logger.debug("Init BTBms: %s (%s)", ble_device.name, ble_device.address)
+        self._logger.debug("Init BTBms: %s (%s)",
+                           ble_device.name, ble_device.address)
         self._device: OGTBms = OGTBms(ble_device)
         self.device_info = DeviceInfo(
-            identifiers = {(DOMAIN, ble_device.name),
-                           (BLUETOOTH_DOMAIN, ble_device.address)},
-            connections = {(CONNECTION_BLUETOOTH, ble_device.address)},
-            name = ble_device.name,
+            identifiers={(DOMAIN, ble_device.name),
+                         (BLUETOOTH_DOMAIN, ble_device.address)},
+            connections={(CONNECTION_BLUETOOTH, ble_device.address)},
+            name=ble_device.name,
             configuration_url=None,
             # properties used in GUI:
-            model = ble_device.name,        
+            model=ble_device.name,
         )
 
     async def _async_update_data(self) -> dict:
         """Return the latest data from the device."""
         self._logger.debug(f"BMS {self.device_info[ATTR_NAME]} data update")
-        
-        service_info = bluetooth.async_last_service_info(self.hass, address=self._mac, connectable=True)
+
+        service_info = bluetooth.async_last_service_info(
+            self.hass, address=self._mac, connectable=True)
         try:
             battery_info = await self._device.update()
         except CancelledError:
             return {}
         except:
             raise UpdateFailed("Device communicating error.")
-            
-        return battery_info | {"rssi": service_info.rssi}
 
+        return battery_info | {"rssi": service_info.rssi}

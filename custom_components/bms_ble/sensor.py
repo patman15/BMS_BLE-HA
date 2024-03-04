@@ -1,6 +1,7 @@
 """Platform for sensor integration."""
 from __future__ import annotations
-from homeassistant.components.sensor import (SensorDeviceClass, SensorStateClass, SensorEntity, SensorEntityDescription)
+from homeassistant.components.sensor import (
+    SensorDeviceClass, SensorStateClass, SensorEntity, SensorEntityDescription)
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity, UpdateFailed
@@ -16,65 +17,66 @@ import logging
 
 SENSOR_TYPES: list[SensorEntityDescription] = [
     SensorEntityDescription(
-        key = ATTR_VOLTAGE,
-        translation_key = ATTR_VOLTAGE,
-        native_unit_of_measurement = UnitOfElectricPotential.VOLT,
-        state_class = SensorStateClass.MEASUREMENT,
-        device_class =  SensorDeviceClass.VOLTAGE,
-        suggested_display_precision = 1,
+        key=ATTR_VOLTAGE,
+        translation_key=ATTR_VOLTAGE,
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        suggested_display_precision=1,
     ),
     SensorEntityDescription(
-        key = ATTR_BATTERY_LEVEL,
-        translation_key = ATTR_BATTERY_LEVEL,
-        native_unit_of_measurement = PERCENTAGE,
-        state_class = SensorStateClass.MEASUREMENT,
-        device_class =  SensorDeviceClass.BATTERY,
-    ), 
-    SensorEntityDescription(
-        key = ATTR_TEMPERATURE,
-        translation_key = ATTR_TEMPERATURE,
-        native_unit_of_measurement = UnitOfTemperature.CELSIUS,
-        state_class = SensorStateClass.MEASUREMENT,
-        device_class =  SensorDeviceClass.TEMPERATURE,
-        suggested_display_precision = 1,
+        key=ATTR_BATTERY_LEVEL,
+        translation_key=ATTR_BATTERY_LEVEL,
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.BATTERY,
     ),
     SensorEntityDescription(
-        key = "current",
-        translation_key = "current",
-        native_unit_of_measurement = UnitOfElectricCurrent.AMPERE,
-        state_class = SensorStateClass.MEASUREMENT,
-        device_class =  SensorDeviceClass.CURRENT,
-    ),       
-    SensorEntityDescription(
-        key = "cycle_capacity",
-        translation_key = "cycle_capacity",
-        native_unit_of_measurement = UnitOfEnergy.WATT_HOUR,
-        state_class = SensorStateClass.MEASUREMENT,
-        device_class =  SensorDeviceClass.ENERGY_STORAGE,
-        suggested_display_precision = 1,
+        key=ATTR_TEMPERATURE,
+        translation_key=ATTR_TEMPERATURE,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        suggested_display_precision=1,
     ),
     SensorEntityDescription(
-        key = "runtime",
-        translation_key = "runtime",
-        name = "Runtime",
-        native_unit_of_measurement = UnitOfTime.SECONDS,
-        state_class = SensorStateClass.MEASUREMENT,        
-        device_class = SensorDeviceClass.DURATION,
-        entity_category = EntityCategory.DIAGNOSTIC,        
+        key="current",
+        translation_key="current",
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.CURRENT,
     ),
     SensorEntityDescription(
-        key = "rssi",
-        translation_key = "rssi",
-        native_unit_of_measurement = SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
-        state_class = SensorStateClass.MEASUREMENT,
-        device_class = SensorDeviceClass.SIGNAL_STRENGTH,
-        entity_registry_enabled_default = False,
-        entity_category = EntityCategory.DIAGNOSTIC,
+        key="cycle_capacity",
+        translation_key="cycle_capacity",
+        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.ENERGY_STORAGE,
+        suggested_display_precision=1,
+    ),
+    SensorEntityDescription(
+        key="runtime",
+        translation_key="runtime",
+        name="Runtime",
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DURATION,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    SensorEntityDescription(
+        key="rssi",
+        translation_key="rssi",
+        native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
 ]
 
-async def async_setup_entry(hass: HomeAssistant, 
-                            config_entry: ConfigEntry, 
+
+async def async_setup_entry(hass: HomeAssistant,
+                            config_entry: ConfigEntry,
                             async_add_entities: AddEntitiesCallback) -> None:
     """Add sensors for passed config_entry in HA."""
 
@@ -99,10 +101,12 @@ class BMSSensor(CoordinatorEntity, SensorEntity):
         """Handle updated data from the coordinator."""
 
         if self.entity_description.key in self._bms.data:
-            self._attr_native_value = self._bms.data.get(self.entity_description.key)
+            self._attr_native_value = self._bms.data.get(
+                self.entity_description.key)
             self._attr_available = True
         else:
             self._attr_available = False
-            self._bms.logger.info("no value update available for %s", self.entity_description.key)
+            self._bms.logger.info(
+                "no value update available for %s", self.entity_description.key)
 
         self.async_write_ha_state()

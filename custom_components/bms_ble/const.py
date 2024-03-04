@@ -1,5 +1,4 @@
-"""Constants for the BT Battery Management System integration."""
-
+"""Constants for the BLE Battery Management System integration."""
 
 DOMAIN = "bms_ble"
-UPDATE_INTERVAL = 30 # in seconds
+UPDATE_INTERVAL = 30  # in seconds
