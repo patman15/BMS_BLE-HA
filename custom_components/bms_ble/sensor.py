@@ -8,7 +8,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity, UpdateFa
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import (HomeAssistant, callback)
-from homeassistant.const import (EntityCategory, UnitOfElectricPotential, UnitOfTemperature, UnitOfElectricCurrent, UnitOfEnergy, UnitOfTime,
+from homeassistant.const import (EntityCategory, UnitOfElectricPotential, UnitOfTemperature, UnitOfElectricCurrent, UnitOfEnergy, UnitOfTime, UnitOfPower,
                                  PERCENTAGE, ATTR_VOLTAGE, ATTR_BATTERY_LEVEL, ATTR_TEMPERATURE, SIGNAL_STRENGTH_DECIBELS_MILLIWATT)
 from .btbms import BTBms
 from .const import DOMAIN
@@ -55,13 +55,26 @@ SENSOR_TYPES: list[SensorEntityDescription] = [
         suggested_display_precision=1,
     ),
     SensorEntityDescription(
+        key="cycles",
+        translation_key="cycles",
+        name="Cycles",
+        state_class=SensorStateClass.TOTAL_INCREASING,
+    ),
+    SensorEntityDescription(
+        key="power",
+        translation_key="power",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.POWER,
+        suggested_display_precision=1,        
+    ),    
+    SensorEntityDescription(
         key="runtime",
         translation_key="runtime",
         name="Runtime",
         native_unit_of_measurement=UnitOfTime.SECONDS,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DURATION,
-        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SensorEntityDescription(
         key="rssi",
@@ -100,6 +113,9 @@ class BMSSensor(CoordinatorEntity, SensorEntity):
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
 
+        if self._bms.data is None:
+            return
+        
         if self.entity_description.key in self._bms.data:
             self._attr_native_value = self._bms.data.get(
                 self.entity_description.key)

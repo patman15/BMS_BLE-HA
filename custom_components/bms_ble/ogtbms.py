@@ -1,9 +1,10 @@
 """ Offgridtec LiFePO4 Smart Pro type A and type B battery class implementation"""
 from bleak.backends.device import BLEDevice
 from bleak import BleakClient, normalize_uuid_str
-import asyncio
 from homeassistant.core import callback
+from typing import Callable
 
+import asyncio
 import logging
 
 BAT_TIMEOUT = 1
@@ -12,7 +13,7 @@ BAT_TIMEOUT = 1
 class OGTBms:
     # magic crypt sequence of length 16
     _CRYPT_NAME = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
-    # '0000fff4-0000-1000-8000-00805f9b34fb'
+    # setup UUIDs, e.g. for receive: '0000fff4-0000-1000-8000-00805f9b34fb'
     UUID_RX = normalize_uuid_str("FFF4")
     UUID_TX = normalize_uuid_str("FFF6")
     UUID_SERVICE = normalize_uuid_str("FFF0")
@@ -44,6 +45,7 @@ class OGTBms:
                 12: dict(name="temperature", len=2, func=lambda x: round(float(x)*0.1-273.15, 1)),
                 16: dict(name="current", len=3, func=lambda x: float(x)/1000),
                 24: dict(name="runtime", len=2, func=lambda x: x*60),
+                44: dict(name="cycles", len=2, func=lambda x: x)
             }
             self._OGT_HEADER = "+RAA"
         elif self._type == 'B':
@@ -56,18 +58,32 @@ class OGTBms:
                 13: dict(name="battery_level", len=1, func=lambda x: x),
                 15: dict(name="cycle_capacity", len=3, func=lambda x: float(x)/1000),
                 18: dict(name="runtime", len=2, func=lambda x: x*60),
-                # 23: dict(name = "num_cycles", len = 2, func = lambda x: x),
-                # 24: dict(name = "capacity", len = 3, func = lambda x: float(x & 0x00FFFF)*0.01)
-                # 25: dict(name = "nom_voltage", len = 2, func = lambda x: float(x)/1000),
+                23: dict(name="cycles", len=2, func=lambda x: x)
             }
             self._OGT_HEADER = "+R16"
         else:
             self._OGT_REGISTERS = {}
             self.logger.error(f"unkown device type: {self._type}")
+    async def __del__(self):
+        """close connection to battery on exit"""
+        self.logger.debug("destructor called.")
+        await self._disconnect()
 
     async def _wait_event(self) -> None:
         await self._data_event.wait()
         self._data_event.clear()
+
+    def _sensor_conv(self, values: dict, valA: str, valB: str, func: Callable[[float, float], float], result: str) -> dict:
+        """Convert """
+        assert result is not None
+
+        if {valA, valB}.issubset(values.keys()):
+            values[result] = round(
+                func(float(values[valA]), float(values[valB])), 6)
+        elif result == valA:
+            del values[valA]
+
+        return values
 
     @callback
     async def update(self) -> dict:
@@ -90,12 +106,12 @@ class OGTBms:
             except TimeoutError:
                 self._logger.debug("timeout reading: %s",
                                    self._OGT_REGISTERS[key].name)
-        if {"cycle_capacity", "voltage"}.issubset(self._values.keys()):
-            # multiply with voltage to get Wh instead of Ah
-            self._values["cycle_capacity"] = round(
-                self._values["cycle_capacity"]*self._values["voltage"], 6)
-        else:
-            del self._values["cycle_capacity"]
+        # multiply with voltage with capacity to get Wh instead of Ah
+        self._values = self._sensor_conv(self._values, "cycle_capacity",
+                                "voltage", lambda x, y: x*y, "cycle_capacity")
+        # calculate power from voltage and current
+        self._values = self._sensor_conv(self._values, "current",
+                                         "voltage", lambda x, y: x*y, "power")
 
         self.logger.debug("data collected: %s", self._values)
         if self._reconnect:
