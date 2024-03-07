@@ -40,7 +40,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Confirm bluetooth device discovery."""
-        _LOGGER.warning(f"confirm step {self._discovery_info.name}")
+        _LOGGER.debug(f"confirm step {self._discovery_info.name}")
         assert self._discovery_info is not None
         title = self._discovery_info.name
 
