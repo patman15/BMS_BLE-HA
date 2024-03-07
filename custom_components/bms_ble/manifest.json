@@ -1,6 +1,6 @@
 {
   "domain": "bms_ble",
-  "name": "BLE Battery Mgmt",
+  "name": "BLE Battery Management",
   "bluetooth": [
     {
       "local_name": "SmartBat-A*"
@@ -18,5 +18,5 @@
   "issue_tracker": "https://github.com/patman15/BLE_BMS-HA/issues",
   "loggers": ["bms_ble", "ogtbms"],
   "requirements": [],
-  "version": "0.9.1"
+  "version": "0.9.2"
 }
