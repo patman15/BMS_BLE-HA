@@ -5,8 +5,10 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - stored energy [Wh]
 - voltage [V]
 - current [A]
+- power [W]
 - temperature [°C]
 - (remaining) runtime [s]
+- charge cycles [#]
 
 ![grafik](https://github.com/patman15/BLE_BMS-HA/assets/14628713/99088715-fa2d-4d3d-90a5-967a8bf08305)
 
