@@ -37,13 +37,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Query the device the first time, initialise coordinator.data
     try:
-        await coordinator.async_config_entry_first_refresh()
+        entry.async_create_background_task(
+            hass=hass, target=coordinator.async_config_entry_first_refresh(), name="initialize")
         # Insert the coordinator in the global registry
         hass.data.setdefault(DOMAIN, {})
         hass.data[DOMAIN][entry.entry_id] = coordinator
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
         return True
     except CancelledError:
+        del coordinator
         return False
 
 
