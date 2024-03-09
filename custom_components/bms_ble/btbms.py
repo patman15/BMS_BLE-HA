@@ -53,7 +53,7 @@ class BTBms(DataUpdateCoordinator[None]):
         service_info = bluetooth.async_last_service_info(
             self.hass, address=self._mac, connectable=True)
         try:
-            battery_info = await self._device.update()
+            battery_info = await self._device.async_update()
         except CancelledError:
             return {}
         except:

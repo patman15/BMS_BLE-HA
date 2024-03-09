@@ -12,7 +12,7 @@ BAT_TIMEOUT = 1
 
 class OGTBms:
     # magic crypt sequence of length 16
-    _CRYPT_NAME = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
+    _CRYPT_SEQ = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
     # setup UUIDs, e.g. for receive: '0000fff4-0000-1000-8000-00805f9b34fb'
     UUID_RX = normalize_uuid_str("FFF4")
     UUID_TX = normalize_uuid_str("FFF6")
@@ -29,7 +29,7 @@ class OGTBms:
         self._data_event = asyncio.Event()
         self._connected = False  # flag to indicate active BLE connection
         self._type = self._ble_device.name[9]
-        self._key = sum(self._CRYPT_NAME[int(c, 16)] for c in (
+        self._key = sum(self._CRYPT_SEQ[int(c, 16)] for c in (
             f'{int(self._ble_device.name[10:]):0>4X}')) + (5 if (self._ble_device.name[9] == 'A') else 8)
         self.logger.info(
             f"Offgridtec LiFePo4 Smart Pro type: {self._type}, ID: {self._ble_device.name[10:]}, key: 0x{self._key:0>2X}")
@@ -86,7 +86,7 @@ class OGTBms:
         return values
 
     @callback
-    async def update(self) -> dict:
+    async def async_update(self) -> dict:
         """ Update battery status information """
 
         try:
