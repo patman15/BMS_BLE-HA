@@ -66,8 +66,8 @@ SENSOR_TYPES: list[SensorEntityDescription] = [
         native_unit_of_measurement=UnitOfPower.WATT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.POWER,
-        suggested_display_precision=1,        
-    ),    
+        suggested_display_precision=1,
+    ),
     SensorEntityDescription(
         key="runtime",
         translation_key="runtime",
@@ -115,7 +115,7 @@ class BMSSensor(CoordinatorEntity, SensorEntity):
 
         if self._bms.data is None:
             return
-        
+
         if self.entity_description.key in self._bms.data:
             self._attr_native_value = self._bms.data.get(
                 self.entity_description.key)

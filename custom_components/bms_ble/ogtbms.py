@@ -64,6 +64,7 @@ class OGTBms:
         else:
             self._OGT_REGISTERS = {}
             self.logger.error(f"unkown device type: {self._type}")
+
     async def __del__(self):
         """close connection to battery on exit"""
         self.logger.debug("destructor called.")
@@ -108,7 +109,7 @@ class OGTBms:
                                    self._OGT_REGISTERS[key].name)
         # multiply with voltage with capacity to get Wh instead of Ah
         self._values = self._sensor_conv(self._values, "cycle_capacity",
-                                "voltage", lambda x, y: x*y, "cycle_capacity")
+                                         "voltage", lambda x, y: x*y, "cycle_capacity")
         # calculate power from voltage and current
         self._values = self._sensor_conv(self._values, "current",
                                          "voltage", lambda x, y: x*y, "power")
