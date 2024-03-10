@@ -1,13 +1,14 @@
 {
-    "config": {
-      "flow_title": "Setup {name}",
-      "step": {
-        "bluetooth_confirm": {
-            "description": "Do you want to set up {name}?"
-        }
-      },
-      "abort": {
-        "already_configured": "Device is already configured."
+  "config": {
+    "flow_title": "Setup {name}",
+    "step": {
+      "bluetooth_confirm": {
+        "description": "Do you want to set up {name}?"
       }
+    },
+    "abort": {
+      "already_configured": "Device is already configured.",
+      "no_devices_found": "No devices available for configuration."
     }
   }
+}
