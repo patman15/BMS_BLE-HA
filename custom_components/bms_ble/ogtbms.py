@@ -162,7 +162,6 @@ class OGTBms:
         if self._connected:
             self.logger.debug(f"disconnecting BMS ({self._ble_device.name})")
             try:
-                await self._client.stop_notify(self.UUID_RX)
                 self._data_event.clear()
                 await self._client.disconnect()
             except:
