@@ -8,7 +8,7 @@ from homeassistant.components.bluetooth import async_ble_device_from_address
 from asyncio import CancelledError
 
 from .const import DOMAIN
-from .btbms import BTBms
+from .btbms import BTBmsCoordinator
 
 import logging
 
@@ -33,7 +33,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER.error(f"Unknonw device type: {ble_device.name[9]}")
         return False
 
-    coordinator = BTBms(hass, _LOGGER, ble_device)
+    coordinator = BTBmsCoordinator(hass, _LOGGER, ble_device)
 
     # Query the device the first time, initialise coordinator.data
     try:

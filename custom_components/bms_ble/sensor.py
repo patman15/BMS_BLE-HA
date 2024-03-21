@@ -10,7 +10,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import (HomeAssistant, callback)
 from homeassistant.const import (EntityCategory, UnitOfElectricPotential, UnitOfTemperature, UnitOfElectricCurrent, UnitOfEnergy, UnitOfTime, UnitOfPower,
                                  PERCENTAGE, ATTR_VOLTAGE, ATTR_BATTERY_LEVEL, ATTR_TEMPERATURE, SIGNAL_STRENGTH_DECIBELS_MILLIWATT)
-from .btbms import BTBms
+from .btbms import BTBmsCoordinator
 from .const import DOMAIN
 
 import logging
@@ -93,7 +93,7 @@ async def async_setup_entry(hass: HomeAssistant,
                             async_add_entities: AddEntitiesCallback) -> None:
     """Add sensors for passed config_entry in HA."""
 
-    bms: BTBms = hass.data[DOMAIN][config_entry.entry_id]
+    bms: BTBmsCoordinator = hass.data[DOMAIN][config_entry.entry_id]
     for descr in SENSOR_TYPES:
         async_add_entities([BMSSensor(bms, descr)])
 
@@ -101,8 +101,8 @@ async def async_setup_entry(hass: HomeAssistant,
 class BMSSensor(CoordinatorEntity, SensorEntity):
     """ BMS overall voltage """
 
-    def __init__(self, bms: BTBms, descr: SensorEntityDescription) -> None:
-        self._bms: BTBms = bms
+    def __init__(self, bms: BTBmsCoordinator, descr: SensorEntityDescription) -> None:
+        self._bms: BTBmsCoordinator = bms
         self._attr_unique_id = f"{format_mac(self._bms.name)}-{descr.key}"
         self._attr_device_info = bms.device_info
         self._attr_has_entity_name = True

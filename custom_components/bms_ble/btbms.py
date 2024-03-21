@@ -14,7 +14,7 @@ from .ogtbms import OGTBms
 import logging
 
 
-class BTBms(DataUpdateCoordinator[None]):
+class BTBmsCoordinator(DataUpdateCoordinator[None]):
     """Representation of a battery."""
 
     def __init__(
