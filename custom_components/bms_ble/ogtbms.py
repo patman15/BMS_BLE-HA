@@ -24,7 +24,8 @@ class OGTBms:
         self._logger = logging.getLogger(__name__)
         self._reconnect = reconnect
         self._ble_device = ble_device
-        self._client: BleakClient = None
+        assert self._ble_device.name is not None
+        self._client: BleakClient | None = None
         self._data_event = asyncio.Event()
         self._connected = False  # flag to indicate active BLE connection
         self._type = self._ble_device.name[9]
@@ -158,6 +159,7 @@ class OGTBms:
 
     async def _disconnect(self) -> None:
         """ disconnect the BMS, includes stoping notifications """
+        assert self._client is not None
         if self._connected:
             self._logger.debug(f"disconnecting BMS ({self._ble_device.name})")
             try:
@@ -193,6 +195,7 @@ class OGTBms:
 
     async def _read(self, reg: int) -> None:
         """ read a specific BMS register """
+        assert self._client is not None
 
         msg = self._ogt_command(reg)
         self._logger.debug(f"ble cmd frame {msg}")

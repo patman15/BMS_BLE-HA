@@ -2,7 +2,7 @@
 from datetime import timedelta
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth import DOMAIN as BLUETOOTH_DOMAIN
-from homeassistant.const import ATTR_IDENTIFIERS, ATTR_NAME
+from homeassistant.const import ATTR_NAME
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo, CONNECTION_BLUETOOTH
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -24,6 +24,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
         ble_device: BLEDevice,
     ) -> None:
         """Initialize BMS data coordinator."""
+        assert ble_device.name is not None
         super().__init__(
             hass=hass,
             logger=logger,
@@ -46,7 +47,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
             model=ble_device.name,
         )
 
-    async def _async_update_data(self) -> dict:
+    async def _async_update_data(self) -> dict[str, float]:
         """Return the latest data from the device."""
         self._logger.debug(
             f"BMS {self.device_info.get(ATTR_NAME)} data update")
@@ -60,4 +61,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
         except:
             raise UpdateFailed("Device communicating error.")
 
-        return battery_info | {"rssi": service_info.rssi}
+        if service_info is not None:
+            battery_info.update({"rssi": service_info.rssi})
+
+        return battery_info
