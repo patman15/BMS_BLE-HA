@@ -1,7 +1,7 @@
 """Platform for sensor integration."""
 from __future__ import annotations
 from homeassistant.components.sensor import (
-    SensorDeviceClass, SensorStateClass, SensorEntityDescription)
+    SensorDeviceClass, SensorStateClass, SensorEntity, SensorEntityDescription)
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.device_registry import format_mac
@@ -97,7 +97,7 @@ async def async_setup_entry(hass: HomeAssistant,
         async_add_entities([BMSSensor(bms, descr)])
 
 
-class BMSSensor(CoordinatorEntity[BTBmsCoordinator]):
+class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
     """ BMS overall voltage """
 
     def __init__(self, bms: BTBmsCoordinator, descr: SensorEntityDescription) -> None:
