@@ -21,6 +21,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up BT Battery Management System from a config entry."""
     _LOGGER.debug("Setup of %s", repr(entry))
 
+    if entry.unique_id is None:
+        raise ConfigEntryNotReady(f"Missing unique ID for device.")
+
     ble_device = async_ble_device_from_address(
         hass=hass, address=entry.unique_id, connectable=True)
 

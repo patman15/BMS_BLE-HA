@@ -1,7 +1,6 @@
 """ Offgridtec LiFePO4 Smart Pro type A and type B battery class implementation"""
 from bleak.backends.device import BLEDevice
 from bleak import BleakClient, normalize_uuid_str
-from homeassistant.core import callback
 from typing import Callable
 
 import asyncio
@@ -22,7 +21,7 @@ class OGTBms:
             self,
             ble_device: BLEDevice,
             reconnect=False) -> None:
-        self.logger = logging.getLogger(__name__)
+        self._logger = logging.getLogger(__name__)
         self._reconnect = reconnect
         self._ble_device = ble_device
         self._client: BleakClient = None
@@ -31,7 +30,7 @@ class OGTBms:
         self._type = self._ble_device.name[9]
         self._key = sum(self._CRYPT_SEQ[int(c, 16)] for c in (
             f'{int(self._ble_device.name[10:]):0>4X}')) + (5 if (self._ble_device.name[9] == 'A') else 8)
-        self.logger.info(
+        self._logger.info(
             f"Offgridtec LiFePo4 Smart Pro type: {self._type}, ID: {self._ble_device.name[10:]}, key: 0x{self._key:0>2X}")
         self._values = {}  # dictionary of queried values
 
@@ -63,11 +62,11 @@ class OGTBms:
             self._OGT_HEADER = "+R16"
         else:
             self._OGT_REGISTERS = {}
-            self.logger.error(f"unkown device type: {self._type}")
+            self._logger.exception(f"unkown device type '{self._type}'")
 
     async def __del__(self):
         """close connection to battery on exit"""
-        self.logger.debug("destructor called.")
+        self._logger.debug("destructor called.")
         await self._disconnect()
 
     async def _wait_event(self) -> None:
@@ -86,14 +85,13 @@ class OGTBms:
 
         return values
 
-    @callback
-    async def async_update(self) -> dict:
+    async def async_update(self) -> dict[str, float]:
         """ Update battery status information """
 
         try:
             await self._connect()
         except Exception as e:
-            self.logger.debug(
+            self._logger.debug(
                 f"failed to connect: {str(e)} ({type(e).__name__})")
             raise IOError
         except asyncio.CancelledError:
@@ -114,7 +112,7 @@ class OGTBms:
         self._values = self._sensor_conv(self._values, "current",
                                          "voltage", lambda x, y: x*y, "power")
 
-        self.logger.debug("data collected: %s", self._values)
+        self._logger.debug("data collected: %s", self._values)
         if self._reconnect:
             # disconnect after data update to force reconnect next time (slow!)
             await self._disconnect()
@@ -123,11 +121,11 @@ class OGTBms:
     def _on_disconnect(self, client: BleakClient) -> None:
         """ disconnect callback """
 
-        self.logger.debug("disconnected from %s", client.address)
+        self._logger.debug("disconnected from %s", client.address)
         self._connected = False
 
     def _notification_handler(self, sender, data: bytearray) -> None:
-        self.logger.debug(f"ble data frame {data}")
+        self._logger.debug(f"ble data frame {data}")
 
         valid, reg, nat_value = self._ogt_response(data)
 
@@ -135,18 +133,18 @@ class OGTBms:
         if valid and sender.uuid == self.UUID_RX:
             register = self._OGT_REGISTERS[reg]
             value = register['func'](nat_value)
-            self.logger.debug(
+            self._logger.debug(
                 f"reg: {register['name']} (#{reg}), raw: {nat_value}, value: {value}")
             self._values[register['name']] = value
         else:
-            self.logger.debug("invalid response")
+            self._logger.debug("invalid response")
         self._data_event.set()
 
     async def _connect(self) -> None:
         """ connect to the BMS and setup notification if not connected """
 
         if not self._connected:
-            self.logger.debug(f"connecting BMS {self._ble_device.name}")
+            self._logger.debug(f"connecting BMS {self._ble_device.name}")
             self._client = BleakClient(self._ble_device.address,
                                        disconnected_callback=self._on_disconnect,
                                        services=[self.UUID_SERVICE]
@@ -155,17 +153,18 @@ class OGTBms:
             await self._client.start_notify(self.UUID_RX, self._notification_handler)
             self._connected = True
         else:
-            self.logger.debug(f"BMS {self._ble_device.name} already connected")
+            self._logger.debug(
+                f"BMS {self._ble_device.name} already connected")
 
     async def _disconnect(self) -> None:
         """ disconnect the BMS, includes stoping notifications """
         if self._connected:
-            self.logger.debug(f"disconnecting BMS ({self._ble_device.name})")
+            self._logger.debug(f"disconnecting BMS ({self._ble_device.name})")
             try:
                 self._data_event.clear()
                 await self._client.disconnect()
             except:
-                self.logger.warning("disconnect failed!")
+                self._logger.warning("disconnect failed!")
 
         self._client = None
 
@@ -174,7 +173,7 @@ class OGTBms:
 
         msg = bytearray(((resp[x] ^ self._key) for x in range(
             0, len(resp)))).decode(encoding="ascii")
-        self.logger.debug(f"response: {msg[:-2]}")
+        self._logger.debug(f"response: {msg[:-2]}")
         # verify correct response
         if msg[:4] != "+RD," or msg[-2:] != "\r\n":
             return False, None, None
@@ -188,7 +187,7 @@ class OGTBms:
         """ put together an scambled query to the BMS """
 
         cmd = f"{self._OGT_HEADER}{command:0>2X}{self._OGT_REGISTERS[command]['len']:0>2X}"
-        self.logger.debug(f"command: {cmd}")
+        self._logger.debug(f"command: {cmd}")
 
         return bytearray(ord(cmd[i]) ^ self._key for i in range(len(cmd)))
 
@@ -196,5 +195,5 @@ class OGTBms:
         """ read a specific BMS register """
 
         msg = self._ogt_command(reg)
-        self.logger.debug(f"ble cmd frame {msg}")
+        self._logger.debug(f"ble cmd frame {msg}")
         await self._client.write_gatt_char(self.UUID_TX, data=msg)

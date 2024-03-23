@@ -14,7 +14,7 @@ from .ogtbms import OGTBms
 import logging
 
 
-class BTBmsCoordinator(DataUpdateCoordinator[None]):
+class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
     """Representation of a battery."""
 
     def __init__(
@@ -48,7 +48,8 @@ class BTBmsCoordinator(DataUpdateCoordinator[None]):
 
     async def _async_update_data(self) -> dict:
         """Return the latest data from the device."""
-        self._logger.debug(f"BMS {self.device_info[ATTR_NAME]} data update")
+        self._logger.debug(
+            f"BMS {self.device_info.get(ATTR_NAME)} data update")
 
         service_info = bluetooth.async_last_service_info(
             self.hass, address=self._mac, connectable=True)
