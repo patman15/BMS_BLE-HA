@@ -5,15 +5,15 @@ In case you have troubles, please enable the debug protocol for the integration 
 
 ## Adding a new battery management system
 
- 0. Fork the repository and create a branch with the name of the new BMS to add.
- 1. Add a new file to the `plugins` folder called, e.g. `dummy_bms.py`
- 2. Populate the file with class derived from `BaseBMS`(see basebms.py). A dummy implementation without the actual functionality to query the BMS can befound below in section _Dummy BMS Example_
+ 1. Fork the repository and create a branch with the name of the new BMS to add.
+ 2. Add a new file to the `plugins` folder called, e.g. `dummy_bms.py`
+ 3. Populate the file with class derived from `BaseBMS`(see basebms.py). A dummy implementation without the actual functionality to query the BMS can befound below in section _Dummy BMS Example_
  4. Make sure that the dictionary returned by `async_update()` has (all) keys listed in `SENSOR_TYPES` (see `sensor.py`), __except__ for the RSSI value which is automatically added by the data update coordinator.
  5. In `plugins/__init__.py` add line to import the new class, e.g. `from .dummy_bms import DummyBms` and add it to the valid enum `BmsTypes`, e.g. `DummyBms = auto()`.
  6. Add an appropriate [bluetooth device matcher](https://developers.home-assistant.io/docs/creating_integration_manifest#bluetooth) to `manifest.json`. Note that this is required to match the implementation of `match_dict_list()` in the new BMS class.
  7. Test and commit the changes to the branch and create a pull request to the main repository.
 
-### Dummy BMS Example#
+### Dummy BMS Example
 ```python
 from bleak.backends.device import BLEDevice
 from .basebms import BaseBMS
