@@ -2,6 +2,7 @@
 
 from enum import Enum, auto
 from typing import Any
+
 from .basebms import BaseBMS
 
 # import all BMS plugins (class name must match enum)

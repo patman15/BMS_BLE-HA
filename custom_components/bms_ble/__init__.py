@@ -1,16 +1,16 @@
 """The BLE Battery Management System integration."""
 
+import logging
+from asyncio import CancelledError
+
+from homeassistant.components.bluetooth import async_ble_device_from_address
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.components.bluetooth import async_ble_device_from_address
-from asyncio import CancelledError
+
 from .const import DOMAIN
 from .coordinator import BTBmsCoordinator
-from .const import DOMAIN
-
-import logging
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
 

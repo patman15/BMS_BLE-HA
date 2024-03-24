@@ -1,34 +1,35 @@
 """Platform for sensor integration"""
 
 from __future__ import annotations
+
 from homeassistant.components.sensor import (
     SensorDeviceClass,
-    SensorStateClass,
     SensorEntity,
     SensorEntityDescription,
+    SensorStateClass,
 )
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.helpers.device_registry import format_mac
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
 from homeassistant.const import (
-    EntityCategory,
-    UnitOfElectricPotential,
-    UnitOfTemperature,
-    UnitOfElectricCurrent,
-    UnitOfEnergy,
-    UnitOfTime,
-    UnitOfPower,
-    PERCENTAGE,
-    ATTR_VOLTAGE,
     ATTR_BATTERY_LEVEL,
     ATTR_TEMPERATURE,
+    ATTR_VOLTAGE,
+    PERCENTAGE,
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+    EntityCategory,
+    UnitOfElectricCurrent,
+    UnitOfElectricPotential,
+    UnitOfEnergy,
+    UnitOfPower,
+    UnitOfTemperature,
+    UnitOfTime,
 )
-from .coordinator import BTBmsCoordinator
-from .const import DOMAIN
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.device_registry import format_mac
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from .const import DOMAIN
+from .coordinator import BTBmsCoordinator
 
 SENSOR_TYPES: list[SensorEntityDescription] = [
     SensorEntityDescription(
