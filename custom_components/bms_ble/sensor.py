@@ -1,4 +1,5 @@
-"""Platform for sensor integration."""
+"""Platform for sensor integration"""
+
 from __future__ import annotations
 from homeassistant.components.sensor import (
     SensorDeviceClass, SensorStateClass, SensorEntity, SensorEntityDescription)
@@ -9,10 +10,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import (HomeAssistant, callback)
 from homeassistant.const import (EntityCategory, UnitOfElectricPotential, UnitOfTemperature, UnitOfElectricCurrent, UnitOfEnergy, UnitOfTime, UnitOfPower,
                                  PERCENTAGE, ATTR_VOLTAGE, ATTR_BATTERY_LEVEL, ATTR_TEMPERATURE, SIGNAL_STRENGTH_DECIBELS_MILLIWATT)
-from .btbms import BTBmsCoordinator
+from .coordinator import BTBmsCoordinator
 from .const import DOMAIN
 
-import logging
 
 SENSOR_TYPES: list[SensorEntityDescription] = [
     SensorEntityDescription(
@@ -90,15 +90,15 @@ SENSOR_TYPES: list[SensorEntityDescription] = [
 async def async_setup_entry(hass: HomeAssistant,
                             config_entry: ConfigEntry,
                             async_add_entities: AddEntitiesCallback) -> None:
-    """Add sensors for passed config_entry in HA."""
+    """Add sensors for passed config_entry in home assistant"""
 
     bms: BTBmsCoordinator = hass.data[DOMAIN][config_entry.entry_id]
     for descr in SENSOR_TYPES:
         async_add_entities([BMSSensor(bms, descr)])
 
 
-class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
-    """ BMS overall voltage """
+class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ignore
+    """Generic BMS sensor implementation"""
 
     def __init__(self, bms: BTBmsCoordinator, descr: SensorEntityDescription) -> None:
         self._bms: BTBmsCoordinator = bms

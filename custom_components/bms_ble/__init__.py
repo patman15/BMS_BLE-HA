@@ -6,9 +6,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.components.bluetooth import async_ble_device_from_address
 from asyncio import CancelledError
-
 from .const import DOMAIN
-from .btbms import BTBmsCoordinator
+from .coordinator import BTBmsCoordinator
+from .const import DOMAIN
 
 import logging
 
@@ -32,11 +32,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             f"Could not find battery with address {entry.unique_id}"
         )
 
-    if ble_device.name[9] not in "AB":
-        _LOGGER.error(f"Unknonw device type: {ble_device.name[9]}")
-        return False
-
-    coordinator = BTBmsCoordinator(hass, _LOGGER, ble_device)
+    coordinator = BTBmsCoordinator(
+        hass, _LOGGER, ble_device, type=entry.data["type"])
 
     # Query the device the first time, initialise coordinator.data
     try:

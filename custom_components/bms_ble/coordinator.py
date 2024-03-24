@@ -1,4 +1,5 @@
 """Home Assistant coordinator for BLE Battery Management System integration."""
+
 from datetime import timedelta
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth import DOMAIN as BLUETOOTH_DOMAIN
@@ -9,19 +10,20 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from bleak.backends.device import BLEDevice
 from asyncio import CancelledError
 from .const import DOMAIN, UPDATE_INTERVAL
-from .ogtbms import OGTBms
+from .plugins import *
 
 import logging
 
 
 class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
-    """Representation of a battery."""
+    """Update coordinator for a battery management system"""
 
     def __init__(
         self,
         hass: HomeAssistant,
         logger: logging.Logger,
         ble_device: BLEDevice,
+        type: str
     ) -> None:
         """Initialize BMS data coordinator."""
         assert ble_device.name is not None
@@ -34,9 +36,12 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
         )
         self._logger = logger
         self._mac = ble_device.address
-        self._logger.debug("Init BTBms: %s (%s)",
-                           ble_device.name, ble_device.address)
-        self._device: OGTBms = OGTBms(ble_device)
+        self._logger.debug(
+            f"Initializing coordinator for {ble_device.name} ({ble_device.address}), type {type}")
+        assert type in BmsTypes._member_names_  # ensure we have a valid BMS type
+
+        # retrieve BMS class and initialize it
+        self._device: BaseBMS = globals()[type](ble_device)
         self.device_info = DeviceInfo(
             identifiers={(DOMAIN, ble_device.name),
                          (BLUETOOTH_DOMAIN, ble_device.address)},

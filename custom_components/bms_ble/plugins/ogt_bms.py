@@ -1,7 +1,7 @@
-""" Offgridtec LiFePO4 Smart Pro type A and type B battery class implementation"""
 from bleak.backends.device import BLEDevice
 from bleak import BleakClient, normalize_uuid_str
-from typing import Callable
+from .basebms import BaseBMS
+from typing import Callable, Any
 
 import asyncio
 import logging
@@ -9,13 +9,22 @@ import logging
 BAT_TIMEOUT = 1
 
 
-class OGTBms:
+class OGTBms(BaseBMS):
+    """ Offgridtec LiFePO4 Smart Pro type A and type B battery class implementation"""
     # magic crypt sequence of length 16
     _CRYPT_SEQ = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
     # setup UUIDs, e.g. for receive: '0000fff4-0000-1000-8000-00805f9b34fb'
     UUID_RX = normalize_uuid_str("FFF4")
     UUID_TX = normalize_uuid_str("FFF6")
     UUID_SERVICE = normalize_uuid_str("FFF0")
+
+    @staticmethod
+    def matcher_dict_list() -> list[dict[str, Any]]:
+        return [{"local_name": "SmartBat-A*", "connectable": True}, {"local_name": "SmartBat-B*", "connectable": True}]
+
+    @staticmethod
+    def name() -> str:
+        return "Offgridtec LiFePo4 Smart Pro"
 
     def __init__(
             self,
@@ -32,7 +41,7 @@ class OGTBms:
         self._key = sum(self._CRYPT_SEQ[int(c, 16)] for c in (
             f'{int(self._ble_device.name[10:]):0>4X}')) + (5 if (self._ble_device.name[9] == 'A') else 8)
         self._logger.info(
-            f"Offgridtec LiFePo4 Smart Pro type: {self._type}, ID: {self._ble_device.name[10:]}, key: 0x{self._key:0>2X}")
+            f"{self.name()} type: {self._type}, ID: {self._ble_device.name[10:]}, key: 0x{self._key:0>2X}")
         self._values = {}  # dictionary of queried values
 
         if self._type == 'A':
@@ -160,6 +169,7 @@ class OGTBms:
     async def _disconnect(self) -> None:
         """ disconnect the BMS, includes stoping notifications """
         assert self._client is not None
+
         if self._connected:
             self._logger.debug(f"disconnecting BMS ({self._ble_device.name})")
             try:
@@ -200,3 +210,4 @@ class OGTBms:
         msg = self._ogt_command(reg)
         self._logger.debug(f"ble cmd frame {msg}")
         await self._client.write_gatt_char(self.UUID_TX, data=msg)
+
