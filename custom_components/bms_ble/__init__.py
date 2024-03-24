@@ -25,20 +25,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady(f"Missing unique ID for device.")
 
     ble_device = async_ble_device_from_address(
-        hass=hass, address=entry.unique_id, connectable=True)
+        hass=hass, address=entry.unique_id, connectable=True
+    )
 
     if not ble_device:
         raise ConfigEntryNotReady(
             f"Could not find battery with address {entry.unique_id}"
         )
 
-    coordinator = BTBmsCoordinator(
-        hass, _LOGGER, ble_device, type=entry.data["type"])
+    coordinator = BTBmsCoordinator(hass, _LOGGER, ble_device, type=entry.data["type"])
 
     # Query the device the first time, initialise coordinator.data
     try:
         entry.async_create_background_task(
-            hass=hass, target=coordinator.async_config_entry_first_refresh(), name="initialize")
+            hass=hass,
+            target=coordinator.async_config_entry_first_refresh(),
+            name="initialize",
+        )
         # Insert the coordinator in the global registry
         hass.data.setdefault(DOMAIN, {})
         hass.data[DOMAIN][entry.entry_id] = coordinator

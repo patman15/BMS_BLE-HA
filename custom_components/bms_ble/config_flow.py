@@ -3,9 +3,11 @@
 from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.device_registry import format_mac
-from homeassistant.helpers.selector import (
-    SelectSelector, SelectSelectorConfig)
-from homeassistant.components.bluetooth import async_discovered_service_info, BluetoothServiceInfoBleak
+from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
+from homeassistant.components.bluetooth import (
+    async_discovered_service_info,
+    BluetoothServiceInfoBleak,
+)
 from homeassistant.const import CONF_ADDRESS
 from dataclasses import dataclass
 from typing import Any
@@ -38,13 +40,16 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._discovered_device: ConfigFlow.DiscoveredDevice | None = None
         self._discovered_devices: dict[str, ConfigFlow.DiscoveredDevice] = {}
 
-    def _device_supported(self, discovery_info: BluetoothServiceInfoBleak) -> BmsTypes | None:
+    def _device_supported(
+        self, discovery_info: BluetoothServiceInfoBleak
+    ) -> BmsTypes | None:
         """Check if device is supported by an available BMS class"""
         for type in BmsTypes:
             bms: BaseBMS = globals()[type.name]
             if bms.supported(discovery_info):
                 _LOGGER.debug(
-                    f"Device {discovery_info.name} ({discovery_info.address}) detected as '{bms.name()}'")
+                    f"Device {discovery_info.name} ({discovery_info.address}) detected as '{bms.name()}'"
+                )
                 return type
         return None
 
@@ -53,7 +58,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> FlowResult:
         """Handle a flow initialized by Bluetooth discovery."""
         _LOGGER.debug(
-            f"Bluetooth device detected: {format_mac(discovery_info.address)}")
+            f"Bluetooth device detected: {format_mac(discovery_info.address)}"
+        )
         await self.async_set_unique_id(discovery_info.address)
         self._abort_if_unique_id_configured()
 
@@ -62,9 +68,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="not_supported")
 
         self._discovered_device = ConfigFlow.DiscoveredDevice(
-            discovery_info.name, discovery_info, device_class)
-        self.context["title_placeholders"] = {
-            "name": self._discovered_device.name}
+            discovery_info.name, discovery_info, device_class
+        )
+        self.context["title_placeholders"] = {"name": self._discovered_device.name}
         return await self.async_step_bluetooth_confirm()
 
     async def async_step_bluetooth_confirm(
@@ -75,12 +81,16 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         _LOGGER.debug(f"confirm step {self._discovered_device.name}")
 
         if user_input is not None:
-            return self.async_create_entry(title=self._discovered_device.name,
-                                           data={"type": self._discovered_device.type.name})
+            return self.async_create_entry(
+                title=self._discovered_device.name,
+                data={"type": self._discovered_device.type.name},
+            )
 
         self._set_confirm_only()
         placeholders = {"name": self._discovered_device.name}
-        return self.async_show_form(step_id="bluetooth_confirm", description_placeholders=placeholders)
+        return self.async_show_form(
+            step_id="bluetooth_confirm", description_placeholders=placeholders
+        )
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -94,11 +104,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._abort_if_unique_id_configured()
             self._discovered_device = self._discovered_devices[address]
 
-            self.context["title_placeholders"] = {
-                "name": self._discovered_device.name}
+            self.context["title_placeholders"] = {"name": self._discovered_device.name}
 
-            return self.async_create_entry(title=self._discovered_device.name,
-                                           data={"type": self._discovered_device.type.name})
+            return self.async_create_entry(
+                title=self._discovered_device.name,
+                data={"type": self._discovered_device.type.name},
+            )
 
         current_addresses = self._async_current_ids()
         for discovery_info in async_discovered_service_info(self.hass, False):
@@ -110,17 +121,23 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 continue
 
             self._discovered_devices[address] = ConfigFlow.DiscoveredDevice(
-                discovery_info.name, discovery_info, device_class)
+                discovery_info.name, discovery_info, device_class
+            )
 
         if not self._discovered_devices:
             return self.async_abort(reason="no_devices_found")
 
         titles = []
-        for (address, discovery) in self._discovered_devices.items():
+        for address, discovery in self._discovered_devices.items():
             titles.append({"value": address, "label": discovery.name})
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({vol.Required(CONF_ADDRESS): SelectSelector(
-                SelectSelectorConfig(options=titles))}),
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_ADDRESS): SelectSelector(
+                        SelectSelectorConfig(options=titles)
+                    )
+                }
+            ),
         )

@@ -2,14 +2,30 @@
 
 from __future__ import annotations
 from homeassistant.components.sensor import (
-    SensorDeviceClass, SensorStateClass, SensorEntity, SensorEntityDescription)
+    SensorDeviceClass,
+    SensorStateClass,
+    SensorEntity,
+    SensorEntityDescription,
+)
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import (HomeAssistant, callback)
-from homeassistant.const import (EntityCategory, UnitOfElectricPotential, UnitOfTemperature, UnitOfElectricCurrent, UnitOfEnergy, UnitOfTime, UnitOfPower,
-                                 PERCENTAGE, ATTR_VOLTAGE, ATTR_BATTERY_LEVEL, ATTR_TEMPERATURE, SIGNAL_STRENGTH_DECIBELS_MILLIWATT)
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.const import (
+    EntityCategory,
+    UnitOfElectricPotential,
+    UnitOfTemperature,
+    UnitOfElectricCurrent,
+    UnitOfEnergy,
+    UnitOfTime,
+    UnitOfPower,
+    PERCENTAGE,
+    ATTR_VOLTAGE,
+    ATTR_BATTERY_LEVEL,
+    ATTR_TEMPERATURE,
+    SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+)
 from .coordinator import BTBmsCoordinator
 from .const import DOMAIN
 
@@ -87,9 +103,11 @@ SENSOR_TYPES: list[SensorEntityDescription] = [
 ]
 
 
-async def async_setup_entry(hass: HomeAssistant,
-                            config_entry: ConfigEntry,
-                            async_add_entities: AddEntitiesCallback) -> None:
+async def async_setup_entry(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
     """Add sensors for passed config_entry in home assistant"""
 
     bms: BTBmsCoordinator = hass.data[DOMAIN][config_entry.entry_id]
@@ -116,12 +134,12 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
             return
 
         if self.entity_description.key in self._bms.data:
-            self._attr_native_value = self._bms.data.get(
-                self.entity_description.key)
+            self._attr_native_value = self._bms.data.get(self.entity_description.key)
             self._attr_available = True
         else:
             self._attr_available = False
             self._bms.logger.info(
-                "no value update available for %s", self.entity_description.key)
+                "no value update available for %s", self.entity_description.key
+            )
 
         self.async_write_ha_state()

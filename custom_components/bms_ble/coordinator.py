@@ -23,7 +23,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
         hass: HomeAssistant,
         logger: logging.Logger,
         ble_device: BLEDevice,
-        type: str
+        type: str,
     ) -> None:
         """Initialize BMS data coordinator."""
         assert ble_device.name is not None
@@ -37,14 +37,17 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
         self._logger = logger
         self._mac = ble_device.address
         self._logger.debug(
-            f"Initializing coordinator for {ble_device.name} ({ble_device.address}), type {type}")
+            f"Initializing coordinator for {ble_device.name} ({ble_device.address}), type {type}"
+        )
         assert type in BmsTypes._member_names_  # ensure we have a valid BMS type
 
         # retrieve BMS class and initialize it
         self._device: BaseBMS = globals()[type](ble_device)
         self.device_info = DeviceInfo(
-            identifiers={(DOMAIN, ble_device.name),
-                         (BLUETOOTH_DOMAIN, ble_device.address)},
+            identifiers={
+                (DOMAIN, ble_device.name),
+                (BLUETOOTH_DOMAIN, ble_device.address),
+            },
             connections={(CONNECTION_BLUETOOTH, ble_device.address)},
             name=ble_device.name,
             configuration_url=None,
@@ -54,11 +57,11 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
 
     async def _async_update_data(self) -> dict[str, float]:
         """Return the latest data from the device."""
-        self._logger.debug(
-            f"BMS {self.device_info.get(ATTR_NAME)} data update")
+        self._logger.debug(f"BMS {self.device_info.get(ATTR_NAME)} data update")
 
         service_info = bluetooth.async_last_service_info(
-            self.hass, address=self._mac, connectable=True)
+            self.hass, address=self._mac, connectable=True
+        )
         try:
             battery_info = await self._device.async_update()
         except CancelledError:
