@@ -137,7 +137,7 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
         if self.entity_description.key in self._bms.data:
             self._attr_native_value = self._bms.data.get(self.entity_description.key)
             self._attr_available = True
-        else:
+        elif self._attr_available:
             self._attr_available = False
             self._bms.logger.info(
                 "no value update available for %s", self.entity_description.key
