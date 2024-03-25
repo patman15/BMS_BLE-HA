@@ -26,6 +26,10 @@ from .basebms import BaseBMS
 class DummyBms(BaseBMS):
     """Dummy battery class implementation"""
 
+    def __init__(self, ble_device: BLEDevice, reconnect=False) -> None:
+        self._logger = logging.getLogger(__name__)
+        self._logger.debug(f"{self.name()} init()")
+
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
         """Provide BluetoothMatcher definition"""
@@ -35,10 +39,6 @@ class DummyBms(BaseBMS):
     def name() -> str:
         """Return name (type) of battery management system"""
         return "Dummy BMS"
-
-    def __init__(self, ble_device: BLEDevice, reconnect=False) -> None:
-        self._logger = logging.getLogger(__name__)
-        self._logger.debug(f"{self.name()} init()")
 
     async def async_update(self) -> dict[str, float]:
         """Update battery status information"""
