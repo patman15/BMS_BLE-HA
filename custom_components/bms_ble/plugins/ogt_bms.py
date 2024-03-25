@@ -43,7 +43,7 @@ class OGTBms(BaseBMS):
         self._key = sum(
             self._CRYPT_SEQ[int(c, 16)]
             for c in (f"{int(self._ble_device.name[10:]):0>4X}")
-        ) + (5 if (self._ble_device.name[9] == "A") else 8)
+        ) + (5 if (self._type == "A") else 8)
         self._logger.info(
             f"{self.name()} type: {self._type}, ID: {self._ble_device.name[10:]}, key: 0x{self._key:0>2X}"
         )
