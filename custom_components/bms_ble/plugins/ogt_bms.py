@@ -89,7 +89,7 @@ class OGTBms(BaseBMS):
 
     async def __del__(self):
         """close connection to battery on exit"""
-        self._logger.debug("destructor called.")
+        self._logger.debug("Destructor called.")
         await self._disconnect()
 
     async def _wait_event(self) -> None:
@@ -120,7 +120,7 @@ class OGTBms(BaseBMS):
         try:
             await self._connect()
         except Exception as e:
-            self._logger.debug(f"failed to connect: {str(e)} ({type(e).__name__})")
+            self._logger.debug(f"Failed to connect: {str(e)} ({type(e).__name__}).")
             raise IOError
         except asyncio.CancelledError:
             return {}
@@ -131,7 +131,9 @@ class OGTBms(BaseBMS):
             try:
                 await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
             except TimeoutError:
-                self._logger.debug("timeout reading: %s", self._OGT_REGISTERS[key].name)
+                self._logger.debug(
+                    f"Reading {self._OGT_REGISTERS[key].name} timed out."
+                )
         # multiply with voltage with capacity to get Wh instead of Ah
         self._values = self._sensor_conv(
             self._values,
@@ -145,7 +147,7 @@ class OGTBms(BaseBMS):
             self._values, "current", "voltage", lambda x, y: x * y, "power"
         )
 
-        self._logger.debug("data collected: %s", self._values)
+        self._logger.debug(f"Data collected: {self._values}")
         if self._reconnect:
             # disconnect after data update to force reconnect next time (slow!)
             await self._disconnect()
@@ -154,11 +156,11 @@ class OGTBms(BaseBMS):
     def _on_disconnect(self, client: BleakClient) -> None:
         """disconnect callback"""
 
-        self._logger.debug("disconnected from %s", client.address)
+        self._logger.debug(f"Disconnected from {client.address}.")
         self._connected = False
 
     def _notification_handler(self, sender, data: bytearray) -> None:
-        self._logger.debug(f"ble data frame {data}")
+        self._logger.debug(f"Received BLE data: {data}")
 
         valid, reg, nat_value = self._ogt_response(data)
 
@@ -167,18 +169,18 @@ class OGTBms(BaseBMS):
             register = self._OGT_REGISTERS[reg]
             value = register["func"](nat_value)
             self._logger.debug(
-                f"reg: {register['name']} (#{reg}), raw: {nat_value}, value: {value}"
+                f"Decoded data: reg: {register['name']} (#{reg}), raw: {nat_value}, value: {value}"
             )
             self._values[register["name"]] = value
         else:
-            self._logger.debug("invalid response")
+            self._logger.debug("Response is invalid.")
         self._data_event.set()
 
     async def _connect(self) -> None:
         """connect to the BMS and setup notification if not connected"""
 
         if not self._connected:
-            self._logger.debug(f"connecting BMS {self._ble_device.name}")
+            self._logger.debug(f"Connecting BMS {self._ble_device.name}")
             self._client = BleakClient(
                 self._ble_device.address,
                 disconnected_callback=self._on_disconnect,

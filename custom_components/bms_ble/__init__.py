@@ -19,7 +19,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up BT Battery Management System from a config entry."""
-    _LOGGER.debug("Setup of %s", repr(entry))
+    _LOGGER.debug(f"Setup of {repr(entry)}")
 
     if entry.unique_id is None:
         raise ConfigEntryNotReady(f"Missing unique ID for device.")
