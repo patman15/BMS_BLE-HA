@@ -20,17 +20,6 @@ class OGTBms(BaseBMS):
     UUID_TX = normalize_uuid_str("FFF6")
     UUID_SERVICE = normalize_uuid_str("FFF0")
 
-    @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
-        return [
-            {"local_name": "SmartBat-A*", "connectable": True},
-            {"local_name": "SmartBat-B*", "connectable": True},
-        ]
-
-    @staticmethod
-    def device_info() -> dict[str,str]:
-        return {"manufacturer": "Offgridtec", "model": "LiFePo4 Smart Pro"}
-
     def __init__(self, ble_device: BLEDevice, reconnect=False) -> None:
         self._logger = logging.getLogger(__name__)
         self._reconnect = reconnect
@@ -45,7 +34,7 @@ class OGTBms(BaseBMS):
             for c in (f"{int(self._ble_device.name[10:]):0>4X}")
         ) + (5 if (self._type == "A") else 8)
         self._logger.info(
-            f"{' '.join(self.device_info().values())} type: {self._type}, ID: {self._ble_device.name[10:]}, key: 0x{self._key:0>2X}"
+            f"{self.device_id()} type: {self._type}, ID: {self._ble_device.name[10:]}, key: 0x{self._key:0>2X}"
         )
         self._values = {}  # dictionary of queried values
 
@@ -86,6 +75,17 @@ class OGTBms(BaseBMS):
         else:
             self._OGT_REGISTERS = {}
             self._logger.exception(f"unkown device type '{self._type}'")
+
+    @staticmethod
+    def matcher_dict_list() -> list[dict[str, Any]]:
+        return [
+            {"local_name": "SmartBat-A*", "connectable": True},
+            {"local_name": "SmartBat-B*", "connectable": True},
+        ]
+
+    @staticmethod
+    def device_info() -> dict[str, str]:
+        return {"manufacturer": "Offgridtec", "model": "LiFePo4 Smart Pro"}
 
     async def __del__(self):
         """close connection to battery on exit"""

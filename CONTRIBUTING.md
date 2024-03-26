@@ -28,7 +28,7 @@ class DummyBms(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect=False) -> None:
         self._logger = logging.getLogger(__name__)
-        self._logger.debug(f"{' '.join(self.device_info().values())} init()")
+        self._logger.debug(f"{self.device_id()} init()")
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:

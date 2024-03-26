@@ -28,6 +28,11 @@ class BaseBMS(metaclass=ABCMeta):
         pass
 
     @classmethod
+    def device_id(cls) -> str:
+        """Return device information as string"""
+        return " ".join(cls.device_info().values())
+
+    @classmethod
     def supported(cls, discovery_info: BluetoothServiceInfoBleak) -> bool:
         """Returns true if service_info matches BMS type"""
         for matcher_dict in cls.matcher_dict_list():
