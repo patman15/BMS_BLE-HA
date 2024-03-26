@@ -49,7 +49,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             bms: BaseBMS = globals()[type.name]
             if bms.supported(discovery_info):
                 _LOGGER.debug(
-                    f"Device {discovery_info.name} ({discovery_info.address}) detected as '{bms.name()}'"
+                    f"Device {discovery_info.name} ({discovery_info.address}) detected as '{' '.join(bms.device_info().values())}'"
                 )
                 return type
         return None

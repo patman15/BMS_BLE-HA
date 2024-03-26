@@ -21,7 +21,10 @@ class BaseBMS(metaclass=ABCMeta):
 
     @staticmethod
     @abstractmethod
-    def name() -> str:
+    def device_info() -> dict[str, str]:
+        """Returns a dictionary of device information
+        keys: manufacturer, model
+        """
         pass
 
     @classmethod

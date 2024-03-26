@@ -44,6 +44,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
 
         # retrieve BMS class and initialize it
         self._device: BaseBMS = globals()[type](ble_device)
+        device_info = self._device.device_info()
         self.device_info = DeviceInfo(
             identifiers={
                 (DOMAIN, ble_device.name),
@@ -53,7 +54,8 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
             name=ble_device.name,
             configuration_url=None,
             # properties used in GUI:
-            model=ble_device.name,
+            manufacturer=device_info.get("manufacturer"),
+            model=device_info.get("model"),
         )
 
     async def _async_update_data(self) -> dict[str, float]:

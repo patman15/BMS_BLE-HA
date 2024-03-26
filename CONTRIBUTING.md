@@ -28,7 +28,7 @@ class DummyBms(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect=False) -> None:
         self._logger = logging.getLogger(__name__)
-        self._logger.debug(f"{self.name()} init()")
+        self._logger.debug(f"{' '.join(self.device_info().values())} init()")
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -36,12 +36,11 @@ class DummyBms(BaseBMS):
         return [{"local_name": "dummy", "connectable": True}]
 
     @staticmethod
-    def name() -> str:
-        """Return name (type) of battery management system"""
-        return "Dummy BMS"
+    def device_info() -> dict[str, str]:
+        """Return device information for the battery management system"""
+        return {"manufacturer": "Dummy Manufacturer", "model": "dummy model"}
 
     async def async_update(self) -> dict[str, float]:
         """Update battery status information"""
-
         return {}
 ```
