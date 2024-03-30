@@ -7,6 +7,7 @@ from bleak.backends.device import BLEDevice
 
 from .basebms import BaseBMS
 
+LOGGER = logging.getLogger(__name__)
 BAT_TIMEOUT = 1
 
 
@@ -21,7 +22,6 @@ class OGTBms(BaseBMS):
     UUID_SERVICE = normalize_uuid_str("FFF0")
 
     def __init__(self, ble_device: BLEDevice, reconnect=False) -> None:
-        self._logger = logging.getLogger(__name__)
         self._reconnect = reconnect
         self._ble_device = ble_device
         assert self._ble_device.name is not None
@@ -33,7 +33,7 @@ class OGTBms(BaseBMS):
             self._CRYPT_SEQ[int(c, 16)]
             for c in (f"{int(self._ble_device.name[10:]):0>4X}")
         ) + (5 if (self._type == "A") else 8)
-        self._logger.info(
+        LOGGER.info(
             f"{self.device_id()} type: {self._type}, ID: {self._ble_device.name[10:]}, key: 0x{self._key:0>2X}"
         )
         self._values = {}  # dictionary of queried values
@@ -74,7 +74,7 @@ class OGTBms(BaseBMS):
             self._OGT_HEADER = "+R16"
         else:
             self._OGT_REGISTERS = {}
-            self._logger.exception(f"unkown device type '{self._type}'")
+            LOGGER.exception(f"unkown device type '{self._type}'")
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -89,7 +89,7 @@ class OGTBms(BaseBMS):
 
     async def __del__(self):
         """close connection to battery on exit"""
-        self._logger.debug("Destructor called.")
+        LOGGER.debug("Destructor called.")
         await self._disconnect()
 
     async def _wait_event(self) -> None:
@@ -120,7 +120,7 @@ class OGTBms(BaseBMS):
         try:
             await self._connect()
         except Exception as e:
-            self._logger.debug(f"Failed to connect: {str(e)} ({type(e).__name__}).")
+            LOGGER.debug(f"Failed to connect: {str(e)} ({type(e).__name__}).")
             raise IOError
         except asyncio.CancelledError:
             return {}
@@ -131,9 +131,7 @@ class OGTBms(BaseBMS):
             try:
                 await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
             except TimeoutError:
-                self._logger.debug(
-                    f"Reading {self._OGT_REGISTERS[key].name} timed out."
-                )
+                LOGGER.debug(f"Reading {self._OGT_REGISTERS[key].name} timed out.")
         # multiply with voltage with capacity to get Wh instead of Ah
         self._values = self._sensor_conv(
             self._values,
@@ -147,7 +145,7 @@ class OGTBms(BaseBMS):
             self._values, "current", "voltage", lambda x, y: x * y, "power"
         )
 
-        self._logger.debug(f"Data collected: {self._values}")
+        LOGGER.debug(f"Data collected: {self._values}")
         if self._reconnect:
             # disconnect after data update to force reconnect next time (slow!)
             await self._disconnect()
@@ -156,11 +154,11 @@ class OGTBms(BaseBMS):
     def _on_disconnect(self, client: BleakClient) -> None:
         """disconnect callback"""
 
-        self._logger.debug(f"Disconnected from {client.address}.")
+        LOGGER.debug(f"Disconnected from {client.address}.")
         self._connected = False
 
     def _notification_handler(self, sender, data: bytearray) -> None:
-        self._logger.debug(f"Received BLE data: {data}")
+        LOGGER.debug(f"Received BLE data: {data}")
 
         valid, reg, nat_value = self._ogt_response(data)
 
@@ -168,19 +166,19 @@ class OGTBms(BaseBMS):
         if valid and sender.uuid == self.UUID_RX:
             register = self._OGT_REGISTERS[reg]
             value = register["func"](nat_value)
-            self._logger.debug(
+            LOGGER.debug(
                 f"Decoded data: reg: {register['name']} (#{reg}), raw: {nat_value}, value: {value}"
             )
             self._values[register["name"]] = value
         else:
-            self._logger.debug("Response is invalid.")
+            LOGGER.debug("Response is invalid.")
         self._data_event.set()
 
     async def _connect(self) -> None:
         """connect to the BMS and setup notification if not connected"""
 
         if not self._connected:
-            self._logger.debug(f"Connecting BMS {self._ble_device.name}")
+            LOGGER.debug(f"Connecting BMS {self._ble_device.name}")
             self._client = BleakClient(
                 self._ble_device.address,
                 disconnected_callback=self._on_disconnect,
@@ -190,19 +188,19 @@ class OGTBms(BaseBMS):
             await self._client.start_notify(self.UUID_RX, self._notification_handler)
             self._connected = True
         else:
-            self._logger.debug(f"BMS {self._ble_device.name} already connected")
+            LOGGER.debug(f"BMS {self._ble_device.name} already connected")
 
     async def _disconnect(self) -> None:
         """disconnect the BMS, includes stoping notifications"""
         assert self._client is not None
 
         if self._connected:
-            self._logger.debug(f"disconnecting BMS ({self._ble_device.name})")
+            LOGGER.debug(f"disconnecting BMS ({self._ble_device.name})")
             try:
                 self._data_event.clear()
                 await self._client.disconnect()
             except:
-                self._logger.warning("disconnect failed!")
+                LOGGER.warning("disconnect failed!")
 
         self._client = None
 
@@ -212,7 +210,7 @@ class OGTBms(BaseBMS):
         msg = bytearray(((resp[x] ^ self._key) for x in range(0, len(resp)))).decode(
             encoding="ascii"
         )
-        self._logger.debug(f"response: {msg[:-2]}")
+        LOGGER.debug(f"response: {msg[:-2]}")
         # verify correct response
         if msg[:4] != "+RD," or msg[-2:] != "\r\n":
             return False, None, None
@@ -227,7 +225,7 @@ class OGTBms(BaseBMS):
         """put together an scambled query to the BMS"""
 
         cmd = f"{self._OGT_HEADER}{command:0>2X}{self._OGT_REGISTERS[command]['len']:0>2X}"
-        self._logger.debug(f"command: {cmd}")
+        LOGGER.debug(f"command: {cmd}")
 
         return bytearray(ord(cmd[i]) ^ self._key for i in range(len(cmd)))
 
@@ -236,5 +234,5 @@ class OGTBms(BaseBMS):
         assert self._client is not None
 
         msg = self._ogt_command(reg)
-        self._logger.debug(f"ble cmd frame {msg}")
+        LOGGER.debug(f"ble cmd frame {msg}")
         await self._client.write_gatt_char(self.UUID_TX, data=msg)

@@ -1,6 +1,5 @@
 """Home Assistant coordinator for BLE Battery Management System integration."""
 
-import logging
 from asyncio import CancelledError
 from datetime import timedelta
 
@@ -12,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH, DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DOMAIN, UPDATE_INTERVAL
+from .const import DOMAIN, LOGGER, UPDATE_INTERVAL
 from .plugins import *
 
 
@@ -22,7 +21,6 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
     def __init__(
         self,
         hass: HomeAssistant,
-        logger: logging.Logger,
         ble_device: BLEDevice,
         type: str,
     ) -> None:
@@ -30,14 +28,13 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
         assert ble_device.name is not None
         super().__init__(
             hass=hass,
-            logger=logger,
+            logger=LOGGER,
             name=ble_device.name,
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
             always_update=False,  # only update when sensor value has changed
         )
-        self._logger = logger
         self._mac = ble_device.address
-        self._logger.debug(
+        LOGGER.debug(
             f"Initializing coordinator for {ble_device.name} ({ble_device.address}), type {type}"
         )
         assert type in BmsTypes._member_names_  # ensure we have a valid BMS type
@@ -60,7 +57,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
 
     async def _async_update_data(self) -> dict[str, float]:
         """Return the latest data from the device."""
-        self._logger.debug(f"BMS {self.device_info.get(ATTR_NAME)} data update")
+        LOGGER.debug(f"BMS {self.device_info.get(ATTR_NAME)} data update")
 
         service_info = bluetooth.async_last_service_info(
             self.hass, address=self._mac, connectable=True

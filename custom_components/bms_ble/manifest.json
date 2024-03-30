@@ -18,5 +18,5 @@
   "issue_tracker": "https://github.com/patman15/BLE_BMS-HA/issues",
   "loggers": ["bms_ble", "ogtbms"],
   "requirements": [],
-  "version": "0.9.13"
+  "version": "0.9.14"
 }

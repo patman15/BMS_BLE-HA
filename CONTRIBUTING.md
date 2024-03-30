@@ -22,13 +22,14 @@ from bleak.backends.device import BLEDevice
 
 from .basebms import BaseBMS
 
+LOGGER = logging.getLogger(__name__)
+
 
 class DummyBms(BaseBMS):
     """Dummy battery class implementation"""
 
     def __init__(self, ble_device: BLEDevice, reconnect=False) -> None:
-        self._logger = logging.getLogger(__name__)
-        self._logger.debug(f"{self.device_id()} init()")
+        LOGGER.debug(f"{self.device_id()} init()")
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:

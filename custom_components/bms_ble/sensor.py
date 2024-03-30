@@ -28,7 +28,7 @@ from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import DOMAIN, LOGGER
 from .coordinator import BTBmsCoordinator
 
 SENSOR_TYPES: list[SensorEntityDescription] = [
@@ -139,8 +139,6 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
             self._attr_available = True
         elif self._attr_available:
             self._attr_available = False
-            self._bms.logger.info(
-                "No update available for {self.entity_description.key}."
-            )
+            LOGGER.info("No update available for {self.entity_description.key}.")
 
         self.async_write_ha_state()

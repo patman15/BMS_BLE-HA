@@ -1,6 +1,5 @@
 """Config flow for BLE Battery Management System integration."""
 
-import logging
 from dataclasses import dataclass
 from typing import Any
 
@@ -15,10 +14,8 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
-from .const import DOMAIN
+from .const import DOMAIN, LOGGER
 from .plugins import *
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -48,7 +45,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         for type in BmsTypes:
             bms: BaseBMS = globals()[type.name]
             if bms.supported(discovery_info):
-                _LOGGER.debug(
+                LOGGER.debug(
                     f"Device {discovery_info.name} ({discovery_info.address}) detected as '{bms.device_id}'"
                 )
                 return type
@@ -58,9 +55,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, discovery_info: BluetoothServiceInfoBleak
     ) -> FlowResult:
         """Handle a flow initialized by Bluetooth discovery."""
-        _LOGGER.debug(
-            f"Bluetooth device detected: {format_mac(discovery_info.address)}"
-        )
+        LOGGER.debug(f"Bluetooth device detected: {format_mac(discovery_info.address)}")
         await self.async_set_unique_id(discovery_info.address)
         self._abort_if_unique_id_configured()
 
@@ -79,7 +74,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> FlowResult:
         """Confirm bluetooth device discovery."""
         assert self._discovered_device is not None
-        _LOGGER.debug(f"confirm step {self._discovered_device.name}")
+        LOGGER.debug(f"confirm step {self._discovered_device.name}")
 
         if user_input is not None:
             return self.async_create_entry(
@@ -97,7 +92,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle the user step to pick discovered device."""
-        _LOGGER.debug(f"user step")
+        LOGGER.debug(f"user step")
 
         if user_input is not None:
             address = user_input[CONF_ADDRESS]
