@@ -1,47 +1,44 @@
 """The BLE Battery Management System integration."""
 
+from asyncio import CancelledError
+
+from homeassistant.components.bluetooth import async_ble_device_from_address
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.components.bluetooth import async_ble_device_from_address
-from asyncio import CancelledError
 
-from .const import DOMAIN
-from .btbms import BTBmsCoordinator
-
-import logging
+from .const import DOMAIN, LOGGER
+from .coordinator import BTBmsCoordinator
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
-
-_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up BT Battery Management System from a config entry."""
-    _LOGGER.debug("Setup of %s", repr(entry))
+    LOGGER.debug(f"Setup of {repr(entry)}")
 
     if entry.unique_id is None:
         raise ConfigEntryNotReady(f"Missing unique ID for device.")
 
     ble_device = async_ble_device_from_address(
-        hass=hass, address=entry.unique_id, connectable=True)
+        hass=hass, address=entry.unique_id, connectable=True
+    )
 
     if not ble_device:
         raise ConfigEntryNotReady(
             f"Could not find battery with address {entry.unique_id}"
         )
 
-    if ble_device.name[9] not in "AB":
-        _LOGGER.error(f"Unknonw device type: {ble_device.name[9]}")
-        return False
-
-    coordinator = BTBmsCoordinator(hass, _LOGGER, ble_device)
+    coordinator = BTBmsCoordinator(hass, ble_device, type=entry.data["type"])
 
     # Query the device the first time, initialise coordinator.data
     try:
         entry.async_create_background_task(
-            hass=hass, target=coordinator.async_config_entry_first_refresh(), name="initialize")
+            hass=hass,
+            target=coordinator.async_config_entry_first_refresh(),
+            name="initialize",
+        )
         # Insert the coordinator in the global registry
         hass.data.setdefault(DOMAIN, {})
         hass.data[DOMAIN][entry.entry_id] = coordinator
@@ -57,5 +54,5 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         hass.data[DOMAIN].pop(entry.entry_id)
 
-    _LOGGER.info(f"unloaded entry: {entry.unique_id}, ok? {unload_ok}!")
+    LOGGER.info(f"unloaded entry: {entry.unique_id}, ok? {unload_ok}!")
     return unload_ok
