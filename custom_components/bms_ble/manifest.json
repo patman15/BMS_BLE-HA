@@ -16,7 +16,7 @@
   "integration_type": "device",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/patman15/BLE_BMS-HA/issues",
-  "loggers": ["bms_ble", "ogtbms"],
+  "loggers": ["bms_ble", "ogt_bms"],
   "requirements": [],
-  "version": "0.9.14"
+  "version": "1.0.0"
 }
