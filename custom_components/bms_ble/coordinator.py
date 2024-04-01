@@ -31,7 +31,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
             logger=LOGGER,
             name=ble_device.name,
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
-            always_update=False,  # only update when sensor value has changed
+            # always_update=False,  # only update when sensor value has changed
         )
         self._mac = ble_device.address
         LOGGER.debug(
