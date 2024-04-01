@@ -139,6 +139,6 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
             self._attr_available = True
         elif self._attr_available:
             self._attr_available = False
-            LOGGER.info("No update available for {self.entity_description.key}.")
+            LOGGER.info(f"No update available for {self.entity_description.key}.")
 
         self.async_write_ha_state()
