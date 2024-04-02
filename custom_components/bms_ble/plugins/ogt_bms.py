@@ -50,6 +50,7 @@ class OGTBms(BaseBMS):
                     len=2,
                     func=lambda x: round(float(x) * 0.1 - 273.15, 1),
                 ),
+                # length for current is actually only 2, 3 used to detect signed value
                 16: dict(name="current", len=3, func=lambda x: float(x) / 1000),
                 24: dict(name="runtime", len=2, func=lambda x: x * 60),
                 44: dict(name="cycles", len=2, func=lambda x: x),
@@ -218,7 +219,7 @@ class OGTBms(BaseBMS):
         signed = len(msg) > 12
         value = int.from_bytes(
             bytes.fromhex(msg[6:10]), byteorder="little", signed=signed
-        ) * (int(msg[10:12], 16) if signed else 1)
+        ) * (max(int(msg[10:12], 16), 1) if signed else 1)
         return True, int(msg[4:6], 16), value
 
     def _ogt_command(self, command: int) -> bytes:
