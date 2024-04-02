@@ -51,7 +51,7 @@ class OGTBms(BaseBMS):
                     func=lambda x: round(float(x) * 0.1 - 273.15, 1),
                 ),
                 # length for current is actually only 2, 3 used to detect signed value
-                16: dict(name="current", len=3, func=lambda x: float(x) / 1000),
+                16: dict(name="current", len=3, func=lambda x: float(x) / 100),
                 24: dict(name="runtime", len=2, func=lambda x: x * 60),
                 44: dict(name="cycles", len=2, func=lambda x: x),
             }
