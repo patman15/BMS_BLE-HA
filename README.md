@@ -9,6 +9,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - temperature [°C]
 - (remaining) runtime [s]
 - charge cycles [#]
+- battery charging indicator [bool]
 
 ![grafik](https://github.com/patman15/BLE_BMS-HA/assets/14628713/99088715-fa2d-4d3d-90a5-967a8bf08305)
 
