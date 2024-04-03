@@ -1,7 +1,5 @@
 """The BLE Battery Management System integration."""
 
-from asyncio import CancelledError
-
 from homeassistant.components.bluetooth import async_ble_device_from_address
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -34,17 +32,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Query the device the first time, initialise coordinator.data
     try:
-        entry.async_create_background_task(
-            hass=hass,
-            target=coordinator.async_config_entry_first_refresh(),
-            name="initialize",
-        )
         # Insert the coordinator in the global registry
         hass.data.setdefault(DOMAIN, {})
         hass.data[DOMAIN][entry.entry_id] = coordinator
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
         return True
-    except CancelledError:
+    except:
         del coordinator
         return False
 

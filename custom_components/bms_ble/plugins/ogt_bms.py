@@ -113,13 +113,7 @@ class OGTBms(BaseBMS):
     async def async_update(self) -> dict[str, float]:
         """Update battery status information"""
 
-        try:
-            await self._connect()
-        except Exception as e:
-            LOGGER.debug(f"Failed to connect: {str(e)} ({type(e).__name__}).")
-            raise IOError
-        except asyncio.CancelledError:
-            return {}
+        await self._connect()
 
         self._values.clear()
         for key in list(self._OGT_REGISTERS):
@@ -127,7 +121,8 @@ class OGTBms(BaseBMS):
             try:
                 await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
             except TimeoutError:
-                LOGGER.debug(f"Reading {self._OGT_REGISTERS[key].name} timed out.")
+                LOGGER.debug(f"Reading {self._OGT_REGISTERS[key]['name']} timed out.")
+
         # multiply with voltage with capacity to get Wh instead of Ah
         self._values = self._sensor_conv(
             self._values,

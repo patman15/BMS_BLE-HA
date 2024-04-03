@@ -1,8 +1,8 @@
 """Home Assistant coordinator for BLE Battery Management System integration."""
 
-from asyncio import CancelledError
 from datetime import timedelta
 
+from bleak import BleakError
 from bleak.backends.device import BLEDevice
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth import DOMAIN as BLUETOOTH_DOMAIN
@@ -31,6 +31,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
             logger=LOGGER,
             name=ble_device.name,
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
+            update_method=self.async_update_data,
             # always_update=False,  # only update when sensor value has changed
         )
         self._mac = ble_device.address
@@ -64,16 +65,20 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
         """Return the latest data from the device."""
         LOGGER.debug(f"BMS {self.device_info.get(ATTR_NAME)} data update")
 
+        battery_info: dict[str, float] = {}
+        try:
+            battery_info = await self._device.async_update()
+        except TimeoutError:
+            LOGGER.debug("Device communication timeout.")
+            raise
+        except BleakError as err:
+            raise UpdateFailed(
+                f"device communicating failed: {str(err)} ({type(err).__name__})"
+            ) from err
+
         service_info = bluetooth.async_last_service_info(
             self.hass, address=self._mac, connectable=True
         )
-        try:
-            battery_info = await self._device.async_update()
-        except CancelledError:
-            return {}
-        except:
-            raise UpdateFailed("Device communicating error.")
-
         if service_info is not None:
             battery_info.update({"rssi": service_info.rssi})
 
