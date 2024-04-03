@@ -55,7 +55,12 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
             model=device_info.get("model"),
         )
 
-    async def _async_update_data(self) -> dict[str, float]:
+    async def stop(self):
+        """Stop connection to BMS instance"""
+        LOGGER.debug(f"Stopping device {self.device_info.get(ATTR_NAME)}")
+        await self._device.disconnect()
+
+    async def async_update_data(self) -> dict[str, float]:
         """Return the latest data from the device."""
         LOGGER.debug(f"BMS {self.device_info.get(ATTR_NAME)} data update")
 

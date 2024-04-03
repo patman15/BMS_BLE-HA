@@ -88,11 +88,6 @@ class OGTBms(BaseBMS):
     def device_info() -> dict[str, str]:
         return {"manufacturer": "Offgridtec", "model": "LiFePo4 Smart Pro"}
 
-    async def __del__(self):
-        """close connection to battery on exit"""
-        LOGGER.debug("Destructor called.")
-        await self._disconnect()
-
     async def _wait_event(self) -> None:
         await self._data_event.wait()
         self._data_event.clear()
@@ -149,7 +144,7 @@ class OGTBms(BaseBMS):
         LOGGER.debug(f"Data collected: {self._values}")
         if self._reconnect:
             # disconnect after data update to force reconnect next time (slow!)
-            await self._disconnect()
+            await self.disconnect()
         return self._values
 
     def _on_disconnect(self, client: BleakClient) -> None:
@@ -191,12 +186,11 @@ class OGTBms(BaseBMS):
         else:
             LOGGER.debug(f"BMS {self._ble_device.name} already connected")
 
-    async def _disconnect(self) -> None:
+    async def disconnect(self) -> None:
         """disconnect the BMS, includes stoping notifications"""
-        assert self._client is not None
 
-        if self._connected:
-            LOGGER.debug(f"disconnecting BMS ({self._ble_device.name})")
+        if self._client and self._connected:
+            LOGGER.debug(f"Disconnecting BMS ({self._ble_device.name})")
             try:
                 self._data_event.clear()
                 await self._client.disconnect()

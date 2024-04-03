@@ -41,6 +41,10 @@ class DummyBms(BaseBMS):
         """Return device information for the battery management system"""
         return {"manufacturer": "Dummy Manufacturer", "model": "dummy model"}
 
+    async def disconnect(self) -> None:
+        """Disconnect connection to BMS if active"""
+        pass
+
     async def async_update(self) -> dict[str, float]:
         """Update battery status information"""
         return {}

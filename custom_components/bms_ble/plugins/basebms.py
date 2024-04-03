@@ -42,6 +42,10 @@ class BaseBMS(metaclass=ABCMeta):
                 return True
         return False
 
+    async def disconnect(self) -> None:
+        """Disconnect connection to BMS if active"""
+        pass
+
     @abstractmethod
     async def async_update(self) -> dict[str, float]:
         """Retrieve updated values from the BMS
