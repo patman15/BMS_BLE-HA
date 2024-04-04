@@ -1,7 +1,6 @@
 """Plugin package for BMS types"""
 
 from enum import Enum, auto
-from typing import Any
 
 from .basebms import BaseBMS
 
