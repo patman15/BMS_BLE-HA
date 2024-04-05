@@ -135,6 +135,10 @@ class OGTBms(BaseBMS):
         self._values = self._sensor_conv(
             self._values, "current", "voltage", lambda x, y: x * y, "power"
         )
+        # calculate charging indicator
+        self._values = self._sensor_conv(
+            self._values, "current", "current", lambda x, y: x > 0, "battery_charging"
+        )
 
         LOGGER.debug(f"Data collected: {self._values}")
         if self._reconnect:
