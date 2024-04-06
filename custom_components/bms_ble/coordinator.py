@@ -31,7 +31,6 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
             logger=LOGGER,
             name=ble_device.name,
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
-            update_method=self.async_update_data,
             always_update=False,  # only update when sensor value has changed
         )
         self._mac = ble_device.address
@@ -61,7 +60,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
         LOGGER.debug(f"Stopping device {self.device_info.get(ATTR_NAME)}")
         await self._device.disconnect()
 
-    async def async_update_data(self) -> dict[str, float]:
+    async def _async_update_data(self) -> dict[str, float]:
         """Return the latest data from the device."""
         LOGGER.debug(f"BMS {self.device_info.get(ATTR_NAME)} data update")
 
