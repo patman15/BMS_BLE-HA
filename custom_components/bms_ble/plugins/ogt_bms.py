@@ -36,7 +36,7 @@ class OGTBms(BaseBMS):
         LOGGER.info(
             f"{self.device_id()} type: {self._type}, ID: {self._ble_device.name[10:]}, key: 0x{self._key:0>2X}"
         )
-        self._values = {}  # dictionary of queried values
+        self._values: dict[str, float] = {}  # dictionary of queried values
 
         if self._type == "A":
             self._OGT_REGISTERS = {
