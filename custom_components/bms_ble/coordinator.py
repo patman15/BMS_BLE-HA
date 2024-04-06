@@ -32,7 +32,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
             name=ble_device.name,
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
             update_method=self.async_update_data,
-            # always_update=False,  # only update when sensor value has changed
+            always_update=False,  # only update when sensor value has changed
         )
         self._mac = ble_device.address
         LOGGER.debug(
@@ -67,7 +67,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
 
         battery_info: dict[str, float] = {}
         try:
-            battery_info = await self._device.async_update()
+            battery_info.update(await self._device.async_update())
         except TimeoutError:
             LOGGER.debug("Device communication timeout.")
             raise
