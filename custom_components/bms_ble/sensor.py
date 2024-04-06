@@ -119,11 +119,12 @@ async def async_setup_entry(
 class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ignore
     """Generic BMS sensor implementation"""
 
+    _attr_has_entity_name = True
+
     def __init__(self, bms: BTBmsCoordinator, descr: SensorEntityDescription) -> None:
         self._bms: BTBmsCoordinator = bms
         self._attr_unique_id = f"{format_mac(self._bms.name)}-{descr.key}"
         self._attr_device_info = bms.device_info
-        self._attr_has_entity_name = True
         self.entity_description = descr
         super().__init__(self._bms)
 
