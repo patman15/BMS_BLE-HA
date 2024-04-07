@@ -131,7 +131,6 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-
         if self._bms.data is None:
             return
 

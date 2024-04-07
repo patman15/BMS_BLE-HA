@@ -47,7 +47,7 @@ class BaseBMS(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    async def async_update(self) -> dict[str, float]:
+    async def async_update(self) -> dict[str, int | float | bool]:
         """Retrieve updated values from the BMS
 
         Returns a dictionary of BMS values, where the keys need to match the keys in the SENSOR_TYPES list.

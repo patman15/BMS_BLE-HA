@@ -41,7 +41,7 @@ class OGTBms(BaseBMS):
         if self._type == "A":
             self._OGT_REGISTERS = {
                 # SOC (State of Charge)
-                2: dict(name="battery_level", len=1, func=lambda x: x),
+                2: dict(name="battery_level", len=1, func=lambda x: int(x)),
                 4: dict(name="cycle_capacity", len=3, func=lambda x: float(x) / 1000),
                 8: dict(name="voltage", len=2, func=lambda x: float(x) / 1000),
                 # MOS temperature
@@ -52,8 +52,8 @@ class OGTBms(BaseBMS):
                 ),
                 # length for current is actually only 2, 3 used to detect signed value
                 16: dict(name="current", len=3, func=lambda x: float(x) / 100),
-                24: dict(name="runtime", len=2, func=lambda x: x * 60),
-                44: dict(name="cycles", len=2, func=lambda x: x),
+                24: dict(name="runtime", len=2, func=lambda x: int(x * 60)),
+                44: dict(name="cycles", len=2, func=lambda x: int(x)),
             }
             self._OGT_HEADER = "+RAA"
         elif self._type == "B":
@@ -67,10 +67,10 @@ class OGTBms(BaseBMS):
                 9: dict(name="voltage", len=2, func=lambda x: float(x) / 1000),
                 10: dict(name="current", len=3, func=lambda x: float(x) / 1000),
                 # SOC (State of Charge)
-                13: dict(name="battery_level", len=1, func=lambda x: x),
+                13: dict(name="battery_level", len=1, func=lambda x: int(x)),
                 15: dict(name="cycle_capacity", len=3, func=lambda x: float(x) / 1000),
-                18: dict(name="runtime", len=2, func=lambda x: x * 60),
-                23: dict(name="cycles", len=2, func=lambda x: x),
+                18: dict(name="runtime", len=2, func=lambda x: int(x * 60)),
+                23: dict(name="cycles", len=2, func=lambda x: int(x)),
             }
             self._OGT_HEADER = "+R16"
         else:
@@ -110,7 +110,7 @@ class OGTBms(BaseBMS):
 
         return values
 
-    async def async_update(self) -> dict[str, float]:
+    async def async_update(self) -> dict[str, int | float | bool]:
         """Update battery status information"""
 
         await self._connect()

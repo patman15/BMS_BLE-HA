@@ -45,7 +45,7 @@ class DummyBms(BaseBMS):
         """Disconnect connection to BMS if active"""
         pass
 
-    async def async_update(self) -> dict[str, float]:
+    async def async_update(self) -> dict[str, int | float | bool]:
         """Update battery status information"""
         return {}
 ```

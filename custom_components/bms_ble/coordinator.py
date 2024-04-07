@@ -15,7 +15,7 @@ from .const import DOMAIN, LOGGER, UPDATE_INTERVAL
 from .plugins import *
 
 
-class BTBmsCoordinator(DataUpdateCoordinator[dict[str, float]]):
+class BTBmsCoordinator(DataUpdateCoordinator[dict[str, int | float | bool]]):
     """Update coordinator for a battery management system"""
 
     def __init__(
