@@ -60,11 +60,11 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, int | float | bool]]):
         LOGGER.debug(f"Stopping device {self.device_info.get(ATTR_NAME)}")
         await self._device.disconnect()
 
-    async def _async_update_data(self) -> dict[str, float]:
+    async def _async_update_data(self) -> dict[str, int | float | bool]:
         """Return the latest data from the device."""
         LOGGER.debug(f"BMS {self.device_info.get(ATTR_NAME)} data update")
 
-        battery_info: dict[str, float] = {}
+        battery_info: dict[str, int | float | bool] = {}
         try:
             battery_info.update(await self._device.async_update())
         except TimeoutError:
