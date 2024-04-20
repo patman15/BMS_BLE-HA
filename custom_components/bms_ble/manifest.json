@@ -7,6 +7,9 @@
     },
     {
       "local_name": "SmartBat-B*"
+    },
+    {
+      "local_name": "DL-*"
     }
   ],
   "codeowners": ["@patman15"],
@@ -18,5 +21,5 @@
   "issue_tracker": "https://github.com/patman15/BLE_BMS-HA/issues",
   "loggers": ["bms_ble", "ogt_bms"],
   "requirements": [],
-  "version": "1.1.2"
+  "version": "1.2.0"
 }

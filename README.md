@@ -15,6 +15,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 
 ## Supported Devices
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-Axxxxx` or `SmartBat-Bxxxxx`)
+- Daly BMS
 
 New device types can be easily added via the plugin architecture of this integration. See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
