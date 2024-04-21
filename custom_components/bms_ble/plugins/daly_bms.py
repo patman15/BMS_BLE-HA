@@ -1,12 +1,13 @@
 import asyncio
 import logging
+from statistics import fmean
 from typing import Any, Callable
 
 from bleak import BleakClient, normalize_uuid_str
 from bleak.backends.device import BLEDevice
+
 from homeassistant.const import STATE_UNKNOWN
 from homeassistant.util.unit_conversion import _HRS_TO_SECS
-from statistics import fmean
 
 from .basebms import BaseBMS
 
