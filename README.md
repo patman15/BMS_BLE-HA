@@ -15,6 +15,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 
 ## Supported Devices
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-Axxxxx` or `SmartBat-Bxxxxx`)
+- Daly BMS
 
 New device types can be easily added via the plugin architecture of this integration. See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
@@ -44,3 +45,6 @@ Yes, you can use a [template sensor](https://my.home-assistant.io/redirect/confi
 
 ### I need a discharge sensor not the charging indicator, can I have that?
 Sure, use, e.g. a [threshold sensor](https://my.home-assistant.io/redirect/config_flow_start/?domain=threshold) based on the current to/from the battery. Negative means discharging, positiv is charging.
+
+## References
+- Daly BMS: [esp32-smart-bms-simulation](https://github.com/roccotsi2/esp32-smart-bms-simulation)
