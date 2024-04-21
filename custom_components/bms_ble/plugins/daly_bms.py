@@ -6,9 +6,18 @@ from typing import Any, Callable
 from bleak import BleakClient, normalize_uuid_str
 from bleak.backends.device import BLEDevice
 
-from homeassistant.const import STATE_UNKNOWN
-from homeassistant.util.unit_conversion import _HRS_TO_SECS
-
+from ..const import (
+    ATTR_BATTERY_CHARGING,
+    ATTR_BATTERY_LEVEL,
+    ATTR_CURRENT,
+    ATTR_CYCLE_CAP,
+    ATTR_CYCLE_CHRG,
+    ATTR_CYCLES,
+    ATTR_POWER,
+    ATTR_RUNTIME,
+    ATTR_TEMPERATURE,
+    ATTR_VOLTAGE,
+)
 from .basebms import BaseBMS
 
 BAT_TIMEOUT = 10
@@ -36,11 +45,11 @@ class DalyBms(BaseBMS):
         self._data_event = asyncio.Event()
         self._connected = False  # flag to indicate active BLE connection
         self._FIELDS: list[tuple[str, int, Callable[[int], int | float]]] = [
-            ("voltage", 80 + self.HEAD_LEN, lambda x: float(x / 10)),
-            ("current", 82 + self.HEAD_LEN, lambda x: float((x - 30000) / 10)),
-            ("battery_level", 84 + self.HEAD_LEN, lambda x: float(x / 10)),
-            ("cycles", 102 + self.HEAD_LEN, lambda x: int(x)),
-            ("remCap", 96 + self.HEAD_LEN, lambda x: float(x / 10)),
+            (ATTR_VOLTAGE, 80 + self.HEAD_LEN, lambda x: float(x / 10)),
+            (ATTR_CURRENT, 82 + self.HEAD_LEN, lambda x: float((x - 30000) / 10)),
+            (ATTR_BATTERY_LEVEL, 84 + self.HEAD_LEN, lambda x: float(x / 10)),
+            (ATTR_CYCLES, 102 + self.HEAD_LEN, lambda x: int(x)),
+            (ATTR_CYCLE_CHRG, 96 + self.HEAD_LEN, lambda x: float(x / 10)),
             ("numTemp", 100 + self.HEAD_LEN, lambda x: int(x)),
         ]
 
@@ -70,7 +79,7 @@ class DalyBms(BaseBMS):
         if (
             len(data) < 3
             or data[0:2] != self.HEAD_READ
-            or int(data[2]) != len(data) - len(self.HEAD_READ) - self.CRC_LEN - 1
+            or int(data[2]) + 1 != len(data) - len(self.HEAD_READ) - self.CRC_LEN
         ):
             LOGGER.debug("Response is invalid.")
             self._data = None
@@ -126,13 +135,10 @@ class DalyBms(BaseBMS):
             key: func(int.from_bytes(self._data[idx : idx + 2]))
             for key, idx, func in self._FIELDS
         }
-        # calculate runtime
-        if data["current"] > 0:
-            data["runtime"] = data["remCap"] / data["current"] * _HRS_TO_SECS
 
         # calculate average temperature
         if data["numTemp"] > 0:
-            data["temperature"] = (
+            data[ATTR_TEMPERATURE] = (
                 fmean(
                     [
                         int.from_bytes(self._data[idx : idx + 2])
@@ -146,8 +152,8 @@ class DalyBms(BaseBMS):
                 - 40
             )
 
-        return data | {
-            "cycle_capacity": data["voltage"] * data["remCap"],
-            "power": data["voltage"] * data["current"],
-            "battery_charging": data["current"] > 0,
-        }
+        self.calc_values(
+            data, {ATTR_CYCLE_CAP, ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_RUNTIME}
+        )
+
+        return data

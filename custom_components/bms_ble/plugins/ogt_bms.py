@@ -5,6 +5,18 @@ from typing import Any, Callable
 from bleak import BleakClient, normalize_uuid_str
 from bleak.backends.device import BLEDevice
 
+from ..const import (
+    ATTR_BATTERY_CHARGING,
+    ATTR_BATTERY_LEVEL,
+    ATTR_CURRENT,
+    ATTR_CYCLE_CAP,
+    ATTR_CYCLE_CHRG,
+    ATTR_CYCLES,
+    ATTR_POWER,
+    ATTR_RUNTIME,
+    ATTR_TEMPERATURE,
+    ATTR_VOLTAGE,
+)
 from .basebms import BaseBMS
 
 LOGGER = logging.getLogger(__name__)
@@ -41,36 +53,36 @@ class OGTBms(BaseBMS):
         if self._type == "A":
             self._OGT_REGISTERS = {
                 # SOC (State of Charge)
-                2: dict(name="battery_level", len=1, func=lambda x: int(x)),
-                4: dict(name="cycle_capacity", len=3, func=lambda x: float(x) / 1000),
-                8: dict(name="voltage", len=2, func=lambda x: float(x) / 1000),
+                2: dict(name=ATTR_BATTERY_LEVEL, len=1, func=lambda x: int(x)),
+                4: dict(name=ATTR_CYCLE_CHRG, len=3, func=lambda x: float(x) / 1000),
+                8: dict(name=ATTR_VOLTAGE, len=2, func=lambda x: float(x) / 1000),
                 # MOS temperature
                 12: dict(
-                    name="temperature",
+                    name=ATTR_TEMPERATURE,
                     len=2,
                     func=lambda x: round(float(x) * 0.1 - 273.15, 1),
                 ),
                 # length for current is actually only 2, 3 used to detect signed value
-                16: dict(name="current", len=3, func=lambda x: float(x) / 100),
-                24: dict(name="runtime", len=2, func=lambda x: int(x * 60)),
-                44: dict(name="cycles", len=2, func=lambda x: int(x)),
+                16: dict(name=ATTR_CURRENT, len=3, func=lambda x: float(x) / 100),
+                24: dict(name=ATTR_RUNTIME, len=2, func=lambda x: int(x * 60)),
+                44: dict(name=ATTR_CYCLES, len=2, func=lambda x: int(x)),
             }
             self._OGT_HEADER = "+RAA"
         elif self._type == "B":
             self._OGT_REGISTERS = {
                 # MOS temperature
                 8: dict(
-                    name="temperature",
+                    name=ATTR_TEMPERATURE,
                     len=2,
                     func=lambda x: round(float(x) * 0.1 - 273.15, 1),
                 ),
-                9: dict(name="voltage", len=2, func=lambda x: float(x) / 1000),
-                10: dict(name="current", len=3, func=lambda x: float(x) / 1000),
+                9: dict(name=ATTR_VOLTAGE, len=2, func=lambda x: float(x) / 1000),
+                10: dict(name=ATTR_CURRENT, len=3, func=lambda x: float(x) / 1000),
                 # SOC (State of Charge)
-                13: dict(name="battery_level", len=1, func=lambda x: int(x)),
-                15: dict(name="cycle_capacity", len=3, func=lambda x: float(x) / 1000),
-                18: dict(name="runtime", len=2, func=lambda x: int(x * 60)),
-                23: dict(name="cycles", len=2, func=lambda x: int(x)),
+                13: dict(name=ATTR_BATTERY_LEVEL, len=1, func=lambda x: int(x)),
+                15: dict(name=ATTR_CYCLE_CHRG, len=3, func=lambda x: float(x) / 1000),
+                18: dict(name=ATTR_RUNTIME, len=2, func=lambda x: int(x * 60)),
+                23: dict(name=ATTR_CYCLES, len=2, func=lambda x: int(x)),
             }
             self._OGT_HEADER = "+R16"
         else:
@@ -123,21 +135,8 @@ class OGTBms(BaseBMS):
             except TimeoutError:
                 LOGGER.debug(f"Reading {self._OGT_REGISTERS[key]['name']} timed out.")
 
-        # multiply with voltage with capacity to get Wh instead of Ah
-        self._values = self._sensor_conv(
-            self._values,
-            "cycle_capacity",
-            "voltage",
-            lambda x, y: x * y,
-            "cycle_capacity",
-        )
-        # calculate power from voltage and current
-        self._values = self._sensor_conv(
-            self._values, "current", "voltage", lambda x, y: x * y, "power"
-        )
-        # calculate charging indicator
-        self._values = self._sensor_conv(
-            self._values, "current", "current", lambda x, y: x > 0, "battery_charging"
+        self.calc_values(
+            self._values, {ATTR_CYCLE_CAP, ATTR_POWER, ATTR_BATTERY_CHARGING}
         )
 
         LOGGER.debug(f"Data collected: {self._values}")

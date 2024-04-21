@@ -1,6 +1,7 @@
 # <img src="https://github.com/patman15/BLE_BMS-HA/assets/14628713/0ee84af9-300a-4a26-a098-26954a46ec36" width="32" height="32"> BLE Battery Management Systems for Home Assistant
 
-This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). The integration provides the following information about the battery
+This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). You can use the [ESPHome Bluetooth proxy](https://esphome.io/components/bluetooth_proxy) to extend the bluetooth coverage range. The integration provides the following information about the battery
+
 - SoC (state of charge) [%]
 - stored energy [Wh]
 - voltage [V]
@@ -47,4 +48,5 @@ Yes, you can use a [template sensor](https://my.home-assistant.io/redirect/confi
 Sure, use, e.g. a [threshold sensor](https://my.home-assistant.io/redirect/config_flow_start/?domain=threshold) based on the current to/from the battery. Negative means discharging, positiv is charging.
 
 ## References
+- [Home Assistant Add-on: BatMON](https://github.com/fl4p/batmon-ha)
 - Daly BMS: [esp32-smart-bms-simulation](https://github.com/roccotsi2/esp32-smart-bms-simulation)
