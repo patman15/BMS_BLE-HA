@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from bleak import BleakError
 from bleak.backends.device import BLEDevice
+
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth import DOMAIN as BLUETOOTH_DOMAIN
 from homeassistant.const import ATTR_NAME
@@ -11,7 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH, DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DOMAIN, LOGGER, UPDATE_INTERVAL
+from .const import ATTR_RSSI, DOMAIN, LOGGER, UPDATE_INTERVAL
 from .plugins import *
 
 
@@ -79,6 +80,6 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, int | float | bool]]):
             self.hass, address=self._mac, connectable=True
         )
         if service_info is not None:
-            battery_info.update({"rssi": service_info.rssi})
+            battery_info.update({ATTR_RSSI: service_info.rssi})
 
         return battery_info

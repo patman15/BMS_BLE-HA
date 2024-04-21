@@ -26,7 +26,16 @@ from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, LOGGER
+from .const import (
+    ATTR_CURRENT,
+    ATTR_CYCLE_CAP,
+    ATTR_CYCLES,
+    ATTR_POWER,
+    ATTR_RSSI,
+    ATTR_RUNTIME,
+    DOMAIN,
+    LOGGER,
+)
 from .coordinator import BTBmsCoordinator
 
 SENSOR_TYPES: list[SensorEntityDescription] = [
@@ -54,45 +63,45 @@ SENSOR_TYPES: list[SensorEntityDescription] = [
         suggested_display_precision=1,
     ),
     SensorEntityDescription(
-        key="current",
-        translation_key="current",
+        key=ATTR_CURRENT,
+        translation_key=ATTR_CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.CURRENT,
     ),
     SensorEntityDescription(
-        key="cycle_capacity",
-        translation_key="cycle_capacity",
+        key=ATTR_CYCLE_CAP,
+        translation_key=ATTR_CYCLE_CAP,
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.ENERGY_STORAGE,
         suggested_display_precision=1,
     ),
     SensorEntityDescription(
-        key="cycles",
-        translation_key="cycles",
+        key=ATTR_CYCLES,
+        translation_key=ATTR_CYCLES,
         name="Cycles",
         state_class=SensorStateClass.TOTAL_INCREASING,
     ),
     SensorEntityDescription(
-        key="power",
-        translation_key="power",
+        key=ATTR_POWER,
+        translation_key=ATTR_POWER,
         native_unit_of_measurement=UnitOfPower.WATT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.POWER,
         suggested_display_precision=1,
     ),
     SensorEntityDescription(
-        key="runtime",
-        translation_key="runtime",
+        key=ATTR_RUNTIME,
+        translation_key=ATTR_RUNTIME,
         name="Runtime",
         native_unit_of_measurement=UnitOfTime.SECONDS,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DURATION,
     ),
     SensorEntityDescription(
-        key="rssi",
-        translation_key="rssi",
+        key=ATTR_RSSI,
+        translation_key=ATTR_RSSI,
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
