@@ -17,7 +17,7 @@ from .plugins import *
 
 
 class BTBmsCoordinator(DataUpdateCoordinator[dict[str, int | float | bool]]):
-    """Update coordinator for a battery management system"""
+    """Update coordinator for a battery management system."""
 
     def __init__(
         self,
@@ -57,7 +57,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, int | float | bool]]):
         )
 
     async def stop(self):
-        """Stop connection to BMS instance"""
+        """Stop connection to BMS instance."""
         LOGGER.debug(f"Stopping device {self.device_info.get(ATTR_NAME)}")
         await self._device.disconnect()
 

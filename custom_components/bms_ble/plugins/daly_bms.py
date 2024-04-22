@@ -1,9 +1,12 @@
+"""Module to support Daly Smart BMS."""
+
 import asyncio
+from collections.abc import Callable
 import logging
 from statistics import fmean
-from typing import Any, Callable
+from typing import Any
 
-from bleak import BleakClient, normalize_uuid_str
+from bleak import BleakClient, BleakError, normalize_uuid_str
 from bleak.backends.device import BLEDevice
 
 from ..const import (
@@ -25,7 +28,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class DalyBms(BaseBMS):
-    """Daly Smart BMS class implementation"""
+    """Daly Smart BMS class implementation."""
 
     UUID_RX = normalize_uuid_str("fff1")
     UUID_TX = normalize_uuid_str("fff2")
@@ -36,7 +39,8 @@ class DalyBms(BaseBMS):
     CRC_LEN = 2
     INFO_LEN = 124 + HEAD_LEN + CRC_LEN
 
-    def __init__(self, ble_device: BLEDevice, reconnect=False) -> None:
+    def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
+        """Intialize private BMS members."""
         self._reconnect = reconnect
         self._ble_device = ble_device
         assert self._ble_device.name is not None
@@ -55,12 +59,12 @@ class DalyBms(BaseBMS):
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
-        """Provide BluetoothMatcher definition"""
+        """Provide BluetoothMatcher definition."""
         return [{"local_name": "DL-*", "connectable": True}]
 
     @staticmethod
     def device_info() -> dict[str, str]:
-        """Return device information for the battery management system"""
+        """Return device information for the battery management system."""
         return {"manufacturer": "Daly", "model": "Smart BMS"}
 
     async def _wait_event(self) -> None:
@@ -68,13 +72,13 @@ class DalyBms(BaseBMS):
         self._data_event.clear()
 
     def _on_disconnect(self, client: BleakClient) -> None:
-        """disconnect callback"""
+        """Disconnect callback function."""
 
-        LOGGER.debug(f"Disconnected from {client.address}.")
+        LOGGER.debug("Disconnected from %s.", client.address)
         self._connected = False
 
     def _notification_handler(self, sender, data: bytearray) -> None:
-        LOGGER.debug(f"Received BLE data: {data}")
+        LOGGER.debug("Received BLE data: %s", data)
         # note: CRC is not checked
         if (
             len(data) < 3
@@ -89,10 +93,10 @@ class DalyBms(BaseBMS):
         self._data_event.set()
 
     async def _connect(self) -> None:
-        """connect to the BMS and setup notification if not connected"""
+        """Connect to the BMS and setup notification if not connected."""
 
         if not self._connected:
-            LOGGER.debug(f"Connecting BMS {self._ble_device.name}")
+            LOGGER.debug("Connecting BMS %s", self._ble_device.name)
             self._client = BleakClient(
                 self._ble_device.address,
                 disconnected_callback=self._on_disconnect,
@@ -102,23 +106,23 @@ class DalyBms(BaseBMS):
             await self._client.start_notify(self.UUID_RX, self._notification_handler)
             self._connected = True
         else:
-            LOGGER.debug(f"BMS {self._ble_device.name} already connected")
+            LOGGER.debug("BMS %s already connected", self._ble_device.name)
 
     async def disconnect(self) -> None:
-        """disconnect the BMS, includes stoping notifications"""
+        """Disconnect the BMS and includes stoping notifications."""
 
         if self._client and self._connected:
-            LOGGER.debug(f"Disconnecting BMS ({self._ble_device.name})")
+            LOGGER.debug("Disconnecting BMS (%s)", self._ble_device.name)
             try:
                 self._data_event.clear()
                 await self._client.disconnect()
-            except:
-                LOGGER.warning("disconnect failed!")
+            except BleakError:
+                LOGGER.warning("Disconnect failed!")
 
         self._client = None
 
     async def async_update(self) -> dict[str, int | float | bool]:
-        """Update battery status information"""
+        """Update battery status information."""
         await self._connect()
         assert self._client is not None
 

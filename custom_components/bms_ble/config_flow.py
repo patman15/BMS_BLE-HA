@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import voluptuous as vol
+
 from homeassistant import config_entries
 from homeassistant.components.bluetooth import (
     BluetoothServiceInfoBleak,
@@ -41,7 +42,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def _device_supported(
         self, discovery_info: BluetoothServiceInfoBleak
     ) -> BmsTypes | None:
-        """Check if device is supported by an available BMS class"""
+        """Check if device is supported by an available BMS class."""
         for type in BmsTypes:
             bms: BaseBMS = globals()[type.name]
             if bms.supported(discovery_info):
@@ -92,7 +93,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle the user step to pick discovered device."""
-        LOGGER.debug(f"user step")
+        LOGGER.debug("user step")
 
         if user_input is not None:
             address = user_input[CONF_ADDRESS]

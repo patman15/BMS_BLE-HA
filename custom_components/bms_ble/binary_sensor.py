@@ -29,7 +29,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Add sensors for passed config_entry in home assistant"""
+    """Add sensors for passed config_entry in Home Assistant."""
 
     bms: BTBmsCoordinator = hass.data[DOMAIN][config_entry.entry_id]
     for descr in BINARY_SENSOR_TYPES:
@@ -37,11 +37,12 @@ async def async_setup_entry(
 
 
 class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity):  # type: ignore
-    """Generic BMS binary sensor implementation"""
+    """The generic BMS binary sensor implementation."""
 
     def __init__(
         self, bms: BTBmsCoordinator, descr: BinarySensorEntityDescription
     ) -> None:
+        """Intialize BMS binary sensor."""
         self._bms: BTBmsCoordinator = bms
         self._attr_unique_id = f"{format_mac(self._bms.name)}-{descr.key}"
         self._attr_device_info = bms.device_info
@@ -61,6 +62,6 @@ class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity): 
             self._attr_available = True
         elif self._attr_available:
             self._attr_available = False
-            LOGGER.info(f"No update available for {self.entity_description.key}.")
+            LOGGER.info("No update available for %s.", self.entity_description.key)
 
         self.async_write_ha_state()

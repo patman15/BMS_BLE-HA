@@ -1,6 +1,7 @@
+"""Module to support Offgridtec Smart Pro BMS."""
 import asyncio
 import logging
-from typing import Any, Callable
+from typing import Any
 
 from bleak import BleakClient, normalize_uuid_str
 from bleak.backends.device import BLEDevice
@@ -24,7 +25,7 @@ BAT_TIMEOUT = 1
 
 
 class OGTBms(BaseBMS):
-    """Offgridtec LiFePO4 Smart Pro type A and type B battery class implementation"""
+    """Offgridtec LiFePO4 Smart Pro type A and type B battery class implementation."""
 
     # magic crypt sequence of length 16
     _CRYPT_SEQ = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
@@ -33,7 +34,8 @@ class OGTBms(BaseBMS):
     UUID_TX = normalize_uuid_str("FFF6")
     UUID_SERVICE = normalize_uuid_str("FFF0")
 
-    def __init__(self, ble_device: BLEDevice, reconnect=False) -> None:
+    def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
+        """Intialize private BMS members."""
         self._reconnect = reconnect
         self._ble_device = ble_device
         assert self._ble_device.name is not None
@@ -46,51 +48,64 @@ class OGTBms(BaseBMS):
             for c in (f"{int(self._ble_device.name[10:]):0>4X}")
         ) + (5 if (self._type == "A") else 8)
         LOGGER.info(
-            f"{self.device_id()} type: {self._type}, ID: {self._ble_device.name[10:]}, key: 0x{self._key:0>2X}"
+            "%s type: %c, ID: %s, key: %x",
+            self.device_id(),
+            self._type,
+            self._ble_device.name[10:],
+            self._key,
         )
         self._values: dict[str, float] = {}  # dictionary of queried values
 
         if self._type == "A":
             self._OGT_REGISTERS = {
                 # SOC (State of Charge)
-                2: dict(name=ATTR_BATTERY_LEVEL, len=1, func=lambda x: int(x)),
-                4: dict(name=ATTR_CYCLE_CHRG, len=3, func=lambda x: float(x) / 1000),
-                8: dict(name=ATTR_VOLTAGE, len=2, func=lambda x: float(x) / 1000),
+                2: {"name": ATTR_BATTERY_LEVEL, "len": 1, "func": lambda x: int(x)},
+                4: {
+                    "name": ATTR_CYCLE_CHRG,
+                    "len": 3,
+                    "func": lambda x: float(x) / 1000,
+                },
+                8: {"name": ATTR_VOLTAGE, "len": 2, "func": lambda x: float(x) / 1000},
                 # MOS temperature
-                12: dict(
-                    name=ATTR_TEMPERATURE,
-                    len=2,
-                    func=lambda x: round(float(x) * 0.1 - 273.15, 1),
-                ),
+                12: {
+                    "name": ATTR_TEMPERATURE,
+                    "len": 2,
+                    "func": lambda x: round(float(x) * 0.1 - 273.15, 1),
+                },
                 # length for current is actually only 2, 3 used to detect signed value
-                16: dict(name=ATTR_CURRENT, len=3, func=lambda x: float(x) / 100),
-                24: dict(name=ATTR_RUNTIME, len=2, func=lambda x: int(x * 60)),
-                44: dict(name=ATTR_CYCLES, len=2, func=lambda x: int(x)),
+                16: {"name": ATTR_CURRENT, "len": 3, "func": lambda x: float(x) / 100},
+                24: {"name": ATTR_RUNTIME, "len": 2, "func": lambda x: int(x * 60)},
+                44: {"name": ATTR_CYCLES, "len": 2, "func": lambda x: int(x)},
             }
             self._OGT_HEADER = "+RAA"
         elif self._type == "B":
             self._OGT_REGISTERS = {
                 # MOS temperature
-                8: dict(
-                    name=ATTR_TEMPERATURE,
-                    len=2,
-                    func=lambda x: round(float(x) * 0.1 - 273.15, 1),
-                ),
-                9: dict(name=ATTR_VOLTAGE, len=2, func=lambda x: float(x) / 1000),
-                10: dict(name=ATTR_CURRENT, len=3, func=lambda x: float(x) / 1000),
+                8: {
+                    "name": ATTR_TEMPERATURE,
+                    "len": 2,
+                    "func": lambda x: round(float(x) * 0.1 - 273.15, 1),
+                },
+                9: {"name": ATTR_VOLTAGE, "len": 2, "func": lambda x: float(x) / 1000},
+                10: {"name": ATTR_CURRENT, "len": 3, "func": lambda x: float(x) / 1000},
                 # SOC (State of Charge)
-                13: dict(name=ATTR_BATTERY_LEVEL, len=1, func=lambda x: int(x)),
-                15: dict(name=ATTR_CYCLE_CHRG, len=3, func=lambda x: float(x) / 1000),
-                18: dict(name=ATTR_RUNTIME, len=2, func=lambda x: int(x * 60)),
-                23: dict(name=ATTR_CYCLES, len=2, func=lambda x: int(x)),
+                13: {"name": ATTR_BATTERY_LEVEL, "len": 1, "func": lambda x: int(x)},
+                15: {
+                    "name": ATTR_CYCLE_CHRG,
+                    "len": 3,
+                    "func": lambda x: float(x) / 1000,
+                },
+                18: {"name": ATTR_RUNTIME, "len": 2, "func": lambda x: int(x * 60)},
+                23: {"name": ATTR_CYCLES, "len": 2, "func": lambda x: int(x)},
             }
             self._OGT_HEADER = "+R16"
         else:
             self._OGT_REGISTERS = {}
-            LOGGER.exception(f"unkown device type '{self._type}'")
+            LOGGER.exception("Unkown device type '%c'", self._type)
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
+        """Return a list of Bluetooth matchers."""
         return [
             {"local_name": "SmartBat-A*", "connectable": True},
             {"local_name": "SmartBat-B*", "connectable": True},
@@ -98,32 +113,15 @@ class OGTBms(BaseBMS):
 
     @staticmethod
     def device_info() -> dict[str, str]:
+        """Return a dictionary of device information."""
         return {"manufacturer": "Offgridtec", "model": "LiFePo4 Smart Pro"}
 
     async def _wait_event(self) -> None:
         await self._data_event.wait()
         self._data_event.clear()
 
-    def _sensor_conv(
-        self,
-        values: dict,
-        valA: str,
-        valB: str,
-        func: Callable[[float, float], float],
-        result: str,
-    ) -> dict:
-        """Convert"""
-        assert result is not None
-
-        if {valA, valB}.issubset(values.keys()):
-            values[result] = round(func(float(values[valA]), float(values[valB])), 6)
-        elif result == valA:
-            del values[valA]
-
-        return values
-
     async def async_update(self) -> dict[str, int | float | bool]:
-        """Update battery status information"""
+        """Update battery status information."""
 
         await self._connect()
 
@@ -133,26 +131,26 @@ class OGTBms(BaseBMS):
             try:
                 await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
             except TimeoutError:
-                LOGGER.debug(f"Reading {self._OGT_REGISTERS[key]['name']} timed out.")
+                LOGGER.debug("Reading %s timed out.", self._OGT_REGISTERS[key]["name"])
 
         self.calc_values(
             self._values, {ATTR_CYCLE_CAP, ATTR_POWER, ATTR_BATTERY_CHARGING}
         )
 
-        LOGGER.debug(f"Data collected: {self._values}")
+        LOGGER.debug("Data collected: %s", self._values)
         if self._reconnect:
             # disconnect after data update to force reconnect next time (slow!)
             await self.disconnect()
         return self._values
 
     def _on_disconnect(self, client: BleakClient) -> None:
-        """disconnect callback"""
+        """Disconnect callback for Bleak."""
 
-        LOGGER.debug(f"Disconnected from {client.address}.")
+        LOGGER.debug("Disconnected from %s.", client.address)
         self._connected = False
 
     def _notification_handler(self, sender, data: bytearray) -> None:
-        LOGGER.debug(f"Received BLE data: {data}")
+        LOGGER.debug("Received BLE data: %s", data)
 
         valid, reg, nat_value = self._ogt_response(data)
 
@@ -161,7 +159,11 @@ class OGTBms(BaseBMS):
             register = self._OGT_REGISTERS[reg]
             value = register["func"](nat_value)
             LOGGER.debug(
-                f"Decoded data: reg: {register['name']} (#{reg}), raw: {nat_value}, value: {value}"
+                "Decoded data: reg: %s (#%i), raw: %i, value: %f",
+                register["name"],
+                reg,
+                nat_value,
+                value,
             )
             self._values[register["name"]] = value
         else:
@@ -169,10 +171,10 @@ class OGTBms(BaseBMS):
         self._data_event.set()
 
     async def _connect(self) -> None:
-        """connect to the BMS and setup notification if not connected"""
+        """Connect to the BMS and setup notification if not connected."""
 
         if not self._connected:
-            LOGGER.debug(f"Connecting BMS {self._ble_device.name}")
+            LOGGER.debug("Connecting BMS (%s).", self._ble_device.name)
             self._client = BleakClient(
                 self._ble_device.address,
                 disconnected_callback=self._on_disconnect,
@@ -182,28 +184,28 @@ class OGTBms(BaseBMS):
             await self._client.start_notify(self.UUID_RX, self._notification_handler)
             self._connected = True
         else:
-            LOGGER.debug(f"BMS {self._ble_device.name} already connected")
+            LOGGER.debug("BMS %s already connected", self._ble_device.name)
 
     async def disconnect(self) -> None:
-        """disconnect the BMS, includes stoping notifications"""
+        """Disconnect the BMS, includes stoping notifications."""
 
         if self._client and self._connected:
-            LOGGER.debug(f"Disconnecting BMS ({self._ble_device.name})")
+            LOGGER.debug("Disconnecting BMS (%s)", self._ble_device.name)
             try:
                 self._data_event.clear()
                 await self._client.disconnect()
-            except:
+            except Exception:
                 LOGGER.warning("disconnect failed!")
 
         self._client = None
 
     def _ogt_response(self, resp: bytearray) -> tuple:
-        """descramble a response from the BMS"""
+        """Descramble a response from the BMS."""
 
-        msg = bytearray(((resp[x] ^ self._key) for x in range(0, len(resp)))).decode(
+        msg = bytearray((resp[x] ^ self._key) for x in range(0, len(resp))).decode(
             encoding="ascii"
         )
-        LOGGER.debug(f"response: {msg[:-2]}")
+        LOGGER.debug("response: %s", msg[:-2])
         # verify correct response
         if msg[:4] != "+RD," or msg[-2:] != "\r\n":
             return False, None, None
@@ -215,17 +217,17 @@ class OGTBms(BaseBMS):
         return True, int(msg[4:6], 16), value
 
     def _ogt_command(self, command: int) -> bytes:
-        """put together an scambled query to the BMS"""
+        """Put together an scambled query to the BMS."""
 
         cmd = f"{self._OGT_HEADER}{command:0>2X}{self._OGT_REGISTERS[command]['len']:0>2X}"
-        LOGGER.debug(f"command: {cmd}")
+        LOGGER.debug("command: %s", cmd)
 
         return bytearray(ord(cmd[i]) ^ self._key for i in range(len(cmd)))
 
     async def _read(self, reg: int) -> None:
-        """read a specific BMS register"""
+        """Read a specific BMS register."""
         assert self._client is not None
 
         msg = self._ogt_command(reg)
-        LOGGER.debug(f"ble cmd frame {msg}")
+        LOGGER.debug("BLE cmd frame %s", msg)
         await self._client.write_gatt_char(self.UUID_TX, data=msg)

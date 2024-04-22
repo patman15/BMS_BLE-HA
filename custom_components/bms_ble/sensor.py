@@ -1,4 +1,4 @@
-"""Platform for sensor integration"""
+"""Platform for sensor integration."""
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -116,7 +116,7 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Add sensors for passed config_entry in home assistant"""
+    """Add sensors for passed config_entry in Home Assistant."""
 
     bms: BTBmsCoordinator = hass.data[DOMAIN][config_entry.entry_id]
     for descr in SENSOR_TYPES:
@@ -124,11 +124,12 @@ async def async_setup_entry(
 
 
 class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ignore
-    """Generic BMS sensor implementation"""
+    """The generic BMS sensor implementation."""
 
     _attr_has_entity_name = True
 
     def __init__(self, bms: BTBmsCoordinator, descr: SensorEntityDescription) -> None:
+        """Intitialize the BMS sensor."""
         self._bms: BTBmsCoordinator = bms
         self._attr_unique_id = f"{format_mac(self._bms.name)}-{descr.key}"
         self._attr_device_info = bms.device_info

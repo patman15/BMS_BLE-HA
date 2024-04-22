@@ -1,4 +1,4 @@
-"""Plugin package for BMS types"""
+"""Plugin package for BMS types."""
 
 from enum import Enum, auto
 

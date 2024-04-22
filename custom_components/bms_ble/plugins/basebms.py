@@ -1,3 +1,5 @@
+"""Base class defintion for battery management systems (BMS)."""
+
 from abc import ABCMeta, abstractmethod
 from typing import Any
 
@@ -20,32 +22,35 @@ from ..const import (
 
 
 class BaseBMS(metaclass=ABCMeta):
-    """Base class for battery management system"""
+    """Base class for battery management system."""
 
     def __init__(self) -> None:
+        """Intialize the BMS."""
         pass
 
     @staticmethod
     @abstractmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
+        """Return a list of Bluetooth matchers."""
         pass
 
     @staticmethod
     @abstractmethod
     def device_info() -> dict[str, str]:
-        """Returns a dictionary of device information
+        """Return a dictionary of device information.
+
         keys: manufacturer, model
         """
         pass
 
     @classmethod
     def device_id(cls) -> str:
-        """Return device information as string"""
+        """Return device information as string."""
         return " ".join(cls.device_info().values())
 
     @classmethod
     def supported(cls, discovery_info: BluetoothServiceInfoBleak) -> bool:
-        """Returns true if service_info matches BMS type"""
+        """Return true if service_info matches BMS type."""
         for matcher_dict in cls.matcher_dict_list():
             if ble_device_matches(
                 BluetoothMatcherOptional(**matcher_dict), discovery_info
@@ -55,13 +60,14 @@ class BaseBMS(metaclass=ABCMeta):
 
     @classmethod
     def calc_values(cls, data: dict[str, int | float | bool], values: set[str]):
-        """calculate missing BMS values
+        """Calculate missing BMS values from existing ones.
+
         data: data dictionary from BMS
         values: list of values to add to the dictionary
         """
 
         def can_calc(value: str, using: frozenset[str]) -> bool:
-            """check that value to add does not exists, is requested and the necessary parameters are available"""
+            """Check that value to add does not exists, is requested and the necessary parameters are available."""
             return (value in values) and (value not in data) and using.issubset(data)
 
         # calculate cycle capacity from voltage and cycle charge
@@ -84,12 +90,12 @@ class BaseBMS(metaclass=ABCMeta):
                 )
 
     async def disconnect(self) -> None:
-        """Disconnect connection to BMS if active"""
+        """Disconnect connection to BMS if active."""
         pass
 
     @abstractmethod
     async def async_update(self) -> dict[str, int | float | bool]:
-        """Retrieve updated values from the BMS
+        """Retrieve updated values from the BMS.
 
         Returns a dictionary of BMS values, where the keys need to match the keys in the SENSOR_TYPES list.
         """
