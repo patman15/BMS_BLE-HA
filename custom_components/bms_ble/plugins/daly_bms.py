@@ -27,7 +27,7 @@ BAT_TIMEOUT = 10
 LOGGER = logging.getLogger(__name__)
 
 
-class DalyBms(BaseBMS):
+class BMS(BaseBMS):
     """Daly Smart BMS class implementation."""
 
     UUID_RX = normalize_uuid_str("fff1")

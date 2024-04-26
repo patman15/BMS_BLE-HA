@@ -9,6 +9,7 @@ from homeassistant.const import (
     ATTR_VOLTAGE,
 )
 
+BMS_TYPES = ["daly_bms", "ogt_bms"] # available BMS types
 DOMAIN = "bms_ble"
 LOGGER = logging.getLogger(__package__)
 UPDATE_INTERVAL = 30  # in seconds

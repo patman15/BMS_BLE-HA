@@ -24,7 +24,7 @@ LOGGER = logging.getLogger(__name__)
 BAT_TIMEOUT = 1
 
 
-class OGTBms(BaseBMS):
+class BMS(BaseBMS):
     """Offgridtec LiFePO4 Smart Pro type A and type B battery class implementation."""
 
     # magic crypt sequence of length 16

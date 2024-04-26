@@ -1,5 +1,7 @@
 """The BLE Battery Management System integration."""
 
+import importlib
+
 from homeassistant.components.bluetooth import async_ble_device_from_address
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -28,8 +30,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             f"Could not find battery with address {entry.unique_id}"
         )
 
-    coordinator = BTBmsCoordinator(hass, ble_device, type=entry.data["type"])
-
+    plugin = importlib.import_module(entry.data["type"])
+    coordinator = BTBmsCoordinator(hass, ble_device, bms_device=plugin.BMS(ble_device))
     # Query the device the first time, initialise coordinator.data
     try:
         await coordinator.async_config_entry_first_refresh()

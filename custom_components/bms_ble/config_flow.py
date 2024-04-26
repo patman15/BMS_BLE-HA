@@ -1,6 +1,7 @@
 """Config flow for BLE Battery Management System integration."""
 
 from dataclasses import dataclass
+import importlib
 from typing import Any
 
 import voluptuous as vol
@@ -15,8 +16,7 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
-from .const import DOMAIN, LOGGER
-from .plugins import *
+from .const import BMS_TYPES, DOMAIN, LOGGER
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -31,7 +31,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         name: str
         discovery_info: BluetoothServiceInfoBleak
-        type: BmsTypes
+        type: str
 
     def __init__(self) -> None:
         """Initialize the config flow."""
@@ -41,15 +41,18 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def _device_supported(
         self, discovery_info: BluetoothServiceInfoBleak
-    ) -> BmsTypes | None:
+    ) -> str | None:
         """Check if device is supported by an available BMS class."""
-        for type in BmsTypes:
-            bms: BaseBMS = globals()[type.name]
-            if bms.supported(discovery_info):
+        for type in BMS_TYPES:
+            LOGGER.debug("type: %s, package: %s", type, __name__[: __name__.rfind(".")])
+            bms_plugin = importlib.import_module(
+                f".plugins.{type}", package=__name__[: __name__.rfind(".")]
+            )
+            if bms_plugin.BMS.supported(discovery_info):
                 LOGGER.debug(
-                    f"Device {discovery_info.name} ({discovery_info.address}) detected as '{bms.device_id}'"
+                    f"Device {discovery_info.name} ({discovery_info.address}) detected as '{bms_plugin.BMS.device_id()}'"
                 )
-                return type
+                return bms_plugin.__name__
         return None
 
     async def async_step_bluetooth(
@@ -80,7 +83,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             return self.async_create_entry(
                 title=self._discovered_device.name,
-                data={"type": self._discovered_device.type.name},
+                data={"type": self._discovered_device.type},
             )
 
         self._set_confirm_only()
@@ -105,7 +108,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             return self.async_create_entry(
                 title=self._discovered_device.name,
-                data={"type": self._discovered_device.type.name},
+                data={"type": self._discovered_device.type},
             )
 
         current_addresses = self._async_current_ids()

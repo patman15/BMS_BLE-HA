@@ -7,14 +7,16 @@ In case you have troubles, please enable the debug protocol for the integration 
 
  1. Fork the repository and create a branch with the name of the new BMS to add.
  2. Add a new file to the `plugins` folder called, e.g. `dummy_bms.py`
- 3. Populate the file with class derived from `BaseBMS`(see basebms.py). A dummy implementation without the actual functionality to query the BMS can befound below in section _Dummy BMS Example_
+ 3. Populate the file with class called `BMS` derived from `BaseBMS`(see basebms.py). A dummy implementation without the actual functionality to query the BMS can befound below in section _Dummy BMS Example_
  4. Make sure that the dictionary returned by `async_update()` has (all) keys listed in `SENSOR_TYPES` (see `sensor.py`), __except__ for the RSSI value which is automatically added by the data update coordinator. To make it simple, just follow the `ATTR_*` import in the example code below.
- 5. In `plugins/__init__.py` add line to import the new class, e.g. `from .dummy_bms import DummyBms` and add it to the valid enum `BmsTypes`, e.g. `DummyBms = auto()`.
+ 5. In `const.py` add the filename (without extention) to the constant `BMS_TYPES`.
  6. Add an appropriate [bluetooth device matcher](https://developers.home-assistant.io/docs/creating_integration_manifest#bluetooth) to `manifest.json`. Note that this is required to match the implementation of `match_dict_list()` in the new BMS class.
  7. Test and commit the changes to the branch and create a pull request to the main repository.
 
 ### Dummy BMS Example
 ```python
+"""Module to support Dummy BMS."""
+
 import logging
 from typing import Any
 
@@ -22,14 +24,14 @@ from bleak.backends.device import BLEDevice
 
 from ..const import (
     ATTR_BATTERY_CHARGING,
-    ATTR_BATTERY_LEVEL,
+    # ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
-    ATTR_CYCLE_CAP,
-    ATTR_CYCLE_CHRG,
-    ATTR_CYCLES,
+    # ATTR_CYCLE_CAP,
+    # ATTR_CYCLE_CHRG,
+    # ATTR_CYCLES,
     ATTR_POWER,
-    ATTR_RUNTIME,
-    ATTR_TEMPERATURE,
+    # ATTR_RUNTIME,
+    # ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
 )
 from .basebms import BaseBMS
@@ -37,12 +39,12 @@ from .basebms import BaseBMS
 LOGGER = logging.getLogger(__name__)
 
 
-class DummyBms(BaseBMS):
+class BMS(BaseBMS):
     """Dummy battery class implementation."""
 
-    def __init__(self, ble_device: BLEDevice, reconnect=False) -> None:
+    def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        LOGGER.debug(f"{self.device_id()} init()")
+        LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:

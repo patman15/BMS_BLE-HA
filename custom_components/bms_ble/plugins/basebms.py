@@ -3,6 +3,8 @@
 from abc import ABCMeta, abstractmethod
 from typing import Any
 
+from bleak.backends.device import BLEDevice
+
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.components.bluetooth.match import (
     BluetoothMatcherOptional,
@@ -24,8 +26,12 @@ from ..const import (
 class BaseBMS(metaclass=ABCMeta):
     """Base class for battery management system."""
 
-    def __init__(self) -> None:
-        """Intialize the BMS."""
+    def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
+        """Intialize the BMS.
+
+        ble_device: the Bleak device to connect to
+        reconnect: if true, the connection will be closed after each update
+        """
         pass
 
     @staticmethod

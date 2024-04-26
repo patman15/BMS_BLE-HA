@@ -13,7 +13,7 @@ from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH, DeviceIn
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import ATTR_RSSI, DOMAIN, LOGGER, UPDATE_INTERVAL
-from .plugins import *
+from .plugins.basebms import BaseBMS
 
 
 class BTBmsCoordinator(DataUpdateCoordinator[dict[str, int | float | bool]]):
@@ -23,7 +23,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, int | float | bool]]):
         self,
         hass: HomeAssistant,
         ble_device: BLEDevice,
-        type: str,
+        bms_device: BaseBMS,
     ) -> None:
         """Initialize BMS data coordinator."""
         assert ble_device.name is not None
@@ -36,12 +36,11 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, int | float | bool]]):
         )
         self._mac = ble_device.address
         LOGGER.debug(
-            f"Initializing coordinator for {ble_device.name} ({ble_device.address}), type {type}"
+            f"Initializing coordinator for {ble_device.name} ({ble_device.address}) as {bms_device.device_id()}"
         )
-        assert type in BmsTypes._member_names_  # ensure we have a valid BMS type
 
         # retrieve BMS class and initialize it
-        self._device: BaseBMS = globals()[type](ble_device)
+        self._device: BaseBMS = bms_device
         device_info = self._device.device_info()
         self.device_info = DeviceInfo(
             identifiers={
