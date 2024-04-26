@@ -44,13 +44,15 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> str | None:
         """Check if device is supported by an available BMS class."""
         for type in BMS_TYPES:
-            LOGGER.debug("type: %s, package: %s", type, __name__[: __name__.rfind(".")])
             bms_plugin = importlib.import_module(
                 f".plugins.{type}", package=__name__[: __name__.rfind(".")]
             )
             if bms_plugin.BMS.supported(discovery_info):
                 LOGGER.debug(
-                    f"Device {discovery_info.name} ({discovery_info.address}) detected as '{bms_plugin.BMS.device_id()}'"
+                    "Device %s (%s) detected as '%s'",
+                    discovery_info.name,
+                    format_mac(discovery_info.address),
+                    bms_plugin.BMS.device_id(),
                 )
                 return bms_plugin.__name__
         return None
@@ -59,7 +61,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, discovery_info: BluetoothServiceInfoBleak
     ) -> FlowResult:
         """Handle a flow initialized by Bluetooth discovery."""
-        LOGGER.debug(f"Bluetooth device detected: {format_mac(discovery_info.address)}")
+        LOGGER.debug(
+            "Bluetooth device detected: %s", format_mac(discovery_info.address)
+        )
         await self.async_set_unique_id(discovery_info.address)
         self._abort_if_unique_id_configured()
 
@@ -78,7 +82,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> FlowResult:
         """Confirm bluetooth device discovery."""
         assert self._discovered_device is not None
-        LOGGER.debug(f"confirm step {self._discovered_device.name}")
+        LOGGER.debug("confirm step for %s", self._discovered_device.name)
 
         if user_input is not None:
             return self.async_create_entry(

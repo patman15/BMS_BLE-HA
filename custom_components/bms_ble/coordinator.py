@@ -36,7 +36,10 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, int | float | bool]]):
         )
         self._mac = ble_device.address
         LOGGER.debug(
-            f"Initializing coordinator for {ble_device.name} ({ble_device.address}) as {bms_device.device_id()}"
+            "Initializing coordinator for %s (%s) as %s",
+            ble_device.name,
+            ble_device.address,
+            bms_device.device_id(),
         )
 
         # retrieve BMS class and initialize it
@@ -57,12 +60,12 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, int | float | bool]]):
 
     async def stop(self):
         """Stop connection to BMS instance."""
-        LOGGER.debug(f"Stopping device {self.device_info.get(ATTR_NAME)}")
+        LOGGER.debug("Stopping device %s", self.device_info.get(ATTR_NAME))
         await self._device.disconnect()
 
     async def _async_update_data(self) -> dict[str, int | float | bool]:
         """Return the latest data from the device."""
-        LOGGER.debug(f"BMS {self.device_info.get(ATTR_NAME)} data update")
+        LOGGER.debug("BMS %s data update", self.device_info.get(ATTR_NAME))
 
         battery_info: dict[str, int | float | bool] = {}
         try:
