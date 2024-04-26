@@ -47,14 +47,17 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             bms_plugin = importlib.import_module(
                 f".plugins.{type}", package=__name__[: __name__.rfind(".")]
             )
-            if bms_plugin.BMS.supported(discovery_info):
-                LOGGER.debug(
-                    "Device %s (%s) detected as '%s'",
-                    discovery_info.name,
-                    format_mac(discovery_info.address),
-                    bms_plugin.BMS.device_id(),
-                )
-                return bms_plugin.__name__
+            try:
+                if bms_plugin.BMS.supported(discovery_info):
+                    LOGGER.debug(
+                        "Device %s (%s) detected as '%s'",
+                        discovery_info.name,
+                        format_mac(discovery_info.address),
+                        bms_plugin.BMS.device_id(),
+                    )
+                    return bms_plugin.__name__
+            except AttributeError:
+                LOGGER.error("Invalid BMS plugin %s", type)
         return None
 
     async def async_step_bluetooth(
