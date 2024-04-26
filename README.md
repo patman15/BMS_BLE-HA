@@ -34,7 +34,7 @@ In case you have severe troubles,
 - please enable the debug protocol for the integration,
 - reproduce the issue,
 - disable the log (Home Assistant will prompt you to download the log), and finally
-- open an issue with a good description of what happened and attach the log.
+- [open an issue](https://github.com/patman15/BMS_BLE-HA/issues) with a good description of what happened and attach the log.
 
 ## FAQ
 ### My sensors show unknown/unavailable at startup!
