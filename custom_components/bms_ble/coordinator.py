@@ -71,7 +71,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, int | float | bool]]):
         try:
             battery_info.update(await self._device.async_update())
         except TimeoutError:
-            LOGGER.debug("Device communication timeout.")
+            LOGGER.debug("Device communication timeout")
             raise
         except BleakError as err:
             raise UpdateFailed(

@@ -52,9 +52,9 @@ class BMS(BaseBMS):
             (ATTR_VOLTAGE, 80 + self.HEAD_LEN, lambda x: float(x / 10)),
             (ATTR_CURRENT, 82 + self.HEAD_LEN, lambda x: float((x - 30000) / 10)),
             (ATTR_BATTERY_LEVEL, 84 + self.HEAD_LEN, lambda x: float(x / 10)),
-            (ATTR_CYCLES, 102 + self.HEAD_LEN, lambda x: int(x)),
+            (ATTR_CYCLES, 102 + self.HEAD_LEN, lambda x: int(x)),  # pylint: disable=unnecessary-lambda
             (ATTR_CYCLE_CHRG, 96 + self.HEAD_LEN, lambda x: float(x / 10)),
-            ("numTemp", 100 + self.HEAD_LEN, lambda x: int(x)),
+            ("numTemp", 100 + self.HEAD_LEN, lambda x: int(x)),  # pylint: disable=unnecessary-lambda
         ]
 
     @staticmethod
@@ -74,7 +74,7 @@ class BMS(BaseBMS):
     def _on_disconnect(self, client: BleakClient) -> None:
         """Disconnect callback function."""
 
-        LOGGER.debug("Disconnected from %s.", client.address)
+        LOGGER.debug("Disconnected from BMS (%s)", client.address)
         self._connected = False
 
     def _notification_handler(self, sender, data: bytearray) -> None:
@@ -85,7 +85,7 @@ class BMS(BaseBMS):
             or data[0:2] != self.HEAD_READ
             or int(data[2]) + 1 != len(data) - len(self.HEAD_READ) - self.CRC_LEN
         ):
-            LOGGER.debug("Response is invalid.")
+            LOGGER.debug("Response data is invalid")
             self._data = None
             return
 
