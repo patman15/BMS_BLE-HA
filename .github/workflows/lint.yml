@@ -1,0 +1,35 @@
+name: "Lint"
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "main"
+
+jobs:
+  linting:
+    name: "Ruff / Pylint"
+    runs-on: "ubuntu-latest"
+    steps:
+        - name: "Checkout the repository"
+          uses: "actions/checkout@main"
+
+        - name: "Set up Python"
+          uses: actions/setup-python@main
+          with:
+            python-version: "3.11"
+            cache: "pip"
+
+        - name: "Install requirements"
+          run: python3 -m pip install -r requirements.txt
+
+        - name: "Run Ruff"
+          run: python3 -m ruff check .
+          
+        - name: "Run pylint"
+          run: python3 -m pylint .
+          
+        - name: "Run pylint on plugins"
+          run: python3 -m pylint plugins
