@@ -1,16 +1,19 @@
 # <img src="https://github.com/patman15/BMS_BLE-HA/assets/14628713/0ee84af9-300a-4a26-a098-26954a46ec36" width="32" height="32"> BLE Battery Management Systems for Home Assistant
+[![GitHub Release][releases-shield]][releases]
 
 This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). You can use the [ESPHome Bluetooth proxy](https://esphome.io/components/bluetooth_proxy) to extend the bluetooth coverage range. The integration provides the following information about the battery
 
-- SoC (state of charge) [%]
-- stored energy [Wh]
-- voltage [V]
-- current [A]
-- power [W]
-- temperature [°C]
-- (remaining) runtime [s]
-- charge cycles [#]
-- battery charging indicator [bool]
+Platform | Description | Unit
+-- | -- | --
+`sensor` | SoC (state of charge) | `%`
+`sensor` | stored energy | `Wh`
+`sensor` | voltage | `V`
+`sensor` | current | `A`
+`sensor` | power | `W`
+`sensor` | temperature | `°C`
+`sensor` | (remaining) runtime | `s`
+`sensor` | charge cycles | `#`
+`binary_sensor` | battery charging indicator | `bool`
 
 ![grafik](https://github.com/patman15/BMS_BLE-HA/assets/14628713/99088715-fa2d-4d3d-90a5-967a8bf08305)
 
@@ -18,12 +21,22 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-Axxxxx` or `SmartBat-Bxxxxx`)
 - Daly BMS (show up as `DL-xxxxxxxxxxxx`)
 
-New device types can be easily added via the plugin architecture of this integration. See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
+New device types can be easily added via the plugin architecture of this integration. See the [contribution guidelines](CONTRIBUTING.md) for details.
 
 ## Installation
-Installation can be done using [HACS](https://hacs.xyz/) by [adding a custom repository](https://hacs.xyz/docs/faq/custom_repositories/). Alternatively, download a zip of this repository and place the folder `custom_components/bms_ble` in the `config/custom_components` directory of your Home Assistant installation.
+### Automatic
+Installation can be done using [HACS](https://hacs.xyz/) by [adding a custom repository](https://hacs.xyz/docs/faq/custom_repositories/). 
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=patman15&repository=BMS_BLE-HA&category=Integration)
+
+### Manual
+1. Using the tool of choice open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
+1. If you do not have a `custom_components` directory (folder) there, you need to create it.
+1. In the `custom_components` directory (folder) create a new folder called `bms_ble`.
+1. Download _all_ the files from the `custom_components/bms_ble/` directory (folder) in this repository.
+1. Place the files you downloaded in the new directory (folder) you created.
+1. Restart Home Assistant
+1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "BLE Battery Management"
 
 ## Outlook
 Add further battery types from [Home Assistant Add-on: BatMON](https://github.com/fl4p/batmon-ha)

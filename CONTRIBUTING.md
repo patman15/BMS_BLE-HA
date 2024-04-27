@@ -1,7 +1,7 @@
 # Contributing
 
 ## Issues
-In case you have troubles, please enable the debug protocol for the integration and open an issue with a good description of what happened and the relevant snippet from the log.
+In case you have troubles, please enable the debug protocol for the integration and [open an issue](https://github.com/patman15/BMS_BLE-HA/issues) with a good description of what happened and the relevant snippet from the log.
 
 ## Adding a new battery management system
 
@@ -12,6 +12,10 @@ In case you have troubles, please enable the debug protocol for the integration 
  5. In `const.py` add the filename (without extention), e.g. `my_bms`, to the constant `BMS_TYPES`.
  6. Add an appropriate [bluetooth device matcher](https://developers.home-assistant.io/docs/creating_integration_manifest#bluetooth) to `manifest.json`. Note that this is required to match the implementation of `match_dict_list()` in the new BMS class.
  7. Test and commit the changes to the branch and create a pull request to the main repository.
+
+### Any contributions you make will be under the LGPL-2.1 License
+
+In short, when you submit code changes, your submissions are understood to be under the same [LGPL-2.1 license](LICENSE) that covers the project. Feel free to contact the maintainers if that's a concern.
 
 ### Dummy BMS Example
 ```python
