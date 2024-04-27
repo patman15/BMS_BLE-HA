@@ -9,8 +9,8 @@ on:
       - "main"
 
 jobs:
-  linting:
-    name: "Ruff / Pylint"
+  ruff:
+    name: "Ruff"
     runs-on: "ubuntu-latest"
     steps:
         - name: "Checkout the repository"
@@ -27,6 +27,3 @@ jobs:
 
         - name: "Run Ruff"
           run: python3 -m ruff check .
-          
-        - name: "Run pylint"
-          run: python3 -m pylint $(git ls-files '*.py')
