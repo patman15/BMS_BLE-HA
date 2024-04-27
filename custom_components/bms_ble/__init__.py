@@ -37,8 +37,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await coordinator.async_config_entry_first_refresh()
     except ConfigEntryNotReady:
         # Ignore, e.g. timeouts, to gracefully handle connection issues
-        LOGGER.warning("Failed to initialize BMS %s, continuing.", ble_device.name)
-        pass
+        LOGGER.warning("Failed to initialize BMS %s, continuing", ble_device.name)
+
     # Insert the coordinator in the global registry
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = coordinator
@@ -52,5 +52,5 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await hass.data[DOMAIN][entry.entry_id].stop()
         hass.data[DOMAIN].pop(entry.entry_id)
 
-    LOGGER.info("unloaded entry: %s, ok? %s!", entry.unique_id, str(unload_ok))
+    LOGGER.info("Unloaded config entry: %s, ok? %s!", entry.unique_id, str(unload_ok))
     return unload_ok

@@ -32,13 +32,11 @@ class BaseBMS(metaclass=ABCMeta):
         ble_device: the Bleak device to connect to
         reconnect: if true, the connection will be closed after each update
         """
-        pass
 
     @staticmethod
     @abstractmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
         """Return a list of Bluetooth matchers."""
-        pass
 
     @staticmethod
     @abstractmethod
@@ -47,7 +45,6 @@ class BaseBMS(metaclass=ABCMeta):
 
         keys: manufacturer, model
         """
-        pass
 
     @classmethod
     def device_id(cls) -> str:
@@ -97,7 +94,6 @@ class BaseBMS(metaclass=ABCMeta):
 
     async def disconnect(self) -> None:
         """Disconnect connection to BMS if active."""
-        pass
 
     @abstractmethod
     async def async_update(self) -> dict[str, int | float | bool]:
@@ -105,4 +101,3 @@ class BaseBMS(metaclass=ABCMeta):
 
         Returns a dictionary of BMS values, where the keys need to match the keys in the SENSOR_TYPES list.
         """
-        pass

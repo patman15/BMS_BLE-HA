@@ -1,9 +1,10 @@
 """Module to support Offgridtec Smart Pro BMS."""
+
 import asyncio
 import logging
 from typing import Any
 
-from bleak import BleakClient, normalize_uuid_str
+from bleak import BleakClient, BleakError, normalize_uuid_str
 from bleak.backends.device import BLEDevice
 
 from ..const import (
@@ -59,7 +60,7 @@ class BMS(BaseBMS):
         if self._type == "A":
             self._OGT_REGISTERS = {
                 # SOC (State of Charge)
-                2: {"name": ATTR_BATTERY_LEVEL, "len": 1, "func": lambda x: int(x)},
+                2: {"name": ATTR_BATTERY_LEVEL, "len": 1, "func": lambda x: int(x)},  # pylint: disable=unnecessary-lambda
                 4: {
                     "name": ATTR_CYCLE_CHRG,
                     "len": 3,
@@ -75,7 +76,7 @@ class BMS(BaseBMS):
                 # length for current is actually only 2, 3 used to detect signed value
                 16: {"name": ATTR_CURRENT, "len": 3, "func": lambda x: float(x) / 100},
                 24: {"name": ATTR_RUNTIME, "len": 2, "func": lambda x: int(x * 60)},
-                44: {"name": ATTR_CYCLES, "len": 2, "func": lambda x: int(x)},
+                44: {"name": ATTR_CYCLES, "len": 2, "func": lambda x: int(x)},  # pylint: disable=unnecessary-lambda
             }
             self._OGT_HEADER = "+RAA"
         elif self._type == "B":
@@ -89,14 +90,14 @@ class BMS(BaseBMS):
                 9: {"name": ATTR_VOLTAGE, "len": 2, "func": lambda x: float(x) / 1000},
                 10: {"name": ATTR_CURRENT, "len": 3, "func": lambda x: float(x) / 1000},
                 # SOC (State of Charge)
-                13: {"name": ATTR_BATTERY_LEVEL, "len": 1, "func": lambda x: int(x)},
+                13: {"name": ATTR_BATTERY_LEVEL, "len": 1, "func": lambda x: int(x)},  # pylint: disable=unnecessary-lambda
                 15: {
                     "name": ATTR_CYCLE_CHRG,
                     "len": 3,
                     "func": lambda x: float(x) / 1000,
                 },
                 18: {"name": ATTR_RUNTIME, "len": 2, "func": lambda x: int(x * 60)},
-                23: {"name": ATTR_CYCLES, "len": 2, "func": lambda x: int(x)},
+                23: {"name": ATTR_CYCLES, "len": 2, "func": lambda x: int(x)},  # pylint: disable=unnecessary-lambda
             }
             self._OGT_HEADER = "+R16"
         else:
@@ -131,7 +132,7 @@ class BMS(BaseBMS):
             try:
                 await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
             except TimeoutError:
-                LOGGER.debug("Reading %s timed out.", self._OGT_REGISTERS[key]["name"])
+                LOGGER.debug("Reading %s timed out", self._OGT_REGISTERS[key]["name"])
 
         self.calc_values(
             self._values, {ATTR_CYCLE_CAP, ATTR_POWER, ATTR_BATTERY_CHARGING}
@@ -146,7 +147,7 @@ class BMS(BaseBMS):
     def _on_disconnect(self, client: BleakClient) -> None:
         """Disconnect callback for Bleak."""
 
-        LOGGER.debug("Disconnected from %s.", client.address)
+        LOGGER.debug("Disconnected from BMS (%s)", client.address)
         self._connected = False
 
     def _notification_handler(self, sender, data: bytearray) -> None:
@@ -167,14 +168,14 @@ class BMS(BaseBMS):
             )
             self._values[register["name"]] = value
         else:
-            LOGGER.debug("Response is invalid.")
+            LOGGER.debug("Response data is invalid")
         self._data_event.set()
 
     async def _connect(self) -> None:
         """Connect to the BMS and setup notification if not connected."""
 
         if not self._connected:
-            LOGGER.debug("Connecting BMS (%s).", self._ble_device.name)
+            LOGGER.debug("Connecting BMS (%s)", self._ble_device.name)
             self._client = BleakClient(
                 self._ble_device.address,
                 disconnected_callback=self._on_disconnect,
@@ -194,8 +195,8 @@ class BMS(BaseBMS):
             try:
                 self._data_event.clear()
                 await self._client.disconnect()
-            except Exception:
-                LOGGER.warning("disconnect failed!")
+            except BleakError:
+                LOGGER.warning("Disconnect failed!")
 
         self._client = None
 

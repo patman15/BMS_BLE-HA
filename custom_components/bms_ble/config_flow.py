@@ -43,9 +43,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, discovery_info: BluetoothServiceInfoBleak
     ) -> str | None:
         """Check if device is supported by an available BMS class."""
-        for type in BMS_TYPES:
+        for bms_type in BMS_TYPES:
             bms_plugin = importlib.import_module(
-                f".plugins.{type}", package=__name__[: __name__.rfind(".")]
+                f".plugins.{bms_type}", package=__name__[: __name__.rfind(".")]
             )
             try:
                 if bms_plugin.BMS.supported(discovery_info):
@@ -57,7 +57,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     )
                     return bms_plugin.__name__
             except AttributeError:
-                LOGGER.error("Invalid BMS plugin %s", type)
+                LOGGER.error("Invalid BMS plugin %s", bms_type)
         return None
 
     async def async_step_bluetooth(
