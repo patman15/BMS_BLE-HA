@@ -1,6 +1,8 @@
 """Module to support Offgridtec Smart Pro BMS."""
 
 import asyncio
+from collections.abc import Callable
+from enum import IntEnum
 import logging
 from typing import Any
 
@@ -23,6 +25,14 @@ from .basebms import BaseBMS
 
 LOGGER = logging.getLogger(__name__)
 BAT_TIMEOUT = 1
+
+
+class REG(IntEnum):
+    """Field list for _REGISTER constant."""
+
+    NAME = 0
+    LEN = 1
+    FCT = 2
 
 
 class BMS(BaseBMS):
@@ -55,53 +65,37 @@ class BMS(BaseBMS):
             self._ble_device.name[10:],
             self._key,
         )
-        self._values: dict[str, float] = {}  # dictionary of queried values
-
+        self._values: dict[str, float] = {}  # dictionary of BMS return values
+        self._REGISTERS: dict[int, tuple[str, int, Callable[[int], int | float] | None]]
         if self._type == "A":
-            self._OGT_REGISTERS = {
+            self._REGISTERS = {
                 # SOC (State of Charge)
-                2: {"name": ATTR_BATTERY_LEVEL, "len": 1, "func": lambda x: int(x)},  # pylint: disable=unnecessary-lambda
-                4: {
-                    "name": ATTR_CYCLE_CHRG,
-                    "len": 3,
-                    "func": lambda x: float(x) / 1000,
-                },
-                8: {"name": ATTR_VOLTAGE, "len": 2, "func": lambda x: float(x) / 1000},
+                2: (ATTR_BATTERY_LEVEL, 1, None),
+                4: (ATTR_CYCLE_CHRG, 3, lambda x: float(x) / 1000),
+                8: (ATTR_VOLTAGE, 2, lambda x: float(x) / 1000),
                 # MOS temperature
-                12: {
-                    "name": ATTR_TEMPERATURE,
-                    "len": 2,
-                    "func": lambda x: round(float(x) * 0.1 - 273.15, 1),
-                },
+                12: (ATTR_TEMPERATURE, 2, lambda x: round(float(x) * 0.1 - 273.15, 1)),
                 # length for current is actually only 2, 3 used to detect signed value
-                16: {"name": ATTR_CURRENT, "len": 3, "func": lambda x: float(x) / 100},
-                24: {"name": ATTR_RUNTIME, "len": 2, "func": lambda x: int(x * 60)},
-                44: {"name": ATTR_CYCLES, "len": 2, "func": lambda x: int(x)},  # pylint: disable=unnecessary-lambda
+                16: (ATTR_CURRENT, 3, lambda x: float(x) / 100),
+                24: (ATTR_RUNTIME, 2, lambda x: int(x * 60)),
+                44: (ATTR_CYCLES, 2, None),
             }
-            self._OGT_HEADER = "+RAA"
+            self._HEADER = "+RAA"
         elif self._type == "B":
-            self._OGT_REGISTERS = {
+            self._REGISTERS = {
                 # MOS temperature
-                8: {
-                    "name": ATTR_TEMPERATURE,
-                    "len": 2,
-                    "func": lambda x: round(float(x) * 0.1 - 273.15, 1),
-                },
-                9: {"name": ATTR_VOLTAGE, "len": 2, "func": lambda x: float(x) / 1000},
-                10: {"name": ATTR_CURRENT, "len": 3, "func": lambda x: float(x) / 1000},
+                8: (ATTR_TEMPERATURE, 2, lambda x: round(float(x) * 0.1 - 273.15, 1)),
+                9: (ATTR_VOLTAGE, 2, lambda x: float(x) / 1000),
+                10: (ATTR_CURRENT, 3, lambda x: float(x) / 1000),
                 # SOC (State of Charge)
-                13: {"name": ATTR_BATTERY_LEVEL, "len": 1, "func": lambda x: int(x)},  # pylint: disable=unnecessary-lambda
-                15: {
-                    "name": ATTR_CYCLE_CHRG,
-                    "len": 3,
-                    "func": lambda x: float(x) / 1000,
-                },
-                18: {"name": ATTR_RUNTIME, "len": 2, "func": lambda x: int(x * 60)},
-                23: {"name": ATTR_CYCLES, "len": 2, "func": lambda x: int(x)},  # pylint: disable=unnecessary-lambda
+                13: (ATTR_BATTERY_LEVEL, 1, None),
+                15: (ATTR_CYCLE_CHRG, 3, lambda x: float(x) / 1000),
+                18: (ATTR_RUNTIME, 2, lambda x: int(x * 60)),
+                23: (ATTR_CYCLES, 2, None),
             }
-            self._OGT_HEADER = "+R16"
+            self._HEADER = "+R16"
         else:
-            self._OGT_REGISTERS = {}
+            self._REGISTERS = {}
             LOGGER.exception("Unkown device type '%c'", self._type)
 
     @staticmethod
@@ -127,12 +121,12 @@ class BMS(BaseBMS):
         await self._connect()
 
         self._values.clear()
-        for key in list(self._OGT_REGISTERS):
+        for key in list(self._REGISTERS):
             await self._read(key)
             try:
                 await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
             except TimeoutError:
-                LOGGER.debug("Reading %s timed out", self._OGT_REGISTERS[key]["name"])
+                LOGGER.debug("Reading %s timed out", self._REGISTERS[key][REG.NAME])
 
         self.calc_values(
             self._values, {ATTR_CYCLE_CAP, ATTR_POWER, ATTR_BATTERY_CHARGING}
@@ -157,16 +151,16 @@ class BMS(BaseBMS):
 
         # check that descambled message is valid and from the right characteristic
         if valid and sender.uuid == self.UUID_RX:
-            register = self._OGT_REGISTERS[reg]
-            value = register["func"](nat_value)
+            name, length, func = self._REGISTERS[reg]
+            value = func(nat_value) if func else nat_value
             LOGGER.debug(
                 "Decoded data: reg: %s (#%i), raw: %i, value: %f",
-                register["name"],
+                name,
                 reg,
                 nat_value,
                 value,
             )
-            self._values[register["name"]] = value
+            self._values[name] = value
         else:
             LOGGER.debug("Response data is invalid")
         self._data_event.set()
@@ -200,7 +194,7 @@ class BMS(BaseBMS):
 
         self._client = None
 
-    def _ogt_response(self, resp: bytearray) -> tuple:
+    def _ogt_response(self, resp: bytearray) -> tuple[bool, int, int]:
         """Descramble a response from the BMS."""
 
         msg = bytearray((resp[x] ^ self._key) for x in range(0, len(resp))).decode(
@@ -209,7 +203,7 @@ class BMS(BaseBMS):
         LOGGER.debug("response: %s", msg[:-2])
         # verify correct response
         if msg[:4] != "+RD," or msg[-2:] != "\r\n":
-            return False, None, None
+            return False, 0, 0
         # 16-bit value in network order (plus optional multiplier for 24-bit values)
         signed = len(msg) > 12
         value = int.from_bytes(
@@ -220,7 +214,7 @@ class BMS(BaseBMS):
     def _ogt_command(self, command: int) -> bytes:
         """Put together an scambled query to the BMS."""
 
-        cmd = f"{self._OGT_HEADER}{command:0>2X}{self._OGT_REGISTERS[command]['len']:0>2X}"
+        cmd = f"{self._HEADER}{command:0>2X}{self._REGISTERS[command][REG.LEN]:0>2X}"
         LOGGER.debug("command: %s", cmd)
 
         return bytearray(ord(cmd[i]) ^ self._key for i in range(len(cmd)))

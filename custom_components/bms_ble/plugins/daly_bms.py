@@ -30,6 +30,7 @@ LOGGER = logging.getLogger(__name__)
 class BMS(BaseBMS):
     """Daly Smart BMS class implementation."""
 
+    # setup UUIDs, e.g. for receive: '0000fff1-0000-1000-8000-00805f9b34fb'
     UUID_RX = normalize_uuid_str("fff1")
     UUID_TX = normalize_uuid_str("fff2")
     UUID_SERVICE = normalize_uuid_str("FFF0")
@@ -52,9 +53,17 @@ class BMS(BaseBMS):
             (ATTR_VOLTAGE, 80 + self.HEAD_LEN, lambda x: float(x / 10)),
             (ATTR_CURRENT, 82 + self.HEAD_LEN, lambda x: float((x - 30000) / 10)),
             (ATTR_BATTERY_LEVEL, 84 + self.HEAD_LEN, lambda x: float(x / 10)),
-            (ATTR_CYCLES, 102 + self.HEAD_LEN, lambda x: int(x)),  # pylint: disable=unnecessary-lambda
+            (
+                ATTR_CYCLES,
+                102 + self.HEAD_LEN,
+                lambda x: int(x),  # pylint: disable=unnecessary-lambda
+            ),
             (ATTR_CYCLE_CHRG, 96 + self.HEAD_LEN, lambda x: float(x / 10)),
-            ("numTemp", 100 + self.HEAD_LEN, lambda x: int(x)),  # pylint: disable=unnecessary-lambda
+            (
+                "numTemp",
+                100 + self.HEAD_LEN,
+                lambda x: int(x),  # pylint: disable=unnecessary-lambda
+            ),
         ]
 
     @staticmethod
