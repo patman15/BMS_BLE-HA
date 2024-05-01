@@ -88,7 +88,7 @@ class BaseBMS(metaclass=ABCMeta):
         # calculate runtime from current and cycle charge
         if can_calc(ATTR_RUNTIME, frozenset({ATTR_CURRENT, ATTR_CYCLE_CHRG})):
             if data[ATTR_CURRENT] > 0:
-                data[ATTR_RUNTIME] = (
+                data[ATTR_RUNTIME] = int(
                     data[ATTR_CYCLE_CHRG] / data[ATTR_CURRENT] * _HRS_TO_SECS
                 )
 
