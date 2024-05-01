@@ -94,9 +94,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
 
         self._set_confirm_only()
-        placeholders = {"name": self._discovered_device.name}
+
         return self.async_show_form(
-            step_id="bluetooth_confirm", description_placeholders=placeholders
+            step_id="bluetooth_confirm",
+            description_placeholders={"name": self._discovered_device.name},
         )
 
     async def async_step_user(
