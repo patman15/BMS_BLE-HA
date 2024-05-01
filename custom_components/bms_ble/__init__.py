@@ -55,27 +55,40 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     LOGGER.info("Unloaded config entry: %s, ok? %s!", entry.unique_id, str(unload_ok))
     return unload_ok
 
+
 async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Migrate old entry."""
-    LOGGER.debug("Migrating from version %s", config_entry.version)
 
     if config_entry.version > 1:
-      # This means the user has downgraded from a future version
-      return False
+        # This means the user has downgraded from a future version
+        LOGGER.debug("Cannot downgrade from version %s", config_entry.version)
+        return False
+
+    LOGGER.debug("Migrating from version %s", config_entry.version)
 
     if config_entry.version == 0:
         bms_type = config_entry.data["type"]
         if bms_type == "OGTBms":
-            new = {"type": "homeassistant.components.bms_ble.plugins.ogt_bms" }
+            new = {"type": "homeassistant.components.bms_ble.plugins.ogt_bms"}
         elif bms_type == "DalyBms":
             new = {"type": "homeassistant.components.bms_ble.plugins.daly_bms"}
         else:
             LOGGER.debug("Entry: %s", config_entry.data)
-            LOGGER.error("Migration from version %s.%s failed", config_entry.version, config_entry.minor_version)
+            LOGGER.error(
+                "Migration from version %s.%s failed",
+                config_entry.version,
+                config_entry.minor_version,
+            )
             return False
 
-        hass.config_entries.async_update_entry(config_entry, data=new, minor_version=0, version=1)
-        LOGGER.debug("Migration to version %s.%s successful", config_entry.version, config_entry.minor_version)
+        hass.config_entries.async_update_entry(
+            config_entry, data=new, minor_version=0, version=1
+        )
+        LOGGER.debug(
+            "Migration to version %s.%s successful",
+            config_entry.version,
+            config_entry.minor_version,
+        )
 
     return True
 
