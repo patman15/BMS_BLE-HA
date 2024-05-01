@@ -6,7 +6,7 @@ from homeassistant.components.bluetooth import async_ble_device_from_address
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
 
 from .const import DOMAIN, LOGGER
 from .coordinator import BTBmsCoordinator
@@ -19,7 +19,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     LOGGER.debug("Setup of %s", repr(entry))
 
     if entry.unique_id is None:
-        raise ConfigEntryNotReady("Missing unique ID for device.")
+        raise ConfigEntryError("Missing unique ID for device.")
 
     ble_device = async_ble_device_from_address(
         hass=hass, address=entry.unique_id, connectable=True
@@ -27,7 +27,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if not ble_device:
         raise ConfigEntryNotReady(
-            f"Could not find battery with address {entry.unique_id}"
+            f"Could not find BMS ({entry.unique_id}) via Bluetooth"
         )
 
     plugin = importlib.import_module(entry.data["type"])
