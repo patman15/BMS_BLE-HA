@@ -58,7 +58,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, int | float | bool]]):
             model=device_info.get("model"),
         )
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop connection to BMS instance."""
         LOGGER.debug("Stopping device %s", self.device_info.get(ATTR_NAME))
         await self._device.disconnect()
