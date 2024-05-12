@@ -12,7 +12,7 @@ from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, LOGGER
+from .const import DOMAIN
 from .coordinator import BTBmsCoordinator
 
 BINARY_SENSOR_TYPES: list[BinarySensorEntityDescription] = [
@@ -52,9 +52,4 @@ class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity): 
     @property
     def is_on(self) -> bool | None: # type: ignore
         """Handle updated data from the coordinator."""
-        LOGGER.debug(
-            "binary update handler for %s (%s)",
-            self.entity_description.key,
-            str(self.coordinator.data.get(self.entity_description.key)),
-        )
         return bool(self.coordinator.data.get(self.entity_description.key))
