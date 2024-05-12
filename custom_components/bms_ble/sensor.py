@@ -21,7 +21,7 @@ from homeassistant.const import (
     UnitOfTemperature,
     UnitOfTime,
 )
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -34,7 +34,6 @@ from .const import (
     ATTR_RSSI,
     ATTR_RUNTIME,
     DOMAIN,
-    LOGGER,
 )
 from .coordinator import BTBmsCoordinator
 
@@ -130,23 +129,12 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
 
     def __init__(self, bms: BTBmsCoordinator, descr: SensorEntityDescription) -> None:
         """Intitialize the BMS sensor."""
-        self._bms: BTBmsCoordinator = bms
-        self._attr_unique_id = f"{format_mac(self._bms.name)}-{descr.key}"
+        self._attr_unique_id = f"{format_mac(bms.name)}-{descr.key}"
         self._attr_device_info = bms.device_info
         self.entity_description = descr
-        super().__init__(self._bms)
+        super().__init__(bms)
 
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        """Handle updated data from the coordinator."""
-        if self._bms.data is None:
-            return
-
-        if self.entity_description.key in self._bms.data:
-            self._attr_native_value = self._bms.data.get(self.entity_description.key)
-            self._attr_available = True
-        elif self._attr_available:
-            self._attr_available = False
-            LOGGER.info("No update available for sensor '%s'", self.entity_description.key)
-
-        self.async_write_ha_state()
+    @property
+    def native_value(self) -> int | float | None:  # type: ignore
+        """Return the sensor value."""
+        return self.coordinator.data.get(self.entity_description.key)
