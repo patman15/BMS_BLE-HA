@@ -84,4 +84,5 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, int | float | bool]]):
         if service_info is not None:
             battery_info.update({ATTR_RSSI: service_info.rssi})
 
+        LOGGER.debug("BMS data sample %s", battery_info)
         return battery_info
