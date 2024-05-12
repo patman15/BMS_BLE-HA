@@ -7,7 +7,7 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_BATTERY_CHARGING
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -43,25 +43,18 @@ class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity): 
         self, bms: BTBmsCoordinator, descr: BinarySensorEntityDescription
     ) -> None:
         """Intialize BMS binary sensor."""
-        self._bms: BTBmsCoordinator = bms
-        self._attr_unique_id = f"{format_mac(self._bms.name)}-{descr.key}"
+        self._attr_unique_id = f"{format_mac(bms.name)}-{descr.key}"
         self._attr_device_info = bms.device_info
         self._attr_has_entity_name = True
         self.entity_description = descr
-        super().__init__(self._bms)
+        super().__init__(bms)
 
-    @callback
-    def _handle_coordinator_update(self) -> None:
+    @property
+    def is_on(self) -> bool | None: # type: ignore
         """Handle updated data from the coordinator."""
-
-        if self._bms.data is None:
-            return
-
-        if self.entity_description.key in self._bms.data:
-            self._attr_is_on = bool(self._bms.data.get(self.entity_description.key))
-            self._attr_available = True
-        elif self._attr_available:
-            self._attr_available = False
-            LOGGER.info("No update available for sensor '%s'", self.entity_description.key)
-
-        self.async_write_ha_state()
+        LOGGER.debug(
+            "binary update handler for %s (%s)",
+            self.entity_description.key,
+            str(self.coordinator.data.get(self.entity_description.key)),
+        )
+        return bool(self.coordinator.data.get(self.entity_description.key))
