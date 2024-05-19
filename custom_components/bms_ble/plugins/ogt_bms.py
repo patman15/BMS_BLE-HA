@@ -59,7 +59,7 @@ class BMS(BaseBMS):
             for c in (f"{int(self._ble_device.name[10:]):0>4X}")
         ) + (5 if (self._type == "A") else 8)
         LOGGER.info(
-            "%s type: %c, ID: %s, key: %x",
+            "%s type: %c, ID: %s, key: 0x%x",
             self.device_id(),
             self._type,
             self._ble_device.name[10:],
@@ -132,7 +132,6 @@ class BMS(BaseBMS):
             self._values, {ATTR_CYCLE_CAP, ATTR_POWER, ATTR_BATTERY_CHARGING}
         )
 
-        LOGGER.debug("Data collected: %s", self._values)
         if self._reconnect:
             # disconnect after data update to force reconnect next time (slow!)
             await self.disconnect()
