@@ -26,14 +26,15 @@ from .basebms import BaseBMS
 BAT_TIMEOUT = 10
 LOGGER = logging.getLogger(__name__)
 
+# setup UUIDs, e.g. for receive: '0000fff1-0000-1000-8000-00805f9b34fb'
+UUID_RX = normalize_uuid_str("fff1")
+UUID_TX = normalize_uuid_str("fff2")
+UUID_SERVICE = normalize_uuid_str("fff0")
+
 
 class BMS(BaseBMS):
     """Daly Smart BMS class implementation."""
 
-    # setup UUIDs, e.g. for receive: '0000fff1-0000-1000-8000-00805f9b34fb'
-    UUID_RX = normalize_uuid_str("fff1")
-    UUID_TX = normalize_uuid_str("fff2")
-    UUID_SERVICE = normalize_uuid_str("FFF0")
     HEAD_READ = bytearray(b"\xD2\x03")
     CMD_INFO = bytearray(b"\x00\x00\x00\x3E\xD7\xB9")
     HEAD_LEN = 3
@@ -69,7 +70,13 @@ class BMS(BaseBMS):
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
         """Provide BluetoothMatcher definition."""
-        return [{"local_name": "DL-*", "connectable": True}]
+        return [
+            {
+                "local_name": "DL-*",
+                "service_uuid": UUID_SERVICE,
+                "connectable": True,
+            }
+        ]
 
     @staticmethod
     def device_info() -> dict[str, str]:
@@ -109,10 +116,10 @@ class BMS(BaseBMS):
             self._client = BleakClient(
                 self._ble_device.address,
                 disconnected_callback=self._on_disconnect,
-                services=[self.UUID_SERVICE],
+                services=[UUID_SERVICE],
             )
             await self._client.connect()
-            await self._client.start_notify(self.UUID_RX, self._notification_handler)
+            await self._client.start_notify(UUID_RX, self._notification_handler)
             self._connected = True
         else:
             LOGGER.debug("BMS %s already connected", self._ble_device.name)
@@ -135,9 +142,7 @@ class BMS(BaseBMS):
         await self._connect()
         assert self._client is not None
 
-        await self._client.write_gatt_char(
-            self.UUID_TX, data=self.HEAD_READ + self.CMD_INFO
-        )
+        await self._client.write_gatt_char(UUID_TX, data=self.HEAD_READ + self.CMD_INFO)
 
         await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 

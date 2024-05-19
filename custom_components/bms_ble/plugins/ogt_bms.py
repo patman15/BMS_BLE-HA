@@ -26,6 +26,13 @@ from .basebms import BaseBMS
 LOGGER = logging.getLogger(__name__)
 BAT_TIMEOUT = 1
 
+# magic crypt sequence of length 16
+CRYPT_SEQ = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
+# setup UUIDs, e.g. for receive: '0000fff4-0000-1000-8000-00805f9b34fb'
+UUID_RX = normalize_uuid_str("fff4")
+UUID_TX = normalize_uuid_str("fff6")
+UUID_SERVICE = normalize_uuid_str("fff0")
+
 
 class REG(IntEnum):
     """Field list for _REGISTER constant."""
@@ -38,13 +45,6 @@ class REG(IntEnum):
 class BMS(BaseBMS):
     """Offgridtec LiFePO4 Smart Pro type A and type B battery class implementation."""
 
-    # magic crypt sequence of length 16
-    _CRYPT_SEQ = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
-    # setup UUIDs, e.g. for receive: '0000fff4-0000-1000-8000-00805f9b34fb'
-    UUID_RX = normalize_uuid_str("FFF4")
-    UUID_TX = normalize_uuid_str("FFF6")
-    UUID_SERVICE = normalize_uuid_str("FFF0")
-
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
         self._reconnect = reconnect
@@ -55,8 +55,7 @@ class BMS(BaseBMS):
         self._connected = False  # flag to indicate active BLE connection
         self._type = self._ble_device.name[9]
         self._key = sum(
-            self._CRYPT_SEQ[int(c, 16)]
-            for c in (f"{int(self._ble_device.name[10:]):0>4X}")
+            CRYPT_SEQ[int(c, 16)] for c in (f"{int(self._ble_device.name[10:]):0>4X}")
         ) + (5 if (self._type == "A") else 8)
         LOGGER.info(
             "%s type: %c, ID: %s, key: 0x%x",
@@ -102,8 +101,16 @@ class BMS(BaseBMS):
     def matcher_dict_list() -> list[dict[str, Any]]:
         """Return a list of Bluetooth matchers."""
         return [
-            {"local_name": "SmartBat-A*", "connectable": True},
-            {"local_name": "SmartBat-B*", "connectable": True},
+            {
+                "local_name": "SmartBat-A*",
+                "service_uuid": UUID_SERVICE,
+                "connectable": True,
+            },
+            {
+                "local_name": "SmartBat-B*",
+                "service_uuid": UUID_SERVICE,
+                "connectable": True,
+            },
         ]
 
     @staticmethod
@@ -148,8 +155,8 @@ class BMS(BaseBMS):
 
         valid, reg, nat_value = self._ogt_response(data)
 
-        # check that descambled message is valid and from the right characteristic
-        if valid and sender.uuid == self.UUID_RX:
+        # check that descrambled message is valid and from the right characteristic
+        if valid and sender.uuid == UUID_RX:
             name, length, func = self._REGISTERS[reg]
             value = func(nat_value) if func else nat_value
             LOGGER.debug(
@@ -172,10 +179,10 @@ class BMS(BaseBMS):
             self._client = BleakClient(
                 self._ble_device.address,
                 disconnected_callback=self._on_disconnect,
-                services=[self.UUID_SERVICE],
+                services=[UUID_SERVICE],
             )
             await self._client.connect()
-            await self._client.start_notify(self.UUID_RX, self._notification_handler)
+            await self._client.start_notify(UUID_RX, self._notification_handler)
             self._connected = True
         else:
             LOGGER.debug("BMS %s already connected", self._ble_device.name)
@@ -224,4 +231,4 @@ class BMS(BaseBMS):
 
         msg = self._ogt_command(reg)
         LOGGER.debug("BLE cmd frame %s", msg)
-        await self._client.write_gatt_char(self.UUID_TX, data=msg)
+        await self._client.write_gatt_char(UUID_TX, data=msg)

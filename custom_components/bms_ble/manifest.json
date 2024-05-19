@@ -3,13 +3,16 @@
   "name": "BLE Battery Management",
   "bluetooth": [
     {
-      "local_name": "SmartBat-A*"
+      "local_name": "SmartBat-A*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"      
     },
     {
-      "local_name": "SmartBat-B*"
+      "local_name": "SmartBat-B*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"      
     },
     {
-      "local_name": "DL-*"
+      "local_name": "DL-*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     }
   ],
   "codeowners": ["@patman15"],
@@ -21,5 +24,5 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bms_ble", "ogt_bms", "daly_bms"],
   "requirements": [],
-  "version": "1.2.1"
+  "version": "1.2.2"
 }
