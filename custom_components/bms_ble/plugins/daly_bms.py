@@ -96,9 +96,9 @@ class BMS(BaseBMS):
         ):
             LOGGER.debug("Response data is invalid")
             self._data = None
-            return
+        else:
+            self._data = data
 
-        self._data = data
         self._data_event.set()
 
     async def _connect(self) -> None:
