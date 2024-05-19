@@ -174,4 +174,8 @@ class BMS(BaseBMS):
             data, {ATTR_CYCLE_CAP, ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_RUNTIME}
         )
 
+        if self._reconnect:
+            # disconnect after data update to force reconnect next time (slow!)
+            await self.disconnect()
+
         return data
