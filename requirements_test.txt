@@ -2,4 +2,8 @@ homeassistant==2023.8.0
 pip>=21.3.1
 pytest
 pytest-cov
-
+bleak
+asyncio
+logging
+importlib
+datetime
