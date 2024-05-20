@@ -3,6 +3,7 @@ pip>=21.3.1
 pytest
 pytest-cov
 bleak
+bleak-retry-connector
 asyncio
 logging
 importlib
