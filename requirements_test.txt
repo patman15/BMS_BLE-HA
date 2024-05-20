@@ -8,3 +8,4 @@ asyncio
 logging
 importlib
 datetime
+serial
