@@ -6,8 +6,8 @@ from homeassistant.config_entries import SOURCE_BLUETOOTH, SOURCE_USER, ConfigEn
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
-
-from tests.components.bluetooth import inject_bluetooth_service_info_bleak
+from .conftest import mock_config
+from .bluetooth import inject_bluetooth_service_info_bleak
 
 
 async def test_device_discovery(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
@@ -80,10 +80,10 @@ async def test_invalid_plugin(monkeypatch, BTdiscovery, hass: HomeAssistant) -> 
     assert result.get("reason") == "not_supported"
 
 
-async def test_already_configured(mock_config, hass: HomeAssistant) -> None:
+async def test_already_configured(bms_fixture, hass: HomeAssistant) -> None:
     """Test that same device cannot be added twice."""
 
-    config = mock_config
+    config = mock_config(bms_fixture)
     config.add_to_hass(hass)
 
     await hass.config_entries.async_setup(config.entry_id)
@@ -102,7 +102,7 @@ async def test_already_configured(mock_config, hass: HomeAssistant) -> None:
 
 
 async def test_async_setup_entry(
-    monkeypatch, mock_config, BTdiscovery, hass: HomeAssistant
+    monkeypatch, bms_fixture, BTdiscovery, hass: HomeAssistant
 ) -> None:
     """Test async_setup_entry with valid input."""
 
@@ -115,7 +115,7 @@ async def test_async_setup_entry(
         patch_async_ble_device_from_address,
     )
 
-    config = mock_config
+    config = mock_config(bms=bms_fixture)
     config.add_to_hass(hass)
 
     assert await hass.config_entries.async_setup(config.entry_id)
@@ -125,13 +125,10 @@ async def test_async_setup_entry(
     assert config.state is ConfigEntryState.LOADED
 
 
-async def test_setup_entry_missing_unique_id(
-    monkeypatch, mock_config, hass: HomeAssistant
-) -> None:
+async def test_setup_entry_missing_unique_id(bms_fixture, hass: HomeAssistant) -> None:
     """Test async_setup_entry with missing unique id."""
 
-    config = mock_config
-    monkeypatch.setattr(config, "unique_id", None)
+    config = mock_config(bms=bms_fixture, unique_id=None)
     config.add_to_hass(hass)
 
     assert not await hass.config_entries.async_setup(config.entry_id)
@@ -222,11 +219,11 @@ async def test_user_setup_double_configure(
 
 
 async def test_migrate_entry_future_version(
-    monkeypatch, mock_config, hass: HomeAssistant
+    monkeypatch, bms_fixture, hass: HomeAssistant
 ) -> None:
     """Test migrating entries from future version."""
 
-    config = mock_config
+    config = mock_config(bms=bms_fixture)
     monkeypatch.setattr(config, "version", 999)
     config.add_to_hass(hass)
 
@@ -238,11 +235,11 @@ async def test_migrate_entry_future_version(
 
 
 async def test_migrate_invalid_v_0_1(
-    monkeypatch, mock_config, hass: HomeAssistant
+    monkeypatch, bms_fixture, hass: HomeAssistant
 ) -> None:
     """Test migrating an invalid entry in version 0.1."""
 
-    config = mock_config
+    config = mock_config(bms=bms_fixture)
     monkeypatch.setattr(config, "version", 0)
     monkeypatch.setattr(config, "data", {"type": None})
     config.add_to_hass(hass)

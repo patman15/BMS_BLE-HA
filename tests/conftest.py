@@ -13,12 +13,14 @@ from bleak import (
     BLEDevice,
     normalize_uuid_str,
 )
+from pytest_homeassistant_custom_component.plugins import enable_custom_integrations
 from bleak.backends.descriptor import BleakGATTDescriptor
+from bleak.backends.scanner import AdvertisementData, BLEDevice
 from bleak.uuids import uuidstr_to_str
 import pytest
 from typing_extensions import Buffer
 
-from homeassistant.components.bluetooth.models import BluetoothServiceInfoBleak
+from home_assistant_bluetooth import BluetoothServiceInfoBleak
 from custom_components.bms_ble.const import (
     ATTR_CURRENT,
     ATTR_CYCLE_CHRG,
@@ -28,12 +30,16 @@ from custom_components.bms_ble.const import (
     DOMAIN,
 )
 from custom_components.bms_ble.plugins.basebms import BaseBMS
-
-from tests.common import MockConfigEntry
-from tests.components.bluetooth import generate_advertisement_data, generate_ble_device
+from .bluetooth import generate_ble_device, generate_advertisement_data
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+# from pytest_homeassistant_custom_component.components.bluetooth import generate_advertisement_data, generate_ble_device
 
 LOGGER = logging.getLogger(__name__)
 
+@pytest.fixture(autouse=True)
+def auto_enable_custom_integrations(enable_custom_integrations: Any):
+    """Auto add enable_custom_integrations."""
+    return
 
 @pytest.fixture(autouse=True)
 def mock_bluetooth(enable_bluetooth):
@@ -88,47 +94,39 @@ def BTdiscovery_notsupported():
     )
 
 
-@pytest.fixture  # (params=["ogt_bms", "daly_bms", "basebms"])
-def mock_config(bms_type="ogt_bms", mac_address="cc:cc:cc:cc:cc:cc"):
+@pytest.fixture(params=BMS_TYPES + ["dummy_bms"])
+def bms_fixture(request):
+    """Return all possible BMS variants."""
+    return request.param
+
+
+def mock_config(bms: str, unique_id: str | None = "cc:cc:cc:cc:cc:cc"):
     """Return a Mock of the HA entity config."""
     return MockConfigEntry(
         domain=DOMAIN,
         version=1,
         minor_version=0,
-        unique_id=mac_address,
-        data={"type": f"custom_components.bms_ble.plugins.{bms_type}"},
-        title=bms_type,
-    )
-
-
-@pytest.fixture
-def mock_dummy_config(mac_address="cc:cc:cc:cc:cc:cc"):
-    """Return a Mock configuration for dummy BMS."""
-    return MockConfigEntry(
-        domain=DOMAIN,
-        version=1,
-        minor_version=0,
-        unique_id=mac_address,
-        data={"type": "custom_components.bms_ble.plugins.dummy_bms"},
-        title="dummy_bms",
+        unique_id=unique_id,
+        data={"type": f"custom_components.bms_ble.plugins.{bms}"},
+        title=bms,
     )
 
 
 @pytest.fixture(params=["OGTBms", "DalyBms"])
-def mock_config_v0_1(request, mac_address="cc:cc:cc:cc:cc:cc"):
+def mock_config_v0_1(request, unique_id="cc:cc:cc:cc:cc:cc"):
     """Return a Mock of the HA entity config."""
     return MockConfigEntry(
         domain=DOMAIN,
         version=0,
         minor_version=1,
-        unique_id=mac_address,
+        unique_id=unique_id,
         data={"type": request.param},
         title="ogt_bms_v0_1",
     )
 
 
 @pytest.fixture
-def mock_bms_data():
+def bms_data_fixture():
     """Return a fake BMS data dictionary."""
 
     return {
@@ -272,6 +270,7 @@ class MockBleakClient(BleakClient):
             self._disconnect_callback(self)
 
         return True
+
 
 class MockRespChar(BleakGATTCharacteristic):
     """Mock response characteristic."""

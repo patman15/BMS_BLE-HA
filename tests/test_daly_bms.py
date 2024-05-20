@@ -9,7 +9,7 @@ from custom_components.bms_ble.plugins.daly_bms import BMS
 
 from .conftest import MockBleakClient
 
-from tests.components.bluetooth import generate_ble_device
+from .bluetooth import generate_ble_device
 
 
 class MockDalyBleakClient(MockBleakClient):

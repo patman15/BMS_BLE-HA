@@ -1,0 +1,16 @@
+# pyproject.toml
+
+#[tool.setuptools.packages.find]
+#where = ["custom_components/"]
+#include = ["bms_ble"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+pythonpath = [
+    ".",
+    "custom_components.bms_ble",
+]
+testpaths = [
+    "tests",
+]
+asyncio_mode = "auto"

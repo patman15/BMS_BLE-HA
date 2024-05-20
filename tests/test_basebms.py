@@ -9,9 +9,9 @@ from custom_components.bms_ble.const import (
 from custom_components.bms_ble.plugins.basebms import BaseBMS
 
 
-def test_calc_missing_values(mock_bms_data) -> None:
+def test_calc_missing_values(bms_data_fixture) -> None:
     """Check if missing data is correctly calculated."""
-    bms_data = reference = mock_bms_data
+    bms_data = reference = bms_data_fixture
     BaseBMS.calc_values(
         bms_data,
         {ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_POWER, ATTR_RUNTIME, "invalid"},

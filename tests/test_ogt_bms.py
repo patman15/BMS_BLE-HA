@@ -10,7 +10,7 @@ from custom_components.bms_ble.plugins.ogt_bms import BAT_TIMEOUT, BMS
 
 from .conftest import MockBleakClient, MockRespChar
 
-from tests.components.bluetooth import generate_ble_device
+from .bluetooth import generate_ble_device
 
 
 class MockOGTBleakClient(MockBleakClient):
@@ -105,13 +105,8 @@ class MockInvalidBleakClient(MockOGTBleakClient):
         value = await self._response(char_specifier, data)
 
         # test read timeout on register 8 (valid for A and B type BMS)
-        delay: float = (
-            BAT_TIMEOUT * 1.1 if bytearray(data)[4:6] == bytearray(b" (") else 0
-        )
-
-        asyncio.get_running_loop().call_later(
-            delay, self._notify_callback, MockRespChar(None, 0), value
-        )
+        if bytearray(data)[4:6] != bytearray(b" ("):
+            self._notify_callback(MockRespChar(None, 0), value)
 
     async def disconnect(self) -> bool:
         """Mock disconnect to raise BleakError."""
