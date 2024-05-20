@@ -6,7 +6,7 @@ from typing import Union
 from bleak import BleakError, BleakGATTCharacteristic, normalize_uuid_str
 from typing_extensions import Buffer
 
-from homeassistant.components.bms_ble.plugins.ogt_bms import BAT_TIMEOUT, BMS
+from custom_components.bms_ble.plugins.ogt_bms import BAT_TIMEOUT, BMS
 
 from .conftest import MockBleakClient, MockRespChar
 
@@ -122,7 +122,7 @@ async def test_update(monkeypatch, ogt_bms_fixture, reconnect_fixture) -> None:
     """Test OGT BMS data update."""
 
     monkeypatch.setattr(
-        "homeassistant.components.bms_ble.plugins.ogt_bms.BleakClient",
+        "custom_components.bms_ble.plugins.ogt_bms.BleakClient",
         MockOGTBleakClient,
     )
 
@@ -158,7 +158,7 @@ async def test_invalid_response(monkeypatch) -> None:
     """Test data update with BMS returning invalid data and read timeout."""
 
     monkeypatch.setattr(
-        "homeassistant.components.bms_ble.plugins.ogt_bms.BleakClient",
+        "custom_components.bms_ble.plugins.ogt_bms.BleakClient",
         MockInvalidBleakClient,
     )
 
@@ -175,7 +175,7 @@ async def test_invalid_bms_type(monkeypatch) -> None:
     """Test BMS with invalid type 'C'."""
 
     monkeypatch.setattr(
-        "homeassistant.components.bms_ble.plugins.ogt_bms.BleakClient",
+        "custom_components.bms_ble.plugins.ogt_bms.BleakClient",
         MockOGTBleakClient,
     )
 

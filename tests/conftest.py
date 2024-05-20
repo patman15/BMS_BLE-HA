@@ -19,7 +19,7 @@ import pytest
 from typing_extensions import Buffer
 
 from homeassistant.components.bluetooth.models import BluetoothServiceInfoBleak
-from homeassistant.components.bms_ble.const import (
+from custom_components.bms_ble.const import (
     ATTR_CURRENT,
     ATTR_CYCLE_CHRG,
     ATTR_CYCLES,
@@ -27,7 +27,7 @@ from homeassistant.components.bms_ble.const import (
     BMS_TYPES,
     DOMAIN,
 )
-from homeassistant.components.bms_ble.plugins.basebms import BaseBMS
+from custom_components.bms_ble.plugins.basebms import BaseBMS
 
 from tests.common import MockConfigEntry
 from tests.components.bluetooth import generate_advertisement_data, generate_ble_device
@@ -96,7 +96,7 @@ def mock_config(bms_type="ogt_bms", mac_address="cc:cc:cc:cc:cc:cc"):
         version=1,
         minor_version=0,
         unique_id=mac_address,
-        data={"type": f"homeassistant.components.bms_ble.plugins.{bms_type}"},
+        data={"type": f"custom_components.bms_ble.plugins.{bms_type}"},
         title=bms_type,
     )
 
@@ -109,7 +109,7 @@ def mock_dummy_config(mac_address="cc:cc:cc:cc:cc:cc"):
         version=1,
         minor_version=0,
         unique_id=mac_address,
-        data={"type": "homeassistant.components.bms_ble.plugins.dummy_bms"},
+        data={"type": "custom_components.bms_ble.plugins.dummy_bms"},
         title="dummy_bms",
     )
 
@@ -148,7 +148,7 @@ def mock_coordinator_exception(request):
 def plugin_fixture(request) -> BaseBMS:
     """Return instance of a BMS."""
     return importlib.import_module(
-        f"homeassistant.components.bms_ble.plugins.{request.param}",
+        f"custom_components.bms_ble.plugins.{request.param}",
         package=__name__[: __name__.rfind(".")],
     ).BMS
 

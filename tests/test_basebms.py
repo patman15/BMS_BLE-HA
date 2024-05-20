@@ -1,12 +1,12 @@
 """Test the BLE Battery Management System base class functions."""
 
-from homeassistant.components.bms_ble.const import (
+from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
     ATTR_CYCLE_CAP,
     ATTR_POWER,
     ATTR_RUNTIME,
 )
-from homeassistant.components.bms_ble.plugins.basebms import BaseBMS
+from custom_components.bms_ble.plugins.basebms import BaseBMS
 
 
 def test_calc_missing_values(mock_bms_data) -> None:

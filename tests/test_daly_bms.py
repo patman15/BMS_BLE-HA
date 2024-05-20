@@ -5,7 +5,7 @@ from typing import Union
 from bleak import BleakError, BleakGATTCharacteristic, normalize_uuid_str
 from typing_extensions import Buffer
 
-from homeassistant.components.bms_ble.plugins.daly_bms import BMS
+from custom_components.bms_ble.plugins.daly_bms import BMS
 
 from .conftest import MockBleakClient
 
@@ -65,7 +65,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
     """Test Daly BMS data update."""
 
     monkeypatch.setattr(
-        "homeassistant.components.bms_ble.plugins.daly_bms.BleakClient",
+        "custom_components.bms_ble.plugins.daly_bms.BleakClient",
         MockDalyBleakClient,
     )
 
@@ -101,7 +101,7 @@ async def test_invalid_response(monkeypatch) -> None:
     """Test data update with BMS returning invalid data."""
 
     monkeypatch.setattr(
-        "homeassistant.components.bms_ble.plugins.daly_bms.BleakClient",
+        "custom_components.bms_ble.plugins.daly_bms.BleakClient",
         MockInvalidBleakClient,
     )
 

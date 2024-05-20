@@ -1,7 +1,7 @@
 """Test the BLE Battery Management System integration config flow."""
 
-from homeassistant.components.bms_ble.const import DOMAIN
-from homeassistant.components.bms_ble.plugins.basebms import BaseBMS
+from custom_components.bms_ble.const import DOMAIN
+from custom_components.bms_ble.plugins.basebms import BaseBMS
 from homeassistant.config_entries import SOURCE_BLUETOOTH, SOURCE_USER, ConfigEntryState
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
@@ -28,7 +28,7 @@ async def test_device_discovery(monkeypatch, BTdiscovery, hass: HomeAssistant) -
     assert result.get("description_placeholders") == {"name": "SmartBat-B12345"}
 
     monkeypatch.setattr(
-        "homeassistant.components.bms_ble.async_ble_device_from_address",
+        "custom_components.bms_ble.async_ble_device_from_address",
         patch_async_ble_device_from_address,
     )
 
@@ -94,7 +94,7 @@ async def test_already_configured(mock_config, hass: HomeAssistant) -> None:
         context={"source": SOURCE_USER},
         data={
             CONF_ADDRESS: "cc:cc:cc:cc:cc:cc",
-            "type": "homeassistant.components.bms_ble.plugins.ogt_bms",
+            "type": "custom_components.bms_ble.plugins.ogt_bms",
         },
     )
     assert result.get("type") == FlowResultType.ABORT
@@ -111,7 +111,7 @@ async def test_async_setup_entry(
         return BTdiscovery.device
 
     monkeypatch.setattr(
-        "homeassistant.components.bms_ble.async_ble_device_from_address",
+        "custom_components.bms_ble.async_ble_device_from_address",
         patch_async_ble_device_from_address,
     )
 
@@ -170,7 +170,7 @@ async def test_user_setup(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None
     }
 
     monkeypatch.setattr(
-        "homeassistant.components.bms_ble.async_ble_device_from_address",
+        "custom_components.bms_ble.async_ble_device_from_address",
         patch_async_ble_device_from_address,
     )
 
@@ -209,7 +209,7 @@ async def test_user_setup_double_configure(
         return {"cc:cc:cc:cc:cc:cc"}
 
     monkeypatch.setattr(
-        "homeassistant.components.bms_ble.config_flow.ConfigFlow._async_current_ids",
+        "custom_components.bms_ble.config_flow.ConfigFlow._async_current_ids",
         patch_async_current_ids,
     )
 
@@ -264,7 +264,7 @@ async def test_migrate_entry_from_v_0_1(
         return BTdiscovery.device
 
     monkeypatch.setattr(
-        "homeassistant.components.bms_ble.async_ble_device_from_address",
+        "custom_components.bms_ble.async_ble_device_from_address",
         patch_async_ble_device_from_address,
     )
 

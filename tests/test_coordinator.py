@@ -1,7 +1,7 @@
 """Test the BLE Battery Management System update coordinator."""
 
-from homeassistant.components.bms_ble import BTBmsCoordinator
-from homeassistant.components.bms_ble.const import (
+from custom_components.bms_ble import BTBmsCoordinator
+from custom_components.const import (
     ATTR_CURRENT,
     ATTR_CYCLE_CHRG,
     ATTR_CYCLES,

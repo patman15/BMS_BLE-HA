@@ -1,6 +1,6 @@
 """Test the BLE Battery Management System base class functions."""
 
-from homeassistant.components.bms_ble.plugins.basebms import BaseBMS
+from custom_components.bms_ble.plugins.basebms import BaseBMS
 
 
 def test_device_info(plugin_fixture) -> None:

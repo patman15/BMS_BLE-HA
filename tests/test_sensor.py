@@ -2,7 +2,7 @@
 
 from datetime import timedelta
 
-from homeassistant.components.bms_ble.const import (
+from custom_components.bms_ble.const import (
     ATTR_CURRENT,
     ATTR_CYCLES,
     ATTR_POWER,
@@ -54,7 +54,7 @@ async def test_update(
     }
 
     monkeypatch.setattr(
-        "homeassistant.components.bms_ble.plugins.dummy_bms.BMS.async_update",
+        "custom_components.bms_ble.plugins.dummy_bms.BMS.async_update",
         patch_async_update,
     )
 

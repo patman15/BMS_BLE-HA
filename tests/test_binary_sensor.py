@@ -2,7 +2,7 @@
 
 from datetime import timedelta
 
-from homeassistant.components.bms_ble.const import UPDATE_INTERVAL
+from custom_components.bms_ble.const import UPDATE_INTERVAL
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
@@ -35,7 +35,7 @@ async def test_update(
     assert hass.states.is_state("binary_sensor.smartbat_b12345_charging", STATE_ON)
 
     monkeypatch.setattr(
-        "homeassistant.components.bms_ble.plugins.dummy_bms.BMS.async_update",
+        "custom_components.bms_ble.plugins.dummy_bms.BMS.async_update",
         patch_device,
     )
 
