@@ -4,13 +4,11 @@ import asyncio
 from typing import Union
 
 from bleak import BleakError, BleakGATTCharacteristic, normalize_uuid_str
+from custom_components.bms_ble.plugins.ogt_bms import BAT_TIMEOUT, BMS
 from typing_extensions import Buffer
 
-from custom_components.bms_ble.plugins.ogt_bms import BAT_TIMEOUT, BMS
-
-from .conftest import MockBleakClient, MockRespChar
-
 from .bluetooth import generate_ble_device
+from .conftest import MockBleakClient, MockRespChar
 
 
 class MockOGTBleakClient(MockBleakClient):

@@ -3,14 +3,15 @@
 from datetime import timedelta
 
 from custom_components.bms_ble.const import UPDATE_INTERVAL
+from pytest_homeassistant_custom_component.common import async_fire_time_changed
+
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
-from .conftest import mock_config
-from pytest_homeassistant_custom_component.common import async_fire_time_changed
-from .bluetooth import inject_bluetooth_service_info_bleak
 
+from .bluetooth import inject_bluetooth_service_info_bleak
+from .conftest import mock_config
 
 
 async def test_update(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:

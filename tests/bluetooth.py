@@ -1,31 +1,15 @@
-"""Common fixtures for the BLE Battery Management System integration tests."""
+"""Test helpers for bluetooth copied from HA 2024.3.0."""
 
-from collections.abc import Callable, Iterable
-import importlib
-import logging
-from typing import Any, Union
-from uuid import UUID
+from typing import Any
 
-from bleak import (
-    BleakClient,
-    BleakError,
-    BleakGATTCharacteristic,
-    BLEDevice,
-    normalize_uuid_str,
+from bleak import AdvertisementData, BLEDevice
+
+from homeassistant.components.bluetooth import (
+    SOURCE_LOCAL,
+    BluetoothServiceInfoBleak,
+    async_get_advertisement_callback,
 )
-
 from homeassistant.core import HomeAssistant
-from bleak.backends.descriptor import BleakGATTDescriptor
-from bleak.backends.scanner import AdvertisementData, BLEDevice
-from bleak.uuids import uuidstr_to_str
-import pytest
-from typing_extensions import Buffer
-
-from homeassistant.components.bluetooth import BluetoothServiceInfoBleak, SOURCE_LOCAL, async_get_advertisement_callback
-
-
-from pytest_homeassistant_custom_component.common import MockConfigEntry
-# from pytest_homeassistant_custom_component.components.bluetooth import generate_advertisement_data, generate_ble_device
 
 ADVERTISEMENT_DATA_DEFAULTS = {
     "local_name": "",
@@ -42,6 +26,7 @@ BLE_DEVICE_DEFAULTS = {
     "rssi": -127,
     "details": None,
 }
+
 
 def generate_advertisement_data(**kwargs: Any) -> AdvertisementData:
     """Generate advertisement data with defaults."""
@@ -72,6 +57,7 @@ def generate_ble_device(
         new.setdefault(key, value)
     return BLEDevice(**new)
 
+
 def inject_advertisement_with_time_and_source_connectable(
     hass: HomeAssistant,
     device: BLEDevice,
@@ -96,6 +82,7 @@ def inject_advertisement_with_time_and_source_connectable(
             time=time,
         )
     )
+
 
 def inject_bluetooth_service_info_bleak(
     hass: HomeAssistant, info: BluetoothServiceInfoBleak

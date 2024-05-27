@@ -1,6 +1,5 @@
 """Test the BLE Battery Management System update coordinator."""
 
-from custom_components.bms_ble.coordinator import BTBmsCoordinator
 from custom_components.bms_ble.const import (
     ATTR_CURRENT,
     ATTR_CYCLE_CHRG,
@@ -8,12 +7,13 @@ from custom_components.bms_ble.const import (
     ATTR_RSSI,
     ATTR_VOLTAGE,
 )
+from custom_components.bms_ble.coordinator import BTBmsCoordinator
+
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
-from .conftest import Mock_BMS
-
 from .bluetooth import inject_bluetooth_service_info_bleak
+from .conftest import Mock_BMS
 
 
 async def test_update(BTdiscovery, hass: HomeAssistant) -> None:

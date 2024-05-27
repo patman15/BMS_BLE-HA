@@ -2,12 +2,14 @@
 
 from custom_components.bms_ble.const import DOMAIN
 from custom_components.bms_ble.plugins.basebms import BaseBMS
+
 from homeassistant.config_entries import SOURCE_BLUETOOTH, SOURCE_USER, ConfigEntryState
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
-from .conftest import mock_config
+
 from .bluetooth import inject_bluetooth_service_info_bleak
+from .conftest import mock_config
 
 
 async def test_device_discovery(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:

@@ -13,14 +13,8 @@ from bleak import (
     BLEDevice,
     normalize_uuid_str,
 )
-from pytest_homeassistant_custom_component.plugins import enable_custom_integrations
 from bleak.backends.descriptor import BleakGATTDescriptor
-from bleak.backends.scanner import AdvertisementData, BLEDevice
 from bleak.uuids import uuidstr_to_str
-import pytest
-from typing_extensions import Buffer
-
-from home_assistant_bluetooth import BluetoothServiceInfoBleak
 from custom_components.bms_ble.const import (
     ATTR_CURRENT,
     ATTR_CYCLE_CHRG,
@@ -30,21 +24,31 @@ from custom_components.bms_ble.const import (
     DOMAIN,
 )
 from custom_components.bms_ble.plugins.basebms import BaseBMS
-from .bluetooth import generate_ble_device, generate_advertisement_data
+from home_assistant_bluetooth import BluetoothServiceInfoBleak
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
-# from pytest_homeassistant_custom_component.components.bluetooth import generate_advertisement_data, generate_ble_device
+from typing_extensions import Buffer
+
+from .bluetooth import generate_advertisement_data, generate_ble_device
 
 LOGGER = logging.getLogger(__name__)
+
 
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(enable_custom_integrations: Any):
     """Auto add enable_custom_integrations."""
     return
 
+
 @pytest.fixture(autouse=True)
 def mock_bluetooth(enable_bluetooth):
     """Auto mock bluetooth."""
 
+
+@pytest.fixture(params=BMS_TYPES + ["dummy_bms"])
+def bms_fixture(request):
+    """Return all possible BMS variants."""
+    return request.param
 
 @pytest.fixture
 def BTdiscovery() -> BluetoothServiceInfoBleak:
@@ -92,12 +96,6 @@ def BTdiscovery_notsupported():
         connectable=True,
         time=0,
     )
-
-
-@pytest.fixture(params=BMS_TYPES + ["dummy_bms"])
-def bms_fixture(request):
-    """Return all possible BMS variants."""
-    return request.param
 
 
 def mock_config(bms: str, unique_id: str | None = "cc:cc:cc:cc:cc:cc"):
