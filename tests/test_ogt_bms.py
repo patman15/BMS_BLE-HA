@@ -4,7 +4,7 @@ import asyncio
 from typing import Union
 
 from bleak import BleakError, BleakGATTCharacteristic, normalize_uuid_str
-from custom_components.bms_ble.plugins.ogt_bms import BAT_TIMEOUT, BMS
+from custom_components.bms_ble.plugins.ogt_bms import BMS
 from typing_extensions import Buffer
 
 from .bluetooth import generate_ble_device
