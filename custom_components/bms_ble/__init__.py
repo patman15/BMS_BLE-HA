@@ -69,9 +69,9 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
     if config_entry.version == 0:
         bms_type = config_entry.data["type"]
         if bms_type == "OGTBms":
-            new = {"type": "homeassistant.components.bms_ble.plugins.ogt_bms"}
+            new = {"type": "custom_components.bms_ble.plugins.ogt_bms"}
         elif bms_type == "DalyBms":
-            new = {"type": "homeassistant.components.bms_ble.plugins.daly_bms"}
+            new = {"type": "custom_components.bms_ble.plugins.daly_bms"}
         else:
             LOGGER.debug("Entry: %s", config_entry.data)
             LOGGER.error(

@@ -1,13 +1,12 @@
-name: "Lint"
+name: "Lint the code"
 
 on:
   push:
-    branches:
-      - "main"
   pull_request:
-    branches:
-      - "main"
-
+  workflow_dispatch:
+  schedule:
+    - cron:  '0 5 * * 6'
+    
 jobs:
   ruff:
     name: "Ruff"
