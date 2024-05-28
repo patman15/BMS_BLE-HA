@@ -205,7 +205,7 @@ class BMS(BaseBMS):
     def _ogt_response(self, resp: bytearray) -> tuple[bool, int, int]:
         """Descramble a response from the BMS."""
 
-        msg = bytearray((resp[x] ^ self._key) for x in range(0, len(resp))).decode(
+        msg = bytearray((resp[x] ^ self._key) for x in range(len(resp))).decode(
             encoding="ascii"
         )
         LOGGER.debug("response: %s", msg[:-2])
