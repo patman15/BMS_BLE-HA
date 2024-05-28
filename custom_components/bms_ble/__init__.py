@@ -10,7 +10,7 @@ from homeassistant.helpers.importlib import async_import_module
 from .const import DOMAIN, LOGGER
 from .coordinator import BTBmsCoordinator
 
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
+PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
