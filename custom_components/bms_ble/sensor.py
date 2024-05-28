@@ -122,7 +122,7 @@ async def async_setup_entry(
         async_add_entities([BMSSensor(bms, descr)])
 
 
-class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ignore
+class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ignore[reportIncompatibleMethodOverride]
     """The generic BMS sensor implementation."""
 
     _attr_has_entity_name = True
@@ -135,6 +135,6 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
         super().__init__(bms)
 
     @property
-    def native_value(self) -> int | float | None:  # type: ignore
+    def native_value(self) -> int | float | None:  # type: ignore[reportIncompatibleVariableOverride]
         """Return the sensor value."""
         return self.coordinator.data.get(self.entity_description.key)
