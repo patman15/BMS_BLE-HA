@@ -95,7 +95,7 @@ def inject_bluetooth_service_info_bleak(
         service_uuids=info.service_uuids,
         rssi=info.rssi,
     )
-    device = generate_ble_device(  # type: ignore[no-untyped-call]
+    device = generate_ble_device(
         address=info.address,
         name=info.name,
         details={},
