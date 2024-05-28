@@ -1,12 +1,11 @@
 """The BLE Battery Management System integration."""
 
-import importlib
-
 from homeassistant.components.bluetooth import async_ble_device_from_address
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
+from homeassistant.helpers.importlib import async_import_module
 
 from .const import DOMAIN, LOGGER
 from .coordinator import BTBmsCoordinator
@@ -30,7 +29,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             f"Could not find BMS ({entry.unique_id}) via Bluetooth"
         )
 
-    plugin = importlib.import_module(entry.data["type"])
+    plugin = await async_import_module(hass, entry.data["type"])
     coordinator = BTBmsCoordinator(hass, ble_device, bms_device=plugin.BMS(ble_device))
     # Query the device the first time, initialise coordinator.data
     try:
@@ -91,4 +90,3 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
         )
 
     return True
-
