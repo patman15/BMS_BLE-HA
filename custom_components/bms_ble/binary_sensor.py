@@ -36,7 +36,7 @@ async def async_setup_entry(
         async_add_entities([BMSBinarySensor(bms, descr)])
 
 
-class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity):  # type: ignore
+class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity):  # type: ignore[reportIncompatibleMethodOverride]
     """The generic BMS binary sensor implementation."""
 
     def __init__(
@@ -50,6 +50,6 @@ class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity): 
         super().__init__(bms)
 
     @property
-    def is_on(self) -> bool | None: # type: ignore
+    def is_on(self) -> bool | None:  # type: ignore[reportIncompatibleVariableOverride]
         """Handle updated data from the coordinator."""
         return bool(self.coordinator.data.get(self.entity_description.key))

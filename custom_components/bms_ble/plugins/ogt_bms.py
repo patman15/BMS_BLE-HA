@@ -6,8 +6,10 @@ from enum import IntEnum
 import logging
 from typing import Any
 
-from bleak import BleakClient, BleakError, normalize_uuid_str
+from bleak import BleakClient
 from bleak.backends.device import BLEDevice
+from bleak.exc import BleakError
+from bleak.uuids import normalize_uuid_str
 
 from ..const import (
     ATTR_BATTERY_CHARGING,
@@ -203,7 +205,7 @@ class BMS(BaseBMS):
     def _ogt_response(self, resp: bytearray) -> tuple[bool, int, int]:
         """Descramble a response from the BMS."""
 
-        msg = bytearray((resp[x] ^ self._key) for x in range(0, len(resp))).decode(
+        msg = bytearray((resp[x] ^ self._key) for x in range(len(resp))).decode(
             encoding="ascii"
         )
         LOGGER.debug("response: %s", msg[:-2])
