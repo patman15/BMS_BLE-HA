@@ -41,7 +41,8 @@ Installation can be done using [HACS](https://hacs.xyz/) by [adding a custom rep
 1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "BLE Battery Management"
 
 ## Outlook
-Add further battery types from [Home Assistant Add-on: BatMON](https://github.com/fl4p/batmon-ha)
+- Add further battery types from [Home Assistant Add-on: BatMON](https://github.com/fl4p/batmon-ha)
+- Add option to only have temporary connections (lowers reliability, but helps running more devices via [ESPHome Bluetooth proxy](https://esphome.io/components/bluetooth_proxy))
 
 ## Troubleshooting
 In case you have severe troubles,
