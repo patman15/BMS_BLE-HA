@@ -2,8 +2,8 @@
 
 from datetime import timedelta
 
-from bleak import BleakError
 from bleak.backends.device import BLEDevice
+from bleak.exc import BleakError
 
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth import DOMAIN as BLUETOOTH_DOMAIN
