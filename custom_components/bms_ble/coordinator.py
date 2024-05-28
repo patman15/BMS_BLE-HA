@@ -75,7 +75,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, int | float | bool]]):
             raise
         except BleakError as err:
             raise UpdateFailed(
-                f"device communicating failed: {str(err)} ({type(err).__name__})"
+                f"device communicating failed: {err!s} ({type(err).__name__})"
             ) from err
 
         service_info = bluetooth.async_last_service_info(
