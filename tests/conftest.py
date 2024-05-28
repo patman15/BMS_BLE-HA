@@ -6,15 +6,12 @@ import logging
 from typing import Any, Union
 from uuid import UUID
 
-from bleak import (
-    BleakClient,
-    BleakError,
-    BleakGATTCharacteristic,
-    BLEDevice,
-    normalize_uuid_str,
-)
+from bleak import BleakClient
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.descriptor import BleakGATTDescriptor
-from bleak.uuids import uuidstr_to_str
+from bleak.backends.device import BLEDevice
+from bleak.exc import BleakError
+from bleak.uuids import normalize_uuid_str, uuidstr_to_str
 from custom_components.bms_ble.const import (
     ATTR_CURRENT,
     ATTR_CYCLE_CHRG,
@@ -49,6 +46,7 @@ def mock_bluetooth(enable_bluetooth):
 def bms_fixture(request):
     """Return all possible BMS variants."""
     return request.param
+
 
 @pytest.fixture
 def BTdiscovery() -> BluetoothServiceInfoBleak:

@@ -2,7 +2,9 @@
 
 from typing import Union
 
-from bleak import BleakError, BleakGATTCharacteristic, normalize_uuid_str
+from bleak.backends.characteristic import BleakGATTCharacteristic
+from bleak.exc import BleakError
+from bleak.uuids import normalize_uuid_str
 from custom_components.bms_ble.plugins.daly_bms import BMS
 from typing_extensions import Buffer
 
