@@ -6,8 +6,10 @@ import logging
 from statistics import fmean
 from typing import Any
 
-from bleak import BleakClient, BleakError, normalize_uuid_str
+from bleak import BleakClient
 from bleak.backends.device import BLEDevice
+from bleak.exc import BleakError
+from bleak.uuids import normalize_uuid_str
 
 from ..const import (
     ATTR_BATTERY_CHARGING,
