@@ -1,5 +1,5 @@
 pip>=21.3.1
-homeassistant==2024.3.0
+homeassistant==2024.5.0
 wheel
 home-assistant-bluetooth
 habluetooth==2.4.0
@@ -21,4 +21,4 @@ bleak-retry-connector>=3.3.0
 bluetooth-data-tools
 pyserial-asyncio
 pyudev
-pytest-homeassistant-custom-component==0.13.107
+pytest-homeassistant-custom-component==0.13.125
