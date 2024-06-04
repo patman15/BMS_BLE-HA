@@ -26,4 +26,4 @@ jobs:
           run: pip install -r requirements_test.txt
           
         - name: Run tests and collect coverage
-          run: pytest --cov-report term-missing --cov-fail-under=100
+          run: pytest --cov --cov-report term-missing --cov-fail-under=100
