@@ -152,8 +152,14 @@ class BMS(BaseBMS):
             for service in self._client.services:
                 for char in service.characteristics:
                     LOGGER.debug(
-                        "Discovered characteristic %s: %s", char.uuid, char.properties
+                        "Discovered %s (#%i): %s",
+                        char.uuid,
+                        char.handle,
+                        char.properties,
                     )
+                    if "read" in char.properties: # TODO: debugging only!
+                        value: bytearray = await self._client.read_gatt_char(char)
+                        LOGGER.debug("value: %s", value)
                     if char.uuid == UUID_CHAR:
                         if "notify" in char.properties:
                             char_notify_handle = char.handle
@@ -166,6 +172,11 @@ class BMS(BaseBMS):
                 LOGGER.debug("Failed to detect characteristics")
                 await self._client.disconnect()
                 return
+            LOGGER.debug(
+                "Using characteristics handle #%i (notify), #%i (write)",
+                char_notify_handle,
+                self._char_write_handle,
+            )
             await self._client.start_notify(
                 char_notify_handle or 0, self._notification_handler
             )
