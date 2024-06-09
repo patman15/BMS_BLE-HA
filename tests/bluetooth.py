@@ -2,7 +2,8 @@
 
 from typing import Any
 
-from bleak import AdvertisementData, BLEDevice
+from bleak.backends.device import BLEDevice
+from bleak.backends.scanner import AdvertisementData
 
 from homeassistant.components.bluetooth import (
     SOURCE_LOCAL,

@@ -49,20 +49,14 @@ class BMS(BaseBMS):
         self._data_event = asyncio.Event()
         self._connected = False  # flag to indicate active BLE connection
         self._char_write_handle: int | None = None
-        self._FIELDS: list[tuple[str, int, int, Callable[[int], int | float]]] = [
-            (ATTR_VOLTAGE, 150, 4, lambda x: float(x / 1000)),
-            (ATTR_CURRENT, 170, 2, lambda x: float(x / 1000)),
-            (ATTR_CYCLES, 182, 4, lambda x: int(x)),
-            (ATTR_BATTERY_LEVEL, 173, 1, lambda x: int(x)),
-            (ATTR_CYCLE_CHRG, 174, 4, lambda x: float(x/1000)),
-        ]
-        # self._FIELDS: list[tuple[str, int, int, Callable[[int], int | float]]] = [
-        #     (ATTR_VOLTAGE, 118, 4, lambda x: float(x / 1000)),
-        #     (ATTR_CURRENT, 138, 2, lambda x: float(x / 1000)),
-        #     (ATTR_CYCLES, 150, 4, lambda x: int(x)),
-        #     (ATTR_BATTERY_LEVEL, 141, 1, lambda x: int(x)),
-        #     (ATTR_CYCLE_CHRG, 142, 4, lambda x: float(x/1000)),
-        # ] 24S
+        self._FIELDS: list[tuple[str, int, int, bool, Callable[[int], int | float]]] = [
+            (ATTR_TEMPERATURE, 144, 2, True, lambda x: float(x / 10)),
+            (ATTR_VOLTAGE, 150, 4, False, lambda x: float(x / 1000)),
+            (ATTR_CURRENT, 170, 2, False, lambda x: float(x / 1000)),
+            (ATTR_BATTERY_LEVEL, 173, 1, False, lambda x: int(x)),
+            (ATTR_CYCLE_CHRG, 174, 4, False, lambda x: float(x / 1000)),
+            (ATTR_CYCLES, 182, 4, False, lambda x: int(x)),
+        ]  # Protocol: JK02_32S; JK02_24S has offset -32
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -97,7 +91,7 @@ class BMS(BaseBMS):
                 "service_uuid": UUID_SERVICE,
                 "connectable": True,
                 "manufacturer_id": 0x4B4A,
-            }
+            },
         ]
 
     @staticmethod
@@ -123,20 +117,22 @@ class BMS(BaseBMS):
         elif len(data) and self._data is not None:
             self._data += data
 
-        if self._data is None or len(self._data) < self.INFO_LEN:
+        # verify that data long enough and if answer is cell info (0x2)
+        if (
+            self._data is None
+            or len(self._data) < self.INFO_LEN
+            or self._data[4] != 0x2
+        ):
             return
 
-        crc = self.crc(self._data[0:self.INFO_LEN-1])
-        if self._data[self.INFO_LEN-1] != crc:
+        crc = self.crc(self._data[0 : self.INFO_LEN - 1])
+        if self._data[self.INFO_LEN - 1] != crc:
             LOGGER.debug(
                 "Response data CRC is invalid: %i != %i",
-                self._data[self.INFO_LEN-1],
-                self.crc(self._data[0:self.INFO_LEN-1]),
+                self._data[self.INFO_LEN - 1],
+                self.crc(self._data[0 : self.INFO_LEN - 1]),
             )
-            return
-
-        if self._data[4] != 0x2:
-            return
+            self._data = None  # reset invalid data
 
         self._data_event.set()
 
@@ -225,31 +221,19 @@ class BMS(BaseBMS):
 
         await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 
-        if self._data is None or len(self._data) != self.INFO_LEN:
-            if self._data is not None:
-                LOGGER.debug("Input data (%i)", len(self._data))
+        if self._data is None:
             return {}
+        if len(self._data) != self.INFO_LEN:
+            LOGGER.debug("Wrong data length (%i): %s", len(self._data), self._data)
 
         data = {
-            key: func(int.from_bytes(self._data[idx : idx + size], byteorder="little"))
-            for key, idx, size, func in self._FIELDS
+            key: func(
+                int.from_bytes(
+                    self._data[idx : idx + size], byteorder="little", signed=sign
+                )
+            )
+            for key, idx, size, sign, func in self._FIELDS
         }
-
-        # calculate average temperature
-        # if data["numTemp"] > 0:
-        #     data[ATTR_TEMPERATURE] = (
-        #         fmean(
-        #             [
-        #                 int.from_bytes(self._data[idx : idx + 2])
-        #                 for idx in range(
-        #                     64 + self.HEAD_LEN,
-        #                     64 + self.HEAD_LEN + int(data["numTemp"]) * 2,
-        #                     2,
-        #                 )
-        #             ]
-        #         )
-        #         - 40
-        #     )
 
         self.calc_values(
             data, {ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_RUNTIME}
