@@ -16,7 +16,7 @@ from .conftest import MockBleakClient
 class MockJikongBleakClient(MockBleakClient):
     """Emulate a Jikong BMS BleakClient."""
 
-    HEAD_READ = bytearray(b"\x55\xAA\xEB\x90")
+    HEAD_CMD = bytearray(b"\xAA\x55\x90\xEB")
     CMD_INFO = bytearray(b"\x96")
 
     def _response(
@@ -24,7 +24,7 @@ class MockJikongBleakClient(MockBleakClient):
     ) -> bytearray:
         if (
             char_specifier == 3
-            and bytearray(data)[0:5] == self.HEAD_READ + self.CMD_INFO
+            and bytearray(data)[0:5] == self.HEAD_CMD + self.CMD_INFO
         ):
             return bytearray(
                 b"\x55\xAA\xEB\x90\x02\xE8\xAE\x0C\x9E\x0C\x9A\x0C\x9F\x0C\xA1\x0C\x9F\x0C"
@@ -174,7 +174,7 @@ class MockInvalidBleakClient(MockJikongBleakClient):
         self, char_specifier: BleakGATTCharacteristic | int | str, data: Buffer
     ) -> bytearray:
         if char_specifier == 3:
-            return self.HEAD_READ + bytearray(b"\x02") + bytearray(295)
+            return bytearray(b"\x55\xAA\xEB\x90\x02") + bytearray(295)
 
         return bytearray()
 

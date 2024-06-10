@@ -35,8 +35,8 @@ UUID_SERVICE = normalize_uuid_str("ffe0")
 class BMS(BaseBMS):
     """Jikong Smart BMS class implementation."""
 
-    HEAD = bytes([0x55, 0xAA, 0xEB, 0x90])
-    HEAD_LEN = 4
+    HEAD_RSP = bytes([0x55, 0xAA, 0xEB, 0x90]) # header for responses
+    HEAD_CMD = bytes([0xAA, 0x55, 0x90, 0xEB]) # header for commands (endiness!)
     INFO_LEN = 300
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -111,7 +111,7 @@ class BMS(BaseBMS):
 
     def _notification_handler(self, sender, data: bytearray) -> None:
         LOGGER.debug("Received BLE data: %s", data)
-        if data[0:4] == self.HEAD:
+        if data[0:4] == self.HEAD_RSP:
             LOGGER.debug("Response start")
             self._data = data
         elif len(data) and self._data is not None:
@@ -206,7 +206,7 @@ class BMS(BaseBMS):
         if value is None:
             value = []
         assert len(value) <= 13
-        frame = bytes([*self.HEAD, cmd[0]])
+        frame = bytes([*self.HEAD_CMD, cmd[0]])
         frame += bytes([len(value), *value])
         frame += bytes([0] * (13 - len(value)))
         frame += bytes([self.crc(frame)])
