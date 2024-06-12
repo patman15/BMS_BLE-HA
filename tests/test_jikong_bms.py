@@ -27,6 +27,7 @@ class MockJikongBleakClient(MockBleakClient):
             and bytearray(data)[0:5] == self.HEAD_CMD + self.CMD_INFO
         ):
             return bytearray(
+                b"\x41\x54\x0d\x0a" # added AT\r\n command
                 b"\x55\xAA\xEB\x90\x02\xE8\xAE\x0C\x9E\x0C\x9A\x0C\x9F\x0C\xA1\x0C\x9F\x0C"
                 b"\xA0\x0C\xA0\x0C\x99\x0C\xA0\x0C\x90\x0C\x99\x0C\xA5\x0C\x9F\x0C\x99\x0C"
                 b"\xAA\x0C\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -55,8 +56,9 @@ class MockJikongBleakClient(MockBleakClient):
         response: bool = None,  # type: ignore[implicit-optional] # same as upstream
     ) -> None:
         """Issue write command to GATT."""
-        await super().write_gatt_char(char_specifier, data, response)
+        #await super().write_gatt_char(char_specifier, data, response)
         assert self._notify_callback is not None
+        self._notify_callback("MockJikongBleakClient", bytearray(b'\x41\x54\x0d\x0a')) # # interleaced AT\r\n command
         resp = self._response(char_specifier, data)
         for notify_data in [resp[i : i + 30] for i in range(0, len(resp), 30)]:
             self._notify_callback("MockJikongBleakClient", notify_data)

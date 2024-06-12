@@ -35,8 +35,10 @@ UUID_SERVICE = normalize_uuid_str("ffe0")
 class BMS(BaseBMS):
     """Jikong Smart BMS class implementation."""
 
-    HEAD_RSP = bytes([0x55, 0xAA, 0xEB, 0x90]) # header for responses
-    HEAD_CMD = bytes([0xAA, 0x55, 0x90, 0xEB]) # header for commands (endiness!)
+    HEAD_RSP = bytes([0x55, 0xAA, 0xEB, 0x90])  # header for responses
+    HEAD_CMD = bytes([0xAA, 0x55, 0x90, 0xEB])  # header for commands (endiness!)
+    BT_MODULE_MSG = bytes([0x41, 0x54, 0x0D, 0x0A])  # AT\r\n from BLE module
+
     INFO_LEN = 300
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -106,16 +108,27 @@ class BMS(BaseBMS):
     def _on_disconnect(self, client: BleakClient) -> None:
         """Disconnect callback function."""
 
-        LOGGER.debug("Disconnected from BMS (%s)", client.address)
+        LOGGER.debug("Disconnected from BMS (%s)", self._ble_device.name)
         self._connected = False
 
     def _notification_handler(self, sender, data: bytearray) -> None:
-        LOGGER.debug("Received BLE data: %s", data)
-        if data[0:4] == self.HEAD_RSP:
-            LOGGER.debug("Response start")
+        if data[0 : len(self.BT_MODULE_MSG)] == self.BT_MODULE_MSG:
+            if len(data) == len(self.BT_MODULE_MSG):
+                LOGGER.debug("(%s) filtering AT cmd.", self._ble_device.name)
+                return
+            data = data[len(self.BT_MODULE_MSG) :]
+
+        if data[0 : len(self.HEAD_RSP)] == self.HEAD_RSP:
             self._data = data
         elif len(data) and self._data is not None:
             self._data += data
+
+        LOGGER.debug(
+            "(%s) Rx BLE data (%s): %s",
+            self._ble_device.name,
+            "start" if data == self._data else "cnt.",
+            data,
+        )
 
         # verify that data long enough and if answer is cell info (0x2)
         if (
@@ -128,7 +141,8 @@ class BMS(BaseBMS):
         crc = self.crc(self._data[0 : self.INFO_LEN - 1])
         if self._data[self.INFO_LEN - 1] != crc:
             LOGGER.debug(
-                "Response data CRC is invalid: %i != %i",
+                "(%s) Rx data CRC is invalid: %i != %i",
+                self._ble_device.name,
                 self._data[self.INFO_LEN - 1],
                 self.crc(self._data[0 : self.INFO_LEN - 1]),
             )
@@ -151,15 +165,17 @@ class BMS(BaseBMS):
             self._char_write_handle = None
             for service in self._client.services:
                 for char in service.characteristics:
+                    value: bytearray = bytearray()
+                    if "read" in char.properties:  # TODO: debugging only!
+                        value = await self._client.read_gatt_char(char)
                     LOGGER.debug(
-                        "Discovered %s (#%i): %s",
+                        "(%s) Discovered %s (#%i): %s%s",
+                        self._ble_device.name,
                         char.uuid,
                         char.handle,
                         char.properties,
+                        f" value: {value}" if value else "",
                     )
-                    if "read" in char.properties: # TODO: debugging only!
-                        value: bytearray = await self._client.read_gatt_char(char)
-                        LOGGER.debug("value: %s", value)
                     if char.uuid == UUID_CHAR:
                         if "notify" in char.properties:
                             char_notify_handle = char.handle
@@ -169,11 +185,14 @@ class BMS(BaseBMS):
                         ):
                             self._char_write_handle = char.handle
             if char_notify_handle is None or self._char_write_handle is None:
-                LOGGER.debug("Failed to detect characteristics")
+                LOGGER.debug(
+                    "(%s) Failed to detect characteristics", self._ble_device.name
+                )
                 await self._client.disconnect()
                 return
             LOGGER.debug(
-                "Using characteristics handle #%i (notify), #%i (write)",
+                "(%s) Using characteristics handle #%i (notify), #%i (write)",
+                self._ble_device.name,
                 char_notify_handle,
                 self._char_write_handle,
             )
@@ -217,7 +236,9 @@ class BMS(BaseBMS):
         await self._connect()
         assert self._client is not None
         if not self._connected:
-            LOGGER.debug("Update request, but device not connected")
+            LOGGER.debug(
+                "Update request, but device (%s) not connected", self._ble_device.name
+            )
             return {}
 
         # query device info
@@ -235,7 +256,12 @@ class BMS(BaseBMS):
         if self._data is None:
             return {}
         if len(self._data) != self.INFO_LEN:
-            LOGGER.debug("Wrong data length (%i): %s", len(self._data), self._data)
+            LOGGER.debug(
+                "(%s) Wrong data length (%i): %s",
+                self._ble_device.name,
+                len(self._data),
+                self._data,
+            )
 
         data = {
             key: func(
