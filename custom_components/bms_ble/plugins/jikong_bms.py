@@ -104,7 +104,7 @@ class BMS(BaseBMS):
 
     async def _wait_event(self) -> None:
         await self._data_event.wait()
-        self._data_event.clear()
+        self._data_event.clear() # TODO: clear here or only on connect?
 
     def _on_disconnect(self, client: BleakClient) -> None:
         """Disconnect callback function."""
@@ -113,6 +113,9 @@ class BMS(BaseBMS):
         self._connected = False
 
     def _notification_handler(self, sender, data: bytearray) -> None:
+        if self._data_event.is_set():
+            return
+        
         if data[0 : len(self.BT_MODULE_MSG)] == self.BT_MODULE_MSG:
             if len(data) == len(self.BT_MODULE_MSG):
                 LOGGER.debug("(%s) filtering AT cmd.", self._ble_device.name)
@@ -155,6 +158,7 @@ class BMS(BaseBMS):
 
     async def _connect(self) -> None:
         """Connect to the BMS and setup notification if not connected."""
+        self._data_event.clear()
 
         if not self._connected:
             LOGGER.debug("Connecting BMS (%s)", self._ble_device.name)
