@@ -74,8 +74,8 @@ class MockJikongBleakClient(MockBleakClient):
         response: bool = None,  # type: ignore[implicit-optional] # same as upstream
     ) -> None:
         """Issue write command to GATT."""
-        # await super().write_gatt_char(char_specifier, data, response)
-        assert self._notify_callback is not None
+        
+        assert self._notify_callback, "write to characteristics but notification not enabled"
         self._notify_callback(
             "MockJikongBleakClient", bytearray(b"\x41\x54\x0d\x0a")
         )  # interleaved AT\r\n command

@@ -52,6 +52,7 @@ class BMS(BaseBMS):
         self._data_event = asyncio.Event()
         self._connected = False  # flag to indicate active BLE connection
         self._char_write_handle: int | None = None
+        self._char_notify_handle: int | None = None
         self._FIELDS: list[tuple[str, int, int, bool, Callable[[int], int | float]]] = [
             (ATTR_TEMPERATURE, 144, 2, True, lambda x: float(x / 10)),
             (ATTR_VOLTAGE, 150, 4, False, lambda x: float(x / 1000)),
@@ -168,8 +169,7 @@ class BMS(BaseBMS):
                 services=[UUID_SERVICE],
             )
             await self._client.connect()
-            char_notify_handle: int | None = None
-            self._char_write_handle = None
+
             for service in self._client.services:
                 for char in service.characteristics:
                     value: bytearray = bytearray()
@@ -185,27 +185,27 @@ class BMS(BaseBMS):
                     )
                     if char.uuid == UUID_CHAR:
                         if "notify" in char.properties:
-                            char_notify_handle = char.handle
+                            self._char_notify_handle = char.handle
                         if (
                             "write" in char.properties
                             or "write-without-response" in char.properties
                         ):
                             self._char_write_handle = char.handle
-            if char_notify_handle is None or self._char_write_handle is None:
+            if self._char_notify_handle is None or self._char_write_handle is None:
                 LOGGER.debug(
                     "(%s) Failed to detect characteristics", self._ble_device.name
                 )
                 await self._client.disconnect()
                 return
+
             LOGGER.debug(
                 "(%s) Using characteristics handle #%i (notify), #%i (write)",
                 self._ble_device.name,
-                char_notify_handle,
+                self._char_notify_handle,
                 self._char_write_handle,
             )
-            await self._client.start_notify(
-                char_notify_handle or 0, self._notification_handler
-            )
+
+            await self._start_notify()
 
             # query device info
             await self._client.write_gatt_char(
@@ -215,6 +215,24 @@ class BMS(BaseBMS):
             self._connected = True
         else:
             LOGGER.debug("BMS %s already connected", self._ble_device.name)
+
+    async def _start_notify(self) -> None:
+        """Start notification from BMS characteristic"""
+        assert self._client
+        
+        await self._client.start_notify(
+            self._char_notify_handle or 0, self._notification_handler
+        )
+
+        # request cell info update
+        await self._client.write_gatt_char(
+            self._char_write_handle or 0, data=self._cmd(b"\x96")
+        )
+
+    async def _stop_notify(self) -> None:
+        """Stop notification from BMS characteristic"""
+        assert self._client
+        await self._client.stop_notify(self._char_notify_handle or 0)
 
     async def disconnect(self) -> None:
         """Disconnect the BMS and includes stoping notifications."""
@@ -228,6 +246,8 @@ class BMS(BaseBMS):
                 LOGGER.warning("Disconnect failed!")
 
         self._client = None
+        self._char_notify_handle = None
+        self._char_write_handle = None
 
     def _crc(self, frame: bytes):
         """Calculate Jikong frame CRC."""
@@ -254,12 +274,9 @@ class BMS(BaseBMS):
             )
             return {}
 
-        # query cell info
-        await self._client.write_gatt_char(
-            self._char_write_handle or 0, data=self._cmd(b"\x96")
-        )
-
+        await self._start_notify()
         await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+        await self._stop_notify()
 
         if self._data_final is None:
             return {}
