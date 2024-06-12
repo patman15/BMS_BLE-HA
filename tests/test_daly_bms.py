@@ -27,7 +27,7 @@ class MockDalyBleakClient(MockBleakClient):
             return bytearray(
                 b"\xd2\x03|\x10\x1f\x10)\x103\x10=\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00<\x00=\x00>\x00?\x00\x00\x00\x00\x00\x00\x00\x00\x00\x8cuN\x03\x84\x10=\x10\x1f\x00\x00\x00\x00\x00\x00\r\x80\x00\x04\x00\x04\x009\x00\x01\x00\x00\x00\x01\x10.\x0f\xa0\x00*\x00\x00\x00\x00\x00\x00\x00\x00\x1a7"
             )
-        # {'voltage': 14.0, 'current': 3.0, 'battery_level': 90.0, 'cycles': 57, 'cycle_charge': 345.6, 'numTemp': 4, 'temperature': 21.5, 'cycle_capacity': 4838.400000000001, 'power': 42.0, 'battery_charging': True, 'runtime': 414720, 'rssi': -78}
+        # {'voltage': 14.0, 'current': 3.0, 'battery_level': 90.0, 'cycles': 57, 'cycle_charge': 345.6, 'numTemp': 4, 'temperature': 21.5, 'cycle_capacity': 4838.400000000001, 'power': 42.0, 'battery_charging': True, 'runtime': none!, 'rssi': -78}
 
         return bytearray()
 
@@ -87,7 +87,6 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "cycle_capacity": 4838.400000000001,
         "power": 42.0,
         "battery_charging": True,
-        "runtime": 414720,
     }
 
     # query again to check already connected state

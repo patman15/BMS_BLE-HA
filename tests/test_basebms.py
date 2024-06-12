@@ -5,15 +5,29 @@ from custom_components.bms_ble.const import (
     ATTR_CYCLE_CAP,
     ATTR_POWER,
     ATTR_RUNTIME,
+    ATTR_CURRENT,
 )
 from custom_components.bms_ble.plugins.basebms import BaseBMS
 
 
 def test_calc_missing_values(bms_data_fixture) -> None:
     """Check if missing data is correctly calculated."""
-    bms_data = reference = bms_data_fixture
+    bms_data = ref = bms_data_fixture
     BaseBMS.calc_values(
         bms_data,
         {ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_POWER, ATTR_RUNTIME, "invalid"},
     )
-    assert bms_data == reference | {ATTR_BATTERY_CHARGING: True, ATTR_CYCLE_CAP: 147, ATTR_POWER: 91, ATTR_RUNTIME: 5815}
+    ref = ref | {
+        ATTR_CYCLE_CAP: 238,
+        ATTR_POWER: (
+            -91
+            if bms_data[ATTR_CURRENT] < 0
+            else 0 if bms_data[ATTR_CURRENT] == 0 else 147
+        ),
+        ATTR_BATTERY_CHARGING: bms_data[ATTR_CURRENT]
+        > 0,  # battery is charging if current is positive
+    }
+    if bms_data[ATTR_CURRENT] < 0:
+        ref |= {ATTR_RUNTIME: 9415}
+
+    assert bms_data == ref
