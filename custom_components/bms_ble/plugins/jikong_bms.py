@@ -207,11 +207,6 @@ class BMS(BaseBMS):
                 char_notify_handle or 0, self._notification_handler
             )
 
-            # send ok in response to AT command
-            await self._client.write_gatt_char(
-                self._char_write_handle or 0, data=self.cmd(b"OK\r\n")
-            )
-
             # query device info
             await self._client.write_gatt_char(
                 self._char_write_handle or 0, data=self._cmd(b"\x97")
