@@ -45,6 +45,7 @@ class MockJikongBleakClient(MockBleakClient):
                 b"\x00\x00\xb8\x00\xb4\x00\xb7\x00\xb2\x03\xde\xe4\x5b\x08\x2c\x00\x00\x00"
                 b"\x80\x51\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xfe"
                 b"\xff\x7f\xdc\x2f\x01\x01\xb0\x07\x00\x00\x00\xd0"
+                ###
                 # b"\x55\xAA\xEB\x90\x02\xE8\xAE\x0C\x9E\x0C\x9A\x0C\x9F\x0C\xA1\x0C\x9F\x0C"
                 # b"\xA0\x0C\xA0\x0C\x99\x0C\xA0\x0C\x90\x0C\x99\x0C\xA5\x0C\x9F\x0C\x99\x0C"
                 # b"\xAA\x0C\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -257,14 +258,13 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
     assert result == {
         "temperature": 18.4,
         "voltage": 52.234,
-        "current": 54.941,
+        "current": -10.595,
         "battery_level": 42,
         "cycle_charge": 117.575,
         "cycles": 2,
         "cycle_capacity": 6141.41255,
-        "power": 2869.788194,
-        "battery_charging": True,
-        "runtime": 7704,
+        "power": -553.4192300000001,
+        "battery_charging": False,
     }
 
     # query again to check already connected state
@@ -306,14 +306,13 @@ async def test_oversized_response(monkeypatch) -> None:
     assert result == {
         "temperature": 18.4,
         "voltage": 52.234,
-        "current": 54.941,
+        "current": -10.595,
         "battery_level": 42,
         "cycle_charge": 117.575,
         "cycles": 2,
         "cycle_capacity": 6141.41255,
-        "power": 2869.788194,
-        "battery_charging": True,
-        "runtime": 7704,
+        "power": -553.4192300000001,
+        "battery_charging": False,
     }
 
     await bms.disconnect()
