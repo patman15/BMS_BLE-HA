@@ -17,8 +17,6 @@ from custom_components.bms_ble.const import (
     ATTR_CYCLE_CHRG,
     ATTR_CYCLES,
     ATTR_VOLTAGE,
-    ATTR_BATTERY_CHARGING,
-    ATTR_RUNTIME,
     BMS_TYPES,
     DOMAIN,
 )
