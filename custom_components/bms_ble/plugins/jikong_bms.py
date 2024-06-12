@@ -48,6 +48,7 @@ class BMS(BaseBMS):
         assert self._ble_device.name is not None
         self._client: BleakClient | None = None
         self._data: bytearray | None = None
+        self._data_final: bytearray | None = None
         self._data_event = asyncio.Event()
         self._connected = False  # flag to indicate active BLE connection
         self._char_write_handle: int | None = None
@@ -146,7 +147,9 @@ class BMS(BaseBMS):
                 self._data[self.INFO_LEN - 1],
                 self.crc(self._data[0 : self.INFO_LEN - 1]),
             )
-            self._data = None  # reset invalid data
+            self._data_final = None  # reset invalid data
+        else:
+            self._data_final = self._data
 
         self._data_event.set()
 
@@ -199,6 +202,12 @@ class BMS(BaseBMS):
             await self._client.start_notify(
                 char_notify_handle or 0, self._notification_handler
             )
+
+            # query device info
+            await self._client.write_gatt_char(
+                self._char_write_handle or 0, data=self.cmd(b"\x97")
+            )
+
             self._connected = True
         else:
             LOGGER.debug("BMS %s already connected", self._ble_device.name)
@@ -241,11 +250,6 @@ class BMS(BaseBMS):
             )
             return {}
 
-        # query device info
-        await self._client.write_gatt_char(
-            self._char_write_handle or 0, data=self.cmd(b"\x97")
-        )
-
         # query cell info
         await self._client.write_gatt_char(
             self._char_write_handle or 0, data=self.cmd(b"\x96")
@@ -253,20 +257,20 @@ class BMS(BaseBMS):
 
         await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 
-        if self._data is None:
+        if self._data_final is None:
             return {}
-        if len(self._data) != self.INFO_LEN:
+        if len(self._data_final) != self.INFO_LEN:
             LOGGER.debug(
                 "(%s) Wrong data length (%i): %s",
                 self._ble_device.name,
-                len(self._data),
-                self._data,
+                len(self._data_final),
+                self._data_final,
             )
 
         data = {
             key: func(
                 int.from_bytes(
-                    self._data[idx : idx + size], byteorder="little", signed=sign
+                    self._data_final[idx : idx + size], byteorder="little", signed=sign
                 )
             )
             for key, idx, size, sign, func in self._FIELDS
