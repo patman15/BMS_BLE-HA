@@ -265,6 +265,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "cycle_capacity": 6141.41255,
         "power": -553.4192300000001,
         "battery_charging": False,
+        "runtime": 39949,
     }
 
     # query again to check already connected state
@@ -313,6 +314,7 @@ async def test_oversized_response(monkeypatch) -> None:
         "cycle_capacity": 6141.41255,
         "power": -553.4192300000001,
         "battery_charging": False,
+        "runtime": 39949,        
     }
 
     await bms.disconnect()
