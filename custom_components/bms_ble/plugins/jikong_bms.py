@@ -104,7 +104,7 @@ class BMS(BaseBMS):
 
     async def _wait_event(self) -> None:
         await self._data_event.wait()
-        self._data_event.clear() # TODO: clear here or only on connect?
+        self._data_event.clear()  # TODO: clear here or only on connect?
 
     def _on_disconnect(self, client: BleakClient) -> None:
         """Disconnect callback function."""
@@ -115,7 +115,7 @@ class BMS(BaseBMS):
     def _notification_handler(self, sender, data: bytearray) -> None:
         if self._data_event.is_set():
             return
-        
+
         if data[0 : len(self.BT_MODULE_MSG)] == self.BT_MODULE_MSG:
             if len(data) == len(self.BT_MODULE_MSG):
                 LOGGER.debug("(%s) filtering AT cmd.", self._ble_device.name)
@@ -142,13 +142,13 @@ class BMS(BaseBMS):
         ):
             return
 
-        crc = self.crc(self._data[0 : self.INFO_LEN - 1])
+        crc = self._crc(self._data[0 : self.INFO_LEN - 1])
         if self._data[self.INFO_LEN - 1] != crc:
             LOGGER.debug(
                 "(%s) Rx data CRC is invalid: %i != %i",
                 self._ble_device.name,
                 self._data[self.INFO_LEN - 1],
-                self.crc(self._data[0 : self.INFO_LEN - 1]),
+                self._crc(self._data[0 : self.INFO_LEN - 1]),
             )
             self._data_final = None  # reset invalid data
         else:
@@ -214,7 +214,7 @@ class BMS(BaseBMS):
 
             # query device info
             await self._client.write_gatt_char(
-                self._char_write_handle or 0, data=self.cmd(b"\x97")
+                self._char_write_handle or 0, data=self._cmd(b"\x97")
             )
 
             self._connected = True
@@ -234,11 +234,11 @@ class BMS(BaseBMS):
 
         self._client = None
 
-    def crc(self, frame: bytes):
+    def _crc(self, frame: bytes):
         """Calculate Jikong frame CRC."""
         return sum(frame) & 0xFF
 
-    def cmd(self, cmd: bytes, value: list[int] | None = None) -> bytes:
+    def _cmd(self, cmd: bytes, value: list[int] | None = None) -> bytes:
         """Assemble a Jikong BMS command."""
         if value is None:
             value = []
@@ -246,7 +246,7 @@ class BMS(BaseBMS):
         frame = bytes([*self.HEAD_CMD, cmd[0]])
         frame += bytes([len(value), *value])
         frame += bytes([0] * (13 - len(value)))
-        frame += bytes([self.crc(frame)])
+        frame += bytes([self._crc(frame)])
         return frame
 
     async def async_update(self) -> dict[str, int | float | bool]:
@@ -261,7 +261,7 @@ class BMS(BaseBMS):
 
         # query cell info
         await self._client.write_gatt_char(
-            self._char_write_handle or 0, data=self.cmd(b"\x96")
+            self._char_write_handle or 0, data=self._cmd(b"\x96")
         )
 
         await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
