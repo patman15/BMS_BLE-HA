@@ -78,9 +78,9 @@ class MockJikongBleakClient(MockBleakClient):
         assert self._notify_callback is not None
         self._notify_callback(
             "MockJikongBleakClient", bytearray(b"\x41\x54\x0d\x0a")
-        )  # # interleaced AT\r\n command
+        )  # interleaved AT\r\n command
         resp = self._response(char_specifier, data)
-        for notify_data in [resp[i : i + 30] for i in range(0, len(resp), 30)]:
+        for notify_data in [resp[i : i + 29] for i in range(0, len(resp), 29)]:
             self._notify_callback("MockJikongBleakClient", notify_data)
 
     class JKservice(BleakGATTService):
