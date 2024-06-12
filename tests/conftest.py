@@ -17,6 +17,8 @@ from custom_components.bms_ble.const import (
     ATTR_CYCLE_CHRG,
     ATTR_CYCLES,
     ATTR_VOLTAGE,
+    ATTR_BATTERY_CHARGING,
+    ATTR_RUNTIME,
     BMS_TYPES,
     DOMAIN,
 )
@@ -121,14 +123,14 @@ def mock_config_v0_1(request, unique_id="cc:cc:cc:cc:cc:cc"):
     )
 
 
-@pytest.fixture
-def bms_data_fixture():
+@pytest.fixture(params=[-13, 0, 21])
+def bms_data_fixture(request):
     """Return a fake BMS data dictionary."""
 
     return {
         ATTR_VOLTAGE: 7.0,
-        ATTR_CURRENT: 13.0,
-        ATTR_CYCLE_CHRG: 21,
+        ATTR_CURRENT: request.param,
+        ATTR_CYCLE_CHRG: 34,
     }
 
 
