@@ -245,14 +245,6 @@ class MockBleakClient(BleakClient):
         assert self._connected, "start_notify called, but client not connected."
         self._notify_callback = callback
 
-    async def stop_notify(  # type: ignore
-        self, char_specifier: Union[BleakGATTCharacteristic, int, str]
-    ) -> None:
-        """Mock stop_notify."""
-        LOGGER.debug("MockBleakClient stop_notify for %s", char_specifier)
-        assert self._connected, "stop_notify called, but client not connected."
-        self._notify_callback = None
-
     async def write_gatt_char(  # type: ignore
         self,
         char_specifier: BleakGATTCharacteristic | int | str,
