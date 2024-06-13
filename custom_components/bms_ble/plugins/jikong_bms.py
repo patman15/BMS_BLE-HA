@@ -172,16 +172,16 @@ class BMS(BaseBMS):
 
             for service in self._client.services:
                 for char in service.characteristics:
-                    value: bytearray = bytearray()
-                    if "read" in char.properties:  # TODO: debugging only!
-                        value = await self._client.read_gatt_char(char)
+                    # value: bytearray = bytearray()
+                    # if "read" in char.properties:
+                    #     value = await self._client.read_gatt_char(char)
                     LOGGER.debug(
                         "(%s) Discovered %s (#%i): %s%s",
                         self._ble_device.name,
                         char.uuid,
                         char.handle,
                         char.properties,
-                        f" value: {value}" if value else "",
+                        # f" value: {value}" if value else "",
                     )
                     if char.uuid == UUID_CHAR:
                         if "notify" in char.properties:
