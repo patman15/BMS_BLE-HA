@@ -105,7 +105,7 @@ class BMS(BaseBMS):
 
     async def _wait_event(self) -> None:
         await self._data_event.wait()
-        self._data_event.clear()  # TODO: clear here or only on connect?
+        self._data_event.clear()
 
     def _on_disconnect(self, client: BleakClient) -> None:
         """Disconnect callback function."""
@@ -119,7 +119,7 @@ class BMS(BaseBMS):
 
         if data[0 : len(self.BT_MODULE_MSG)] == self.BT_MODULE_MSG:
             if len(data) == len(self.BT_MODULE_MSG):
-                LOGGER.debug("(%s) filtering AT cmd.", self._ble_device.name)
+                LOGGER.debug("(%s) filtering AT cmd", self._ble_device.name)
                 return
             data = data[len(self.BT_MODULE_MSG) :]
 
@@ -217,9 +217,9 @@ class BMS(BaseBMS):
             LOGGER.debug("BMS %s already connected", self._ble_device.name)
 
     async def _start_notify(self) -> None:
-        """Start notification from BMS characteristic"""
+        """Start notification from BMS characteristic."""
+
         assert self._client
-        
         await self._client.start_notify(
             self._char_notify_handle or 0, self._notification_handler
         )
@@ -230,7 +230,8 @@ class BMS(BaseBMS):
         )
 
     async def _stop_notify(self) -> None:
-        """Stop notification from BMS characteristic"""
+        """Stop notification from BMS characteristic."""
+
         assert self._client
         await self._client.stop_notify(self._char_notify_handle or 0)
 

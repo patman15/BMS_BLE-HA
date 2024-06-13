@@ -1,13 +1,14 @@
 """Test the Jikong BMS implementation."""
 
+from uuid import UUID
+
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.descriptor import BleakGATTDescriptor
-from bleak.backends.service import BleakGATTServiceCollection, BleakGATTService
+from bleak.backends.service import BleakGATTService, BleakGATTServiceCollection
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str, uuidstr_to_str
 from custom_components.bms_ble.plugins.jikong_bms import BMS
 from typing_extensions import Buffer
-from uuid import UUID
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -74,8 +75,10 @@ class MockJikongBleakClient(MockBleakClient):
         response: bool = None,  # type: ignore[implicit-optional] # same as upstream
     ) -> None:
         """Issue write command to GATT."""
-        
-        assert self._notify_callback, "write to characteristics but notification not enabled"
+
+        assert (
+            self._notify_callback
+        ), "write to characteristics but notification not enabled"
         self._notify_callback(
             "MockJikongBleakClient", bytearray(b"\x41\x54\x0d\x0a")
         )  # interleaved AT\r\n command
@@ -84,6 +87,7 @@ class MockJikongBleakClient(MockBleakClient):
             self._notify_callback("MockJikongBleakClient", notify_data)
 
     class JKservice(BleakGATTService):
+        """Mock the main battery info service from JiKong BMS."""
 
         class CharBase(BleakGATTCharacteristic):
             """Basic characteristic for common properties."""
@@ -144,23 +148,27 @@ class MockJikongBleakClient(MockBleakClient):
 
         @property
         def handle(self) -> int:
-            """The handle of this service"""
+            """The handle of this service."""
+
             return 2
 
         @property
         def uuid(self) -> str:
-            """The UUID to this service"""
+            """The UUID to this service."""
+
             return normalize_uuid_str("ffe0")
 
         @property
         def description(self) -> str:
-            """String description for this service"""
+            """String description for this service."""
+
             return uuidstr_to_str(self.uuid)
 
         @property
         def characteristics(self) -> list[BleakGATTCharacteristic]:
-            """List of characteristics for this service"""
-            return list([self.CharNotify(None, 350), self.CharWrite(None, 350)])
+            """List of characteristics for this service."""
+
+            return [self.CharNotify(None, 350), self.CharWrite(None, 350)]
 
         def add_characteristic(self, characteristic: BleakGATTCharacteristic) -> None:
             """Add a :py:class:`~BleakGATTCharacteristic` to the service.
@@ -180,13 +188,13 @@ class MockJikongBleakClient(MockBleakClient):
 
 
 class MockWrongBleakClient(MockBleakClient):
+    """Mock invalid service for JiKong BMS."""
+
     @property
     def services(self) -> BleakGATTServiceCollection:
         """Emulate JiKong BT service setup."""
 
-        ServCol = BleakGATTServiceCollection()
-
-        return ServCol
+        return BleakGATTServiceCollection()
 
 
 class MockInvalidBleakClient(MockJikongBleakClient):
@@ -196,7 +204,7 @@ class MockInvalidBleakClient(MockJikongBleakClient):
         self, char_specifier: BleakGATTCharacteristic | int | str, data: Buffer
     ) -> bytearray:
         if char_specifier == 3:
-            return bytearray(b"\x55\xAA\xEB\x90\x02") + bytearray(295)
+            return bytearray(b"\x55\xaa\xeb\x90\x02") + bytearray(295)
 
         return bytearray()
 
@@ -314,7 +322,7 @@ async def test_oversized_response(monkeypatch) -> None:
         "cycle_capacity": 6141.41255,
         "power": -553.4192300000001,
         "battery_charging": False,
-        "runtime": 39949,        
+        "runtime": 39949,
     }
 
     await bms.disconnect()
