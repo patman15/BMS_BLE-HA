@@ -22,7 +22,7 @@ Platform | Description | Unit
 ## Supported Devices
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-Axxxxx` or `SmartBat-Bxxxxx`)
 - Daly BMS (show up as `DL-xxxxxxxxxxxx`)
-- JiKong BMS (HW version >=11 required)<br>:warning: untested, please [open an issue](https://github.com/patman15/BMS_BLE-HA/issues), if you have logs for working/non-working devices
+- JiKong BMS (HW version >=11 required)
 
 New device types can be easily added via the plugin architecture of this integration. See the [contribution guidelines](CONTRIBUTING.md) for details.
 
