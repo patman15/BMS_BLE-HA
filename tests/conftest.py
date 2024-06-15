@@ -3,7 +3,7 @@
 from collections.abc import Callable, Iterable
 import importlib
 import logging
-from typing import Any, Union
+from typing import Any
 from uuid import UUID
 
 from bleak import BleakClient
