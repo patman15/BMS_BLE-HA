@@ -68,32 +68,7 @@ class BMS(BaseBMS):
             {
                 "service_uuid": UUID_SERVICE,
                 "connectable": True,
-                "manufacturer_id": 0x00F0,
-            },
-            {
-                "service_uuid": UUID_SERVICE,
-                "connectable": True,
                 "manufacturer_id": 0x0B65,
-            },
-            {
-                "service_uuid": UUID_SERVICE,
-                "connectable": True,
-                "manufacturer_id": 0xEAC1,
-            },
-            {
-                "service_uuid": UUID_SERVICE,
-                "connectable": True,
-                "manufacturer_id": 0x2D0B,
-            },
-            {
-                "service_uuid": UUID_SERVICE,
-                "connectable": True,
-                "manufacturer_id": 0x5844,
-            },
-            {
-                "service_uuid": UUID_SERVICE,
-                "connectable": True,
-                "manufacturer_id": 0x4B4A,
             },
         ]
 
@@ -172,16 +147,12 @@ class BMS(BaseBMS):
             self._char_write_handle = None
             for service in self._client.services:
                 for char in service.characteristics:
-                    # value: bytearray = bytearray()
-                    # if "read" in char.properties:
-                    #     value = await self._client.read_gatt_char(char)
                     LOGGER.debug(
-                        "(%s) Discovered %s (#%i): %s%s",
+                        "(%s) Discovered %s (#%i): %s",
                         self._ble_device.name,
                         char.uuid,
                         char.handle,
                         char.properties,
-                        # f" value: {value}" if value else "",
                     )
                     if char.uuid == UUID_CHAR:
                         if "notify" in char.properties:
