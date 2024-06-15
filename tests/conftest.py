@@ -3,7 +3,7 @@
 from collections.abc import Callable, Iterable
 import importlib
 import logging
-from typing import Any, Union
+from typing import Any
 from uuid import UUID
 
 from bleak import BleakClient
@@ -42,7 +42,7 @@ def mock_bluetooth(enable_bluetooth):
     """Auto mock bluetooth."""
 
 
-@pytest.fixture(params=BMS_TYPES + ["dummy_bms"])
+@pytest.fixture(params=[*BMS_TYPES, "dummy_bms"])
 def bms_fixture(request):
     """Return all possible BMS variants."""
     return request.param
@@ -121,14 +121,14 @@ def mock_config_v0_1(request, unique_id="cc:cc:cc:cc:cc:cc"):
     )
 
 
-@pytest.fixture
-def bms_data_fixture():
+@pytest.fixture(params=[-13, 0, 21])
+def bms_data_fixture(request):
     """Return a fake BMS data dictionary."""
 
     return {
         ATTR_VOLTAGE: 7.0,
-        ATTR_CURRENT: 13.0,
-        ATTR_CYCLE_CHRG: 21,
+        ATTR_CURRENT: request.param,
+        ATTR_CYCLE_CHRG: 34,
     }
 
 
@@ -138,7 +138,7 @@ def mock_coordinator_exception(request):
     return request.param
 
 
-@pytest.fixture(params=BMS_TYPES + ["dummy_bms"])
+@pytest.fixture(params=[*BMS_TYPES, "dummy_bms"])
 def plugin_fixture(request) -> BaseBMS:
     """Return instance of a BMS."""
     return importlib.import_module(
@@ -237,7 +237,7 @@ class MockBleakClient(BleakClient):
 
     async def start_notify(  # type: ignore
         self,
-        char_specifier: Union[BleakGATTCharacteristic, int, str],
+        char_specifier: BleakGATTCharacteristic | int | str,
         callback: Callable,
     ):
         """Mock start_notify."""
@@ -247,7 +247,7 @@ class MockBleakClient(BleakClient):
 
     async def write_gatt_char(  # type: ignore
         self,
-        char_specifier: Union[BleakGATTCharacteristic, int, str],
+        char_specifier: BleakGATTCharacteristic | int | str,
         data: Buffer,
         response: bool = None,  # type: ignore # same as upstream
     ) -> None:
@@ -274,17 +274,17 @@ class MockRespChar(BleakGATTCharacteristic):
     @property
     def service_uuid(self) -> str:
         """The UUID of the Service containing this characteristic."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def service_handle(self) -> int:
         """The integer handle of the Service containing this characteristic."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def handle(self) -> int:
         """The handle for this characteristic."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def uuid(self) -> str:
@@ -299,22 +299,22 @@ class MockRespChar(BleakGATTCharacteristic):
     @property
     def properties(self) -> list[str]:
         """Properties of this characteristic."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @property
     def descriptors(self) -> list[BleakGATTDescriptor]:
         """List of descriptors for this service."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def get_descriptor(
-        self, specifier: Union[int, str, UUID]
-    ) -> Union[BleakGATTDescriptor, None]:
+        self, specifier: int | str | UUID
+    ) -> BleakGATTDescriptor | None:
         """Get a descriptor by handle (int) or UUID (str or uuid.UUID)."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def add_descriptor(self, descriptor: BleakGATTDescriptor):
         """Add a :py:class:`~BleakGATTDescriptor` to the characteristic.
 
         Should not be used by end user, but rather by `bleak` itself.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
