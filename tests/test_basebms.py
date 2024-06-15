@@ -2,10 +2,10 @@
 
 from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
+    ATTR_CURRENT,
     ATTR_CYCLE_CAP,
     ATTR_POWER,
     ATTR_RUNTIME,
-    ATTR_CURRENT,
 )
 from custom_components.bms_ble.plugins.basebms import BaseBMS
 

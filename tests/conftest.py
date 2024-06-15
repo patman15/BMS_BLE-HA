@@ -317,4 +317,4 @@ class MockRespChar(BleakGATTCharacteristic):
 
         Should not be used by end user, but rather by `bleak` itself.
         """
-        raise NotImplementedError()
+        raise NotImplementedError
