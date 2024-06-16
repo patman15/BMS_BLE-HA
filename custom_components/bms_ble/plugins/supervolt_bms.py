@@ -2,6 +2,7 @@
 
 import logging
 from typing import Any, Optional
+import asyncio
 
 from bleak.backends.device import BLEDevice
 from bleak import BleakClient
@@ -21,11 +22,14 @@ from ..const import (
 )
 from .basebms import BaseBMS
 
+BAT_TIMEOUT = 10
 LOGGER = logging.getLogger(__name__)
 
-UUID_SERVICE = normalize_uuid_str("1800")
-UUID_RX = normalize_uuid_str("1801")
-UUID_TX = normalize_uuid_str("180a")
+# setup UUIDs, e.g. for receive: '0000fff1-0000-1000-8000-00805f9b34fb'
+# UUID_CHAR = normalize_uuid_str("ffe1")
+UUID_SERVICE = normalize_uuid_str("ff00")
+UUID_RX = normalize_uuid_str("ff01")
+UUID_TX = normalize_uuid_str("ff02")
 
 
 class BMS(BaseBMS):
@@ -36,6 +40,7 @@ class BMS(BaseBMS):
         LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
         self._reconnect: bool = reconnect
         self._ble_device: BLEDevice = ble_device
+        self._data_event = asyncio.Event()
         assert self._ble_device is not None
         self._client: Optional[BleakClient] = None
         self._connected: bool = False
@@ -46,7 +51,7 @@ class BMS(BaseBMS):
         return [
             {
                 "local_name": "SX100P-*",
-                # "service_uuid": UUID_SERVICE,
+                "service_uuid": UUID_SERVICE,
                 "connectable": True,
             }
         ]
@@ -68,6 +73,7 @@ class BMS(BaseBMS):
             )
             LOGGER.debug("connect inner")
             await self._client.connect()
+            LOGGER.debug(self._client)
             LOGGER.debug("set notify")
             await self._client.start_notify(UUID_RX, self._notification_handler)
             LOGGER.debug("connected.....................")
@@ -89,12 +95,22 @@ class BMS(BaseBMS):
     async def disconnect(self) -> None:
         """Disconnect connection to BMS if active."""
 
+    async def _wait_event(self) -> None:
+        await self._data_event.wait()
+        self._data_event.clear()
+
     async def async_update(self) -> dict[str, int | float | bool]:
         """Update battery status information."""
         LOGGER.debug("connecting for update")
         await self._connect()
-        assert self._client is not None
-
+        # assert self._client is not None
+        LOGGER.debug("sending")
+        await self._client.write_gatt_char(
+            char_specifier=UUID_TX, data=bytes(":000250000E03~", "ascii")
+        )
+        LOGGER.debug("waiting")
+        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+        LOGGER.debug(f"got data ")
         data = {
             ATTR_VOLTAGE: 12,
             ATTR_CURRENT: 1.5,
