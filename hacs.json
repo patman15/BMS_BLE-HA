@@ -1,5 +1,5 @@
 {
   "name": "BLE Battery Management System (BMS)",
-  "homeassistant": "2024.5.0",
+  "homeassistant": "2024.6.0",
   "render_readme": true
 }
