@@ -5,9 +5,9 @@
 #include = ["bms_ble"]
 
 [tool.pytest.ini_options]
-minversion = "6.0"
+minversion = "8.0"
+addopts="--cov=custom_components.bms_ble --cov-report=term-missing --cov-fail-under=100"
 pythonpath = [
-    ".",
     "custom_components.bms_ble",
 ]
 testpaths = [

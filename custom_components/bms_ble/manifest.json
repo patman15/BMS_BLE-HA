@@ -4,15 +4,19 @@
   "bluetooth": [
     {
       "local_name": "SmartBat-A*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"      
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
       "local_name": "SmartBat-B*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"      
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
       "local_name": "DL-*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
+      "manufacturer_id": 2917
     }
   ],
   "codeowners": ["@patman15"],
@@ -22,7 +26,7 @@
   "integration_type": "device",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
-  "loggers": ["bms_ble", "ogt_bms", "daly_bms"],
+  "loggers": ["bms_ble", "ogt_bms", "daly_bms", "jikong_bms"],
   "requirements": [],
-  "version": "1.2.2"
+  "version": "1.3.0"
 }

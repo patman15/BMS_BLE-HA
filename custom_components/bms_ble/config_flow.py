@@ -64,9 +64,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, discovery_info: BluetoothServiceInfoBleak
     ) -> FlowResult:
         """Handle a flow initialized by Bluetooth discovery."""
-        LOGGER.debug(
-            "Bluetooth device detected: %s", format_mac(discovery_info.address)
-        )
+        LOGGER.debug("Bluetooth device detected: %s", discovery_info)
+
         await self.async_set_unique_id(discovery_info.address)
         self._abort_if_unique_id_configured()
 

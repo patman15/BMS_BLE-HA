@@ -34,6 +34,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, int | float | bool]]):
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
             always_update=False,  # only update when sensor value has changed
         )
+
         self._mac = ble_device.address
         LOGGER.debug(
             "Initializing coordinator for %s (%s) as %s",
@@ -41,6 +42,10 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, int | float | bool]]):
             ble_device.address,
             bms_device.device_id(),
         )
+        if service_info := bluetooth.async_last_service_info(
+            self.hass, address=self._mac, connectable=True
+        ):
+            LOGGER.debug("device data: %s", service_info.as_dict())
 
         # retrieve BMS class and initialize it
         self._device: BaseBMS = bms_device

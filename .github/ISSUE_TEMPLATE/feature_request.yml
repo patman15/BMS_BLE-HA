@@ -37,6 +37,7 @@ body:
 - type: textarea
   attributes:
     label: "Additional context"
-    description: "Add any other context or screenshots about the feature request here."
+    description: "Add any other context (documentation) or screenshots about the feature request here."
+    placeholder: "For new BMS, please provide any links to documentation, the BT protocol, emulators, other open source implementations, or the like."
   validations:
     required: false
