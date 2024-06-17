@@ -252,7 +252,7 @@ class MockBleakClient(BleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None, # type: ignore[ReportArgumentType] # same as upstream
+        response: bool = None,  # type: ignore[ReportArgumentType] # same as upstream
     ) -> None:
         """Mock write GATT characteristics."""
         LOGGER.debug(

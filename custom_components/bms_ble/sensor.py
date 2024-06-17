@@ -6,7 +6,6 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     ATTR_BATTERY_LEVEL,
     ATTR_TEMPERATURE,
@@ -26,6 +25,7 @@ from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from . import BTBmsConfigEntry
 from .const import (
     ATTR_CURRENT,
     ATTR_CYCLE_CAP,
@@ -112,12 +112,12 @@ SENSOR_TYPES: list[SensorEntityDescription] = [
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: BTBmsConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Add sensors for passed config_entry in Home Assistant."""
 
-    bms: BTBmsCoordinator = hass.data[DOMAIN][config_entry.entry_id]
+    bms: BTBmsCoordinator = config_entry.runtime_data
     for descr in SENSOR_TYPES:
         async_add_entities([BMSSensor(bms, descr)])
 
