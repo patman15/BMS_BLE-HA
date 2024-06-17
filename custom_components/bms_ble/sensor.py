@@ -33,7 +33,6 @@ from .const import (
     ATTR_POWER,
     ATTR_RSSI,
     ATTR_RUNTIME,
-    DOMAIN,
 )
 from .coordinator import BTBmsCoordinator
 

@@ -12,7 +12,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import BTBmsConfigEntry
-from .const import DOMAIN
 from .coordinator import BTBmsCoordinator
 
 BINARY_SENSOR_TYPES: list[BinarySensorEntityDescription] = [
