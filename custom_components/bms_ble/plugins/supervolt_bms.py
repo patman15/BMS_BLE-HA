@@ -1,4 +1,4 @@
-"""Module to support Dummy BMS."""
+"""Support for Supervolt BMS v4"""
 
 import logging
 from typing import Any, Optional
@@ -10,11 +10,11 @@ from bleak.uuids import normalize_uuid_str
 
 from ..const import (
     ATTR_BATTERY_CHARGING,
-    # ATTR_BATTERY_LEVEL,
+    ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
     # ATTR_CYCLE_CAP,
-    # ATTR_CYCLE_CHRG,
-    # ATTR_CYCLES,
+    ATTR_CYCLE_CHRG,
+    ATTR_CYCLES,
     ATTR_POWER,
     # ATTR_RUNTIME,
     # ATTR_TEMPERATURE,
@@ -25,11 +25,9 @@ from .basebms import BaseBMS
 BAT_TIMEOUT = 10
 LOGGER = logging.getLogger(__name__)
 
-# setup UUIDs, e.g. for receive: '0000fff1-0000-1000-8000-00805f9b34fb'
-# UUID_CHAR = normalize_uuid_str("ffe1")
-UUID_SERVICE = normalize_uuid_str("ff00")
-UUID_RX = normalize_uuid_str("ff01")
-UUID_TX = normalize_uuid_str("ff02")
+UUID_SERVICE = normalize_uuid_str("FF00")
+UUID_RX = normalize_uuid_str("FF01")
+UUID_TX = normalize_uuid_str("FF02")
 
 
 class BMS(BaseBMS):
@@ -59,7 +57,7 @@ class BMS(BaseBMS):
     @staticmethod
     def device_info() -> dict[str, str]:
         """Return device information for the battery management system."""
-        return {"manufacturer": "Supervolt", "model": "dummy model"}
+        return {"manufacturer": "Supervolt", "model": "BMS v4"}
 
     async def _connect(self) -> None:
         """Connect to the BMS and setup notification if not connected."""
@@ -71,18 +69,13 @@ class BMS(BaseBMS):
                 disconnected_callback=self._on_disconnect,
                 services=[UUID_SERVICE],
             )
-            LOGGER.debug("connect inner")
             await self._client.connect()
-            LOGGER.debug(self._client)
-            LOGGER.debug("set notify")
             await self._client.start_notify(UUID_RX, self._notification_handler)
-            LOGGER.debug("connected.....................")
             self._connected = True
         else:
             LOGGER.debug("BMS %s already connected", self._ble_device.name)
 
     def _notification_handler(self, sender, data: bytearray) -> None:
-        LOGGER.debug("Received BLE data: %s", data)
         self._data = data
         self._data_event.set()
 
@@ -101,20 +94,31 @@ class BMS(BaseBMS):
 
     async def async_update(self) -> dict[str, int | float | bool]:
         """Update battery status information."""
-        LOGGER.debug("connecting for update")
         await self._connect()
-        # assert self._client is not None
-        LOGGER.debug("sending")
+        assert self._client is not None
         await self._client.write_gatt_char(
-            char_specifier=UUID_TX, data=bytes(":000250000E03~", "ascii")
+            char_specifier=UUID_TX, data=bytearray(b"\xDD\xA5\x03\x00\xFF\xFD\x77")
         )
-        LOGGER.debug("waiting")
         await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-        LOGGER.debug(f"got data ")
+        # LOGGER.debug("sending cell voltage request")
+        # await self._client.write_gatt_char(
+        #     char_specifier=UUID_TX, data=bytes(b"\xDD\xA5\x03\x00\xFF\xFD\x77")
+        # )
+        # await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
         data = {
-            ATTR_VOLTAGE: 12,
-            ATTR_CURRENT: 1.5,
-        }  # set fixed values for dummy battery
+            ATTR_VOLTAGE: int.from_bytes(self._data[4:6], "big") / 100.0,
+            ATTR_CURRENT: int.from_bytes(self._data[6:8], "big", signed=True) / 100.0,
+            ATTR_CYCLE_CHRG: int.from_bytes(self._data[8:10], "big") / 100.0,
+            ATTR_CYCLES: int.from_bytes(self._data[12:14], "big"),
+            ATTR_BATTERY_LEVEL: min(
+                (
+                    int.from_bytes(self._data[8:10], "big")
+                    / int.from_bytes(self._data[10:12], "big")
+                )
+                * 100,
+                100,
+            ),
+        }
         self.calc_values(
             data, {ATTR_POWER, ATTR_BATTERY_CHARGING}
         )  # calculate further values from previously set ones
