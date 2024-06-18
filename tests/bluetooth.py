@@ -1,4 +1,7 @@
-"""Test helpers for bluetooth copied from HA 2024.3.0."""
+"""Test helpers for bluetooth copied from HA 2024.5.0.
+
+Source: /tests/components/bluetooth/__init__.py
+"""
 
 from typing import Any
 
@@ -81,6 +84,7 @@ def inject_advertisement_with_time_and_source_connectable(
             advertisement=adv,
             connectable=connectable,
             time=time,
+            tx_power=adv.tx_power,
         )
     )
 

@@ -5,14 +5,13 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_BATTERY_CHARGING
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from . import BTBmsConfigEntry
 from .coordinator import BTBmsCoordinator
 
 BINARY_SENSOR_TYPES: list[BinarySensorEntityDescription] = [
@@ -26,12 +25,12 @@ BINARY_SENSOR_TYPES: list[BinarySensorEntityDescription] = [
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: BTBmsConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Add sensors for passed config_entry in Home Assistant."""
 
-    bms: BTBmsCoordinator = hass.data[DOMAIN][config_entry.entry_id]
+    bms: BTBmsCoordinator = config_entry.runtime_data
     for descr in BINARY_SENSOR_TYPES:
         async_add_entities([BMSBinarySensor(bms, descr)])
 

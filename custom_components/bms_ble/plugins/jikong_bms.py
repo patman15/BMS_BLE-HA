@@ -56,9 +56,9 @@ class BMS(BaseBMS):
             (ATTR_TEMPERATURE, 144, 2, True, lambda x: float(x / 10)),
             (ATTR_VOLTAGE, 150, 4, False, lambda x: float(x / 1000)),
             (ATTR_CURRENT, 158, 4, True, lambda x: float(x / 1000)),
-            (ATTR_BATTERY_LEVEL, 173, 1, False, lambda x: int(x)),
+            (ATTR_BATTERY_LEVEL, 173, 1, False, lambda x: x),
             (ATTR_CYCLE_CHRG, 174, 4, False, lambda x: float(x / 1000)),
-            (ATTR_CYCLES, 182, 4, False, lambda x: int(x)),
+            (ATTR_CYCLES, 182, 4, False, lambda x: x),
         ]  # Protocol: JK02_32S; JK02_24S has offset -32
 
     @staticmethod
