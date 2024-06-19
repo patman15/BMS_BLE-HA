@@ -1,7 +1,7 @@
-"""Support for Supervolt BMS v4"""
+"""Module to support Supervolt BMS v4."""
 
 import logging
-from typing import Any, Optional
+from typing import Any, Dict, Optional, Union
 import asyncio
 
 from bleak.backends.device import BLEDevice
@@ -12,12 +12,11 @@ from ..const import (
     ATTR_BATTERY_CHARGING,
     ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
-    # ATTR_CYCLE_CAP,
+    ATTR_CYCLE_CAP,
     ATTR_CYCLE_CHRG,
     ATTR_CYCLES,
     ATTR_POWER,
-    # ATTR_RUNTIME,
-    # ATTR_TEMPERATURE,
+    ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
 )
 from .basebms import BaseBMS
@@ -31,7 +30,9 @@ UUID_TX = normalize_uuid_str("FF02")
 
 
 class BMS(BaseBMS):
-    """Dummy battery class implementation."""
+    """Supervolt BMS v4 class implementation."""
+
+    CMD_STATUS = bytearray(b"\xDD\xA5\x03\x00\xFF\xFD\x77")
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -42,6 +43,32 @@ class BMS(BaseBMS):
         assert self._ble_device is not None
         self._client: Optional[BleakClient] = None
         self._connected: bool = False
+        self._max_capacity: int = None
+
+    def convert_data(self) -> Dict[str, Union[int, float]]:
+        cycle_chrg = int.from_bytes(self._data[8:10], "big") / 100.0
+        design_capacity = int.from_bytes(self._data[10:12], "big") / 100.0
+        # check if max capacity is already set, if not set it
+        if self._max_capacity is None:
+            self._max_capacity = design_capacity
+        # Supervolts sometimes have more than designed capacity
+        # adjust max to get accurate battery level
+        if cycle_chrg > self._max_capacity:
+            self._max_capacity = cycle_chrg
+
+        temperatures = [
+            (int.from_bytes(self._data[idx : idx + 2], "big") - 2731) / 10.0
+            for idx in [27 + i * 2 for i in range(self._data[26])]
+        ]
+        return {
+            ATTR_VOLTAGE: int.from_bytes(self._data[4:6], "big") / 100.0,
+            ATTR_CURRENT: int.from_bytes(self._data[6:8], "big", signed=True) / 100.0,
+            ATTR_CYCLE_CHRG: cycle_chrg,
+            ATTR_CYCLE_CAP: cycle_chrg * 12.8,
+            ATTR_CYCLES: int.from_bytes(self._data[12:14], "big"),
+            ATTR_BATTERY_LEVEL: (cycle_chrg / self._max_capacity) * 100,
+            ATTR_TEMPERATURE: sum(temperatures) / len(temperatures),
+        }
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -88,6 +115,14 @@ class BMS(BaseBMS):
     async def disconnect(self) -> None:
         """Disconnect connection to BMS if active."""
 
+        if self._client and self._connected:
+            LOGGER.debug("Disconnecting BMS (%s)", self._ble_device.name)
+            try:
+                self._data_event.clear()
+                await self._client.disconnect()
+            except BleakError:
+                LOGGER.warning("Disconnect failed!")
+
     async def _wait_event(self) -> None:
         await self._data_event.wait()
         self._data_event.clear()
@@ -96,30 +131,13 @@ class BMS(BaseBMS):
         """Update battery status information."""
         await self._connect()
         assert self._client is not None
-        await self._client.write_gatt_char(
-            char_specifier=UUID_TX, data=bytearray(b"\xDD\xA5\x03\x00\xFF\xFD\x77")
-        )
+        await self._client.write_gatt_char(char_specifier=UUID_TX, data=self.CMD_STATUS)
         await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-        # LOGGER.debug("sending cell voltage request")
-        # await self._client.write_gatt_char(
-        #     char_specifier=UUID_TX, data=bytes(b"\xDD\xA5\x03\x00\xFF\xFD\x77")
-        # )
-        # await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-        data = {
-            ATTR_VOLTAGE: int.from_bytes(self._data[4:6], "big") / 100.0,
-            ATTR_CURRENT: int.from_bytes(self._data[6:8], "big", signed=True) / 100.0,
-            ATTR_CYCLE_CHRG: int.from_bytes(self._data[8:10], "big") / 100.0,
-            ATTR_CYCLES: int.from_bytes(self._data[12:14], "big"),
-            ATTR_BATTERY_LEVEL: min(
-                (
-                    int.from_bytes(self._data[8:10], "big")
-                    / int.from_bytes(self._data[10:12], "big")
-                )
-                * 100,
-                100,
-            ),
-        }
-        self.calc_values(
-            data, {ATTR_POWER, ATTR_BATTERY_CHARGING}
-        )  # calculate further values from previously set ones
+        data = self.convert_data()
+
+        # calculate further values from previously set ones
+        self.calc_values(data, {ATTR_POWER, ATTR_BATTERY_CHARGING})
+        if self._reconnect:
+            await self.disconnect()
+
         return data
