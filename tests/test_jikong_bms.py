@@ -13,6 +13,7 @@ from typing_extensions import Buffer
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
+BT_FRAME_SIZE = 29
 
 class MockJikongBleakClient(MockBleakClient):
     """Emulate a Jikong BMS BleakClient."""
@@ -83,7 +84,7 @@ class MockJikongBleakClient(MockBleakClient):
             "MockJikongBleakClient", bytearray(b"\x41\x54\x0d\x0a")
         )  # interleaved AT\r\n command
         resp = self._response(char_specifier, data)
-        for notify_data in [resp[i : i + 29] for i in range(0, len(resp), 29)]:
+        for notify_data in [resp[i : i + BT_FRAME_SIZE] for i in range(0, len(resp), BT_FRAME_SIZE)]:
             self._notify_callback("MockJikongBleakClient", notify_data)
 
     class JKservice(BleakGATTService):
