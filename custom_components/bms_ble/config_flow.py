@@ -44,8 +44,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> str | None:
         """Check if device is supported by an available BMS class."""
         for bms_type in BMS_TYPES:
-            bms_plugin = await async_import_module(self.hass,
-                f"custom_components.bms_ble.plugins.{bms_type}")
+            bms_plugin = await async_import_module(
+                self.hass, f"custom_components.bms_ble.plugins.{bms_type}"
+            )
             try:
                 if bms_plugin.BMS.supported(discovery_info):
                     LOGGER.debug(
