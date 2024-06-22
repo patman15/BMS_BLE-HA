@@ -1,7 +1,6 @@
 """Config flow for BLE Battery Management System integration."""
 
 from dataclasses import dataclass
-import importlib
 from typing import Any
 
 import voluptuous as vol
@@ -14,6 +13,7 @@ from homeassistant.components.bluetooth import (
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.helpers.device_registry import format_mac
+from homeassistant.helpers.importlib import async_import_module
 from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
 
 from .const import BMS_TYPES, DOMAIN, LOGGER
@@ -39,14 +39,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._discovered_device: ConfigFlow.DiscoveredDevice | None = None
         self._discovered_devices: dict[str, ConfigFlow.DiscoveredDevice] = {}
 
-    def _device_supported(
+    async def _async_device_supported(
         self, discovery_info: BluetoothServiceInfoBleak
     ) -> str | None:
         """Check if device is supported by an available BMS class."""
         for bms_type in BMS_TYPES:
-            bms_plugin = importlib.import_module(
-                f".plugins.{bms_type}", package=__name__[: __name__.rfind(".")]
-            )
+            bms_plugin = await async_import_module(self.hass,
+                f"custom_components.bms_ble.plugins.{bms_type}")
             try:
                 if bms_plugin.BMS.supported(discovery_info):
                     LOGGER.debug(
@@ -69,7 +68,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(discovery_info.address)
         self._abort_if_unique_id_configured()
 
-        device_class = self._device_supported(discovery_info)
+        device_class = await self._async_device_supported(discovery_info)
         if device_class is None:
             return self.async_abort(reason="not_supported")
 
@@ -123,7 +122,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             address = discovery_info.address
             if address in current_addresses or address in self._discovered_devices:
                 continue
-            device_class = self._device_supported(discovery_info)
+            device_class = await self._async_device_supported(discovery_info)
             if not device_class:
                 continue
 
