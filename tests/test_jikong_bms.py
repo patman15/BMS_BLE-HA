@@ -1,5 +1,6 @@
 """Test the Jikong BMS implementation."""
 
+from collections.abc import Buffer
 from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -8,12 +9,12 @@ from bleak.backends.service import BleakGATTService, BleakGATTServiceCollection
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str, uuidstr_to_str
 from custom_components.bms_ble.plugins.jikong_bms import BMS
-from typing_extensions import Buffer
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
 BT_FRAME_SIZE = 29
+
 
 class MockJikongBleakClient(MockBleakClient):
     """Emulate a Jikong BMS BleakClient."""
@@ -22,7 +23,7 @@ class MockJikongBleakClient(MockBleakClient):
     CMD_INFO = bytearray(b"\x96")
 
     def _response(
-        self, char_specifier: BleakGATTCharacteristic | int | str, data: Buffer
+        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
         if (
             char_specifier == 3
@@ -71,7 +72,7 @@ class MockJikongBleakClient(MockBleakClient):
 
     async def write_gatt_char(
         self,
-        char_specifier: BleakGATTCharacteristic | int | str,
+        char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
         response: bool = None,  # type: ignore[implicit-optional] # same as upstream
     ) -> None:
@@ -84,7 +85,9 @@ class MockJikongBleakClient(MockBleakClient):
             "MockJikongBleakClient", bytearray(b"\x41\x54\x0d\x0a")
         )  # interleaved AT\r\n command
         resp = self._response(char_specifier, data)
-        for notify_data in [resp[i : i + BT_FRAME_SIZE] for i in range(0, len(resp), BT_FRAME_SIZE)]:
+        for notify_data in [
+            resp[i : i + BT_FRAME_SIZE] for i in range(0, len(resp), BT_FRAME_SIZE)
+        ]:
             self._notify_callback("MockJikongBleakClient", notify_data)
 
     class JKservice(BleakGATTService):
@@ -202,7 +205,7 @@ class MockInvalidBleakClient(MockJikongBleakClient):
     """Emulate a Jikong BMS BleakClient returning wrong data."""
 
     def _response(
-        self, char_specifier: BleakGATTCharacteristic | int | str, data: Buffer
+        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
         if char_specifier == 3:
             return bytearray(b"\x55\xaa\xeb\x90\x02") + bytearray(295)
@@ -218,7 +221,7 @@ class MockOversizedBleakClient(MockJikongBleakClient):
     """Emulate a Jikong BMS BleakClient returning wrong data length."""
 
     def _response(
-        self, char_specifier: BleakGATTCharacteristic | int | str, data: Buffer
+        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
         if char_specifier == 3:
             return bytearray(

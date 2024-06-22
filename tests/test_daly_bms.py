@@ -1,7 +1,7 @@
 """Test the Daly BMS implementation."""
 
 from collections.abc import Buffer
-from typing import Union
+from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.exc import BleakError
@@ -19,7 +19,7 @@ class MockDalyBleakClient(MockBleakClient):
     CMD_INFO = bytearray(b"\x00\x00\x00\x3E\xD7\xB9")
 
     def _response(
-        self, char_specifier: Union[BleakGATTCharacteristic, int, str], data: Buffer
+        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
         if char_specifier == normalize_uuid_str("fff2") and data == (
             self.HEAD_READ + self.CMD_INFO
@@ -33,7 +33,7 @@ class MockDalyBleakClient(MockBleakClient):
 
     async def write_gatt_char(
         self,
-        char_specifier: Union[BleakGATTCharacteristic, int, str],
+        char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
         response: bool = None,  # type: ignore # same as upstream
     ) -> None:
@@ -49,7 +49,7 @@ class MockInvalidBleakClient(MockDalyBleakClient):
     """Emulate a Daly BMS BleakClient."""
 
     def _response(
-        self, char_specifier: Union[BleakGATTCharacteristic, int, str], data: Buffer
+        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
         if char_specifier == normalize_uuid_str("fff2"):
             return bytearray(b"invalid_value")

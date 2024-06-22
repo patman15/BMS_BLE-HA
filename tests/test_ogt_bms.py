@@ -1,13 +1,13 @@
 """Test the Daly BMS implementation."""
 
 import asyncio
-from typing import Union
+from collections.abc import Buffer
+from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 from custom_components.bms_ble.plugins.ogt_bms import BMS
-from typing_extensions import Buffer
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient, MockRespChar
@@ -37,7 +37,7 @@ class MockOGTBleakClient(MockBleakClient):
     }
 
     async def _response(
-        self, char_specifier: Union[BleakGATTCharacteristic, int, str], data: Buffer
+        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
         if char_specifier == normalize_uuid_str("fff6"):
             assert self._ble_device.name is not None
@@ -68,7 +68,7 @@ class MockOGTBleakClient(MockBleakClient):
 
     async def write_gatt_char(
         self,
-        char_specifier: Union[BleakGATTCharacteristic, int, str],
+        char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
         response: bool = None,  # type: ignore # same as upstream
     ) -> None:
@@ -86,7 +86,7 @@ class MockInvalidBleakClient(MockOGTBleakClient):
     """Emulate an invalid BleakClient."""
 
     async def _response(
-        self, char_specifier: Union[BleakGATTCharacteristic, int, str], data: Buffer
+        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
         if char_specifier == normalize_uuid_str("fff6"):
             return bytearray(b"invalid_value")
@@ -95,7 +95,7 @@ class MockInvalidBleakClient(MockOGTBleakClient):
 
     async def write_gatt_char(
         self,
-        char_specifier: Union[BleakGATTCharacteristic, int, str],
+        char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
         response: bool = None,  # type: ignore # same as upstream
     ) -> None:
