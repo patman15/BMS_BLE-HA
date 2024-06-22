@@ -22,6 +22,7 @@ from ..const import (
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
+    KEY_TEMP_SENS,
 )
 from .basebms import BaseBMS
 
@@ -63,7 +64,7 @@ class BMS(BaseBMS):
             ),
             (ATTR_CYCLE_CHRG, 96 + self.HEAD_LEN, lambda x: float(x / 10)),
             (
-                "numTemp",
+                KEY_TEMP_SENS,
                 100 + self.HEAD_LEN,
                 lambda x: int(x),  # pylint: disable=unnecessary-lambda
             ),
@@ -157,14 +158,14 @@ class BMS(BaseBMS):
         }
 
         # calculate average temperature
-        if data["numTemp"] > 0:
+        if data[KEY_TEMP_SENS] > 0:
             data[ATTR_TEMPERATURE] = (
                 fmean(
                     [
                         int.from_bytes(self._data[idx : idx + 2])
                         for idx in range(
                             64 + self.HEAD_LEN,
-                            64 + self.HEAD_LEN + int(data["numTemp"]) * 2,
+                            64 + self.HEAD_LEN + int(data[KEY_TEMP_SENS]) * 2,
                             2,
                         )
                     ]

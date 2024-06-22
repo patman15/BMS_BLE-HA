@@ -1,12 +1,12 @@
 """Test the Daly BMS implementation."""
 
+from collections.abc import Buffer
 from typing import Union
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 from custom_components.bms_ble.plugins.daly_bms import BMS
-from typing_extensions import Buffer
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -82,7 +82,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "battery_level": 90.0,
         "cycles": 57,
         "cycle_charge": 345.6,
-        "numTemp": 4,
+        "temp_sensors": 4,
         "temperature": 21.5,
         "cycle_capacity": 4838.400000000001,
         "power": 42.0,

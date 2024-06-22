@@ -22,3 +22,6 @@ ATTR_CYCLES = "cycles"  # [#]
 ATTR_POWER = "power"  # [W]
 ATTR_RUNTIME = "runtime"  # [s]
 ATTR_RSSI = "rssi"
+
+# temporary dictionary keys (do not change)
+KEY_TEMP_SENS = "temp_sensors"  # [#]
