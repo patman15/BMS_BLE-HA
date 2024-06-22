@@ -91,6 +91,7 @@ class MockOversizedBleakClient(MockJBDBleakClient):
         """Mock disconnect to raise BleakError."""
         raise BleakError
 
+
 async def test_update(monkeypatch, reconnect_fixture) -> None:
     """Test JBD BMS data update."""
 
@@ -107,7 +108,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
     result = await bms.async_update()
 
     assert result == {
-        "numTemp": 3,
+        "temp_sensors": 3,
         "voltage": 15.6,
         "current": -2.87,
         "battery_level": 100,
@@ -157,7 +158,7 @@ async def test_oversized_response(monkeypatch) -> None:
     result = await bms.async_update()
 
     assert result == {
-        "numTemp": 3,
+        "temp_sensors": 3,
         "voltage": 15.6,
         "current": -2.87,
         "battery_level": 100,

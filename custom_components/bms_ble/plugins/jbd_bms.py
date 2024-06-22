@@ -22,6 +22,7 @@ from ..const import (
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
+    KEY_TEMP_SENS,
 )
 from .basebms import BaseBMS
 
@@ -53,7 +54,7 @@ class BMS(BaseBMS):
         self._data_event = asyncio.Event()
         self._connected = False  # flag to indicate active BLE connection
         self._FIELDS: list[tuple[str, int, int, bool, Callable[[int], int | float]]] = [
-            ("numTemp", 26, 1, False, lambda x: x),
+            (KEY_TEMP_SENS, 26, 1, False, lambda x: x),
             (ATTR_VOLTAGE, 4, 2, False, lambda x: float(x / 100)),
             (ATTR_CURRENT, 6, 2, True, lambda x: float(x / 100)),
             (ATTR_BATTERY_LEVEL, 23, 1, False, lambda x: x),
@@ -200,14 +201,14 @@ class BMS(BaseBMS):
         }
 
         # calculate average temperature
-        if data["numTemp"]:
+        if data[KEY_TEMP_SENS]:
             data[ATTR_TEMPERATURE] = (
                 fmean(
                     [
                         int.from_bytes(self._data_final[idx : idx + 2])
                         for idx in range(
                             27,
-                            27 + int(data["numTemp"]) * 2,
+                            27 + int(data[KEY_TEMP_SENS]) * 2,
                             2,
                         )
                     ]
