@@ -1,12 +1,13 @@
 """Test the JBD BMS implementation."""
 
+from collections.abc import Buffer
 import logging
+from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 from custom_components.bms_ble.plugins.jbd_bms import BMS
-from typing_extensions import Buffer
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -19,10 +20,10 @@ class MockJBDBleakClient(MockBleakClient):
     """Emulate a JBD BMS BleakClient."""
 
     HEAD_CMD = bytearray(b"\xDD")
-    CMD_INFO = bytearray(b"\xa5\x03")
+    CMD_INFO = bytearray(b"\xA5\x03")
 
     def _response(
-        self, char_specifier: BleakGATTCharacteristic | int | str, data: Buffer
+        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
         if (
             char_specifier == normalize_uuid_str("ff02")
@@ -37,7 +38,7 @@ class MockJBDBleakClient(MockBleakClient):
 
     async def write_gatt_char(
         self,
-        char_specifier: BleakGATTCharacteristic | int | str,
+        char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
         response: bool = None,  # type: ignore[implicit-optional] # same as upstream
     ) -> None:
@@ -58,7 +59,7 @@ class MockInvalidBleakClient(MockJBDBleakClient):
     """Emulate a JBD BMS BleakClient returning wrong data."""
 
     def _response(
-        self, char_specifier: BleakGATTCharacteristic | int | str, data: Buffer
+        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
         # LOGGER.debug(f"{char_specifier=}")
         # LOGGER.debug(f"{data=}")
@@ -76,7 +77,7 @@ class MockOversizedBleakClient(MockJBDBleakClient):
     """Emulate a JBD BMS BleakClient returning wrong data length."""
 
     def _response(
-        self, char_specifier: BleakGATTCharacteristic | int | str, data: Buffer
+        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
         if char_specifier == normalize_uuid_str("ff02"):
             return bytearray(
