@@ -13,6 +13,7 @@ from homeassistant.components.bluetooth.match import (
 from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 from ..const import (
+    ATTR_BALANCE_VOLTAGE,
     ATTR_BATTERY_CHARGING,
     ATTR_CURRENT,
     ATTR_CYCLE_CAP,
@@ -20,6 +21,7 @@ from ..const import (
     ATTR_POWER,
     ATTR_RUNTIME,
     ATTR_VOLTAGE,
+    KEY_CELL_VOLTAGE,
 )
 
 
@@ -91,6 +93,12 @@ class BaseBMS(metaclass=ABCMeta):
                 data[ATTR_RUNTIME] = int(
                     data[ATTR_CYCLE_CHRG] / abs(data[ATTR_CURRENT]) * _HRS_TO_SECS
                 )
+        # calculate balance voltage (maximum cell voltage difference)
+        if can_calc(ATTR_BALANCE_VOLTAGE, frozenset(f"{KEY_CELL_VOLTAGE}1")):
+            cell_voltages = (
+                v for k, v in sorted(data.items()) if k.startswith(KEY_CELL_VOLTAGE)
+            )
+            data[ATTR_BALANCE_VOLTAGE] = max(cell_voltages) - min(cell_voltages)
 
     async def disconnect(self) -> None:
         """Disconnect connection to BMS if active."""

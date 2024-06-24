@@ -27,12 +27,15 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import BTBmsConfigEntry
 from .const import (
+    ATTR_BALANCE_VOLTAGE,
+    ATTR_CELL_VOLTAGES,
     ATTR_CURRENT,
     ATTR_CYCLE_CAP,
     ATTR_CYCLES,
     ATTR_POWER,
     ATTR_RSSI,
     ATTR_RUNTIME,
+    KEY_CELL_VOLTAGE,
 )
 from .coordinator import BTBmsCoordinator
 
@@ -98,6 +101,15 @@ SENSOR_TYPES: list[SensorEntityDescription] = [
         device_class=SensorDeviceClass.DURATION,
     ),
     SensorEntityDescription(
+        key=ATTR_BALANCE_VOLTAGE,
+        translation_key=ATTR_BALANCE_VOLTAGE,
+        name="Balance voltage",
+        icon="mdi:battery-sync",
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.VOLTAGE,
+    ),
+    SensorEntityDescription(
         key=ATTR_RSSI,
         translation_key=ATTR_RSSI,
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
@@ -132,6 +144,19 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
         self._attr_device_info = bms.device_info
         self.entity_description = descr
         super().__init__(bms)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, list[float]] | None:  # type: ignore[reportIncompatibleVariableOverride]
+        """Return entity specific state attributes, e.g. cell voltages."""
+        if self.entity_description.key == ATTR_BALANCE_VOLTAGE:
+            return {
+                ATTR_CELL_VOLTAGES: [
+                    v
+                    for k, v in sorted(self.coordinator.data.items())
+                    if k.startswith(KEY_CELL_VOLTAGE)
+                ]
+            }
+        return None
 
     @property
     def native_value(self) -> int | float | None:  # type: ignore[reportIncompatibleVariableOverride]
