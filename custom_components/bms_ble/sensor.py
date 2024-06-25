@@ -27,11 +27,11 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import BTBmsConfigEntry
 from .const import (
-    ATTR_BALANCE_VOLTAGE,
     ATTR_CELL_VOLTAGES,
     ATTR_CURRENT,
     ATTR_CYCLE_CAP,
     ATTR_CYCLES,
+    ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     ATTR_RSSI,
     ATTR_RUNTIME,
@@ -101,13 +101,14 @@ SENSOR_TYPES: list[SensorEntityDescription] = [
         device_class=SensorDeviceClass.DURATION,
     ),
     SensorEntityDescription(
-        key=ATTR_BALANCE_VOLTAGE,
-        translation_key=ATTR_BALANCE_VOLTAGE,
-        name="Balance voltage",
+        key=ATTR_DELTA_VOLTAGE,
+        translation_key=ATTR_DELTA_VOLTAGE,
+        name="Delta voltage",
         icon="mdi:battery-sync",
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SensorEntityDescription(
         key=ATTR_RSSI,
@@ -148,7 +149,7 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
     @property
     def extra_state_attributes(self) -> dict[str, list[float]] | None:  # type: ignore[reportIncompatibleVariableOverride]
         """Return entity specific state attributes, e.g. cell voltages."""
-        if self.entity_description.key == ATTR_BALANCE_VOLTAGE:
+        if self.entity_description.key == ATTR_DELTA_VOLTAGE:
             return {
                 ATTR_CELL_VOLTAGES: [
                     v

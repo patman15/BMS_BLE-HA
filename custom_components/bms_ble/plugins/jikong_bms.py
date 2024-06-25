@@ -17,10 +17,13 @@ from ..const import (
     ATTR_CYCLE_CAP,
     ATTR_CYCLE_CHRG,
     ATTR_CYCLES,
+    ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
+    KEY_CELL_COUNT,
+    KEY_CELL_VOLTAGE,
 )
 from .basebms import BaseBMS
 
@@ -53,6 +56,8 @@ class BMS(BaseBMS):
         self._connected = False  # flag to indicate active BLE connection
         self._char_write_handle: int | None = None
         self._FIELDS: list[tuple[str, int, int, bool, Callable[[int], int | float]]] = [
+            (KEY_CELL_COUNT, 70, 4, False, lambda x: x.bit_count()),
+            (ATTR_DELTA_VOLTAGE, 76, 2, False, lambda x: float(x / 1000)),
             (ATTR_TEMPERATURE, 144, 2, True, lambda x: float(x / 10)),
             (ATTR_VOLTAGE, 150, 4, False, lambda x: float(x / 1000)),
             (ATTR_CURRENT, 158, 4, True, lambda x: float(x / 1000)),
@@ -251,8 +256,27 @@ class BMS(BaseBMS):
             for key, idx, size, sign, func in self._FIELDS
         }
 
+        data.update(
+            {
+                f"{KEY_CELL_VOLTAGE}{idx}": float(
+                    int.from_bytes(
+                        self._data_final[6 + 2 * idx : 6 + 2 * idx + 2],
+                        byteorder="little",
+                        signed=True,
+                    )
+                    / 1000
+                )
+                for idx in range(int(data[KEY_CELL_COUNT]))
+            }
+        )
         self.calc_values(
-            data, {ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_RUNTIME}
+            data,
+            {
+                ATTR_POWER,
+                ATTR_BATTERY_CHARGING,
+                ATTR_CYCLE_CAP,
+                ATTR_RUNTIME,
+            },
         )
 
         if self._reconnect:
