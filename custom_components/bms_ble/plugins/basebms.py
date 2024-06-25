@@ -24,6 +24,7 @@ from ..const import (
     KEY_CELL_VOLTAGE,
 )
 
+type BMSsample = dict[str, int | float | bool]
 
 class BaseBMS(metaclass=ABCMeta):
     """Base class for battery management system."""
@@ -64,7 +65,7 @@ class BaseBMS(metaclass=ABCMeta):
         return False
 
     @classmethod
-    def calc_values(cls, data: dict[str, int | float | bool], values: set[str]):
+    def calc_values(cls, data: BMSsample, values: set[str]):
         """Calculate missing BMS values from existing ones.
 
         data: data dictionary from BMS
@@ -104,7 +105,7 @@ class BaseBMS(metaclass=ABCMeta):
         """Disconnect connection to BMS if active."""
 
     @abstractmethod
-    async def async_update(self) -> dict[str, int | float | bool]:
+    async def async_update(self) -> BMSsample:
         """Retrieve updated values from the BMS.
 
         Returns a dictionary of BMS values, where the keys need to match the keys in the SENSOR_TYPES list.

@@ -25,7 +25,7 @@ from ..const import (
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
 )
-from .basebms import BaseBMS
+from .basebms import BaseBMS, BMSsample
 
 BAT_TIMEOUT = 10
 LOGGER = logging.getLogger(__name__)
@@ -233,7 +233,7 @@ class BMS(BaseBMS):
             for idx in range(cells)
         }
 
-    def _decode_data(self, data) -> dict[str, int | float]:
+    def _decode_data(self, data: bytearray) -> BMSsample:
         """Return BMS data from status message."""
         return {
             key: func(
@@ -242,7 +242,7 @@ class BMS(BaseBMS):
             for key, idx, size, sign, func in self._FIELDS
         }
 
-    async def async_update(self) -> dict[str, int | float | bool]:
+    async def async_update(self) -> BMSsample:
         """Update battery status information."""
         await self._connect()
         assert self._client is not None

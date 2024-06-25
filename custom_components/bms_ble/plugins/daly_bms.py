@@ -24,7 +24,7 @@ from ..const import (
     ATTR_VOLTAGE,
     KEY_TEMP_SENS,
 )
-from .basebms import BaseBMS
+from .basebms import BaseBMS, BMSsample
 
 BAT_TIMEOUT = 10
 LOGGER = logging.getLogger(__name__)
@@ -140,7 +140,7 @@ class BMS(BaseBMS):
 
         self._client = None
 
-    async def async_update(self) -> dict[str, int | float | bool]:
+    async def async_update(self) -> BMSsample:
         """Update battery status information."""
         await self._connect()
         assert self._client is not None

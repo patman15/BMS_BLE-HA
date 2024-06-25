@@ -23,7 +23,7 @@ from ..const import (
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
 )
-from .basebms import BaseBMS
+from .basebms import BaseBMS, BMSsample
 
 LOGGER = logging.getLogger(__name__)
 BAT_TIMEOUT = 1
@@ -66,7 +66,7 @@ class BMS(BaseBMS):
             self._ble_device.name[10:],
             self._key,
         )
-        self._values: dict[str, float] = {}  # dictionary of BMS return values
+        self._values: BMSsample = {}  # dictionary of BMS return values
         self._REGISTERS: dict[int, tuple[str, int, Callable[[int], int | float] | None]]
         if self._type == "A":
             self._REGISTERS = {
@@ -124,7 +124,7 @@ class BMS(BaseBMS):
         await self._data_event.wait()
         self._data_event.clear()
 
-    async def async_update(self) -> dict[str, int | float | bool]:
+    async def async_update(self) -> BMSsample:
         """Update battery status information."""
 
         await self._connect()
