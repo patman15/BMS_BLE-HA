@@ -94,7 +94,7 @@ class BMS(BaseBMS):
         self._connected = False
 
     def _notification_handler(self, sender, data: bytearray) -> None:
-        """Callback function for data update."""
+        """Retrieve BMS data update."""
 
         if data[0 : len(self.BT_MODULE_MSG)] == self.BT_MODULE_MSG:
             if len(data) == len(self.BT_MODULE_MSG):
@@ -204,7 +204,7 @@ class BMS(BaseBMS):
 
         self._client = None
 
-    def _crc(self, frame: bytes):
+    def _crc(self, frame: bytes) -> int:
         """Calculate Jikong frame CRC."""
         return sum(frame) & 0xFF
 
@@ -218,6 +218,29 @@ class BMS(BaseBMS):
         frame += bytes([0] * (13 - len(value)))
         frame += bytes([self._crc(frame)])
         return frame
+
+    def _cell_voltages(self, data: bytearray, cells: int) -> dict[str, float]:
+        """Return cell voltages from status message."""
+        return {
+            f"{KEY_CELL_VOLTAGE}{idx}": float(
+                int.from_bytes(
+                    data[6 + 2 * idx : 6 + 2 * idx + 2],
+                    byteorder="little",
+                    signed=True,
+                )
+                / 1000
+            )
+            for idx in range(cells)
+        }
+
+    def _decode_data(self, data) -> dict[str, int | float]:
+        """Return BMS data from status message."""
+        return {
+            key: func(
+                int.from_bytes(data[idx : idx + size], byteorder="little", signed=sign)
+            )
+            for key, idx, size, sign, func in self._FIELDS
+        }
 
     async def async_update(self) -> dict[str, int | float | bool]:
         """Update battery status information."""
@@ -248,36 +271,11 @@ class BMS(BaseBMS):
                 self._data_final,
             )
 
-        data = {
-            key: func(
-                int.from_bytes(
-                    self._data_final[idx : idx + size], byteorder="little", signed=sign
-                )
-            )
-            for key, idx, size, sign, func in self._FIELDS
-        }
+        data = self._decode_data(self._data_final)
+        data.update(self._cell_voltages(self._data_final, int(data[KEY_CELL_COUNT])))
 
-        data.update(
-            {
-                f"{KEY_CELL_VOLTAGE}{idx}": float(
-                    int.from_bytes(
-                        self._data_final[6 + 2 * idx : 6 + 2 * idx + 2],
-                        byteorder="little",
-                        signed=True,
-                    )
-                    / 1000
-                )
-                for idx in range(int(data[KEY_CELL_COUNT]))
-            }
-        )
         self.calc_values(
-            data,
-            {
-                ATTR_POWER,
-                ATTR_BATTERY_CHARGING,
-                ATTR_CYCLE_CAP,
-                ATTR_RUNTIME,
-            },
+            data, {ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_RUNTIME}
         )
 
         if self._reconnect:
