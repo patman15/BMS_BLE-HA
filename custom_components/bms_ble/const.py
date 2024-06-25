@@ -27,5 +27,5 @@ ATTR_RSSI = "rssi"
 
 # temporary dictionary keys (do not change)
 KEY_TEMP_SENS = "temp_sensors"  # [#]
-KEY_CELL_VOLTAGE = "cell_#"
-KEY_CELL_COUNT = "cell_count" # [#]
+KEY_CELL_VOLTAGE = "cell#"  # [V]
+KEY_CELL_COUNT = "cell_count"  # [#]
