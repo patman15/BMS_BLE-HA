@@ -83,6 +83,7 @@ class BMS(BaseBMS):
         return {"manufacturer": "Jikong", "model": "Smart BMS"}
 
     async def _wait_event(self) -> None:
+        """Wait for data event and clear it."""
         await self._data_event.wait()
         self._data_event.clear()
 
@@ -93,8 +94,7 @@ class BMS(BaseBMS):
         self._connected = False
 
     def _notification_handler(self, sender, data: bytearray) -> None:
-        if self._data_event.is_set():
-            return
+        """Callback function for data update."""
 
         if data[0 : len(self.BT_MODULE_MSG)] == self.BT_MODULE_MSG:
             if len(data) == len(self.BT_MODULE_MSG):
@@ -138,7 +138,6 @@ class BMS(BaseBMS):
 
     async def _connect(self) -> None:
         """Connect to the BMS and setup notification if not connected."""
-        self._data_event.clear()
 
         if not self._connected:
             LOGGER.debug("Connecting BMS (%s)", self._ble_device.name)
@@ -230,10 +229,12 @@ class BMS(BaseBMS):
             )
             return {}
 
-        # query cell info
-        await self._client.write_gatt_char(
-            self._char_write_handle or 0, data=self._cmd(b"\x96")
-        )
+        if not self._data_event.is_set():
+            # request cell info (only if data is not constantly published)
+            LOGGER.debug("(%s) request cell info", self._ble_device.name)
+            await self._client.write_gatt_char(
+                self._char_write_handle or 0, data=self._cmd(b"\x96")
+            )
 
         await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 
