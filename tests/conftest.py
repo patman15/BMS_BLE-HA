@@ -165,11 +165,12 @@ class Mock_BMS(BaseBMS):
     """Mock Battery Management System."""
 
     def __init__(
-        self, exc: Exception | None = None
+        self, exc: Exception | None = None, ret_value: dict | None = None
     ) -> None:  # , ble_device, reconnect: bool = False
         """Initialize BMS."""
         LOGGER.debug("%s init(), Test except: %s", self.device_id(), str(exc))
         self._exception = exc
+        self._ret_value = ret_value
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -189,6 +190,9 @@ class Mock_BMS(BaseBMS):
         if self._exception:
             raise self._exception
 
+        if self._ret_value is not None:
+            return self._ret_value
+        
         return {
             ATTR_VOLTAGE: 13,
             ATTR_CURRENT: 1.7,

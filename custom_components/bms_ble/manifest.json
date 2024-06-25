@@ -28,5 +28,5 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bms_ble", "ogt_bms", "daly_bms", "jikong_bms"],
   "requirements": [],
-  "version": "1.4.3"
+  "version": "1.4.4"
 }
