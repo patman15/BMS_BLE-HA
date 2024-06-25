@@ -96,7 +96,7 @@ class BaseBMS(metaclass=ABCMeta):
         # calculate delta voltage (maximum cell voltage difference)
         if can_calc(ATTR_DELTA_VOLTAGE, frozenset({f"{KEY_CELL_VOLTAGE}1"})):
             cell_voltages = [
-                v for k, v in sorted(data.items()) if k.startswith(KEY_CELL_VOLTAGE)
+                v for k, v in data.items() if k.startswith(KEY_CELL_VOLTAGE)
             ]
             data[ATTR_DELTA_VOLTAGE] = round(max(cell_voltages) - min(cell_voltages), 3)
 
