@@ -9,6 +9,7 @@ from custom_components.bms_ble.const import (
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
+    ATTR_DELTA_VOLTAGE,
     UPDATE_INTERVAL,
 )
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
@@ -38,7 +39,7 @@ async def test_update(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
 
     assert config in hass.config_entries.async_entries()
     assert config.state is ConfigEntryState.LOADED
-    assert len(hass.states.async_all(["sensor"])) == 8
+    assert len(hass.states.async_all(["sensor"])) == 9
     data = {
         entity.entity_id: entity.state for entity in hass.states.async_all(["sensor"])
     }
@@ -49,6 +50,7 @@ async def test_update(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
         f"sensor.smartbat_b12345_{ATTR_CURRENT}": "1.5",
         "sensor.smartbat_b12345_stored_energy": "unknown",
         f"sensor.smartbat_b12345_{ATTR_CYCLES}": "unknown",
+        f'sensor.smartbat_b12345_{ATTR_DELTA_VOLTAGE}': 'unknown',
         f"sensor.smartbat_b12345_{ATTR_POWER}": "18.0",
         f"sensor.smartbat_b12345_{ATTR_RUNTIME}": "unknown",
     }
@@ -70,6 +72,7 @@ async def test_update(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
         f"sensor.smartbat_b12345_{ATTR_CURRENT}": "0",
         "sensor.smartbat_b12345_stored_energy": "unknown",
         f"sensor.smartbat_b12345_{ATTR_CYCLES}": "unknown",
+        f'sensor.smartbat_b12345_{ATTR_DELTA_VOLTAGE}': 'unknown',        
         f"sensor.smartbat_b12345_{ATTR_POWER}": "unknown",
         f"sensor.smartbat_b12345_{ATTR_RUNTIME}": "unknown",
     }
