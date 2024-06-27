@@ -18,10 +18,12 @@ from ..const import (
     ATTR_CYCLE_CAP,
     ATTR_CYCLE_CHRG,
     ATTR_CYCLES,
+    ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
+    KEY_CELL_VOLTAGE,
 )
 from .basebms import BaseBMS, BMSsample
 
@@ -80,6 +82,7 @@ class BMS(BaseBMS):
                 16: (ATTR_CURRENT, 3, lambda x: float(x) / 100),
                 24: (ATTR_RUNTIME, 2, lambda x: int(x * 60)),
                 44: (ATTR_CYCLES, 2, None),
+                # Type A batteries have no cell voltage registers
             }
             self._HEADER = "+RAA"
         elif self._type == "B":
@@ -94,6 +97,8 @@ class BMS(BaseBMS):
                 18: (ATTR_RUNTIME, 2, lambda x: int(x * 60)),
                 23: (ATTR_CYCLES, 2, None),
             }
+            # add cell voltage registers, note need to be last!
+            self._REGISTERS.update({63-reg: (f"{KEY_CELL_VOLTAGE}{reg+1}", 2, lambda x: float(x)/1000) for reg in range(16)})
             self._HEADER = "+R16"
         else:
             self._REGISTERS = {}
@@ -136,9 +141,11 @@ class BMS(BaseBMS):
                 await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
             except TimeoutError:
                 LOGGER.debug("Reading %s timed out", self._REGISTERS[key][REG.NAME])
+            if key > 48 and f"{KEY_CELL_VOLTAGE}{64-key}" not in self._values:
+                break
 
         self.calc_values(
-            self._values, {ATTR_CYCLE_CAP, ATTR_POWER, ATTR_BATTERY_CHARGING}
+            self._values, {ATTR_CYCLE_CAP, ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_DELTA_VOLTAGE}
         )
 
         if self._reconnect:
@@ -210,7 +217,7 @@ class BMS(BaseBMS):
         )
         LOGGER.debug("response: %s", msg[:-2])
         # verify correct response
-        if msg[:4] != "+RD," or msg[-2:] != "\r\n":
+        if msg[4:7] == "Err" or msg[:4] != "+RD," or msg[-2:] != "\r\n":
             return False, 0, 0
         # 16-bit value in network order (plus optional multiplier for 24-bit values)
         signed = len(msg) > 12
