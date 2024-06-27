@@ -18,11 +18,14 @@ from ..const import (
     ATTR_CYCLE_CAP,
     ATTR_CYCLE_CHRG,
     ATTR_CYCLES,
+    ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_TEMP_SENS,
+    KEY_CELL_COUNT,
+    KEY_CELL_VOLTAGE,
 )
 from .basebms import BaseBMS, BMSsample
 
@@ -57,17 +60,19 @@ class BMS(BaseBMS):
             (ATTR_VOLTAGE, 80 + self.HEAD_LEN, lambda x: float(x / 10)),
             (ATTR_CURRENT, 82 + self.HEAD_LEN, lambda x: float((x - 30000) / 10)),
             (ATTR_BATTERY_LEVEL, 84 + self.HEAD_LEN, lambda x: float(x / 10)),
-            (
-                ATTR_CYCLES,
-                102 + self.HEAD_LEN,
-                lambda x: int(x),  # pylint: disable=unnecessary-lambda
-            ),
             (ATTR_CYCLE_CHRG, 96 + self.HEAD_LEN, lambda x: float(x / 10)),
             (
                 KEY_TEMP_SENS,
                 100 + self.HEAD_LEN,
                 lambda x: int(x),  # pylint: disable=unnecessary-lambda
             ),
+            (KEY_CELL_COUNT, 98 + self.HEAD_LEN, lambda x: x),
+            (
+                ATTR_CYCLES,
+                102 + self.HEAD_LEN,
+                lambda x: int(x),  # pylint: disable=unnecessary-lambda
+            ),
+            (ATTR_DELTA_VOLTAGE, 112 + self.HEAD_LEN, lambda x: float(x / 1000)),
         ]
 
     @staticmethod
@@ -153,16 +158,26 @@ class BMS(BaseBMS):
             return {}
 
         data = {
-            key: func(int.from_bytes(self._data[idx : idx + 2]))
+            key: func(
+                int.from_bytes(
+                    self._data[idx : idx + 2],
+                    byteorder="big",
+                    signed=True,
+                )
+            )
             for key, idx, func in self._FIELDS
         }
 
         # calculate average temperature
-        if data[KEY_TEMP_SENS] > 0:
+        if data[KEY_TEMP_SENS] and data[KEY_TEMP_SENS] <= 8:
             data[ATTR_TEMPERATURE] = (
                 fmean(
                     [
-                        int.from_bytes(self._data[idx : idx + 2])
+                        int.from_bytes(
+                            self._data[idx : idx + 2],
+                            byteorder="big",
+                            signed=True,
+                        )
                         for idx in range(
                             64 + self.HEAD_LEN,
                             64 + self.HEAD_LEN + int(data[KEY_TEMP_SENS]) * 2,
@@ -171,6 +186,24 @@ class BMS(BaseBMS):
                     ]
                 )
                 - 40
+            )
+
+        # get cell voltages
+        if data[KEY_CELL_COUNT] and data[KEY_CELL_COUNT] <= 32:
+            data.update(
+                {
+                    f"{KEY_CELL_VOLTAGE}{idx}": float(
+                        int.from_bytes(
+                            self._data[
+                                self.HEAD_LEN + 2 * idx : self.HEAD_LEN + 2 * idx + 2
+                            ],
+                            byteorder="big",
+                            signed=True,
+                        )
+                        / 1000
+                    )
+                    for idx in range(int(data[KEY_CELL_COUNT]))
+                }
             )
 
         self.calc_values(
