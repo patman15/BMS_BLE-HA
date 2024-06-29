@@ -1,8 +1,9 @@
 """Test the BLE Battery Management System integration sensor definition."""
 
 from datetime import timedelta
-
 from custom_components.bms_ble.const import (
+    ATTR_BATTERY_CHARGING,
+    ATTR_CELL_VOLTAGES,
     ATTR_CURRENT,
     ATTR_CYCLES,
     ATTR_POWER,
@@ -27,7 +28,13 @@ async def test_update(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
 
     async def patch_async_update(self):
         """Patch async_update to return a specific value."""
-        return {"voltage": 17.0, "current": 0}
+        return {
+            "voltage": 17.0,
+            "current": 0,
+            "cell#0": 3,
+            "cell#1": 3.123,
+            "delta_voltage": 0.123,
+        }
 
     config = mock_config(bms="dummy_bms")
     config.add_to_hass(hass)
@@ -50,7 +57,7 @@ async def test_update(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
         f"sensor.smartbat_b12345_{ATTR_CURRENT}": "1.5",
         "sensor.smartbat_b12345_stored_energy": "unknown",
         f"sensor.smartbat_b12345_{ATTR_CYCLES}": "unknown",
-        f'sensor.smartbat_b12345_{ATTR_DELTA_VOLTAGE}': 'unknown',
+        f"sensor.smartbat_b12345_{ATTR_DELTA_VOLTAGE}": "unknown",
         f"sensor.smartbat_b12345_{ATTR_POWER}": "18.0",
         f"sensor.smartbat_b12345_{ATTR_RUNTIME}": "unknown",
     }
@@ -65,6 +72,8 @@ async def test_update(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
     data = {
         entity.entity_id: entity.state for entity in hass.states.async_all(["sensor"])
     }
+
+    # check all sensor have correct updated value
     assert data == {
         f"sensor.smartbat_b12345_{ATTR_VOLTAGE}": "17.0",
         "sensor.smartbat_b12345_battery": "unknown",
@@ -72,7 +81,11 @@ async def test_update(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
         f"sensor.smartbat_b12345_{ATTR_CURRENT}": "0",
         "sensor.smartbat_b12345_stored_energy": "unknown",
         f"sensor.smartbat_b12345_{ATTR_CYCLES}": "unknown",
-        f'sensor.smartbat_b12345_{ATTR_DELTA_VOLTAGE}': 'unknown',        
+        f"sensor.smartbat_b12345_{ATTR_DELTA_VOLTAGE}": "0.123",
         f"sensor.smartbat_b12345_{ATTR_POWER}": "unknown",
         f"sensor.smartbat_b12345_{ATTR_RUNTIME}": "unknown",
     }
+    # check delta voltage sensor has cell voltage as attribute array
+    assert hass.states.get("sensor.smartbat_b12345_delta_voltage").attributes[
+        ATTR_CELL_VOLTAGES
+    ] == [3, 3.123]
