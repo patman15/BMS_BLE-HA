@@ -72,9 +72,8 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, int | float | bool]]):
         """Return the latest data from the device."""
         LOGGER.debug("BMS %s data update", self.device_info.get(ATTR_NAME))
 
-        battery_info: dict[str, int | float | bool] = {}
         try:
-            battery_info.update(await self._device.async_update())
+            battery_info = await self._device.async_update()
         except TimeoutError:
             LOGGER.debug("Device communication timeout")
             raise
@@ -83,10 +82,14 @@ class BTBmsCoordinator(DataUpdateCoordinator[dict[str, int | float | bool]]):
                 f"device communicating failed: {err!s} ({type(err).__name__})"
             ) from err
 
-        service_info = bluetooth.async_last_service_info(
-            self.hass, address=self._mac, connectable=True
-        )
-        if service_info is not None:
+        if not battery_info:
+            raise UpdateFailed("no valid data received.")
+
+        if (
+            service_info := bluetooth.async_last_service_info(
+                self.hass, address=self._mac, connectable=True
+            )
+        ) is not None:
             battery_info.update({ATTR_RSSI: service_info.rssi})
 
         LOGGER.debug("BMS data sample %s", battery_info)

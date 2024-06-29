@@ -1,20 +1,20 @@
 """The BLE Battery Management System integration."""
 
-import importlib
-
 from homeassistant.components.bluetooth import async_ble_device_from_address
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
+from homeassistant.helpers.importlib import async_import_module
 
 from .const import DOMAIN, LOGGER
 from .coordinator import BTBmsCoordinator
 
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
+PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
 
+type BTBmsConfigEntry = ConfigEntry[BTBmsCoordinator]
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> bool:
     """Set up BT Battery Management System from a config entry."""
     LOGGER.debug("Setup of %s", repr(entry))
 
@@ -30,7 +30,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             f"Could not find BMS ({entry.unique_id}) via Bluetooth"
         )
 
-    plugin = importlib.import_module(entry.data["type"])
+    plugin = await async_import_module(hass, entry.data["type"])
     coordinator = BTBmsCoordinator(hass, ble_device, bms_device=plugin.BMS(ble_device))
     # Query the device the first time, initialise coordinator.data
     try:
@@ -41,22 +41,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Insert the coordinator in the global registry
     hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = coordinator
+    entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> bool:
     """Unload a config entry."""
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        await hass.data[DOMAIN][entry.entry_id].stop()
-        hass.data[DOMAIN].pop(entry.entry_id)
+        await entry.runtime_data.stop()
 
-    LOGGER.info("Unloaded config entry: %s, ok? %s!", entry.unique_id, str(unload_ok))
+    LOGGER.debug("Unloaded config entry: %s, ok? %s!", entry.unique_id, str(unload_ok))
     return unload_ok
 
 
-async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+async def async_migrate_entry(hass: HomeAssistant, config_entry: BTBmsConfigEntry) -> bool:
     """Migrate old entry."""
 
     if config_entry.version > 1:

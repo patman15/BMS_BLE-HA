@@ -1,13 +1,13 @@
 """Test the Daly BMS implementation."""
 
 import asyncio
-from typing import Union
+from collections.abc import Buffer
+from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 from custom_components.bms_ble.plugins.ogt_bms import BMS
-from typing_extensions import Buffer
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient, MockRespChar
@@ -37,7 +37,7 @@ class MockOGTBleakClient(MockBleakClient):
     }
 
     async def _response(
-        self, char_specifier: Union[BleakGATTCharacteristic, int, str], data: Buffer
+        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
         if char_specifier == normalize_uuid_str("fff6"):
             assert self._ble_device.name is not None
@@ -68,9 +68,9 @@ class MockOGTBleakClient(MockBleakClient):
 
     async def write_gatt_char(
         self,
-        char_specifier: Union[BleakGATTCharacteristic, int, str],
+        char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # type: ignore # same as upstream
+        response: bool = None,  # type: ignore[implicit-optional] # noqa: RUF013 # same as upstream
     ) -> None:
         """Issue write command to GATT."""
         # await super().write_gatt_char(char_specifier, data, response)
@@ -86,7 +86,7 @@ class MockInvalidBleakClient(MockOGTBleakClient):
     """Emulate an invalid BleakClient."""
 
     async def _response(
-        self, char_specifier: Union[BleakGATTCharacteristic, int, str], data: Buffer
+        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
         if char_specifier == normalize_uuid_str("fff6"):
             return bytearray(b"invalid_value")
@@ -95,9 +95,9 @@ class MockInvalidBleakClient(MockOGTBleakClient):
 
     async def write_gatt_char(
         self,
-        char_specifier: Union[BleakGATTCharacteristic, int, str],
+        char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # type: ignore # same as upstream
+        response: bool = None,  # type: ignore[implicit-optional] # noqa: RUF013 # same as upstream
     ) -> None:
         """Issue write command to GATT."""
         # await super().write_gatt_char(char_specifier, data, response)
@@ -144,7 +144,7 @@ async def test_update(monkeypatch, ogt_bms_fixture, reconnect_fixture) -> None:
 
     # query again to check already connected state
     result = await bms.async_update()
-    assert bms._connected is not reconnect_fixture
+    assert bms._connected is not reconnect_fixture  # noqa: SLF001
 
     await bms.disconnect()
 
@@ -161,7 +161,7 @@ async def test_invalid_response(monkeypatch) -> None:
 
     result = await bms.async_update()
     assert result == {}
-    assert bms._connected
+    assert bms._connected  # noqa: SLF001
 
     await bms.disconnect()
 

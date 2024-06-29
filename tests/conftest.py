@@ -1,6 +1,6 @@
 """Common fixtures for the BLE Battery Management System integration tests."""
 
-from collections.abc import Callable, Iterable
+from collections.abc import Awaitable, Buffer, Callable, Iterable
 import importlib
 import logging
 from typing import Any
@@ -24,7 +24,6 @@ from custom_components.bms_ble.plugins.basebms import BaseBMS
 from home_assistant_bluetooth import BluetoothServiceInfoBleak
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
-from typing_extensions import Buffer
 
 from .bluetooth import generate_advertisement_data, generate_ble_device
 
@@ -69,6 +68,7 @@ def BTdiscovery() -> BluetoothServiceInfoBleak:
         source="local",
         connectable=True,
         time=0,
+        tx_power=-76,
     )
 
 
@@ -93,6 +93,7 @@ def BTdiscovery_notsupported():
         source="local",
         connectable=True,
         time=0,
+        tx_power=-76,
     )
 
 
@@ -164,11 +165,12 @@ class Mock_BMS(BaseBMS):
     """Mock Battery Management System."""
 
     def __init__(
-        self, exc: Exception | None = None
+        self, exc: Exception | None = None, ret_value: dict | None = None
     ) -> None:  # , ble_device, reconnect: bool = False
         """Initialize BMS."""
         LOGGER.debug("%s init(), Test except: %s", self.device_id(), str(exc))
         self._exception = exc
+        self._ret_value = ret_value
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -188,13 +190,15 @@ class Mock_BMS(BaseBMS):
         if self._exception:
             raise self._exception
 
-        data = {
+        if self._ret_value is not None:
+            return self._ret_value
+        
+        return {
             ATTR_VOLTAGE: 13,
             ATTR_CURRENT: 1.7,
             ATTR_CYCLE_CHRG: 19,
             ATTR_CYCLES: 23,
         }  # set fixed values for dummy battery
-        return data
 
 
 class MockBleakClient(BleakClient):
@@ -235,21 +239,24 @@ class MockBleakClient(BleakClient):
         self._connected = True
         return True
 
-    async def start_notify(  # type: ignore
+    async def start_notify(
         self,
-        char_specifier: BleakGATTCharacteristic | int | str,
-        callback: Callable,
-    ):
+        char_specifier: BleakGATTCharacteristic | int | str | UUID,
+        callback: Callable[
+            [BleakGATTCharacteristic, bytearray], None | Awaitable[None]
+        ],
+        **kwargs,
+    ) -> None:
         """Mock start_notify."""
         LOGGER.debug("MockBleakClient start_notify for %s", char_specifier)
         assert self._connected, "start_notify called, but client not connected."
         self._notify_callback = callback
 
-    async def write_gatt_char(  # type: ignore
+    async def write_gatt_char(
         self,
-        char_specifier: BleakGATTCharacteristic | int | str,
+        char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # type: ignore # same as upstream
+        response: bool = None,  # type: ignore[implicit-optional] # noqa: RUF013 # same as upstream
     ) -> None:
         """Mock write GATT characteristics."""
         LOGGER.debug(
@@ -306,9 +313,7 @@ class MockRespChar(BleakGATTCharacteristic):
         """List of descriptors for this service."""
         raise NotImplementedError
 
-    def get_descriptor(
-        self, specifier: int | str | UUID
-    ) -> BleakGATTDescriptor | None:
+    def get_descriptor(self, specifier: int | str | UUID) -> BleakGATTDescriptor | None:
         """Get a descriptor by handle (int) or UUID (str or uuid.UUID)."""
         raise NotImplementedError
 

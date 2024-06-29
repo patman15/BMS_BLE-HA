@@ -37,11 +37,26 @@ async def test_update(BTdiscovery, hass: HomeAssistant) -> None:
         ATTR_RSSI: BTdiscovery.rssi,
     }
 
+async def test_nodata(BTdiscovery, hass: HomeAssistant) -> None:
+    """Test if coordinator raises exception in case no data, e.g. invalid CRC, is returned."""
+
+    coordinator = BTBmsCoordinator(hass, BTdiscovery.device, Mock_BMS(ret_value={}))
+
+    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
+
+    await coordinator.async_refresh()
+    result = coordinator.data
+    assert not coordinator.last_update_success
+
+    await coordinator.stop()
+
+    assert result is None
+
 
 async def test_update_exception(
     BTdiscovery, mock_coordinator_exception, hass: HomeAssistant
 ) -> None:
-    """Test setting up creates the sensors."""
+    """Test if coordinator raises appropriate exception from BMS."""
 
     coordinator = BTBmsCoordinator(
         hass, BTdiscovery.device, Mock_BMS(mock_coordinator_exception)

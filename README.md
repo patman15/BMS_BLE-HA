@@ -3,28 +3,38 @@
 [![GitHub Release][releases-shield]][releases]
 [![License][license-shield]](LICENSE)
 
-This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). You can use the [ESPHome Bluetooth proxy](https://esphome.io/components/bluetooth_proxy) to extend the bluetooth coverage range. The integration provides the following information about the battery
-
-Platform | Description | Unit
--- | -- | --
-`sensor` | SoC (state of charge) | `%`
-`sensor` | stored energy | `Wh`
-`sensor` | voltage | `V`
-`sensor` | current | `A`
-`sensor` | power | `W`
-`sensor` | temperature | `°C`
-`sensor` | (remaining) runtime | `s`
-`sensor` | charge cycles | `#`
-`binary_sensor` | battery charging indicator | `bool`
+This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). After installation, no configuration is required. You can use the [ESPHome Bluetooth proxy](https://esphome.io/components/bluetooth_proxy) to extend the bluetooth coverage range. By using standard dashboard cards, it is easy to visualize the current state of remote batteries.
 
 ![grafik](https://github.com/patman15/BMS_BLE-HA/assets/14628713/99088715-fa2d-4d3d-90a5-967a8bf08305)
 
-## Supported Devices
+## Features
+- Zero configuration
+- Autodetects compatible batteries
+- Supports [ESPHome Bluetooth proxy](https://esphome.io/components/bluetooth_proxy)
+- Native Home Assistant integration (works with all [HA installation methods](https://www.home-assistant.io/installation/#advanced-installation-methods))
+
+### Supported Devices
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-Axxxxx` or `SmartBat-Bxxxxx`)
 - Daly BMS (show up as `DL-xxxxxxxxxxxx`)
 - JiKong BMS (HW version >=11 required)
 
 New device types can be easily added via the plugin architecture of this integration. See the [contribution guidelines](CONTRIBUTING.md) for details.
+
+### Provided Information
+The integration provides the following information about the battery
+
+Platform | Description | Unit | Details
+-- | -- | -- | --
+`sensor` | SoC (state of charge) | `%` | range 100% (full) to 0% (battery empty)
+`sensor` | stored energy | `Wh` | currently stored energy
+`sensor` | voltage | `V` | overall battery voltage
+`sensor` | current | `A` | positive for charging, negative for discharging
+`sensor` | power | `W` | positive for charging, negative for discharging
+`sensor` | temperature | `°C` |
+`sensor` | (remaining) runtime | `s` | remaining discharge time till SoC 0%
+`sensor` | charge cycles | `#` |
+`binary_sensor` | battery charging indicator | `bool` | true if battery is charging
+
 
 ## Installation
 ### Automatic
@@ -64,6 +74,11 @@ Yes, you can use a [template sensor](https://my.home-assistant.io/redirect/confi
 
 ### I need a discharge sensor not the charging indicator, can I have that?
 Sure, use, e.g. a [threshold sensor](https://my.home-assistant.io/redirect/config_flow_start/?domain=threshold) based on the current to/from the battery. Negative means discharging, positiv is charging.
+
+## Thanks to
+> @downset
+
+for helping with making the integration better.
 
 ## References
 - [Home Assistant Add-on: BatMON](https://github.com/fl4p/batmon-ha)

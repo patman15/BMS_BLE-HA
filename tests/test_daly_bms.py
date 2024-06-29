@@ -1,12 +1,12 @@
 """Test the Daly BMS implementation."""
 
-from typing import Union
+from collections.abc import Buffer
+from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 from custom_components.bms_ble.plugins.daly_bms import BMS
-from typing_extensions import Buffer
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -19,7 +19,7 @@ class MockDalyBleakClient(MockBleakClient):
     CMD_INFO = bytearray(b"\x00\x00\x00\x3E\xD7\xB9")
 
     def _response(
-        self, char_specifier: Union[BleakGATTCharacteristic, int, str], data: Buffer
+        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
         if char_specifier == normalize_uuid_str("fff2") and data == (
             self.HEAD_READ + self.CMD_INFO
@@ -33,9 +33,9 @@ class MockDalyBleakClient(MockBleakClient):
 
     async def write_gatt_char(
         self,
-        char_specifier: Union[BleakGATTCharacteristic, int, str],
+        char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # type: ignore # same as upstream
+        response: bool = None,  # type: ignore[implicit-optional] # noqa: RUF013 # same as upstream
     ) -> None:
         """Issue write command to GATT."""
         await super().write_gatt_char(char_specifier, data, response)
@@ -49,7 +49,7 @@ class MockInvalidBleakClient(MockDalyBleakClient):
     """Emulate a Daly BMS BleakClient."""
 
     def _response(
-        self, char_specifier: Union[BleakGATTCharacteristic, int, str], data: Buffer
+        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
         if char_specifier == normalize_uuid_str("fff2"):
             return bytearray(b"invalid_value")
@@ -82,7 +82,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "battery_level": 90.0,
         "cycles": 57,
         "cycle_charge": 345.6,
-        "numTemp": 4,
+        "temp_sensors": 4,
         "temperature": 21.5,
         "cycle_capacity": 4838.400000000001,
         "power": 42.0,
@@ -91,7 +91,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
 
     # query again to check already connected state
     result = await bms.async_update()
-    assert bms._connected is not reconnect_fixture
+    assert bms._connected is not reconnect_fixture # noqa: SLF001
 
     await bms.disconnect()
 
