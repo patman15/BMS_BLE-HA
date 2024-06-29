@@ -2,7 +2,6 @@
 
 from datetime import timedelta
 from custom_components.bms_ble.const import (
-    ATTR_BATTERY_CHARGING,
     ATTR_CELL_VOLTAGES,
     ATTR_CURRENT,
     ATTR_CYCLES,
