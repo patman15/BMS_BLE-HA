@@ -1,4 +1,4 @@
-"""Module to support Supervolt BMS v4."""
+"""Module to support Supervolt BMS"""
 
 import logging
 from typing import Any, Dict, Optional, Union
