@@ -79,14 +79,15 @@ Yes, you can use a [template sensor](https://my.home-assistant.io/redirect/confi
 Sure, use, e.g. a [threshold sensor](https://my.home-assistant.io/redirect/config_flow_start/?domain=threshold) based on the current to/from the battery. Negative means discharging, positiv is charging.
 
 ## Thanks to
-> @downset
+> [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22)
 
 for helping with making the integration better.
 
 ## References
 - [Home Assistant Add-on: BatMON](https://github.com/fl4p/batmon-ha)
 - Daly BMS: [esp32-smart-bms-simulation](https://github.com/roccotsi2/esp32-smart-bms-simulation)
-- JiKong BMS: [esphome-jk-bms](https://github.com/syssi/esphome-jk-bms)
+- Jikong BMS: [esphome-jk-bms](https://github.com/syssi/esphome-jk-bms)
+- JBD BMS: [esphome-jbd-bms](https://github.com/syssi/esphome-jbd-bms)
 
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge
