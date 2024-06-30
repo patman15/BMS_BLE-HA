@@ -35,12 +35,13 @@ from ..const import (
     # ATTR_CYCLE_CAP,
     # ATTR_CYCLE_CHRG,
     # ATTR_CYCLES,
+    # ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     # ATTR_RUNTIME,
     # ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
 )
-from .basebms import BaseBMS
+from .basebms import BaseBMS, BMSsample
 
 LOGGER = logging.getLogger(__name__)
 
@@ -65,7 +66,7 @@ class BMS(BaseBMS):
     async def disconnect(self) -> None:
         """Disconnect connection to BMS if active."""
 
-    async def async_update(self) -> dict[str, int | float | bool]:
+    async def async_update(self) -> BMSsample:
         """Update battery status information."""
         data = {
             ATTR_VOLTAGE: 12,

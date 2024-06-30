@@ -17,12 +17,15 @@ from ..const import (
     ATTR_CYCLE_CAP,
     ATTR_CYCLE_CHRG,
     ATTR_CYCLES,
+    ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
+    KEY_CELL_COUNT,
+    KEY_CELL_VOLTAGE,
 )
-from .basebms import BaseBMS
+from .basebms import BaseBMS, BMSsample
 
 BAT_TIMEOUT = 10
 LOGGER = logging.getLogger(__name__)
@@ -53,6 +56,8 @@ class BMS(BaseBMS):
         self._connected = False  # flag to indicate active BLE connection
         self._char_write_handle: int | None = None
         self._FIELDS: list[tuple[str, int, int, bool, Callable[[int], int | float]]] = [
+            (KEY_CELL_COUNT, 70, 4, False, lambda x: x.bit_count()),
+            (ATTR_DELTA_VOLTAGE, 76, 2, False, lambda x: float(x / 1000)),
             (ATTR_TEMPERATURE, 144, 2, True, lambda x: float(x / 10)),
             (ATTR_VOLTAGE, 150, 4, False, lambda x: float(x / 1000)),
             (ATTR_CURRENT, 158, 4, True, lambda x: float(x / 1000)),
@@ -89,7 +94,7 @@ class BMS(BaseBMS):
         self._connected = False
 
     def _notification_handler(self, sender, data: bytearray) -> None:
-        """Callback function for data update."""
+        """Retrieve BMS data update."""
 
         if data[0 : len(self.BT_MODULE_MSG)] == self.BT_MODULE_MSG:
             if len(data) == len(self.BT_MODULE_MSG):
@@ -199,7 +204,7 @@ class BMS(BaseBMS):
 
         self._client = None
 
-    def _crc(self, frame: bytes):
+    def _crc(self, frame: bytes) -> int:
         """Calculate Jikong frame CRC."""
         return sum(frame) & 0xFF
 
@@ -214,7 +219,30 @@ class BMS(BaseBMS):
         frame += bytes([self._crc(frame)])
         return frame
 
-    async def async_update(self) -> dict[str, int | float | bool]:
+    def _cell_voltages(self, data: bytearray, cells: int) -> dict[str, float]:
+        """Return cell voltages from status message."""
+        return {
+            f"{KEY_CELL_VOLTAGE}{idx}": float(
+                int.from_bytes(
+                    data[6 + 2 * idx : 6 + 2 * idx + 2],
+                    byteorder="little",
+                    signed=True,
+                )
+                / 1000
+            )
+            for idx in range(cells)
+        }
+
+    def _decode_data(self, data: bytearray) -> BMSsample:
+        """Return BMS data from status message."""
+        return {
+            key: func(
+                int.from_bytes(data[idx : idx + size], byteorder="little", signed=sign)
+            )
+            for key, idx, size, sign, func in self._FIELDS
+        }
+
+    async def async_update(self) -> BMSsample:
         """Update battery status information."""
         await self._connect()
         assert self._client is not None
@@ -243,14 +271,8 @@ class BMS(BaseBMS):
                 self._data_final,
             )
 
-        data = {
-            key: func(
-                int.from_bytes(
-                    self._data_final[idx : idx + size], byteorder="little", signed=sign
-                )
-            )
-            for key, idx, size, sign, func in self._FIELDS
-        }
+        data = self._decode_data(self._data_final)
+        data.update(self._cell_voltages(self._data_final, int(data[KEY_CELL_COUNT])))
 
         self.calc_values(
             data, {ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_RUNTIME}

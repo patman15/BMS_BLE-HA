@@ -47,7 +47,7 @@ async def test_device_discovery(monkeypatch, BTdiscovery, hass: HomeAssistant) -
         result_detail.unique_id
         == "cc:cc:cc:cc:cc:cc"  # pyright: ignore[reportOptionalMemberAccess]
     )
-    assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 9
+    assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 10
 
 
 async def test_device_not_supported(
@@ -184,7 +184,7 @@ async def test_user_setup(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None
     result_detail = result.get("result")
     assert result_detail is not None
     assert result_detail.unique_id == "cc:cc:cc:cc:cc:cc"
-    assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 9
+    assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 10
 
 
 async def test_user_setup_invalid(

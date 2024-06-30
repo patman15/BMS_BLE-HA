@@ -17,11 +17,14 @@ from ..const import (
     ATTR_CURRENT,
     ATTR_CYCLE_CAP,
     ATTR_CYCLE_CHRG,
+    ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     ATTR_RUNTIME,
     ATTR_VOLTAGE,
+    KEY_CELL_VOLTAGE,
 )
 
+type BMSsample = dict[str, int | float | bool]
 
 class BaseBMS(metaclass=ABCMeta):
     """Base class for battery management system."""
@@ -62,7 +65,7 @@ class BaseBMS(metaclass=ABCMeta):
         return False
 
     @classmethod
-    def calc_values(cls, data: dict[str, int | float | bool], values: set[str]):
+    def calc_values(cls, data: BMSsample, values: set[str]):
         """Calculate missing BMS values from existing ones.
 
         data: data dictionary from BMS
@@ -91,12 +94,18 @@ class BaseBMS(metaclass=ABCMeta):
                 data[ATTR_RUNTIME] = int(
                     data[ATTR_CYCLE_CHRG] / abs(data[ATTR_CURRENT]) * _HRS_TO_SECS
                 )
+        # calculate delta voltage (maximum cell voltage difference)
+        if can_calc(ATTR_DELTA_VOLTAGE, frozenset({f"{KEY_CELL_VOLTAGE}1"})):
+            cell_voltages = [
+                v for k, v in data.items() if k.startswith(KEY_CELL_VOLTAGE)
+            ]
+            data[ATTR_DELTA_VOLTAGE] = round(max(cell_voltages) - min(cell_voltages), 3)
 
     async def disconnect(self) -> None:
         """Disconnect connection to BMS if active."""
 
     @abstractmethod
-    async def async_update(self) -> dict[str, int | float | bool]:
+    async def async_update(self) -> BMSsample:
         """Retrieve updated values from the BMS.
 
         Returns a dictionary of BMS values, where the keys need to match the keys in the SENSOR_TYPES list.

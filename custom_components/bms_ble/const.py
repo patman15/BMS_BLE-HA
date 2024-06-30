@@ -15,6 +15,8 @@ LOGGER = logging.getLogger(__package__)
 UPDATE_INTERVAL = 30  # in seconds
 
 # attributes (do not change)
+ATTR_DELTA_VOLTAGE = "delta_voltage"  # [V]
+ATTR_CELL_VOLTAGES = "cell_voltages"  # [V]
 ATTR_CURRENT = "current"  # [A]
 ATTR_CYCLE_CHRG = "cycle_charge"  # [Ah]
 ATTR_CYCLE_CAP = "cycle_capacity"  # [Wh]
@@ -25,3 +27,5 @@ ATTR_RSSI = "rssi"
 
 # temporary dictionary keys (do not change)
 KEY_TEMP_SENS = "temp_sensors"  # [#]
+KEY_CELL_VOLTAGE = "cell#"  # [V]
+KEY_CELL_COUNT = "cell_count"  # [#]
