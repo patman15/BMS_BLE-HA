@@ -18,13 +18,15 @@ from ..const import (
     ATTR_CYCLE_CAP,
     ATTR_CYCLE_CHRG,
     ATTR_CYCLES,
+    ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
+    KEY_CELL_VOLTAGE,
     KEY_TEMP_SENS,
 )
-from .basebms import BaseBMS
+from .basebms import BaseBMS, BMSsample
 
 BAT_TIMEOUT = 10
 LOGGER = logging.getLogger(__name__)
@@ -91,9 +93,10 @@ class BMS(BaseBMS):
         if self._data_event.is_set():
             return
 
+        # check if answer is a heading of basic info (0x3) or cell block info (0x4)
         if (
             data[0 : len(self.HEAD_RSP)] == self.HEAD_RSP
-            and (data[1] == 0x03)  # or data[1] == 0x04)
+            and (data[1] == 0x03 or data[1] == 0x04)
             and data[2] == 0x00
         ):
             self._data = data
@@ -107,7 +110,7 @@ class BMS(BaseBMS):
             data,
         )
 
-        # verify that data long enough and if answer is basic info (0x3)
+        # verify that data long enough and has correct frame ending (0x77)
         if (
             self._data is None
             or len(self._data) < self.INFO_LEN + self._data[3]
@@ -171,14 +174,50 @@ class BMS(BaseBMS):
         frame += bytes([0x77])
         return frame
 
-    async def async_update(self) -> dict[str, int | float | bool]:
+    def _decode_data(self, data: bytearray) -> dict[str, int | float]:
+        result = {
+            key: func(
+                int.from_bytes(data[idx : idx + size], byteorder="big", signed=sign)
+            )
+            for key, idx, size, sign, func in self._FIELDS
+        }
+
+        # calculate average temperature
+        if result[KEY_TEMP_SENS]:
+            result[ATTR_TEMPERATURE] = (
+                fmean(
+                    [
+                        int.from_bytes(data[idx : idx + 2], byteorder="big")
+                        for idx in range(
+                            27,
+                            27 + int(result[KEY_TEMP_SENS]) * 2,
+                            2,
+                        )
+                    ]
+                )
+                - 2731
+            ) / 10
+
+        return result
+
+    def _cell_voltages(self, data: bytearray) -> dict[str, float]:
+        return {
+            f"{KEY_CELL_VOLTAGE}{idx}": float(
+                int.from_bytes(
+                    data[4 + idx * 2 : 4 + idx * 2 + 2], byteorder="big", signed=False
+                )
+            )
+            / 1000
+            for idx in range(int(data[3] / 2))
+        }
+
+    async def async_update(self) -> BMSsample:
         """Update battery status information."""
         await self._connect()
         assert self._client is not None
 
-        # query general info
+        # query basic info
         await self._client.write_gatt_char(UUID_TX, data=self._cmd(b"\x03"))
-
         await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 
         if self._data_final is None:
@@ -191,33 +230,24 @@ class BMS(BaseBMS):
                 self._data_final,
             )
 
-        data = {
-            key: func(
-                int.from_bytes(
-                    self._data_final[idx : idx + size], byteorder="big", signed=sign
-                )
-            )
-            for key, idx, size, sign, func in self._FIELDS
-        }
+        data = self._decode_data(self._data_final)
 
-        # calculate average temperature
-        if data[KEY_TEMP_SENS]:
-            data[ATTR_TEMPERATURE] = (
-                fmean(
-                    [
-                        int.from_bytes(self._data_final[idx : idx + 2])
-                        for idx in range(
-                            27,
-                            27 + int(data[KEY_TEMP_SENS]) * 2,
-                            2,
-                        )
-                    ]
-                )
-                - 2731
-            ) / 10
+        # query cell block info
+        await self._client.write_gatt_char(UUID_TX, data=self._cmd(b"\x04"))
+        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+
+        if self._data_final is not None:
+            data.update(self._cell_voltages(self._data_final))
 
         self.calc_values(
-            data, {ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_RUNTIME}
+            data,
+            {
+                ATTR_POWER,
+                ATTR_BATTERY_CHARGING,
+                ATTR_CYCLE_CAP,
+                ATTR_RUNTIME,
+                ATTR_DELTA_VOLTAGE,
+            },
         )
 
         if self._reconnect:
