@@ -6,13 +6,13 @@ from typing import Any
 from bleak.backends.device import BLEDevice
 
 from ..const import (
-    # ATTR_BALANCE_VOLTAGE,
     ATTR_BATTERY_CHARGING,
     # ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
     # ATTR_CYCLE_CAP,
     # ATTR_CYCLE_CHRG,
     # ATTR_CYCLES,
+    # ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     # ATTR_RUNTIME,
     # ATTR_TEMPERATURE,
