@@ -35,7 +35,7 @@ Platform | Description | Unit | Details
 `sensor` | temperature | `°C` |
 `sensor` | (remaining) runtime | `s` | remaining discharge time till SoC 0%
 `sensor` | charge cycles | `#` |
-`sensor` | delta voltage | `V` | maximum voltage difference between any two cells
+`sensor` | delta voltage | `V` | maximum difference between any two cells
 `binary_sensor` | battery charging indicator | `bool` | true if battery is charging
 
 
