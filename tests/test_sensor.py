@@ -1,15 +1,16 @@
 """Test the BLE Battery Management System integration sensor definition."""
 
 from datetime import timedelta
+
 from custom_components.bms_ble.const import (
     ATTR_CELL_VOLTAGES,
     ATTR_CURRENT,
     ATTR_CYCLES,
+    ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
-    ATTR_DELTA_VOLTAGE,
     UPDATE_INTERVAL,
 )
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
@@ -85,6 +86,7 @@ async def test_update(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
         f"sensor.smartbat_b12345_{ATTR_RUNTIME}": "unknown",
     }
     # check delta voltage sensor has cell voltage as attribute array
-    assert hass.states.get("sensor.smartbat_b12345_delta_voltage").attributes[
+    delta_state = hass.states.get("sensor.smartbat_b12345_delta_voltage")
+    assert delta_state is not None and delta_state.attributes[
         ATTR_CELL_VOLTAGES
     ] == [3, 3.123]

@@ -95,7 +95,7 @@ class MockOversizedBleakClient(MockJBDBleakClient):
                 LOGGER.debug("cell")
                 return bytearray(
                     b"\xdd\x04\x00\x08\x0d\x66\x0d\x61\x0d\x68\x0d\x59\xfe\x3c\x77"
-                    b"\00\00\00\00\00\00\00\00\00\00\00\00"  # oversized response                    
+                    b"\00\00\00\00\00\00\00\00\00\00\00\00"  # oversized response
                 )  # {'cell#0': 3.43, 'cell#1': 3.425, 'cell#2': 3.432, 'cell#3': 3.417}
 
         return bytearray()
@@ -141,7 +141,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
 
     # query again to check already connected state
     result = await bms.async_update()
-    assert bms._connected is not reconnect_fixture
+    assert bms._connected is not reconnect_fixture  # noqa: SLF001
 
     await bms.disconnect()
 
@@ -191,7 +191,7 @@ async def test_oversized_response(monkeypatch) -> None:
         "cell#1": 3.425,
         "cell#2": 3.432,
         "cell#3": 3.417,
-        "delta_voltage": 0.015,        
+        "delta_voltage": 0.015,
     }
 
     await bms.disconnect()
