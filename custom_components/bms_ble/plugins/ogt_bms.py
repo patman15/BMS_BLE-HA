@@ -68,7 +68,7 @@ class BMS(BaseBMS):
             self._ble_device.name[10:],
             self._key,
         )
-        self._values: BMSsample = {}  # dictionary of BMS return values
+        self._values: BMSsample  # dictionary of BMS return values
         self._REGISTERS: dict[int, tuple[str, int, Callable[[int], int | float] | None]]
         if self._type == "A":
             self._REGISTERS = {
@@ -98,7 +98,13 @@ class BMS(BaseBMS):
                 23: (ATTR_CYCLES, 2, None),
             }
             # add cell voltage registers, note need to be last!
-            self._REGISTERS.update({63-reg: (f"{KEY_CELL_VOLTAGE}{reg+1}", 2, lambda x: float(x)/1000) for reg in range(16)})
+            self._REGISTERS.update(
+                {
+                    63
+                    - reg: (f"{KEY_CELL_VOLTAGE}{reg+1}", 2, lambda x: float(x) / 1000)
+                    for reg in range(16)
+                }
+            )
             self._HEADER = "+R16"
         else:
             self._REGISTERS = {}
@@ -134,7 +140,7 @@ class BMS(BaseBMS):
 
         await self._connect()
 
-        self._values.clear()
+        self._values = {}
         for key in list(self._REGISTERS):
             await self._read(key)
             try:
@@ -145,7 +151,8 @@ class BMS(BaseBMS):
                 break
 
         self.calc_values(
-            self._values, {ATTR_CYCLE_CAP, ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_DELTA_VOLTAGE}
+            self._values,
+            {ATTR_CYCLE_CAP, ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_DELTA_VOLTAGE},
         )
 
         if self._reconnect:
