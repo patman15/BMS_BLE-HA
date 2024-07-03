@@ -72,9 +72,8 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
         """Return the latest data from the device."""
         LOGGER.debug("BMS %s data update", self.device_info.get(ATTR_NAME))
 
-        battery_info: BMSsample = {} # required to ensure incremental updates
         try:
-            battery_info.update(await self._device.async_update())
+            battery_info = await self._device.async_update()
         except TimeoutError:
             LOGGER.debug("Device communication timeout")
             raise
