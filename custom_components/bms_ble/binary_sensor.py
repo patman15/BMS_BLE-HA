@@ -12,6 +12,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import BTBmsConfigEntry
+from .const import DOMAIN
 from .coordinator import BTBmsCoordinator
 
 BINARY_SENSOR_TYPES: list[BinarySensorEntityDescription] = [
@@ -32,17 +33,22 @@ async def async_setup_entry(
 
     bms: BTBmsCoordinator = config_entry.runtime_data
     for descr in BINARY_SENSOR_TYPES:
-        async_add_entities([BMSBinarySensor(bms, descr)])
+        async_add_entities(
+            [BMSBinarySensor(bms, descr, format_mac(config_entry.unique_id))]
+        )
 
 
 class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity):  # type: ignore[reportIncompatibleMethodOverride]
     """The generic BMS binary sensor implementation."""
 
     def __init__(
-        self, bms: BTBmsCoordinator, descr: BinarySensorEntityDescription
+        self,
+        bms: BTBmsCoordinator,
+        descr: BinarySensorEntityDescription,
+        unique_id: str,
     ) -> None:
         """Intialize BMS binary sensor."""
-        self._attr_unique_id = f"{format_mac(bms.name)}-{descr.key}"
+        self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
         self._attr_device_info = bms.device_info
         self._attr_has_entity_name = True
         self.entity_description = descr

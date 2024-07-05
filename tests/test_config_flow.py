@@ -7,6 +7,7 @@ from homeassistant.config_entries import SOURCE_BLUETOOTH, SOURCE_USER, ConfigEn
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers import entity_registry as er
 
 from .bluetooth import inject_bluetooth_service_info_bleak
 from .conftest import mock_config
@@ -48,6 +49,13 @@ async def test_device_discovery(monkeypatch, BTdiscovery, hass: HomeAssistant) -
         == "cc:cc:cc:cc:cc:cc"  # pyright: ignore[reportOptionalMemberAccess]
     )
     assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 10
+
+    entities = er.async_get(hass).entities
+    assert len(entities) == 11  # sensors, binary_sensors, rssi
+
+    # check correct unique_id format of all sensor entries
+    for entry in entities.get_entries_for_config_entry_id(result_detail.entry_id):
+        assert entry.unique_id.startswith(f"{DOMAIN}-cc:cc:cc:cc:cc:cc-")
 
 
 async def test_device_not_supported(
@@ -277,3 +285,59 @@ async def test_migrate_entry_from_v_0_1(
     assert config.version == 1
     assert config.minor_version == 0
     assert config.state is ConfigEntryState.LOADED
+
+
+async def test_migrate_unique_id(hass: HomeAssistant) -> None:
+    """Verify that old style unique_ids are correctly migrated to new style."""
+    config = mock_config("jikong_bms")
+    config.add_to_hass(hass)
+    await hass.async_block_till_done()
+
+    assert config in hass.config_entries.async_entries()
+    config_entry = hass.config_entries.async_entries(domain=DOMAIN)[0]
+
+    ent_reg = er.async_get(hass)
+    # add entry with old unique_id style to be modified
+    entry_old = ent_reg.async_get_or_create(
+        capabilities={"state_class": "measurement"},
+        config_entry=config_entry,
+        device_id="0a93efc4fd01acbcfcb034bfd903b2b0",
+        domain=DOMAIN,
+        has_entity_name=True,
+        original_device_class="battery",
+        original_name="Battery",
+        platform="bms_ble",
+        supported_features=0,
+        translation_key="battery_level",
+        unique_id="myJBD-test-battery_level",
+        unit_of_measurement="%",
+    )
+
+    # generate another entry that should be kept untouched
+    entry_new = ent_reg.async_get_or_create(
+        capabilities={"state_class": "measurement"},
+        config_entry=config_entry,
+        device_id="0a93efc4fd01acbcfcb034bfd903b2b0",
+        domain=DOMAIN,
+        has_entity_name=True,
+        original_device_class="battery",
+        original_name="Battery",
+        platform="bms_ble",
+        supported_features=0,
+        translation_key="battery_level",
+        unique_id=f"{DOMAIN}-myJBD-test-battery_level",
+        unit_of_measurement="%",
+    )
+
+    await hass.config_entries.async_setup(config.entry_id)
+    await hass.async_block_till_done()
+
+    # check that "old_style" entry is migrated
+    modified_entry = ent_reg.async_get(entry_old.entity_id)
+    assert (modified_entry) is not None
+    assert modified_entry.unique_id == f"{DOMAIN}-cc:cc:cc:cc:cc:cc-battery_level"
+
+    # check that "new style" entry is not modified
+    unmodified_entry = ent_reg.async_get(entry_new.entity_id)
+    assert (unmodified_entry) is not None
+    assert unmodified_entry.unique_id == f"{DOMAIN}-myJBD-test-battery_level"

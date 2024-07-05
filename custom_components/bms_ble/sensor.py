@@ -35,6 +35,7 @@ from .const import (
     ATTR_POWER,
     ATTR_RSSI,
     ATTR_RUNTIME,
+    DOMAIN,
     KEY_CELL_VOLTAGE,
 )
 from .coordinator import BTBmsCoordinator
@@ -131,7 +132,7 @@ async def async_setup_entry(
 
     bms: BTBmsCoordinator = config_entry.runtime_data
     for descr in SENSOR_TYPES:
-        async_add_entities([BMSSensor(bms, descr)])
+        async_add_entities([BMSSensor(bms, descr, format_mac(config_entry.unique_id))])
 
 
 class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ignore[reportIncompatibleMethodOverride]
@@ -139,9 +140,11 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
 
     _attr_has_entity_name = True
 
-    def __init__(self, bms: BTBmsCoordinator, descr: SensorEntityDescription) -> None:
+    def __init__(
+        self, bms: BTBmsCoordinator, descr: SensorEntityDescription, unique_id: str
+    ) -> None:
         """Intitialize the BMS sensor."""
-        self._attr_unique_id = f"{format_mac(bms.name)}-{descr.key}"
+        self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
         self._attr_device_info = bms.device_info
         self.entity_description = descr
         super().__init__(bms)
