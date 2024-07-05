@@ -1,18 +1,18 @@
 """Test the BLE Battery Management System base class functions."""
 
-import pytest
 from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
     ATTR_CURRENT,
     ATTR_CYCLE_CAP,
+    ATTR_CYCLE_CHRG,
+    ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     ATTR_RUNTIME,
-    ATTR_CYCLE_CHRG,
     ATTR_VOLTAGE,
-    ATTR_DELTA_VOLTAGE,
     KEY_CELL_VOLTAGE,
 )
 from custom_components.bms_ble.plugins.basebms import BaseBMS
+import pytest
 
 
 @pytest.fixture(params=[-13, 0, 21])

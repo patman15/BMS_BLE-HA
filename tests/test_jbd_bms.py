@@ -27,7 +27,10 @@ class MockJBDBleakClient(MockBleakClient):
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
         LOGGER.debug("response")
-        if char_specifier == normalize_uuid_str("ff02") and data[0] == self.HEAD_CMD:
+        if (
+            char_specifier == normalize_uuid_str("ff02")
+            and bytearray(data)[0] == self.HEAD_CMD
+        ):
             LOGGER.debug("response command")
             if bytearray(data)[1:3] == self.CMD_INFO:
                 LOGGER.debug("info")
@@ -84,7 +87,10 @@ class MockOversizedBleakClient(MockJBDBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if char_specifier == normalize_uuid_str("ff02") and data[0] == self.HEAD_CMD:
+        if (
+            char_specifier == normalize_uuid_str("ff02")
+            and bytearray(data)[0] == self.HEAD_CMD
+        ):
             if bytearray(data)[1:3] == self.CMD_INFO:
                 return bytearray(
                     b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
