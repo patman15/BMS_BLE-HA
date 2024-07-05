@@ -32,17 +32,17 @@ LOGGER = logging.getLogger(__name__)
 #    serv 0000fff0-0000-1000-8000-00805f9b34fb
 # 	 char 0000fff1-0000-1000-8000-00805f9b34fb (#16): ['read', 'notify']
 # 	 char 0000fff2-0000-1000-8000-00805f9b34fb (#20): ['read', 'write-without-response', 'write']
-UUID_CHAR = normalize_uuid_str("FFF1")
-UUID_SERVICE = normalize_uuid_str("FFF0")
+UUID_CHAR = normalize_uuid_str("fff1")
+UUID_SERVICE = normalize_uuid_str("fff0")
 
 
 class BMS(BaseBMS):
     """Seplos V3 Smart BMS class implementation."""
 
-    CMD_READ = 0x04
-    PART = [0xE0, 0x00, 0x01]  # partitions: PIA, PIB, PIC
-    HEAD_LEN = 3
-    CRC_LEN = 2
+    CMD_READ: int = 0x04
+    PART: list[int] = [0xE0, 0x00, 0x01]  # partitions: PIA, PIB, PIC
+    HEAD_LEN: int = 3
+    CRC_LEN: int = 2
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
@@ -50,9 +50,11 @@ class BMS(BaseBMS):
         self._ble_device = ble_device
         assert self._ble_device.name is not None
         self._client: BleakClient | None = None
-        self._data: bytearray
+        self._data: bytearray | None = None
         self._exp_dat_len: int = 0
-        self._data_final: dict[int, bytearray]
+        self._data_final: dict[int, bytearray] = {
+            part: bytearray() for part in self.PART
+        }
         self._data_event = asyncio.Event()
         self._connected = False  # flag to indicate active BLE connection
         self._char_write_handle: int | None = None
@@ -101,13 +103,6 @@ class BMS(BaseBMS):
     def _notification_handler(self, sender, data: bytearray) -> None:
         """Retrieve BMS data update."""
 
-        LOGGER.debug(
-            "(%s) Rx BLE data (%s): %s",
-            self._ble_device.name,
-            "start" if data == self._data else "cnt.",
-            data,
-        )
-
         if (
             len(data) > self.HEAD_LEN + self.CRC_LEN
             and data[1] == self.CMD_READ
@@ -115,15 +110,26 @@ class BMS(BaseBMS):
             and data[2] >= self.HEAD_LEN + self.CRC_LEN
         ):
             self._data = data
-            self._exp_dat_len = data[2]  # expected packet length
+            self._exp_dat_len = (
+                data[2] + self.HEAD_LEN + self.CRC_LEN
+            )  # expected packet length
         elif len(data) and self._data is not None:
             self._data += data
 
-        # verify that data long enough and if answer is cell info (0x2)
+        LOGGER.debug(
+            "(%s) Rx BLE data (%s): %s",
+            self._ble_device.name,
+            "start" if data == self._data else "cnt.",
+            data,
+        )
+
+        # verify that data long enough
         if self._data is None or len(self._data) < self._exp_dat_len:
             return
 
-        crc = self._crc(self._data[0 : self._exp_dat_len - 2])
+        crc = int.from_bytes(
+            self._data[self._exp_dat_len - 2 :], byteorder="little"
+        )  # self._crc(self._data[0 : self._exp_dat_len - 2])
         if (
             int.from_bytes(self._data[self._exp_dat_len - 2 :], byteorder="little")
             != crc
@@ -134,9 +140,9 @@ class BMS(BaseBMS):
                 int.from_bytes(self._data[self._exp_dat_len - 2 :], byteorder="little"),
                 crc,
             )
-            self._data_final[data[0]] = bytearray()  # reset invalid data
+            self._data_final[int(self._data[0])] = bytearray()  # reset invalid data
         else:
-            self._data_final[data[0]] = self._data
+            self._data_final[int(self._data[0])] = self._data
 
         self._data_event.set()
 
@@ -193,10 +199,13 @@ class BMS(BaseBMS):
                 "Update request, but device (%s) not connected", self._ble_device.name
             )
             return {}
+
         await self._client.write_gatt_char(0, b"")
         await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 
-        if not all(len(self._data_final[self.PART[x]]) for x in range(2)):
+
+        LOGGER.debug(f"{self._data_final=} {self.PART=}")
+        if not any(len(self._data_final[self.PART[x]]) for x in range(3)):
             return {}
         # if len(self._data_final) != self.INFO_LEN:
         #     LOGGER.debug(
@@ -209,13 +218,15 @@ class BMS(BaseBMS):
         data = {
             key: func(
                 int.from_bytes(
-                    self._data_final[self.PART[0]][idx : idx + size], byteorder="little", signed=sign
+                    self._data_final[self.PART[0]][idx : idx + size],
+                    byteorder="little",
+                    signed=sign,
                 )
             )
             for key, idx, size, sign, func in self._FIELDS
         }
 
-        # get cell voltages        
+        # get cell voltages
         if len(self._data_final[self.PART[1]]):
             data.update(
                 {
