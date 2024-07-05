@@ -27,9 +27,12 @@ from .basebms import BaseBMS
 BAT_TIMEOUT = 10
 LOGGER = logging.getLogger(__name__)
 
-# setup UUIDs, e.g. for receive: '0000fff1-0000-1000-8000-00805f9b34fb'
-UUID_CHAR = normalize_uuid_str("2A05")
-UUID_SERVICE = normalize_uuid_str("1801")
+# setup UUIDs
+#    serv 0000fff0-0000-1000-8000-00805f9b34fb
+#	 char 0000fff1-0000-1000-8000-00805f9b34fb (#16): ['read', 'notify']
+#	 char 0000fff2-0000-1000-8000-00805f9b34fb (#20): ['read', 'write-without-response', 'write']
+UUID_CHAR = normalize_uuid_str("FFF1")
+UUID_SERVICE = normalize_uuid_str("FFF0")
 
 
 class BMS(BaseBMS):
