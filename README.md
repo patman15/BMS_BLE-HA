@@ -16,7 +16,9 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 ### Supported Devices
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-Axxxxx` or `SmartBat-Bxxxxx`)
 - Daly BMS (show up as `DL-xxxxxxxxxxxx`)
-- JiKong BMS (HW version >=11 required)
+- JK BMS, Jikong, (HW version >=11 required)
+- JBD BMS, Jiabaida
+- Supervolt batteries (JBD BMS)
 
 New device types can be easily added via the plugin architecture of this integration. See the [contribution guidelines](CONTRIBUTING.md) for details.
 
@@ -33,6 +35,7 @@ Platform | Description | Unit | Details
 `sensor` | temperature | `°C` |
 `sensor` | (remaining) runtime | `s` | remaining discharge time till SoC 0%
 `sensor` | charge cycles | `#` |
+`sensor` | delta voltage | `V` | maximum difference between any two cells
 `binary_sensor` | battery charging indicator | `bool` | true if battery is charging
 
 
@@ -76,14 +79,15 @@ Yes, you can use a [template sensor](https://my.home-assistant.io/redirect/confi
 Sure, use, e.g. a [threshold sensor](https://my.home-assistant.io/redirect/config_flow_start/?domain=threshold) based on the current to/from the battery. Negative means discharging, positiv is charging.
 
 ## Thanks to
-> @downset
+> [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22)
 
 for helping with making the integration better.
 
 ## References
 - [Home Assistant Add-on: BatMON](https://github.com/fl4p/batmon-ha)
 - Daly BMS: [esp32-smart-bms-simulation](https://github.com/roccotsi2/esp32-smart-bms-simulation)
-- JiKong BMS: [esphome-jk-bms](https://github.com/syssi/esphome-jk-bms)
+- Jikong BMS: [esphome-jk-bms](https://github.com/syssi/esphome-jk-bms)
+- JBD BMS: [esphome-jbd-bms](https://github.com/syssi/esphome-jbd-bms)
 
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge

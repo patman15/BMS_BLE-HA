@@ -19,7 +19,7 @@
       "manufacturer_id": 2917
     },
     {
-      "local_name": "SP0*"
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     }
   ],
   "codeowners": ["@patman15"],
@@ -29,7 +29,7 @@
   "integration_type": "device",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
-  "loggers": ["bms_ble", "ogt_bms", "daly_bms", "jikong_bms", "seplos_bms"],
+  "loggers": ["bms_ble", "daly_bms", "jbd_bms", "jikong_bms", "ogt_bms", "seplos_bms"],
   "requirements": [],
-  "version": "1.5.0"
+  "version": "1.6.0"
 }

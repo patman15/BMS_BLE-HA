@@ -20,7 +20,7 @@ from custom_components.bms_ble.const import (
     BMS_TYPES,
     DOMAIN,
 )
-from custom_components.bms_ble.plugins.basebms import BaseBMS
+from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 from home_assistant_bluetooth import BluetoothServiceInfoBleak
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -122,17 +122,6 @@ def mock_config_v0_1(request, unique_id="cc:cc:cc:cc:cc:cc"):
     )
 
 
-@pytest.fixture(params=[-13, 0, 21])
-def bms_data_fixture(request):
-    """Return a fake BMS data dictionary."""
-
-    return {
-        ATTR_VOLTAGE: 7.0,
-        ATTR_CURRENT: request.param,
-        ATTR_CYCLE_CHRG: 34,
-    }
-
-
 @pytest.fixture(params=[TimeoutError, BleakError])
 def mock_coordinator_exception(request):
     """Return possible exceptions for mock BMS update function."""
@@ -165,12 +154,21 @@ class Mock_BMS(BaseBMS):
     """Mock Battery Management System."""
 
     def __init__(
-        self, exc: Exception | None = None, ret_value: dict | None = None
+        self, exc: Exception | None = None, ret_value: BMSsample | None = None
     ) -> None:  # , ble_device, reconnect: bool = False
         """Initialize BMS."""
         LOGGER.debug("%s init(), Test except: %s", self.device_id(), str(exc))
         self._exception = exc
-        self._ret_value = ret_value
+        self._ret_value: BMSsample = (
+            ret_value
+            if ret_value is not None
+            else {
+                ATTR_VOLTAGE: 13,
+                ATTR_CURRENT: 1.7,
+                ATTR_CYCLE_CHRG: 19,
+                ATTR_CYCLES: 23,
+            }
+        )  # set fixed values for dummy battery
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -185,20 +183,12 @@ class Mock_BMS(BaseBMS):
     async def disconnect(self) -> None:
         """Disconnect connection to BMS if active."""
 
-    async def async_update(self) -> dict[str, int | float | bool]:
+    async def async_update(self) -> BMSsample:
         """Update battery status information."""
         if self._exception:
             raise self._exception
 
-        if self._ret_value is not None:
-            return self._ret_value
-        
-        return {
-            ATTR_VOLTAGE: 13,
-            ATTR_CURRENT: 1.7,
-            ATTR_CYCLE_CHRG: 19,
-            ATTR_CYCLES: 23,
-        }  # set fixed values for dummy battery
+        return self._ret_value
 
 
 class MockBleakClient(BleakClient):

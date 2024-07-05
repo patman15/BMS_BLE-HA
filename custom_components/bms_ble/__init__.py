@@ -5,6 +5,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.importlib import async_import_module
 
 from .const import DOMAIN, LOGGER
@@ -14,12 +16,16 @@ PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
 
 type BTBmsConfigEntry = ConfigEntry[BTBmsCoordinator]
 
+
 async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> bool:
     """Set up BT Battery Management System from a config entry."""
     LOGGER.debug("Setup of %s", repr(entry))
 
     if entry.unique_id is None:
         raise ConfigEntryError("Missing unique ID for device.")
+
+    # migrate old entries
+    migrate_sensor_entities(hass, entry)
 
     ble_device = async_ble_device_from_address(
         hass=hass, address=entry.unique_id, connectable=True
@@ -42,6 +48,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> boo
     # Insert the coordinator in the global registry
     hass.data.setdefault(DOMAIN, {})
     entry.runtime_data = coordinator
+
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
@@ -55,7 +62,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> bo
     return unload_ok
 
 
-async def async_migrate_entry(hass: HomeAssistant, config_entry: BTBmsConfigEntry) -> bool:
+async def async_migrate_entry(
+    hass: HomeAssistant, config_entry: BTBmsConfigEntry
+) -> bool:
     """Migrate old entry."""
 
     if config_entry.version > 1:
@@ -90,3 +99,24 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: BTBmsConfigEntr
         )
 
     return True
+
+
+def migrate_sensor_entities(
+    hass: HomeAssistant,
+    config_entry: BTBmsConfigEntry,
+) -> None:
+    """Migrate old unique_ids with wrong format (name) to new format (MAC address) if needed."""
+    ent_reg = er.async_get(hass)
+    entities = ent_reg.entities
+
+    for entry in entities.get_entries_for_config_entry_id(config_entry.entry_id):
+        if entry.unique_id.startswith(f"{DOMAIN}-"):
+            continue
+        new_unique_id = f"{DOMAIN}-{format_mac(config_entry.unique_id)}-{entry.unique_id.split('-')[-1]}"
+        LOGGER.debug(
+            "migrating %s with old unique_id '%s' to new '%s'",
+            entry.entity_id,
+            entry.unique_id,
+            new_unique_id,
+        )
+        ent_reg.async_update_entity(entry.entity_id, new_unique_id=new_unique_id)
