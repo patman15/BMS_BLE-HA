@@ -22,7 +22,7 @@ from ..const import (
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
-    KEY_CELL_VOLTAGE,
+#    KEY_CELL_VOLTAGE,
 )
 from .basebms import BaseBMS
 
@@ -171,7 +171,43 @@ class BMS(BaseBMS):
                 services=[UUID_SERVICE],
             )
             await self._client.connect()
-            await self._client.start_notify(UUID_CHAR, self._notification_handler)
+            char_notify_handle: int | None = None
+            self._char_write_handle = None
+            for service in self._client.services:
+                for char in service.characteristics:
+                    LOGGER.debug(
+                        "(%s) Discovered service %s,\n\t char %s (#%i): %s",
+                        self._ble_device.name,
+                        service.uuid,
+                        char.uuid,
+                        char.handle,
+                        char.properties,
+                    )
+                    if char.uuid == UUID_CHAR:
+                        if "notify" in char.properties or "indicate" in char.properties:
+                            char_notify_handle = char.handle
+                        if (
+                            "write" in char.properties
+                            or "write-without-response" in char.properties
+                        ):
+                            self._char_write_handle = char.handle
+            if char_notify_handle is None:
+                LOGGER.debug(
+                    "(%s) Failed to detect characteristics", self._ble_device.name
+                )
+                await self._client.disconnect()
+                return
+            LOGGER.debug(
+                "(%s) Using characteristics handle #%i (notify), #%i (write)",
+                self._ble_device.name,
+                char_notify_handle,
+                self._char_write_handle or 0,
+            )
+            await self._client.start_notify(
+                char_notify_handle or 0, self._notification_handler
+            )
+
+            #await self._client.start_notify(UUID_CHAR, self._notification_handler)
             self._connected = True
         else:
             LOGGER.debug("BMS %s already connected", self._ble_device.name)
