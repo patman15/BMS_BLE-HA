@@ -143,6 +143,14 @@ class BMS(BaseBMS):
             self._data_final[int(self._data[0])] = bytearray()  # reset invalid data
         else:
             self._data_final[int(self._data[0])] = self._data
+            if len(self._data) != self._exp_dat_len:
+                LOGGER.debug(
+                    "(%s) Wrong data length (%i!=%s): %s",
+                    self._ble_device.name,
+                    len(self._data_final),
+                    self._exp_dat_len,
+                    self._data_final,
+                )            
 
         self._data_event.set()
 
@@ -175,20 +183,10 @@ class BMS(BaseBMS):
 
         self._client = None
 
+    # FIXME! implement correct CRC mechanism
     # def _crc(self, frame: bytes):
     #     """Calculate Seplos V3 frame CRC."""
     #     return sum(frame) & 0xFF
-
-    # def _cmd(self, cmd: bytes, value: list[int] | None = None) -> bytes:
-    #     """Assemble a Seplos V3 BMS command."""
-    #     if value is None:
-    #         value = []
-    #     assert len(value) <= 13
-    #     frame = bytes([*self.HEAD_CMD, cmd[0]])
-    #     frame += bytes([len(value), *value])
-    #     frame += bytes([0] * (13 - len(value)))
-    #     frame += bytes([self._crc(frame)])
-    #     return frame
 
     async def async_update(self) -> dict[str, int | float | bool]:
         """Update battery status information."""
@@ -200,26 +198,16 @@ class BMS(BaseBMS):
             )
             return {}
 
-        await self._client.write_gatt_char(0, b"")
         await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 
-
-        LOGGER.debug(f"{self._data_final=} {self.PART=}")
-        if not any(len(self._data_final[self.PART[x]]) for x in range(3)):
+        if not any(len(self._data_final[self.PART[idx]]) for idx in range(3)):
             return {}
-        # if len(self._data_final) != self.INFO_LEN:
-        #     LOGGER.debug(
-        #         "(%s) Wrong data length (%i): %s",
-        #         self._ble_device.name,
-        #         len(self._data_final),
-        #         self._data_final,
-        #     )
 
         data = {
             key: func(
                 int.from_bytes(
                     self._data_final[self.PART[0]][idx : idx + size],
-                    byteorder="little",
+                    byteorder="big",
                     signed=sign,
                 )
             )
@@ -227,15 +215,15 @@ class BMS(BaseBMS):
         }
 
         # get cell voltages
-        if len(self._data_final[self.PART[1]]):
+        if len(self._data_final[self.PART[2]]):
             data.update(
                 {
                     f"{KEY_CELL_VOLTAGE}{idx}": float(
                         int.from_bytes(
-                            self._data_final[self.PART[1]][
+                            self._data_final[self.PART[2]][
                                 self.HEAD_LEN + 2 * idx : self.HEAD_LEN + 2 * idx + 2
                             ],
-                            byteorder="little",
+                            byteorder="big",
                             signed=False,
                         )
                         / 1000
