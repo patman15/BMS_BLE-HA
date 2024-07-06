@@ -17,6 +17,7 @@ from ..const import (
     ATTR_CYCLE_CAP,
     ATTR_CYCLE_CHRG,
     ATTR_CYCLES,
+    ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
@@ -40,7 +41,7 @@ class BMS(BaseBMS):
     """Seplos V3 Smart BMS class implementation."""
 
     CMD_READ: int = 0x04
-    PART: list[int] = [0xE0, 0x00, 0x01]  # partitions: PIA, PIB, PIC
+    PART: list[int] = [0x00, 0x01]  # partitions: PIA, PIB, PIC
     HEAD_LEN: int = 3
     CRC_LEN: int = 2
 
@@ -51,26 +52,30 @@ class BMS(BaseBMS):
         assert self._ble_device.name is not None
         self._client: BleakClient | None = None
         self._data: bytearray | None = None
-        self._exp_dat_len: int = 0
+        self._exp_len: int = 0
         self._data_final: dict[int, bytearray] = {
             part: bytearray() for part in self.PART
         }
         self._data_event = asyncio.Event()
         self._connected = False  # flag to indicate active BLE connection
         self._char_write_handle: int | None = None
-        self._FIELDS: list[tuple[str, int, int, bool, Callable[[int], int | float]]] = [
-            (ATTR_VOLTAGE, self.HEAD_LEN, 2, False, lambda x: float(x / 100)),
-            (ATTR_CURRENT, self.HEAD_LEN + 2, 2, True, lambda x: float(x / 100)),
-            (ATTR_CYCLE_CHRG, self.HEAD_LEN + 4, 2, False, lambda x: float(x / 100)),
+        self._FIELDS: list[
+            tuple[str, int, int, int, bool, Callable[[int], int | float]]
+        ] = [
+            (ATTR_DELTA_VOLTAGE, 0, self.HEAD_LEN + 4, 2, False, lambda x: float(x/1000)),
+            (ATTR_TEMPERATURE, 0, self.HEAD_LEN + 20, 2,False, lambda x: float(x/10)),
+            (ATTR_VOLTAGE, 1, self.HEAD_LEN, 2, False, lambda x: float(x / 100)),
+            (ATTR_CURRENT, 1, self.HEAD_LEN + 2, 2, True, lambda x: float(x / 100)),
+            (ATTR_CYCLE_CHRG, 1, self.HEAD_LEN + 4, 2, False, lambda x: float(x / 100)),
             (
-                ATTR_TEMPERATURE,
-                self.HEAD_LEN + 6,
+                ATTR_BATTERY_LEVEL,
+                1,
+                self.HEAD_LEN + 10,
                 2,
                 False,
-                lambda x: round(float(x) * 0.1 - 273.15, 1),
+                lambda x: float(x / 10),
             ),
-            (ATTR_BATTERY_LEVEL, self.HEAD_LEN + 10, 2, False, lambda x: float(x / 10)),
-            (ATTR_CYCLES, self.HEAD_LEN + 14, 2, False, lambda x: x),
+            (ATTR_CYCLES, 1, self.HEAD_LEN + 14, 2, False, lambda x: x),
         ]  # Protocol Seplos V3
 
     @staticmethod
@@ -110,7 +115,7 @@ class BMS(BaseBMS):
             and data[2] >= self.HEAD_LEN + self.CRC_LEN
         ):
             self._data = data
-            self._exp_dat_len = (
+            self._exp_len = (
                 data[2] + self.HEAD_LEN + self.CRC_LEN
             )  # expected packet length
         elif len(data) and self._data is not None:
@@ -124,33 +129,34 @@ class BMS(BaseBMS):
         )
 
         # verify that data long enough
-        if self._data is None or len(self._data) < self._exp_dat_len:
+        if self._data is None or len(self._data) < self._exp_len:
             return
 
         crc = int.from_bytes(
-            self._data[self._exp_dat_len - 2 :], byteorder="little"
+            self._data[self._exp_len - 2 :], byteorder="little"
         )  # self._crc(self._data[0 : self._exp_dat_len - 2])
         if (
-            int.from_bytes(self._data[self._exp_dat_len - 2 :], byteorder="little")
-            != crc
+            int.from_bytes(self._data[self._exp_len - 2 :], byteorder="little") != crc
+            or (self._data[0] == 0x00 and self._data[2] != 0x2C)
+            or (self._data[0] == 0x01 and self._data[2] != 0x22)
         ):
             LOGGER.debug(
-                "(%s) Rx data CRC is invalid: %i != %i",
+                "(%s) Rx data CRC is invalid: %i != %i or wrong message %s",
                 self._ble_device.name,
-                int.from_bytes(self._data[self._exp_dat_len - 2 :], byteorder="little"),
-                crc,
+                int.from_bytes(self._data[self._exp_len - 2 :], byteorder="little"),
+                crc, self._data[0:3]
             )
             self._data_final[int(self._data[0])] = bytearray()  # reset invalid data
         else:
             self._data_final[int(self._data[0])] = self._data
-            if len(self._data) != self._exp_dat_len:
+            if len(self._data) != self._exp_len:
                 LOGGER.debug(
                     "(%s) Wrong data length (%i!=%s): %s",
                     self._ble_device.name,
                     len(self._data_final),
-                    self._exp_dat_len,
+                    self._exp_len,
                     self._data_final,
-                )            
+                )
 
         self._data_event.set()
 
@@ -206,31 +212,31 @@ class BMS(BaseBMS):
         data = {
             key: func(
                 int.from_bytes(
-                    self._data_final[self.PART[0]][idx : idx + size],
+                    self._data_final[self.PART[part]][idx : idx + size],
                     byteorder="big",
                     signed=sign,
                 )
             )
-            for key, idx, size, sign, func in self._FIELDS
+            for key, part, idx, size, sign, func in self._FIELDS
         }
 
         # get cell voltages
-        if len(self._data_final[self.PART[2]]):
-            data.update(
-                {
-                    f"{KEY_CELL_VOLTAGE}{idx}": float(
-                        int.from_bytes(
-                            self._data_final[self.PART[2]][
-                                self.HEAD_LEN + 2 * idx : self.HEAD_LEN + 2 * idx + 2
-                            ],
-                            byteorder="big",
-                            signed=False,
-                        )
-                        / 1000
-                    )
-                    for idx in range(16)
-                }
-            )
+        # if len(self._data_final[self.PART[2]]):
+        #     data.update(
+        #         {
+        #             f"{KEY_CELL_VOLTAGE}{idx}": float(
+        #                 int.from_bytes(
+        #                     self._data_final[self.PART[2]][
+        #                         self.HEAD_LEN + 2 * idx : self.HEAD_LEN + 2 * idx + 2
+        #                     ],
+        #                     byteorder="big",
+        #                     signed=False,
+        #                 )
+        #                 / 1000
+        #             )
+        #             for idx in range(16)
+        #         }
+        #     )
 
         self.calc_values(
             data, {ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_RUNTIME}
