@@ -22,7 +22,7 @@ from ..const import (
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
-#    KEY_CELL_VOLTAGE,
+    #    KEY_CELL_VOLTAGE,
 )
 from .basebms import BaseBMS
 
@@ -62,8 +62,22 @@ class BMS(BaseBMS):
         self._FIELDS: list[
             tuple[str, int, int, int, bool, Callable[[int], int | float]]
         ] = [
-            (ATTR_DELTA_VOLTAGE, 0, self.HEAD_LEN + 4, 2, False, lambda x: float(x/1000)),
-            (ATTR_TEMPERATURE, 0, self.HEAD_LEN + 20, 2,False, lambda x: float(x/10)),
+            (
+                ATTR_DELTA_VOLTAGE,
+                0,
+                self.HEAD_LEN + 4,
+                2,
+                False,
+                lambda x: float(x / 1000),
+            ),
+            (
+                ATTR_TEMPERATURE,
+                0,
+                self.HEAD_LEN + 20,
+                2,
+                False,
+                lambda x: float(x / 10),
+            ),
             (ATTR_VOLTAGE, 1, self.HEAD_LEN, 2, False, lambda x: float(x / 100)),
             (ATTR_CURRENT, 1, self.HEAD_LEN + 2, 2, True, lambda x: float(x / 100)),
             (ATTR_CYCLE_CHRG, 1, self.HEAD_LEN + 4, 2, False, lambda x: float(x / 100)),
@@ -97,6 +111,9 @@ class BMS(BaseBMS):
     async def _wait_event(self) -> None:
         """Wait for data event and clear it."""
         await self._data_event.wait()
+        # clear data
+        for part in self.PART:
+            self._data_final[part] = bytearray()
         self._data_event.clear()
 
     def _on_disconnect(self, client: BleakClient) -> None:
@@ -135,18 +152,20 @@ class BMS(BaseBMS):
         crc = int.from_bytes(
             self._data[self._exp_len - 2 :], byteorder="little"
         )  # self._crc(self._data[0 : self._exp_dat_len - 2])
-        if (
-            int.from_bytes(self._data[self._exp_len - 2 :], byteorder="little") != crc
-            or (self._data[0] == 0x00 and self._data[2] != 0x2C)
-            or (self._data[0] == 0x01 and self._data[2] != 0x22)
-        ):
+        if int.from_bytes(self._data[self._exp_len - 2 :], byteorder="little") != crc:
             LOGGER.debug(
-                "(%s) Rx data CRC is invalid: %i != %i or wrong message %s",
+                "(%s) Rx data CRC is invalid: %i != %i",
                 self._ble_device.name,
                 int.from_bytes(self._data[self._exp_len - 2 :], byteorder="little"),
-                crc, self._data[0:3]
+                crc,
             )
             self._data_final[int(self._data[0])] = bytearray()  # reset invalid data
+        elif (self._data[0] == 0x00 and self._data[2] != 0x2C) or (
+            self._data[0] == 0x01 and self._data[2] != 0x22
+        ):
+            LOGGER.debug(
+                "(%s) unknown message: %s", self._ble_device.name, self._data[0:3]
+            )
         else:
             self._data_final[int(self._data[0])] = self._data
             if len(self._data) != self._exp_len:
@@ -207,7 +226,7 @@ class BMS(BaseBMS):
                 char_notify_handle or 0, self._notification_handler
             )
 
-            #await self._client.start_notify(UUID_CHAR, self._notification_handler)
+            # await self._client.start_notify(UUID_CHAR, self._notification_handler)
             self._connected = True
         else:
             LOGGER.debug("BMS %s already connected", self._ble_device.name)
