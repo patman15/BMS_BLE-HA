@@ -19,6 +19,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - JK BMS, Jikong, (HW version >=11 required)
 - JBD BMS, Jiabaida
 - Supervolt batteries (JBD BMS)
+- Seplos v3
 
 New device types can be easily added via the plugin architecture of this integration. See the [contribution guidelines](CONTRIBUTING.md) for details.
 
@@ -79,7 +80,7 @@ Yes, you can use a [template sensor](https://my.home-assistant.io/redirect/confi
 Sure, use, e.g. a [threshold sensor](https://my.home-assistant.io/redirect/config_flow_start/?domain=threshold) based on the current to/from the battery. Negative means discharging, positiv is charging.
 
 ## Thanks to
-> [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22)
+> [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22), [@Goaheadz](https://github.com/patman15/BMS_BLE-HA/issues/24)
 
 for helping with making the integration better.
 

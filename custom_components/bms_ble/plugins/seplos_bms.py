@@ -22,7 +22,6 @@ from ..const import (
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
-    #    KEY_CELL_VOLTAGE,
 )
 from .basebms import BaseBMS
 
@@ -33,17 +32,24 @@ LOGGER = logging.getLogger(__name__)
 #    serv 0000fff0-0000-1000-8000-00805f9b34fb
 # 	 char 0000fff1-0000-1000-8000-00805f9b34fb (#16): ['read', 'notify']
 # 	 char 0000fff2-0000-1000-8000-00805f9b34fb (#20): ['read', 'write-without-response', 'write']
-UUID_CHAR = normalize_uuid_str("fff1")
 UUID_SERVICE = normalize_uuid_str("fff0")
+UUID_RX = normalize_uuid_str("fff1")
+UUID_TX = normalize_uuid_str("fff2")
 
 
 class BMS(BaseBMS):
     """Seplos V3 Smart BMS class implementation."""
 
     CMD_READ: int = 0x04
-    PART: list[int] = [0x00, 0x01]  # partitions: PIA, PIB, PIC
+    DEV: list[int] = [0x00]  # valid devices
     HEAD_LEN: int = 3
     CRC_LEN: int = 2
+    EIA_LEN = 0x34
+    EIB_LEN = 0x2C
+    QUERY: dict[str, tuple[int, int, int, int]] = {
+        "EIA": (0, 0x4, 0x2000, EIA_LEN),
+        "EIB": (0, 0x4, 0x2100, EIB_LEN),
+    }
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
@@ -54,7 +60,7 @@ class BMS(BaseBMS):
         self._data: bytearray | None = None
         self._exp_len: int = 0
         self._data_final: dict[int, bytearray] = {
-            part: bytearray() for part in self.PART
+            part: bytearray() for part in self.DEV
         }
         self._data_event = asyncio.Event()
         self._connected = False  # flag to indicate active BLE connection
@@ -64,32 +70,55 @@ class BMS(BaseBMS):
         ] = [
             (
                 ATTR_DELTA_VOLTAGE,
-                0,
-                self.HEAD_LEN + 4,
-                2,
+                self.EIB_LEN,
+                self.HEAD_LEN,
+                4,
                 False,
-                lambda x: float(x / 1000),
+                lambda x: int(((x >> 16) & 0xFFFF) - (x & 0xFFFF)),
             ),
             (
                 ATTR_TEMPERATURE,
-                0,
+                self.EIB_LEN,
                 self.HEAD_LEN + 20,
                 2,
                 False,
                 lambda x: float(x / 10),
             ),
-            (ATTR_VOLTAGE, 1, self.HEAD_LEN, 2, False, lambda x: float(x / 100)),
-            (ATTR_CURRENT, 1, self.HEAD_LEN + 2, 2, True, lambda x: float(x / 100)),
-            (ATTR_CYCLE_CHRG, 1, self.HEAD_LEN + 4, 2, False, lambda x: float(x / 100)),
+            (
+                ATTR_VOLTAGE,
+                self.EIA_LEN,
+                self.HEAD_LEN,
+                4,
+                False,
+                lambda x: float((((x >> 16) & 0xFFFF) | (x & 0xFFFF) << 16) / 100),
+            ),
+            (
+                ATTR_CURRENT,
+                self.EIA_LEN,
+                self.HEAD_LEN + 4,
+                4,
+                True,
+                lambda x: float(
+                    ((((x >> 16) & 0xFFFF) | (x & 0xFFFF) << 16) - 0xFFFFFFFF) / 10
+                ),
+            ),
+            (
+                ATTR_CYCLE_CHRG,
+                self.EIA_LEN,
+                self.HEAD_LEN + 8,
+                4,
+                False,
+                lambda x: float((((x >> 16) & 0xFFFF) | (x & 0xFFFF) << 16) / 100),
+            ),
             (
                 ATTR_BATTERY_LEVEL,
-                1,
-                self.HEAD_LEN + 10,
+                self.EIA_LEN,
+                self.HEAD_LEN + 48,
                 2,
                 False,
                 lambda x: float(x / 10),
             ),
-            (ATTR_CYCLES, 1, self.HEAD_LEN + 14, 2, False, lambda x: x),
+            (ATTR_CYCLES, self.EIA_LEN, self.HEAD_LEN + 46, 2, False, lambda x: x),
         ]  # Protocol Seplos V3
 
     @staticmethod
@@ -111,9 +140,7 @@ class BMS(BaseBMS):
     async def _wait_event(self) -> None:
         """Wait for data event and clear it."""
         await self._data_event.wait()
-        # clear data
-        for part in self.PART:
-            self._data_final[part] = bytearray()
+
         self._data_event.clear()
 
     def _on_disconnect(self, client: BleakClient) -> None:
@@ -128,7 +155,7 @@ class BMS(BaseBMS):
         if (
             len(data) > self.HEAD_LEN + self.CRC_LEN
             and data[1] == self.CMD_READ
-            and data[0] in self.PART
+            and data[0] in self.DEV
             and data[2] >= self.HEAD_LEN + self.CRC_LEN
         ):
             self._data = data
@@ -149,25 +176,22 @@ class BMS(BaseBMS):
         if self._data is None or len(self._data) < self._exp_len:
             return
 
-        crc = int.from_bytes(
-            self._data[self._exp_len - 2 :], byteorder="little"
-        )  # self._crc(self._data[0 : self._exp_dat_len - 2])
-        if int.from_bytes(self._data[self._exp_len - 2 :], byteorder="little") != crc:
+        crc = self._crc16(self._data[: self._exp_len - 2])
+        if int.from_bytes(self._data[self._exp_len - 2 : self._exp_len]) != crc:
             LOGGER.debug(
                 "(%s) Rx data CRC is invalid: %i != %i",
                 self._ble_device.name,
-                int.from_bytes(self._data[self._exp_len - 2 :], byteorder="little"),
+                int.from_bytes(self._data[self._exp_len - 2 :]),
                 crc,
             )
             self._data_final[int(self._data[0])] = bytearray()  # reset invalid data
-        elif (self._data[0] == 0x00 and self._data[2] != 0x2C) or (
-            self._data[0] == 0x01 and self._data[2] != 0x22
-        ):
+        elif not (self._data[2] == self.EIA_LEN or self._data[2] == self.EIB_LEN):
             LOGGER.debug(
                 "(%s) unknown message: %s", self._ble_device.name, self._data[0:3]
             )
+            return
         else:
-            self._data_final[int(self._data[0])] = self._data
+            self._data_final[int(self._data[2])] = self._data
             if len(self._data) != self._exp_len:
                 LOGGER.debug(
                     "(%s) Wrong data length (%i!=%s): %s",
@@ -190,43 +214,8 @@ class BMS(BaseBMS):
                 services=[UUID_SERVICE],
             )
             await self._client.connect()
-            char_notify_handle: int | None = None
-            self._char_write_handle = None
-            for service in self._client.services:
-                for char in service.characteristics:
-                    LOGGER.debug(
-                        "(%s) Discovered service %s,\n\t char %s (#%i): %s",
-                        self._ble_device.name,
-                        service.uuid,
-                        char.uuid,
-                        char.handle,
-                        char.properties,
-                    )
-                    if char.uuid == UUID_CHAR:
-                        if "notify" in char.properties or "indicate" in char.properties:
-                            char_notify_handle = char.handle
-                        if (
-                            "write" in char.properties
-                            or "write-without-response" in char.properties
-                        ):
-                            self._char_write_handle = char.handle
-            if char_notify_handle is None:
-                LOGGER.debug(
-                    "(%s) Failed to detect characteristics", self._ble_device.name
-                )
-                await self._client.disconnect()
-                return
-            LOGGER.debug(
-                "(%s) Using characteristics handle #%i (notify), #%i (write)",
-                self._ble_device.name,
-                char_notify_handle,
-                self._char_write_handle or 0,
-            )
-            await self._client.start_notify(
-                char_notify_handle or 0, self._notification_handler
-            )
+            await self._client.start_notify(UUID_RX, self._notification_handler)
 
-            # await self._client.start_notify(UUID_CHAR, self._notification_handler)
             self._connected = True
         else:
             LOGGER.debug("BMS %s already connected", self._ble_device.name)
@@ -244,10 +233,25 @@ class BMS(BaseBMS):
 
         self._client = None
 
-    # FIXME! implement correct CRC mechanism
-    # def _crc(self, frame: bytes):
-    #     """Calculate Seplos V3 frame CRC."""
-    #     return sum(frame) & 0xFF
+    def _crc16(self, data: bytearray) -> int:
+        """Calculate CRC-16-CCITT XMODEM (ModBus)."""
+        crc: int = 0xFFFF
+        for i in data:
+            crc ^= i & 0xFF
+            for _ in range(8):
+                crc = (crc >> 1) ^ 0xA001 if crc % 2 else (crc >> 1)
+        return ((0xFF00 & crc) >> 8) | ((crc & 0xFF) << 8)
+
+    def _cmd(self, device: int, cmd: int, start: int, count: int) -> bytearray:
+        """Assemble a Seplos BMS command."""
+        assert device >= 0x00 and (device <= 0x10 or device == 0xC0 or device == 0xE0)
+        assert cmd in (0x01, 0x04)  # allow only read commands
+        assert start >= 0 and count > 0 and start + count <= 0xFFFF
+        frame = bytearray([device, cmd])
+        frame += bytearray(int.to_bytes(start, 2, byteorder="big"))
+        frame += bytearray(int.to_bytes(count, 2, byteorder="big"))
+        frame += bytearray(int.to_bytes(self._crc16(frame), 2, byteorder="big"))
+        return frame
 
     async def async_update(self) -> dict[str, int | float | bool]:
         """Update battery status information."""
@@ -259,20 +263,26 @@ class BMS(BaseBMS):
             )
             return {}
 
+        await self._client.write_gatt_char(UUID_TX, data=self._cmd(*self.QUERY["EIA"]))
         await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 
-        if not any(len(self._data_final[self.PART[idx]]) for idx in range(3)):
+        await self._client.write_gatt_char(UUID_TX, data=self._cmd(*self.QUERY["EIB"]))
+        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+
+        LOGGER.debug(f"{self._data_final=}")
+
+        if not (self.EIA_LEN in self._data_final and self.EIB_LEN in self._data_final):
             return {}
 
         data = {
             key: func(
                 int.from_bytes(
-                    self._data_final[self.PART[part]][idx : idx + size],
+                    self._data_final[msg][idx : idx + size],
                     byteorder="big",
                     signed=sign,
                 )
             )
-            for key, part, idx, size, sign, func in self._FIELDS
+            for key, msg, idx, size, sign, func in self._FIELDS
         }
 
         # get cell voltages
