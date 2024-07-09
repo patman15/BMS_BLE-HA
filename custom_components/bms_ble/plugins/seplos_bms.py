@@ -59,9 +59,7 @@ class BMS(BaseBMS):
         self._client: BleakClient | None = None
         self._data: bytearray | None = None
         self._exp_len: int = 0
-        self._data_final: dict[int, bytearray] = {
-            part: bytearray() for part in self.DEV
-        }
+        self._data_final: dict[int, bytearray] = {}
         self._data_event = asyncio.Event()
         self._connected = False  # flag to indicate active BLE connection
         self._char_write_handle: int | None = None
@@ -74,7 +72,7 @@ class BMS(BaseBMS):
                 0,
                 4,
                 False,
-                lambda x: int(((x >> 16) & 0xFFFF) - (x & 0xFFFF)),
+                lambda x: float((((x >> 16) & 0xFFFF) - (x & 0xFFFF)) / 1E3),
             ),
             (ATTR_TEMPERATURE, self.EIB_LEN, 20, 2, False, lambda x: float(x / 10)),
             (
@@ -102,7 +100,7 @@ class BMS(BaseBMS):
                 lambda x: float(self._swap32(x) / 100),
             ),
             (ATTR_BATTERY_LEVEL, self.EIA_LEN, 48, 2, False, lambda x: float(x / 10)),
-            (ATTR_CYCLES, self.EIA_LEN, self.HEAD_LEN + 46, 2, False, lambda x: x),
+            (ATTR_CYCLES, self.EIA_LEN, 46, 2, False, lambda x: x),
         ]  # Protocol Seplos V3
 
     @staticmethod
@@ -225,6 +223,7 @@ class BMS(BaseBMS):
 
     def _swap32(self, value: int, signed: bool = False) -> int:
         """Swap high and low 16bit in 32bit integer."""
+
         value = ((value >> 16) & 0xFFFF) | (value & 0xFFFF) << 16
         if signed and value & 0x80000000:
             value = -0x100000000 + value
@@ -232,6 +231,7 @@ class BMS(BaseBMS):
 
     def _crc16(self, data: bytearray) -> int:
         """Calculate CRC-16-CCITT XMODEM (ModBus)."""
+
         crc: int = 0xFFFF
         for i in data:
             crc ^= i & 0xFF
@@ -252,6 +252,7 @@ class BMS(BaseBMS):
 
     async def async_update(self) -> dict[str, int | float | bool]:
         """Update battery status information."""
+
         await self._connect()
         assert self._client is not None
         if not self._connected:
