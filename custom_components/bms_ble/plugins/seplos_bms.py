@@ -44,8 +44,8 @@ class BMS(BaseBMS):
     DEV: list[int] = [0x00]  # valid devices
     HEAD_LEN: int = 3
     CRC_LEN: int = 2
-    EIA_LEN = 0x34
-    EIB_LEN = 0x2C
+    EIA_LEN = 0x1A
+    EIB_LEN = 0x16
     QUERY: dict[str, tuple[int, int, int, int]] = {
         "EIA": (0, 0x4, 0x2000, EIA_LEN),
         "EIB": (0, 0x4, 0x2100, EIB_LEN),
@@ -71,53 +71,37 @@ class BMS(BaseBMS):
             (
                 ATTR_DELTA_VOLTAGE,
                 self.EIB_LEN,
-                self.HEAD_LEN,
+                0,
                 4,
                 False,
                 lambda x: int(((x >> 16) & 0xFFFF) - (x & 0xFFFF)),
             ),
-            (
-                ATTR_TEMPERATURE,
-                self.EIB_LEN,
-                self.HEAD_LEN + 20,
-                2,
-                False,
-                lambda x: float(x / 10),
-            ),
+            (ATTR_TEMPERATURE, self.EIB_LEN, 20, 2, False, lambda x: float(x / 10)),
             (
                 ATTR_VOLTAGE,
                 self.EIA_LEN,
-                self.HEAD_LEN,
+                0,
                 4,
                 False,
-                lambda x: float((((x >> 16) & 0xFFFF) | (x & 0xFFFF) << 16) / 100),
+                lambda x: float(self._swap32(x) / 100),
             ),
             (
                 ATTR_CURRENT,
                 self.EIA_LEN,
-                self.HEAD_LEN + 4,
                 4,
-                True,
-                lambda x: float(
-                    ((((x >> 16) & 0xFFFF) | (x & 0xFFFF) << 16) - 0xFFFFFFFF) / 10
-                ),
+                4,
+                False,
+                lambda x: float((self._swap32(x, True)) / 10),
             ),
             (
                 ATTR_CYCLE_CHRG,
                 self.EIA_LEN,
-                self.HEAD_LEN + 8,
+                8,
                 4,
                 False,
-                lambda x: float((((x >> 16) & 0xFFFF) | (x & 0xFFFF) << 16) / 100),
+                lambda x: float(self._swap32(x) / 100),
             ),
-            (
-                ATTR_BATTERY_LEVEL,
-                self.EIA_LEN,
-                self.HEAD_LEN + 48,
-                2,
-                False,
-                lambda x: float(x / 10),
-            ),
+            (ATTR_BATTERY_LEVEL, self.EIA_LEN, 48, 2, False, lambda x: float(x / 10)),
             (ATTR_CYCLES, self.EIA_LEN, self.HEAD_LEN + 46, 2, False, lambda x: x),
         ]  # Protocol Seplos V3
 
@@ -154,7 +138,7 @@ class BMS(BaseBMS):
 
         if (
             len(data) > self.HEAD_LEN + self.CRC_LEN
-            and data[1] == self.CMD_READ
+            and data[1] & 0x7F == self.CMD_READ  # include read errors
             and data[0] in self.DEV
             and data[2] >= self.HEAD_LEN + self.CRC_LEN
         ):
@@ -162,6 +146,10 @@ class BMS(BaseBMS):
             self._exp_len = (
                 data[2] + self.HEAD_LEN + self.CRC_LEN
             )  # expected packet length
+            if data[1] & 0x80:
+                LOGGER.debug(
+                    "(%s) Rx BLE error: %x", self._ble_device.name, int(data[1])
+                )
         elif len(data) and self._data is not None:
             self._data += data
 
@@ -185,7 +173,9 @@ class BMS(BaseBMS):
                 crc,
             )
             self._data_final[int(self._data[0])] = bytearray()  # reset invalid data
-        elif not (self._data[2] == self.EIA_LEN or self._data[2] == self.EIB_LEN):
+        elif not (
+            self._data[2] == self.EIA_LEN * 2 or self._data[2] == self.EIB_LEN * 2
+        ):
             LOGGER.debug(
                 "(%s) unknown message: %s", self._ble_device.name, self._data[0:3]
             )
@@ -233,6 +223,13 @@ class BMS(BaseBMS):
 
         self._client = None
 
+    def _swap32(self, value: int, signed: bool = False) -> int:
+        """Swap high and low 16bit in 32bit integer."""
+        value = ((value >> 16) & 0xFFFF) | (value & 0xFFFF) << 16
+        if signed and value & 0x80000000:
+            value = -0x100000000 + value
+        return value
+
     def _crc16(self, data: bytearray) -> int:
         """Calculate CRC-16-CCITT XMODEM (ModBus)."""
         crc: int = 0xFFFF
@@ -271,13 +268,18 @@ class BMS(BaseBMS):
 
         LOGGER.debug(f"{self._data_final=}")
 
-        if not (self.EIA_LEN in self._data_final and self.EIB_LEN in self._data_final):
+        if not (
+            self.EIA_LEN * 2 in self._data_final
+            and self.EIB_LEN * 2 in self._data_final
+        ):
             return {}
 
         data = {
             key: func(
                 int.from_bytes(
-                    self._data_final[msg][idx : idx + size],
+                    self._data_final[msg * 2][
+                        self.HEAD_LEN + idx : self.HEAD_LEN + idx + size
+                    ],
                     byteorder="big",
                     signed=sign,
                 )
