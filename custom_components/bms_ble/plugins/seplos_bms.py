@@ -22,10 +22,12 @@ from ..const import (
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
+    KEY_CELL_VOLTAGE,
+    KEY_PACK_COUNT,
 )
 from .basebms import BaseBMS
 
-BAT_TIMEOUT = 10
+BAT_TIMEOUT = 5
 LOGGER = logging.getLogger(__name__)
 
 # setup UUIDs
@@ -41,14 +43,15 @@ class BMS(BaseBMS):
     """Seplos V3 Smart BMS class implementation."""
 
     CMD_READ: int = 0x04
-    DEV: list[int] = [0x00]  # valid devices
     HEAD_LEN: int = 3
     CRC_LEN: int = 2
-    EIA_LEN = 0x1A
+    EIA_LEN = PIB_LEN = 0x1A
     EIB_LEN = 0x16
-    QUERY: dict[str, tuple[int, int, int, int]] = {
-        "EIA": (0, 0x4, 0x2000, EIA_LEN),
-        "EIB": (0, 0x4, 0x2100, EIB_LEN),
+    QUERY: dict[str, tuple[int, int, int]] = {
+        # name: device, cmd, reg start, length
+        "EIA": (0x4, 0x2000, EIA_LEN),
+        "EIB": (0x4, 0x2100, EIB_LEN),
+        "PIB": (0x4, 0x1100, PIB_LEN),
     }
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -61,19 +64,12 @@ class BMS(BaseBMS):
         self._exp_len: int = 0
         self._data_final: dict[int, bytearray] = {}
         self._data_event = asyncio.Event()
+        self._pack_count = 0
         self._connected = False  # flag to indicate active BLE connection
         self._char_write_handle: int | None = None
         self._FIELDS: list[
             tuple[str, int, int, int, bool, Callable[[int], int | float]]
         ] = [
-            (
-                ATTR_DELTA_VOLTAGE,
-                self.EIB_LEN,
-                0,
-                4,
-                False,
-                lambda x: float((((x >> 16) & 0xFFFF) - (x & 0xFFFF)) / 1E3),
-            ),
             (ATTR_TEMPERATURE, self.EIB_LEN, 20, 2, False, lambda x: float(x / 10)),
             (
                 ATTR_VOLTAGE,
@@ -99,8 +95,9 @@ class BMS(BaseBMS):
                 False,
                 lambda x: float(self._swap32(x) / 100),
             ),
-            (ATTR_BATTERY_LEVEL, self.EIA_LEN, 48, 2, False, lambda x: float(x / 10)),
+            (KEY_PACK_COUNT, self.EIA_LEN, 44, 2, False, lambda x: x),
             (ATTR_CYCLES, self.EIA_LEN, 46, 2, False, lambda x: x),
+            (ATTR_BATTERY_LEVEL, self.EIA_LEN, 48, 2, False, lambda x: float(x / 10)),
         ]  # Protocol Seplos V3
 
     @staticmethod
@@ -137,7 +134,7 @@ class BMS(BaseBMS):
         if (
             len(data) > self.HEAD_LEN + self.CRC_LEN
             and data[1] & 0x7F == self.CMD_READ  # include read errors
-            and data[0] in self.DEV
+            and data[0] <= self._pack_count
             and data[2] >= self.HEAD_LEN + self.CRC_LEN
         ):
             self._data = data
@@ -179,7 +176,7 @@ class BMS(BaseBMS):
             )
             return
         else:
-            self._data_final[int(self._data[2])] = self._data
+            self._data_final[int(self._data[0]) << 8 | int(self._data[2])] = self._data
             if len(self._data) != self._exp_len:
                 LOGGER.debug(
                     "(%s) Wrong data length (%i!=%s): %s",
@@ -261,13 +258,11 @@ class BMS(BaseBMS):
             )
             return {}
 
-        await self._client.write_gatt_char(UUID_TX, data=self._cmd(*self.QUERY["EIA"]))
-        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-
-        await self._client.write_gatt_char(UUID_TX, data=self._cmd(*self.QUERY["EIB"]))
-        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-
-        LOGGER.debug(f"{self._data_final=}")
+        for block in ["EIA", "EIB"]:
+            await self._client.write_gatt_char(
+                UUID_TX, data=self._cmd(0x0, *self.QUERY[block])
+            )
+            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 
         if not (
             self.EIA_LEN * 2 in self._data_final
@@ -287,25 +282,42 @@ class BMS(BaseBMS):
             )
             for key, msg, idx, size, sign, func in self._FIELDS
         }
+        self._pack_count = min(int(data.get(KEY_PACK_COUNT, 0)), 0x10)
 
-        # get cell voltages
-        # if len(self._data_final[self.PART[2]]):
-        #     data.update(
-        #         {
-        #             f"{KEY_CELL_VOLTAGE}{idx}": float(
-        #                 int.from_bytes(
-        #                     self._data_final[self.PART[2]][
-        #                         self.HEAD_LEN + 2 * idx : self.HEAD_LEN + 2 * idx + 2
-        #                     ],
-        #                     byteorder="big",
-        #                     signed=False,
-        #                 )
-        #                 / 1000
-        #             )
-        #             for idx in range(16)
-        #         }
-        #     )
-
+        for pack in range(1, 1 + self._pack_count):
+            await self._client.write_gatt_char(
+                UUID_TX, data=self._cmd(pack, *self.QUERY["PIB"])
+            )
+            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+            # get cell voltages
+            if (pack << 8 | self.PIB_LEN * 2) in self._data_final:
+                pack_cells = [
+                    float(
+                        int.from_bytes(
+                            self._data_final[pack << 8 | self.PIB_LEN * 2][
+                                self.HEAD_LEN + idx * 2 : self.HEAD_LEN + idx * 2 + 2
+                            ],
+                            byteorder="big",
+                        )
+                        / 1000
+                    )
+                    for idx in range(16)
+                ]
+                data.update(
+                    {
+                        ATTR_DELTA_VOLTAGE: max(
+                            float(data.get(ATTR_DELTA_VOLTAGE, 0)),
+                            round(max(pack_cells) - min(pack_cells), 3),
+                        )
+                    }
+                )
+                data.update(
+                    {
+                        f"{KEY_CELL_VOLTAGE}{idx+16*(pack-1)}": pack_cells[idx]
+                        for idx in range(16)
+                    }
+                )
+        LOGGER.debug(f"{self._data_final=}")
         self.calc_values(
             data, {ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_RUNTIME}
         )

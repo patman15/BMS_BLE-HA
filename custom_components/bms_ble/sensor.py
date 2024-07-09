@@ -153,11 +153,12 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
     @property
     def extra_state_attributes(self) -> dict[str, list[float]] | None:  # type: ignore[reportIncompatibleVariableOverride]
         """Return entity specific state attributes, e.g. cell voltages."""
+        # TODO: add sorting?
         if self.entity_description.key == ATTR_DELTA_VOLTAGE:
             return {
                 ATTR_CELL_VOLTAGES: [
                     v
-                    for k, v in sorted(self.coordinator.data.items())
+                    for k, v in self.coordinator.data.items()
                     if k.startswith(KEY_CELL_VOLTAGE)
                 ]
             }

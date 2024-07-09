@@ -9,10 +9,16 @@ from homeassistant.const import (  # noqa: F401
     ATTR_VOLTAGE,
 )
 
-BMS_TYPES = ["daly_bms", "jbd_bms", "jikong_bms", "ogt_bms", "seplos_bms"] # available BMS types
+BMS_TYPES = [
+    "daly_bms",
+    "jbd_bms",
+    "jikong_bms",
+    "ogt_bms",
+    "seplos_bms",
+]  # available BMS types
 DOMAIN = "bms_ble"
 LOGGER = logging.getLogger(__package__)
-UPDATE_INTERVAL = 30  # in seconds
+UPDATE_INTERVAL = 10  # in seconds
 
 # attributes (do not change)
 ATTR_DELTA_VOLTAGE = "delta_voltage"  # [V]
@@ -27,5 +33,6 @@ ATTR_RSSI = "rssi"
 
 # temporary dictionary keys (do not change)
 KEY_TEMP_SENS = "temp_sensors"  # [#]
+KEY_PACK_COUNT = "pack_count"  # [#]
 KEY_CELL_VOLTAGE = "cell#"  # [V]
 KEY_CELL_COUNT = "cell_count"  # [#]
