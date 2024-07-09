@@ -110,6 +110,7 @@ SENSOR_TYPES: list[SensorEntityDescription] = [
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
+        suggested_display_precision=3,
     ),
     SensorEntityDescription(
         key=ATTR_RSSI,
