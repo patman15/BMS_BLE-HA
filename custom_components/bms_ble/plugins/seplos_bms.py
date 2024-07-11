@@ -273,7 +273,7 @@ class BMS(BaseBMS):
             )
             await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
             # check if a valid frame was received otherwise terminate immediately
-            if not self.QUERY[block][2]*2 in self._data_final:
+            if self.QUERY[block][2]*2 not in self._data_final:
                 return {}
 
         data = {
