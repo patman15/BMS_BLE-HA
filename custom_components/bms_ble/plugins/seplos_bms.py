@@ -266,11 +266,6 @@ class BMS(BaseBMS):
 
         await self._connect()
         assert self._client is not None
-        if not self._connected:
-            LOGGER.debug(
-                "Update request, but device (%s) not connected", self._ble_device.name
-            )
-            return {}
 
         for block in ["EIA", "EIB"]:
             await self._client.write_gatt_char(
