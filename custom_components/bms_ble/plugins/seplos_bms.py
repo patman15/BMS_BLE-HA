@@ -133,18 +133,22 @@ class BMS(BaseBMS):
 
         if (
             len(data) > self.HEAD_LEN + self.CRC_LEN
-            and data[1] & 0x7F == self.CMD_READ  # include read errors
             and data[0] <= self._pack_count
+            and data[1] & 0x7F == self.CMD_READ  # include read errors
             and data[2] >= self.HEAD_LEN + self.CRC_LEN
         ):
             self._data = data
             self._exp_len = (
                 data[2] + self.HEAD_LEN + self.CRC_LEN
             )  # expected packet length
-            if data[1] & 0x80:
-                LOGGER.debug(
-                    "(%s) Rx BLE error: %x", self._ble_device.name, int(data[1])
-                )
+        elif (  # error message
+            len(data) == self.HEAD_LEN + self.CRC_LEN
+            and data[0] <= self._pack_count
+            and data[1] & 0x80
+        ):
+            LOGGER.debug("(%s) Rx BLE error: %x", self._ble_device.name, int(data[2]))
+            self._data = data
+            self._exp_len = self.HEAD_LEN + self.CRC_LEN
         elif len(data) and self._data is not None:
             self._data += data
 
@@ -164,16 +168,26 @@ class BMS(BaseBMS):
             LOGGER.debug(
                 "(%s) Rx data CRC is invalid: %i != %i",
                 self._ble_device.name,
-                int.from_bytes(self._data[self._exp_len - 2 :]),
+                int.from_bytes(self._data[self._exp_len - 2 : self._exp_len]),
                 crc,
             )
+            LOGGER.debug(
+                "(%s): %s",
+                self._ble_device.name,
+                self._data[self._exp_len - 1 : self._exp_len + 1],
+            )
             self._data_final[int(self._data[0])] = bytearray()  # reset invalid data
-        elif not (
-            self._data[2] == self.EIA_LEN * 2 or self._data[2] == self.EIB_LEN * 2
+        elif (
+            not (self._data[2] == self.EIA_LEN * 2 or self._data[2] == self.EIB_LEN * 2)
+            and not self._data[1] & 0x80
         ):
             LOGGER.debug(
-                "(%s) unknown message: %s", self._ble_device.name, self._data[0:3]
+                "(%s) unknown message: %s, length: %s",
+                self._ble_device.name,
+                self._data[0:2],
+                self._data[2],
             )
+            self._data = None
             return
         else:
             self._data_final[int(self._data[0]) << 8 | int(self._data[2])] = self._data
@@ -181,9 +195,9 @@ class BMS(BaseBMS):
                 LOGGER.debug(
                     "(%s) Wrong data length (%i!=%s): %s",
                     self._ble_device.name,
-                    len(self._data_final),
+                    len(self._data),
                     self._exp_len,
-                    self._data_final,
+                    self._data,
                 )
 
         self._data_event.set()
@@ -317,7 +331,7 @@ class BMS(BaseBMS):
                         for idx in range(16)
                     }
                 )
-        LOGGER.debug(f"{self._data_final=}")
+
         self.calc_values(
             data, {ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_RUNTIME}
         )
