@@ -272,12 +272,9 @@ class BMS(BaseBMS):
                 UUID_TX, data=self._cmd(0x0, *self.QUERY[block])
             )
             await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-
-        if not (
-            self.EIA_LEN * 2 in self._data_final
-            and self.EIB_LEN * 2 in self._data_final
-        ):
-            return {}
+            # check if a valid frame was received otherwise terminate immediately
+            if not self.QUERY[block][2]*2 in self._data_final:
+                return {}
 
         data = {
             key: func(
