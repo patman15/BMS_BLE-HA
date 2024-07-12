@@ -26,6 +26,7 @@ from ..const import (
 
 type BMSsample = dict[str, int | float | bool]
 
+
 class BaseBMS(metaclass=ABCMeta):
     """Base class for battery management system."""
 
@@ -73,7 +74,8 @@ class BaseBMS(metaclass=ABCMeta):
         """
 
         def can_calc(value: str, using: frozenset[str]) -> bool:
-            """Check that value to add does not exists, is requested and the necessary parameters are available."""
+            """Check that value to add does not exists, is requested and
+            the necessary parameters are available."""
             return (value in values) and (value not in data) and using.issubset(data)
 
         # calculate cycle capacity from voltage and cycle charge
@@ -108,5 +110,16 @@ class BaseBMS(metaclass=ABCMeta):
     async def async_update(self) -> BMSsample:
         """Retrieve updated values from the BMS.
 
-        Returns a dictionary of BMS values, where the keys need to match the keys in the SENSOR_TYPES list.
+        Returns a dictionary of BMS values, where the keys need to match
+        the keys in the SENSOR_TYPES list.
         """
+
+
+def crc_xmodem(data: bytearray) -> int:
+    """Calculate CRC-16-CCITT XMODEM (ModBus)."""
+    crc: int = 0xFFFF
+    for i in data:
+        crc ^= i & 0xFF
+        for _ in range(8):
+            crc = (crc >> 1) ^ 0xA001 if crc % 2 else (crc >> 1)
+    return ((0xFF00 & crc) >> 8) | ((crc & 0xFF) << 8)

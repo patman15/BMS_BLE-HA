@@ -25,7 +25,7 @@ from ..const import (
     KEY_CELL_VOLTAGE,
     KEY_PACK_COUNT,
 )
-from .basebms import BaseBMS
+from .basebms import BaseBMS, BMSsample, crc_xmodem
 
 BAT_TIMEOUT = 5
 LOGGER = logging.getLogger(__name__)
@@ -163,7 +163,7 @@ class BMS(BaseBMS):
         if self._data is None or len(self._data) < self._exp_len:
             return
 
-        crc = self._crc16(self._data[: self._exp_len - 2])
+        crc = crc_xmodem(self._data[: self._exp_len - 2])
         if int.from_bytes(self._data[self._exp_len - 2 : self._exp_len]) != crc:
             LOGGER.debug(
                 "(%s) Rx data CRC is invalid: %i != %i",
@@ -240,16 +240,6 @@ class BMS(BaseBMS):
             value = -0x100000000 + value
         return value
 
-    def _crc16(self, data: bytearray) -> int:
-        """Calculate CRC-16-CCITT XMODEM (ModBus)."""
-
-        crc: int = 0xFFFF
-        for i in data:
-            crc ^= i & 0xFF
-            for _ in range(8):
-                crc = (crc >> 1) ^ 0xA001 if crc % 2 else (crc >> 1)
-        return ((0xFF00 & crc) >> 8) | ((crc & 0xFF) << 8)
-
     def _cmd(self, device: int, cmd: int, start: int, count: int) -> bytearray:
         """Assemble a Seplos BMS command."""
         assert device >= 0x00 and (device <= 0x10 or device == 0xC0 or device == 0xE0)
@@ -258,10 +248,10 @@ class BMS(BaseBMS):
         frame = bytearray([device, cmd])
         frame += bytearray(int.to_bytes(start, 2, byteorder="big"))
         frame += bytearray(int.to_bytes(count, 2, byteorder="big"))
-        frame += bytearray(int.to_bytes(self._crc16(frame), 2, byteorder="big"))
+        frame += bytearray(int.to_bytes(crc_xmodem(frame), 2, byteorder="big"))
         return frame
 
-    async def async_update(self) -> dict[str, int | float | bool]:
+    async def async_update(self) -> BMSsample:
         """Update battery status information."""
 
         await self._connect()
@@ -273,7 +263,7 @@ class BMS(BaseBMS):
             )
             await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
             # check if a valid frame was received otherwise terminate immediately
-            if self.QUERY[block][2]*2 not in self._data_final:
+            if self.QUERY[block][2] * 2 not in self._data_final:
                 return {}
 
         data = {
@@ -296,7 +286,7 @@ class BMS(BaseBMS):
             )
             await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
             # get cell voltages
-            if (pack << 8 | self.PIB_LEN * 2) in self._data_final:
+            if pack << 8 | self.PIB_LEN * 2 in self._data_final:
                 pack_cells = [
                     float(
                         int.from_bytes(

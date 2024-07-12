@@ -27,7 +27,7 @@ from ..const import (
     KEY_CELL_VOLTAGE,
     KEY_TEMP_SENS,
 )
-from .basebms import BaseBMS, BMSsample
+from .basebms import BaseBMS, BMSsample, crc_xmodem
 
 BAT_TIMEOUT = 10
 LOGGER = logging.getLogger(__name__)
@@ -101,15 +101,6 @@ class BMS(BaseBMS):
         LOGGER.debug("Disconnected from BMS (%s)", client.address)
         self._connected = False
 
-    def _crc16(self, data: bytearray) -> int:
-        """Calculate CRC-16-CCITT XMODEM (ModBus)."""
-        crc: int = 0xFFFF
-        for i in data:
-            crc ^= i & 0xFF
-            for _ in range(8):
-                crc = (crc >> 1) ^ 0xA001 if crc % 2 else (crc >> 1)
-        return ((0xFF00 & crc) >> 8) | ((crc & 0xFF) << 8)
-
     def _notification_handler(self, sender, data: bytearray) -> None:
         LOGGER.debug("Received BLE data: %s", data)
 
@@ -117,12 +108,12 @@ class BMS(BaseBMS):
             len(data) < 3
             or data[0:2] != self.HEAD_READ
             or int(data[2]) + 1 != len(data) - len(self.HEAD_READ) - self.CRC_LEN
-            or int.from_bytes(data[-2:], byteorder="big") != self._crc16(data[:-2])
+            or int.from_bytes(data[-2:], byteorder="big") != crc_xmodem(data[:-2])
         ):
             LOGGER.debug(
                 "Response data is invalid, CRC: %s/%s",
                 data[-2:],
-                bytearray(self._crc16(data[:-2]).to_bytes(2)),
+                bytearray(crc_xmodem(data[:-2]).to_bytes(2)),
             )
             self._data = None
         else:
