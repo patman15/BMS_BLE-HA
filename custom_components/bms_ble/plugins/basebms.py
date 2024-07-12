@@ -78,11 +78,11 @@ class BaseBMS(metaclass=ABCMeta):
 
         # calculate cycle capacity from voltage and cycle charge
         if can_calc(ATTR_CYCLE_CAP, frozenset({ATTR_VOLTAGE, ATTR_CYCLE_CHRG})):
-            data[ATTR_CYCLE_CAP] = data[ATTR_VOLTAGE] * data[ATTR_CYCLE_CHRG]
+            data[ATTR_CYCLE_CAP] = round(data[ATTR_VOLTAGE] * data[ATTR_CYCLE_CHRG], 3)
 
         # calculate current power from voltage and current
         if can_calc(ATTR_POWER, frozenset({ATTR_VOLTAGE, ATTR_CURRENT})):
-            data[ATTR_POWER] = data[ATTR_VOLTAGE] * data[ATTR_CURRENT]
+            data[ATTR_POWER] = round(data[ATTR_VOLTAGE] * data[ATTR_CURRENT], 3)
 
         # calculate charge indicator from current
         if can_calc(ATTR_BATTERY_CHARGING, frozenset({ATTR_CURRENT})):

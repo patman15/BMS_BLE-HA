@@ -274,8 +274,8 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "cell#13": 3.265,
         "cell#14": 3.265,
         "cell#15": 3.265,
-        "cycle_capacity": 6141.41255,
-        "power": -553.4192300000001,
+        "cycle_capacity": 6141.413,
+        "power": -553.419,
         "battery_charging": False,
         "runtime": 39949,
     }
@@ -341,8 +341,8 @@ async def test_oversized_response(monkeypatch) -> None:
         "cell#13": 3.265,
         "cell#14": 3.265,
         "cell#15": 3.265,
-        "cycle_capacity": 6141.41255,
-        "power": -553.4192300000001,
+        "cycle_capacity": 6141.413,
+        "power": -553.419,
         "battery_charging": False,
         "runtime": 39949,
     }

@@ -137,7 +137,7 @@ async def test_update(monkeypatch, ogt_bms_fixture, reconnect_fixture) -> None:
         "cycle_charge": 8.0,
         "temperature": 21.8,
         "cycle_capacity": 365.448,
-        "power": 56.18763,
+        "power": 56.188,
         "battery_charging": True,
         "runtime": 7200,
     }  # verify all sensors are reported
