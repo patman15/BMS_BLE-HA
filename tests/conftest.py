@@ -205,7 +205,6 @@ class MockBleakClient(BleakClient):
         """Mock init."""
         LOGGER.debug("Mock init")
         super().__init__(address_or_ble_device.address)
-        # self._device_path = "/dev/test"
         self._connected: bool = False
         self._notify_callback: Callable | None = None
         self._disconnect_callback: Callable[[BleakClient], None] | None = (
