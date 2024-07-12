@@ -11,15 +11,16 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Zero configuration
 - Autodetects compatible batteries
 - Supports [ESPHome Bluetooth proxy](https://esphome.io/components/bluetooth_proxy)
+- Any number of batteries in parallel
 - Native Home Assistant integration (works with all [HA installation methods](https://www.home-assistant.io/installation/#advanced-installation-methods))
 
 ### Supported Devices
-- Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-Axxxxx` or `SmartBat-Bxxxxx`)
-- Daly BMS (show up as `DL-xxxxxxxxxxxx`)
+- Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
+- Daly BMS (show up as `DL-`&#x2026;)
 - JK BMS, Jikong, (HW version >=11 required)
 - JBD BMS, Jiabaida
 - Supervolt batteries (JBD BMS)
-- Seplos v3
+- Seplos v3 (show up as `SP0`&#x2026;)
 
 New device types can be easily added via the plugin architecture of this integration. See the [contribution guidelines](CONTRIBUTING.md) for details.
 
@@ -36,7 +37,7 @@ Platform | Description | Unit | Details
 `sensor` | temperature | `°C` |
 `sensor` | (remaining) runtime | `s` | remaining discharge time till SoC 0%
 `sensor` | charge cycles | `#` |
-`sensor` | delta voltage | `V` | maximum difference between any two cells
+`sensor` | delta voltage | `V` | maximum difference between any two cells; individual cell voltage are available as attribute to this sensor
 `binary_sensor` | battery charging indicator | `bool` | true if battery is charging
 
 
