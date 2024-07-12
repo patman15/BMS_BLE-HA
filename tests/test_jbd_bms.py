@@ -26,7 +26,7 @@ class MockJBDBleakClient(MockBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        LOGGER.debug("response")
+
         if (
             char_specifier == normalize_uuid_str("ff02")
             and bytearray(data)[0] == self.HEAD_CMD

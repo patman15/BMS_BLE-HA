@@ -101,8 +101,8 @@ class BMS(BaseBMS):
         LOGGER.debug("Disconnected from BMS (%s)", client.address)
         self._connected = False
 
-    def crc16(self, data: bytearray) -> int:
-        """Calculate CRC-16-CCITT XMODEM."""
+    def _crc16(self, data: bytearray) -> int:
+        """Calculate CRC-16-CCITT XMODEM (ModBus)."""
         crc: int = 0xFFFF
         for i in data:
             crc ^= i & 0xFF
@@ -112,17 +112,17 @@ class BMS(BaseBMS):
 
     def _notification_handler(self, sender, data: bytearray) -> None:
         LOGGER.debug("Received BLE data: %s", data)
-        # note: CRC is not checked
+
         if (
             len(data) < 3
             or data[0:2] != self.HEAD_READ
             or int(data[2]) + 1 != len(data) - len(self.HEAD_READ) - self.CRC_LEN
-            or int.from_bytes(data[-2:], byteorder="big") != self.crc16(data[:-2])
+            or int.from_bytes(data[-2:], byteorder="big") != self._crc16(data[:-2])
         ):
             LOGGER.debug(
                 "Response data is invalid, CRC: %s/%s",
                 data[-2:],
-                bytearray(self.crc16(data[:-2]).to_bytes(2)),
+                bytearray(self._crc16(data[:-2]).to_bytes(2)),
             )
             self._data = None
         else:

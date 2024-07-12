@@ -239,7 +239,7 @@ class MockBleakClient(BleakClient):
         """Mock start_notify."""
         LOGGER.debug("MockBleakClient start_notify for %s", char_specifier)
         assert self._connected, "start_notify called, but client not connected."
-        self._notify_callback = callback
+        self._notify_callback = callback      
 
     async def write_gatt_char(
         self,
