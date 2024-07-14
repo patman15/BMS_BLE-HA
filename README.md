@@ -10,7 +10,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 ## Features
 - Zero configuration
 - Autodetects compatible batteries
-- Supports [ESPHome Bluetooth proxy](https://esphome.io/components/bluetooth_proxy)
+- Supports [ESPHome Bluetooth proxy](https://esphome.io/components/bluetooth_proxy) ([BT proxy limit](https://esphome.io/components/bluetooth_proxy): 3 devices/proxy)
 - Any number of batteries in parallel
 - Native Home Assistant integration (works with all [HA installation methods](https://www.home-assistant.io/installation/#advanced-installation-methods))
 
@@ -67,7 +67,7 @@ In case you have severe troubles,
 - please enable the debug protocol for the integration,
 - reproduce the issue,
 - disable the log (Home Assistant will prompt you to download the log), and finally
-- [open an issue](https://github.com/patman15/BMS_BLE-HA/issues) with a good description of what happened and attach the log.
+- [open an issue]([https://github.com/patman15/BMS_BLE-HA/issues](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=Bug&projects=&template=bug.yml)) with a good description of what happened and attach the log.
 
 ## FAQ
 ### My sensors show unknown/unavailable at startup!
