@@ -1,0 +1,24 @@
+---
+name: "Support"
+description: "Ask a question, get help with the integration"
+labels: "question"
+body:
+- type: markdown
+  attributes:
+    value: Before you open a new issue, search through the existing issues to see if others have had the same problem.
+- type: checkboxes
+  attributes:
+    label: Checklist
+    options:
+      - label: I need support with using the integration.
+        required: true
+      - label: My issue is not a [feature request](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=Feature%2BRequest&projects=&template=feature_request.yml)
+        required: true
+      - label: I'm not avoiding to fill out the [bug report](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=Bug&projects=&template=bug.yml) form.
+        required: true
+- type: textarea
+  attributes:
+    label: "Describe the issue"
+    description: "Please describe your issue, ask your question and give necessary context (BMS you are using)."
+  validations:
+    required: true

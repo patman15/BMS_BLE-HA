@@ -1,7 +1,7 @@
 ---
 name: "Feature request"
 description: "Suggest an idea for this project / add a new BMS"
-labels: "Feature+Request"
+labels: "enhancement"
 body:
 - type: markdown
   attributes:
@@ -16,7 +16,7 @@ body:
         required: true        
       - label: This only contains 1 feature request (if you have multiple feature requests, open one feature request for each feature request).
         required: true
-      - label: This issue is not a duplicate feature request of [previous feature requests](https://github.com/patman15/BMS_BLE-HA/issues?q=is%3Aissue+label%3A%22Feature+Request%22+).
+      - label: This issue is not a duplicate of any [previous feature requests](https://github.com/patman15/BMS_BLE-HA/issues?q=is%3Aissue+label%3A%22Feature+Request%22+).
         required: true
 
 - type: textarea
