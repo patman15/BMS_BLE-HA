@@ -13,6 +13,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Supports [ESPHome Bluetooth proxy](https://esphome.io/components/bluetooth_proxy) ([BT proxy limit](https://esphome.io/components/bluetooth_proxy): 3 devices/proxy)
 - Any number of batteries in parallel
 - Native Home Assistant integration (works with all [HA installation methods](https://www.home-assistant.io/installation/#advanced-installation-methods))
+- Readout of individual cell voltages to be able to judge battery health
 
 ### Supported Devices
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
@@ -57,9 +58,8 @@ Installation can be done using [HACS](https://hacs.xyz/) by [adding a custom rep
 1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "BLE Battery Management"
 
 ## Outlook
-- Add readout of individual cell voltages to be able to judge battery health
 - Add option to only have temporary connections (lowers reliability, but helps running more devices via [ESPHome Bluetooth proxy](https://esphome.io/components/bluetooth_proxy))
-- Add further battery types from [Home Assistant Add-on: BatMON](https://github.com/fl4p/batmon-ha)
+- Add further battery types from [Home Assistant Add-on: BatMON](https://github.com/fl4p/batmon-ha) on request
 
 ## Troubleshooting
 In case you have severe troubles,
@@ -75,7 +75,29 @@ The polling interval is 30 seconds. So at startup it takes a few minutes to dete
 
 ### Can I have the runtime in human readable format (using days)?
 Yes, you can use a [template sensor](https://my.home-assistant.io/redirect/config_flow_start?domain=template) or a card to show templates, e.g. [Mushroom template card](https://github.com/piitaya/lovelace-mushroom) with the following template:
-`{{ timedelta(seconds=int(states("sensor.smartbat_..._runtime"), 0)) }}` results in e,g, `4 days, 4:20:00`
+`{{ timedelta(seconds=int(states("sensor.smartbat_`&#x2026;`_runtime"), 0)) }}` results in e,g, `4 days, 4:20:00`
+
+### How do I get the cell voltages as individual sensor for tracking?
+The individual voltages are available as attribute to the `delta voltage` sensor. Click the sensor and at the bottom of the graph expand the `attribute` section. Alternatively, you can also find them in the `developer tools`.
+To create individual sensors, go to [Settings > Devices & Services > Helper](https://my.home-assistant.io/redirect/helpers) and add a template sensor (for a `sensor`) for each cell you want to monitor. Fill the configuration for, e.g. the first cell (0), as follows:
+
+Field | Content
+-- | --
+State template | `{{ state_attr("sensor.smartbat_`&#x2026;`_delta_voltage", "cell_voltages")[0] }}` The index `[0]` can be in the range from 0 to the number of cells-1, i.e. 0-3 for a 4 cell battery.
+Unit of measurement | `V`
+Device class | `Voltage`
+State class | `Measurement`
+Device | `smartbat_`&#x2026;
+
+### I want to know the maximum cell voltage!
+Please follow the explanations in the previous question but use the following:
+
+Field | Content
+-- | --
+State template | `{{ state_attr("sensor.smartbat_`&#x2026;`_delta_voltage", "cell_voltages") | max}}`
+
+There are plenty more functions you can use, e.g. min, and the full power of [templating](https://www.home-assistant.io/docs/configuration/templating/).
+
 
 ### I need a discharge sensor not the charging indicator, can I have that?
 Sure, use, e.g. a [threshold sensor](https://my.home-assistant.io/redirect/config_flow_start/?domain=threshold) based on the current to/from the battery. Negative means discharging, positiv is charging.
