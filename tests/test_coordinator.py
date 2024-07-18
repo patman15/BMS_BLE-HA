@@ -66,5 +66,5 @@ async def test_update_exception(
     assert not coordinator.last_update_success
     assert isinstance(
         coordinator.last_exception,
-        TimeoutError if mock_coordinator_exception == TimeoutError else UpdateFailed,
+        TimeoutError if mock_coordinator_exception is TimeoutError else UpdateFailed,
     )
