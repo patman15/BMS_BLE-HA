@@ -27,11 +27,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> boo
     # migrate old entries
     migrate_sensor_entities(hass, entry)
 
-    ble_device = async_ble_device_from_address(
-        hass=hass, address=entry.unique_id, connectable=True
-    )
+    ble_device = async_ble_device_from_address(hass, entry.unique_id, True)
 
-    if not ble_device:
+    if ble_device is None:
         raise ConfigEntryNotReady(
             f"Could not find BMS ({entry.unique_id}) via Bluetooth"
         )
