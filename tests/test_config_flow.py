@@ -1,24 +1,20 @@
 """Test the BLE Battery Management System integration config flow."""
 
-from custom_components.bms_ble.const import DOMAIN
-from custom_components.bms_ble.plugins.basebms import BaseBMS
-
 from homeassistant.config_entries import SOURCE_BLUETOOTH, SOURCE_USER, ConfigEntryState
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er
 
+from custom_components.bms_ble.const import DOMAIN
+from custom_components.bms_ble.plugins.basebms import BaseBMS
+
 from .bluetooth import inject_bluetooth_service_info_bleak
 from .conftest import mock_config
 
 
-async def test_device_discovery(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
+async def test_device_discovery(BTdiscovery, hass: HomeAssistant) -> None:
     """Test discovery via bluetooth with a valid device."""
-
-    def patch_async_ble_device_from_address(hass: HomeAssistant, address, connectable):
-        """Patch async ble device from address to return a given value."""
-        return BTdiscovery.device
 
     result = await hass.config_entries.flow.async_init(
         DOMAIN,
@@ -30,10 +26,7 @@ async def test_device_discovery(monkeypatch, BTdiscovery, hass: HomeAssistant) -
     assert result.get("step_id") == "bluetooth_confirm"
     assert result.get("description_placeholders") == {"name": "SmartBat-B12345"}
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.async_ble_device_from_address",
-        patch_async_ble_device_from_address,
-    )
+    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], user_input={"not": "empty"}
@@ -111,19 +104,10 @@ async def test_already_configured(bms_fixture, hass: HomeAssistant) -> None:
     assert result.get("reason") == "already_configured"
 
 
-async def test_async_setup_entry(
-    monkeypatch, bms_fixture, BTdiscovery, hass: HomeAssistant
-) -> None:
+async def test_async_setup_entry(bms_fixture, BTdiscovery, hass: HomeAssistant) -> None:
     """Test async_setup_entry with valid input."""
 
-    def patch_async_ble_device_from_address(hass: HomeAssistant, address, connectable):
-        """Patch async ble device from address to return a given value."""
-        return BTdiscovery.device
-
-    monkeypatch.setattr(
-        "custom_components.bms_ble.async_ble_device_from_address",
-        patch_async_ble_device_from_address,
-    )
+    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
 
     config = mock_config(bms=bms_fixture)
     config.add_to_hass(hass)
@@ -147,12 +131,8 @@ async def test_setup_entry_missing_unique_id(bms_fixture, hass: HomeAssistant) -
     assert config.state is ConfigEntryState.SETUP_ERROR
 
 
-async def test_user_setup(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
+async def test_user_setup(BTdiscovery, hass: HomeAssistant) -> None:
     """Check config flow for user adding previously discovered device."""
-
-    def patch_async_ble_device_from_address(hass: HomeAssistant, address, connectable):
-        """Patch async ble device from address to return a given value."""
-        return BTdiscovery.device
 
     inject_bluetooth_service_info_bleak(hass, BTdiscovery)
 
@@ -175,11 +155,6 @@ async def test_user_setup(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None
             }
         }
     }
-
-    monkeypatch.setattr(
-        "custom_components.bms_ble.async_ble_device_from_address",
-        patch_async_ble_device_from_address,
-    )
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], user_input={CONF_ADDRESS: "cc:cc:cc:cc:cc:cc"}
@@ -262,18 +237,11 @@ async def test_migrate_invalid_v_0_1(
 
 
 async def test_migrate_entry_from_v_0_1(
-    monkeypatch, mock_config_v0_1, BTdiscovery, hass: HomeAssistant
+    mock_config_v0_1, BTdiscovery, hass: HomeAssistant
 ) -> None:
     """Test migrating entries from version 0.1."""
 
-    def patch_async_ble_device_from_address(hass: HomeAssistant, address, connectable):
-        """Patch async ble device from address to return a given value."""
-        return BTdiscovery.device
-
-    monkeypatch.setattr(
-        "custom_components.bms_ble.async_ble_device_from_address",
-        patch_async_ble_device_from_address,
-    )
+    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
 
     config = mock_config_v0_1
     config.add_to_hass(hass)
