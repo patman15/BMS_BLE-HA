@@ -25,7 +25,7 @@ BINARY_SENSOR_TYPES: list[BinarySensorEntityDescription] = [
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
+    _hass: HomeAssistant,
     config_entry: BTBmsConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
