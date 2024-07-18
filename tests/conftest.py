@@ -5,13 +5,16 @@ import importlib
 import logging
 from typing import Any
 from uuid import UUID
-
+from homeassistant.config_entries import SOURCE_BLUETOOTH
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.descriptor import BleakGATTDescriptor
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str, uuidstr_to_str
+from home_assistant_bluetooth import BluetoothServiceInfoBleak
+import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.bms_ble.const import (
     ATTR_CURRENT,
     ATTR_CYCLE_CHRG,
@@ -21,9 +24,6 @@ from custom_components.bms_ble.const import (
     DOMAIN,
 )
 from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
-from home_assistant_bluetooth import BluetoothServiceInfoBleak
-import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from .bluetooth import generate_advertisement_data, generate_ble_device
 
@@ -65,7 +65,7 @@ def BTdiscovery() -> BluetoothServiceInfoBleak:
             local_name="SmartBat-B12345",
             service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
         ),
-        source="local",
+        source=SOURCE_BLUETOOTH,
         connectable=True,
         time=0,
         tx_power=-76,
@@ -199,12 +199,12 @@ class MockBleakClient(BleakClient):
         address_or_ble_device: BLEDevice,
         disconnected_callback: Callable[[BleakClient], None] | None,
         services: Iterable[str] | None = None,
-        *args,
-        **kwargs,
     ) -> None:
         """Mock init."""
         LOGGER.debug("Mock init")
-        super().__init__(address_or_ble_device.address)
+        super().__init__(
+            address_or_ble_device.address
+        )  # call with address to avoid backend resolving
         self._connected: bool = False
         self._notify_callback: Callable | None = None
         self._disconnect_callback: Callable[[BleakClient], None] | None = (
@@ -222,7 +222,7 @@ class MockBleakClient(BleakClient):
         """Mock connected."""
         return self._connected
 
-    async def connect(self, *args, **kwargs):
+    async def connect(self, *_args, **_kwargs):
         """Mock connect."""
         assert not self._connected, "connect called, but client already connected."
         self._connected = True
@@ -239,7 +239,7 @@ class MockBleakClient(BleakClient):
         """Mock start_notify."""
         LOGGER.debug("MockBleakClient start_notify for %s", char_specifier)
         assert self._connected, "start_notify called, but client not connected."
-        self._notify_callback = callback      
+        self._notify_callback = callback
 
     async def write_gatt_char(
         self,
