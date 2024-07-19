@@ -9,6 +9,7 @@ from bleak import BleakClient
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
+
 from ..const import (
     ATTR_BATTERY_CHARGING,
     ATTR_BATTERY_LEVEL,
@@ -168,7 +169,7 @@ class BMS(BaseBMS):
                     "(%s) Failed to detect characteristics", self._ble_device.name
                 )
                 await self._client.disconnect()
-                raise IOError(f"Unable to connect to {self._ble_device.name}.")
+                raise ConnectionError(f"Unable to connect to {self._ble_device.name}.")
             LOGGER.debug(
                 "(%s) Using characteristics handle #%i (notify), #%i (write)",
                 self._ble_device.name,

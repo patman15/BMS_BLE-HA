@@ -9,7 +9,8 @@ from bleak.backends.service import BleakGATTService, BleakGATTServiceCollection
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str, uuidstr_to_str
 from custom_components.bms_ble.plugins.jikong_bms import BMS
-from pytest import raises
+import pytest
+
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
@@ -362,8 +363,11 @@ async def test_invalid_device(monkeypatch) -> None:
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
-    with raises(IOError, match=r"^Unable to connect to.*"):
+    result = {}
+
+    with pytest.raises(ConnectionError, match=r"^Unable to connect to.*"):
         result = await bms.async_update()
-        assert result == {}
+
+    assert result == {}
 
     await bms.disconnect()
