@@ -7,16 +7,18 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 from custom_components.bms_ble.plugins.seplos_bms import BMS
-from pytest import raises, fixture
+import pytest
+
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
 BT_FRAME_SIZE = 50
 CHAR_UUID = "fff1"
 
-@fixture
+
+@pytest.fixture
 def ref_value() -> dict:
-    """Return reference value for mock Seplos BMS"""
+    """Return reference value for mock Seplos BMS."""
     return {
         "voltage": 52.34,
         "current": -6.7,
@@ -63,6 +65,7 @@ def ref_value() -> dict:
         "cell#31": 3.529,
         "delta_voltage": 0.003,
     }
+
 
 class MockSeplosBleakClient(MockBleakClient):
     """Emulate a Seplos BMS BleakClient."""
@@ -216,7 +219,7 @@ class MockOversizedBleakClient(MockSeplosBleakClient):
     async def send_frag_response(
         self,
         data: Buffer,
-        _response: bool = None,  # type: ignore[implicit-optional] # same as upstream
+        response: bool = None,  # type: ignore[implicit-optional] # same as upstream
     ) -> None:
         """Send fragmented response and add trash to each message."""
 
@@ -252,7 +255,9 @@ async def test_update(monkeypatch, ref_value, reconnect_fixture) -> None:
 
     # query again to check already connected state
     result = await bms.async_update()
-    assert bms._client and bms._client.is_connected is not reconnect_fixture  # noqa: SLF001
+    assert (
+        bms._client and bms._client.is_connected is not reconnect_fixture
+    )  # noqa: SLF001
 
     await bms.disconnect()
 
@@ -317,7 +322,7 @@ async def test_invalid_message(monkeypatch) -> None:
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
     result = {}
-    with raises(TimeoutError):
+    with pytest.raises(TimeoutError):
         result = await bms.async_update()
 
     assert result == {}

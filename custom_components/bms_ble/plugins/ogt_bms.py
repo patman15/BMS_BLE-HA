@@ -135,7 +135,7 @@ class BMS(BaseBMS):
 
         await self._connect()
         assert self._client is not None
-        
+
         self._values = {}
         for key in list(self._REGISTERS):
             await self._read(key)
