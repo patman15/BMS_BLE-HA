@@ -1,7 +1,6 @@
 """Test the JBD BMS implementation."""
 
 from collections.abc import Buffer
-import logging
 from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -12,7 +11,6 @@ from custom_components.bms_ble.plugins.jbd_bms import BMS
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
-LOGGER = logging.getLogger(__name__)
 BT_FRAME_SIZE = 20
 
 
@@ -31,15 +29,12 @@ class MockJBDBleakClient(MockBleakClient):
             char_specifier == normalize_uuid_str("ff02")
             and bytearray(data)[0] == self.HEAD_CMD
         ):
-            LOGGER.debug("response command")
             if bytearray(data)[1:3] == self.CMD_INFO:
-                LOGGER.debug("info")
                 return bytearray(
                     b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
                     b"\x00\x00\x00\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x84\x77"
                 )  # {'voltage': 15.6, 'current': -2.87, 'battery_level': 100, 'cycle_charge': 4.98, 'cycles': 42, 'temperature': 22.133333333333347}
             if bytearray(data)[1:3] == self.CMD_CELL:
-                LOGGER.debug("cell")
                 return bytearray(
                     b"\xdd\x04\x00\x08\x0d\x66\x0d\x61\x0d\x68\x0d\x59\xfe\x3c\x77"
                 )  # {'cell#0': 3.43, 'cell#1': 3.425, 'cell#2': 3.432, 'cell#3': 3.417}
@@ -98,7 +93,6 @@ class MockOversizedBleakClient(MockJBDBleakClient):
                     b"\00\00\00\00\00\00"  # oversized response
                 )  # {'voltage': 15.6, 'current': -2.87, 'battery_level': 100, 'cycle_charge': 4.98, 'cycles': 42, 'temperature': 22.133333333333347}
             if bytearray(data)[1:3] == self.CMD_CELL:
-                LOGGER.debug("cell")
                 return bytearray(
                     b"\xdd\x04\x00\x08\x0d\x66\x0d\x61\x0d\x68\x0d\x59\xfe\x3c\x77"
                     b"\00\00\00\00\00\00\00\00\00\00\00\00"  # oversized response
