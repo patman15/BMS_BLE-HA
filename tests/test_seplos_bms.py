@@ -135,7 +135,7 @@ class MockSeplosBleakClient(MockBleakClient):
     async def send_frag_response(
         self,
         data: Buffer,
-        response: bool = None,  # type: ignore[implicit-optional] # same as upstream
+        _response: bool = None,  # type: ignore[implicit-optional] # same as upstream
     ) -> None:
         """Send fragmented response."""
 
@@ -174,7 +174,7 @@ class MockWrongCRCBleakClient(MockSeplosBleakClient):
     async def send_frag_response(
         self,
         data: Buffer,
-        response: bool = None,  # type: ignore[implicit-optional] # same as upstream
+        _response: bool = None,  # type: ignore[implicit-optional] # same as upstream
     ) -> None:
         """Send fragmented response."""
 
@@ -216,7 +216,7 @@ class MockOversizedBleakClient(MockSeplosBleakClient):
     async def send_frag_response(
         self,
         data: Buffer,
-        response: bool = None,  # type: ignore[implicit-optional] # same as upstream
+        _response: bool = None,  # type: ignore[implicit-optional] # same as upstream
     ) -> None:
         """Send fragmented response and add trash to each message."""
 
@@ -252,7 +252,7 @@ async def test_update(monkeypatch, ref_value, reconnect_fixture) -> None:
 
     # query again to check already connected state
     result = await bms.async_update()
-    assert bms._connected is not reconnect_fixture  # noqa: SLF001
+    assert bms._client and bms._client.is_connected is not reconnect_fixture  # noqa: SLF001
 
     await bms.disconnect()
 

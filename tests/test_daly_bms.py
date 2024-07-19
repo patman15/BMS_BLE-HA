@@ -96,7 +96,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
 
     # query again to check already connected state
     result = await bms.async_update()
-    assert bms._connected is not reconnect_fixture # noqa: SLF001
+    assert bms._client and bms._client.is_connected is not reconnect_fixture # noqa: SLF001
 
     await bms.disconnect()
 

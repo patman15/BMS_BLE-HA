@@ -55,7 +55,6 @@ class BMS(BaseBMS):
         self._client: BleakClient | None = None
         self._data: bytearray | None = None
         self._data_event = asyncio.Event()
-        self._connected = False  # flag to indicate active BLE connection
         self._FIELDS: list[tuple[str, int, Callable[[int], int | float]]] = [
             (ATTR_VOLTAGE, 80 + self.HEAD_LEN, lambda x: float(x / 10)),
             (ATTR_CURRENT, 82 + self.HEAD_LEN, lambda x: float((x - 30000) / 10)),
@@ -101,7 +100,7 @@ class BMS(BaseBMS):
         LOGGER.debug("Disconnected from BMS (%s)", client.address)
         self._connected = False
 
-    def _notification_handler(self, sender, data: bytearray) -> None:
+    def _notification_handler(self, _sender, data: bytearray) -> None:
         LOGGER.debug("Received BLE data: %s", data)
 
         if (
@@ -124,7 +123,7 @@ class BMS(BaseBMS):
     async def _connect(self) -> None:
         """Connect to the BMS and setup notification if not connected."""
 
-        if not self._connected:
+        if self._client is None or not self._client.is_connected:
             LOGGER.debug("Connecting BMS (%s)", self._ble_device.name)
             self._client = BleakClient(
                 self._ble_device,
@@ -133,22 +132,19 @@ class BMS(BaseBMS):
             )
             await self._client.connect()
             await self._client.start_notify(UUID_RX, self._notification_handler)
-            self._connected = True
         else:
             LOGGER.debug("BMS %s already connected", self._ble_device.name)
 
     async def disconnect(self) -> None:
         """Disconnect the BMS and includes stoping notifications."""
 
-        if self._client and self._connected:
+        if self._client and self._client.is_connected:
             LOGGER.debug("Disconnecting BMS (%s)", self._ble_device.name)
             try:
                 self._data_event.clear()
                 await self._client.disconnect()
             except BleakError:
                 LOGGER.warning("Disconnect failed!")
-
-        self._client = None
 
     async def async_update(self) -> BMSsample:
         """Update battery status information."""
