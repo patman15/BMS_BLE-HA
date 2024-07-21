@@ -53,7 +53,6 @@ class BMS(BaseBMS):
         self._data: bytearray | None = None
         self._data_final: bytearray | None = None
         self._data_event = asyncio.Event()
-        self._connected = False  # flag to indicate active BLE connection
         self._char_write_handle: int | None = None
         self._FIELDS: list[tuple[str, int, int, bool, Callable[[int], int | float]]] = [
             (KEY_CELL_COUNT, 70, 4, False, lambda x: x.bit_count()),
@@ -87,13 +86,12 @@ class BMS(BaseBMS):
         await self._data_event.wait()
         self._data_event.clear()
 
-    def _on_disconnect(self, client: BleakClient) -> None:
+    def _on_disconnect(self, _client: BleakClient) -> None:
         """Disconnect callback function."""
 
         LOGGER.debug("Disconnected from BMS (%s)", self._ble_device.name)
-        self._connected = False
 
-    def _notification_handler(self, sender, data: bytearray) -> None:
+    def _notification_handler(self, _sender, data: bytearray) -> None:
         """Retrieve BMS data update."""
 
         if data[0 : len(self.BT_MODULE_MSG)] == self.BT_MODULE_MSG:
@@ -139,7 +137,7 @@ class BMS(BaseBMS):
     async def _connect(self) -> None:
         """Connect to the BMS and setup notification if not connected."""
 
-        if not self._connected:
+        if self._client is None or not self._client.is_connected:
             LOGGER.debug("Connecting BMS (%s)", self._ble_device.name)
             self._client = BleakClient(
                 self._ble_device,
@@ -171,7 +169,7 @@ class BMS(BaseBMS):
                     "(%s) Failed to detect characteristics", self._ble_device.name
                 )
                 await self._client.disconnect()
-                return
+                raise ConnectionError(f"Unable to connect to {self._ble_device.name}.")
             LOGGER.debug(
                 "(%s) Using characteristics handle #%i (notify), #%i (write)",
                 self._ble_device.name,
@@ -186,23 +184,19 @@ class BMS(BaseBMS):
             await self._client.write_gatt_char(
                 self._char_write_handle or 0, data=self._cmd(b"\x97")
             )
-
-            self._connected = True
         else:
             LOGGER.debug("BMS %s already connected", self._ble_device.name)
 
     async def disconnect(self) -> None:
         """Disconnect the BMS and includes stoping notifications."""
 
-        if self._client and self._connected:
+        if self._client and self._client.is_connected:
             LOGGER.debug("Disconnecting BMS (%s)", self._ble_device.name)
             try:
                 self._data_event.clear()
                 await self._client.disconnect()
             except BleakError:
                 LOGGER.warning("Disconnect failed!")
-
-        self._client = None
 
     def _crc(self, frame: bytes) -> int:
         """Calculate Jikong frame CRC."""
@@ -244,13 +238,9 @@ class BMS(BaseBMS):
 
     async def async_update(self) -> BMSsample:
         """Update battery status information."""
+
         await self._connect()
         assert self._client is not None
-        if not self._connected:
-            LOGGER.debug(
-                "Update request, but device (%s) not connected", self._ble_device.name
-            )
-            return {}
 
         if not self._data_event.is_set():
             # request cell info (only if data is not constantly published)

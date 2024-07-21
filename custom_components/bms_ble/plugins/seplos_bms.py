@@ -65,7 +65,6 @@ class BMS(BaseBMS):
         self._data_final: dict[int, bytearray] = {}
         self._data_event = asyncio.Event()
         self._pack_count = 0
-        self._connected = False  # flag to indicate active BLE connection
         self._char_write_handle: int | None = None
         self._FIELDS: list[
             tuple[str, int, int, int, bool, Callable[[int], int | float]]
@@ -122,13 +121,12 @@ class BMS(BaseBMS):
 
         self._data_event.clear()
 
-    def _on_disconnect(self, client: BleakClient) -> None:
+    def _on_disconnect(self, _client: BleakClient) -> None:
         """Disconnect callback function."""
 
         LOGGER.debug("Disconnected from BMS (%s)", self._ble_device.name)
-        self._connected = False
 
-    def _notification_handler(self, sender, data: bytearray) -> None:
+    def _notification_handler(self, _sender, data: bytearray) -> None:
         """Retrieve BMS data update."""
 
         if (
@@ -205,7 +203,7 @@ class BMS(BaseBMS):
     async def _connect(self) -> None:
         """Connect to the BMS and setup notification if not connected."""
 
-        if not self._connected:
+        if self._client is None or not self._client.is_connected:
             LOGGER.debug("Connecting BMS (%s)", self._ble_device.name)
             self._client = BleakClient(
                 self._ble_device,
@@ -214,23 +212,19 @@ class BMS(BaseBMS):
             )
             await self._client.connect()
             await self._client.start_notify(UUID_RX, self._notification_handler)
-
-            self._connected = True
         else:
             LOGGER.debug("BMS %s already connected", self._ble_device.name)
 
     async def disconnect(self) -> None:
         """Disconnect the BMS and includes stoping notifications."""
 
-        if self._client and self._connected:
+        if self._client and self._client.is_connected:
             LOGGER.debug("Disconnecting BMS (%s)", self._ble_device.name)
             try:
                 self._data_event.clear()
                 await self._client.disconnect()
             except BleakError:
                 LOGGER.warning("Disconnect failed!")
-
-        self._client = None
 
     def _swap32(self, value: int, signed: bool = False) -> int:
         """Swap high and low 16bit in 32bit integer."""

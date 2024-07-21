@@ -74,8 +74,7 @@ class BaseBMS(metaclass=ABCMeta):
         """
 
         def can_calc(value: str, using: frozenset[str]) -> bool:
-            """Check that value to add does not exists, is requested and
-            the necessary parameters are available."""
+            """Check that value to add does not exists, is requested and the necessary parameters are available."""
             return (value in values) and (value not in data) and using.issubset(data)
 
         # calculate cycle capacity from voltage and cycle charge
