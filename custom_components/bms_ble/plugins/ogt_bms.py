@@ -92,7 +92,7 @@ class BMS(BaseBMS):
                 18: (ATTR_RUNTIME, 2, lambda x: int(x * 60)),
                 23: (ATTR_CYCLES, 2, None),
             }
-            # add cell voltage registers, note: needs to be last!
+            # add cell voltage registers, note: need to be last!
             self._REGISTERS.update(
                 {
                     63
