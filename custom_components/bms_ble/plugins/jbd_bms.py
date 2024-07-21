@@ -86,7 +86,6 @@ class BMS(BaseBMS):
         """Disconnect callback function."""
 
         LOGGER.debug("Disconnected from BMS (%s)", self._ble_device.name)
-        self._connected = False
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         if self._data_event.is_set():

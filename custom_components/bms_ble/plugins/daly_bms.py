@@ -94,10 +94,10 @@ class BMS(BaseBMS):
         await self._data_event.wait()
         self._data_event.clear()
 
-    def _on_disconnect(self, client: BleakClient) -> None:
+    def _on_disconnect(self, _client: BleakClient) -> None:
         """Disconnect callback function."""
 
-        LOGGER.debug("Disconnected from BMS (%s)", client.address)
+        LOGGER.debug("Disconnected from BMS (%s)", self._ble_device.name)
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         LOGGER.debug("Received BLE data: %s", data)
