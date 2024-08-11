@@ -18,7 +18,7 @@ BMS_TYPES = [
 ]  # available BMS types
 DOMAIN = "bms_ble"
 LOGGER = logging.getLogger(__package__)
-UPDATE_INTERVAL = 10  # in seconds
+UPDATE_INTERVAL = 30  # in seconds
 
 # attributes (do not change)
 ATTR_DELTA_VOLTAGE = "delta_voltage"  # [V]
