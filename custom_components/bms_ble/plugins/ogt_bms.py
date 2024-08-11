@@ -153,6 +153,10 @@ class BMS(BaseBMS):
             {ATTR_CYCLE_CAP, ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_DELTA_VOLTAGE},
         )
 
+        # remove remaining runtime if battery is charging
+        if self._values.get(ATTR_RUNTIME) == 0xFFFF*60:
+            del self._values[ATTR_RUNTIME]
+
         if self._reconnect:
             # disconnect after data update to force reconnect next time (slow!)
             await self.disconnect()
