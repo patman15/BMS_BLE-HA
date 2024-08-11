@@ -22,7 +22,7 @@ class MockOGTBleakClient(MockBleakClient):
         0x04: bytearray(b'"  # Q\x1d\x1a'),  # cycle_charge: 8.0
         0x08: bytearray(b"'!R\"\x1d\x1a"),  # voltage: 45.681
         0x0C: bytearray(b"(% R\x1d\x1a"),  # temperature: 21.8
-        0x10: bytearray(b"'R  \x1d\x1a"),  # current: 1.23
+        0x10: bytearray(b"(%VV  \x1d\x1a"),  # current: -1.23
         0x18: bytearray(b"'(  \x1d\x1a"),  # runtime: 7200
         0x2C: bytearray(b"&#  \x1d\x1a"),  # cycles: 99
     }
@@ -32,7 +32,7 @@ class MockOGTBleakClient(MockBleakClient):
         0x0A: bytearray(b"'R   Q\x1d\x1a"),  # current: 1.23
         0x0D: bytearray(b" U  \x1d\x1a"),  # battery_level: 14
         0x0F: bytearray(b'"  # Q\x1d\x1a'),  # cycle_charge: 8.0
-        0x12: bytearray(b"'(  \x1d\x1a"),  # runtime: 7200
+        0x12: bytearray(b"VVVV\x1d\x1a"),  # runtime: 65536 (inf)
         0x17: bytearray(b"&#  \x1d\x1a"),  # cycles: 99
     }
 
@@ -78,7 +78,7 @@ class MockOGTBleakClient(MockBleakClient):
         value = await self._response(char_specifier, data)
 
         asyncio.get_running_loop().call_soon(
-            self._notify_callback, MockRespChar(None, 0), value
+            self._notify_callback, MockRespChar(None, lambda: 0), value
         )
 
 
@@ -106,7 +106,7 @@ class MockInvalidBleakClient(MockOGTBleakClient):
 
         # test read timeout on register 8 (valid for A and B type BMS)
         if bytearray(data)[4:6] != bytearray(b" ("):
-            self._notify_callback(MockRespChar(None, 0), value)
+            self._notify_callback(MockRespChar(None, lambda: 0), value)
 
     async def disconnect(self) -> bool:
         """Mock disconnect to raise BleakError."""
@@ -128,19 +128,33 @@ async def test_update(monkeypatch, ogt_bms_fixture, reconnect_fixture) -> None:
 
     result = await bms.async_update()
 
-    assert len(result) == 10  # verify number of entries
-    assert result == {
-        "voltage": 45.681,
-        "current": 1.23,
-        "battery_level": 14,
-        "cycles": 99,
-        "cycle_charge": 8.0,
-        "temperature": 21.8,
-        "cycle_capacity": 365.448,
-        "power": 56.188,
-        "battery_charging": True,
-        "runtime": 7200,
-    }  # verify all sensors are reported
+    if str(ogt_bms_fixture)[10] == 'A':
+        assert len(result) == 10  # verify number of entries
+        assert result == {
+            "voltage": 45.681,
+            "current": -1.23,
+            "battery_level": 14,
+            "cycles": 99,
+            "cycle_charge": 8.0,
+            "temperature": 21.8,
+            "cycle_capacity": 365.448,
+            "power": -56.188,
+            "battery_charging": False,
+            "runtime": 7200,
+        }  # verify all sensors are reported
+    elif str(ogt_bms_fixture)[10] == 'B':
+        assert len(result) == 9  # verify number of entries
+        assert result == {
+            "voltage": 45.681,
+            "current": 1.23,
+            "battery_level": 14,
+            "cycles": 99,
+            "cycle_charge": 8.0,
+            "temperature": 21.8,
+            "cycle_capacity": 365.448,
+            "power": 56.188,
+            "battery_charging": True,
+        }  # verify all sensors are reported (except runtime (battery charging))
 
     # query again to check already connected state
     result = await bms.async_update()
