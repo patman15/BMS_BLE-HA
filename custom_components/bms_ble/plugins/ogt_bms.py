@@ -73,7 +73,7 @@ class BMS(BaseBMS):
                 8: (ATTR_VOLTAGE, 2, lambda x: float(x) / 1000),
                 # MOS temperature
                 12: (ATTR_TEMPERATURE, 2, lambda x: round(float(x) * 0.1 - 273.15, 1)),
-                # length for current is actually only 2, 3 used to detect signed value
+                # 3rd byte of current is 0 (should be 1 as for B version)
                 16: (ATTR_CURRENT, 3, lambda x: float(x) / 100),
                 24: (ATTR_RUNTIME, 2, lambda x: int(x * 60)),
                 44: (ATTR_CYCLES, 2, None),
@@ -225,6 +225,7 @@ class BMS(BaseBMS):
         if msg[4:7] == "Err" or msg[:4] != "+RD," or msg[-2:] != "\r\n":
             return False, 0, 0
         # 16-bit value in network order (plus optional multiplier for 24-bit values)
+        # multiplier has 1 as minimum due to current value in A type battery
         signed = len(msg) > 12
         value = int.from_bytes(
             bytes.fromhex(msg[6:10]), byteorder="little", signed=signed
