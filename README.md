@@ -83,7 +83,7 @@ To create individual sensors, go to [Settings > Devices & Services > Helper](htt
 
 Field | Content
 -- | --
-State template | `{{ state_attr("sensor.smartbat_..._delta_voltage", "cell_voltages")[0] }}`<br>The index `[0]` can be in the range from 0 to the number of cells-1, i.e. 0-3 for a 4 cell battery.
+State template | ```{{ iif(has_value("sensor.smartbat_..._delta_voltage"), state_attr("sensor.smartbat_..._delta_voltage", "cell_voltages")[0], "unavailable")}}```<br>The index `[0]` can be in the range from 0 to the number of cells-1, i.e. 0-3 for a 4 cell battery.
 Unit of measurement | `V`
 Device class | `Voltage`
 State class | `Measurement`
