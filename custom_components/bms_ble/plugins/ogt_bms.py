@@ -3,7 +3,7 @@
 import asyncio
 from collections.abc import Callable
 import logging
-from typing import Any
+from typing import Any, Final
 
 from bleak import BleakClient
 from bleak.backends.device import BLEDevice
@@ -26,23 +26,23 @@ from ..const import (
 )
 from .basebms import BaseBMS, BMSsample
 
-LOGGER = logging.getLogger(__name__)
-BAT_TIMEOUT = 1
+LOGGER: Final = logging.getLogger(__name__)
+BAT_TIMEOUT: Final = 1
 
 # magic crypt sequence of length 16
-CRYPT_SEQ = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
+CRYPT_SEQ: Final = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
 # setup UUIDs, e.g. for receive: '0000fff4-0000-1000-8000-00805f9b34fb'
-UUID_RX = normalize_uuid_str("fff4")
-UUID_TX = normalize_uuid_str("fff6")
-UUID_SERVICE = normalize_uuid_str("fff0")
+UUID_RX: Final = normalize_uuid_str("fff4")
+UUID_TX: Final = normalize_uuid_str("fff6")
+UUID_SERVICE: Final = normalize_uuid_str("fff0")
 
 
 class BMS(BaseBMS):
     """Offgridtec LiFePO4 Smart Pro type A and type B battery class implementation."""
 
-    IDX_NAME = 0
-    IDX_LEN = 1
-    IDX_FCT = 2
+    IDX_NAME: Final = 0
+    IDX_LEN: Final = 1
+    IDX_FCT: Final = 2
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""

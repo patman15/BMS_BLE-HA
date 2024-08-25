@@ -4,7 +4,7 @@ import asyncio
 from collections.abc import Callable
 import logging
 from statistics import fmean
-from typing import Any
+from typing import Any, Final
 
 from bleak import BleakClient
 from bleak.backends.device import BLEDevice
@@ -28,22 +28,22 @@ from ..const import (
 )
 from .basebms import BaseBMS, BMSsample
 
-BAT_TIMEOUT = 10
-LOGGER = logging.getLogger(__name__)
+BAT_TIMEOUT: Final = 10
+LOGGER: Final = logging.getLogger(__name__)
 
 # setup UUIDs, e.g. for receive: '0000fff1-0000-1000-8000-00805f9b34fb'
-UUID_RX = normalize_uuid_str("ff01")
-UUID_TX = normalize_uuid_str("ff02")
-UUID_SERVICE = normalize_uuid_str("ff00")
+UUID_RX: Final = normalize_uuid_str("ff01")
+UUID_TX: Final = normalize_uuid_str("ff02")
+UUID_SERVICE: Final = normalize_uuid_str("ff00")
 
 
 class BMS(BaseBMS):
     """JBD Smart BMS class implementation."""
 
-    HEAD_RSP = bytes([0xDD])  # header for responses
-    HEAD_CMD = bytes([0xDD, 0xA5])  # read header for commands
+    HEAD_RSP: Final = bytes([0xDD])  # header for responses
+    HEAD_CMD: Final = bytes([0xDD, 0xA5])  # read header for commands
 
-    INFO_LEN = 7  # minimum frame size
+    INFO_LEN: Final = 7  # minimum frame size
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
@@ -54,7 +54,7 @@ class BMS(BaseBMS):
         self._data: bytearray | None = None
         self._data_final: bytearray | None = None
         self._data_event = asyncio.Event()
-        self._FIELDS: list[tuple[str, int, int, bool, Callable[[int], int | float]]] = [
+        self._FIELDS: Final[list[tuple[str, int, int, bool, Callable[[int], int | float]]]] = [
             (KEY_TEMP_SENS, 26, 1, False, lambda x: x),
             (ATTR_VOLTAGE, 4, 2, False, lambda x: float(x / 100)),
             (ATTR_CURRENT, 6, 2, True, lambda x: float(x / 100)),

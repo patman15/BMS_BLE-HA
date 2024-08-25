@@ -3,7 +3,7 @@
 import asyncio
 from collections.abc import Callable
 import logging
-from typing import Any
+from typing import Any, Final
 
 from bleak import BleakClient
 from bleak.backends.device import BLEDevice
@@ -27,22 +27,22 @@ from ..const import (
 )
 from .basebms import BaseBMS, BMSsample
 
-BAT_TIMEOUT = 10
-LOGGER = logging.getLogger(__name__)
+BAT_TIMEOUT: Final = 10
+LOGGER: Final = logging.getLogger(__name__)
 
 # setup UUIDs, e.g. for receive: '0000fff1-0000-1000-8000-00805f9b34fb'
-UUID_CHAR = normalize_uuid_str("ffe1")
-UUID_SERVICE = normalize_uuid_str("ffe0")
+UUID_CHAR: Final = normalize_uuid_str("ffe1")
+UUID_SERVICE: Final = normalize_uuid_str("ffe0")
 
 
 class BMS(BaseBMS):
     """Jikong Smart BMS class implementation."""
 
-    HEAD_RSP = bytes([0x55, 0xAA, 0xEB, 0x90])  # header for responses
-    HEAD_CMD = bytes([0xAA, 0x55, 0x90, 0xEB])  # header for commands (endiness!)
-    BT_MODULE_MSG = bytes([0x41, 0x54, 0x0D, 0x0A])  # AT\r\n from BLE module
+    HEAD_RSP: Final = bytes([0x55, 0xAA, 0xEB, 0x90])  # header for responses
+    HEAD_CMD: Final = bytes([0xAA, 0x55, 0x90, 0xEB])  # header for commands (endiness!)
+    BT_MODULE_MSG: Final = bytes([0x41, 0x54, 0x0D, 0x0A])  # AT\r\n from BLE module
 
-    INFO_LEN = 300
+    INFO_LEN: Final = 300
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
@@ -54,7 +54,9 @@ class BMS(BaseBMS):
         self._data_final: bytearray | None = None
         self._data_event = asyncio.Event()
         self._char_write_handle: int | None = None
-        self._FIELDS: list[tuple[str, int, int, bool, Callable[[int], int | float]]] = [
+        self._FIELDS: Final[
+            list[tuple[str, int, int, bool, Callable[[int], int | float]]]
+        ] = [
             (KEY_CELL_COUNT, 70, 4, False, lambda x: x.bit_count()),
             (ATTR_DELTA_VOLTAGE, 76, 2, False, lambda x: float(x / 1000)),
             (ATTR_TEMPERATURE, 144, 2, True, lambda x: float(x / 10)),

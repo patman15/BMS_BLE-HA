@@ -1,5 +1,6 @@
 """Platform for sensor integration."""
 
+from typing import Final
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -40,7 +41,7 @@ from .const import (
 )
 from .coordinator import BTBmsCoordinator
 
-SENSOR_TYPES: list[SensorEntityDescription] = [
+SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
     SensorEntityDescription(
         key=ATTR_VOLTAGE,
         translation_key=ATTR_VOLTAGE,

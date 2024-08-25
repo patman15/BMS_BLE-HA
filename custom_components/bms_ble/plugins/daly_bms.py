@@ -4,7 +4,7 @@ import asyncio
 from collections.abc import Callable
 import logging
 from statistics import fmean
-from typing import Any
+from typing import Any, Final
 
 from bleak import BleakClient
 from bleak.backends.device import BLEDevice
@@ -29,23 +29,23 @@ from ..const import (
 )
 from .basebms import BaseBMS, BMSsample, crc_xmodem
 
-BAT_TIMEOUT = 10
-LOGGER = logging.getLogger(__name__)
+BAT_TIMEOUT: Final = 10
+LOGGER: Final = logging.getLogger(__name__)
 
 # setup UUIDs, e.g. for receive: '0000fff1-0000-1000-8000-00805f9b34fb'
-UUID_RX = normalize_uuid_str("fff1")
-UUID_TX = normalize_uuid_str("fff2")
-UUID_SERVICE = normalize_uuid_str("fff0")
+UUID_RX: Final = normalize_uuid_str("fff1")
+UUID_TX: Final = normalize_uuid_str("fff2")
+UUID_SERVICE: Final = normalize_uuid_str("fff0")
 
 
 class BMS(BaseBMS):
     """Daly Smart BMS class implementation."""
 
-    HEAD_READ = bytearray(b"\xD2\x03")
-    CMD_INFO = bytearray(b"\x00\x00\x00\x3E\xD7\xB9")
-    HEAD_LEN = 3
-    CRC_LEN = 2
-    INFO_LEN = 124 + HEAD_LEN + CRC_LEN
+    HEAD_READ: Final = bytearray(b"\xD2\x03")
+    CMD_INFO: Final = bytearray(b"\x00\x00\x00\x3E\xD7\xB9")
+    HEAD_LEN: Final = 3
+    CRC_LEN: Final = 2
+    INFO_LEN: Final = 124 + HEAD_LEN + CRC_LEN
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
@@ -55,7 +55,7 @@ class BMS(BaseBMS):
         self._client: BleakClient | None = None
         self._data: bytearray | None = None
         self._data_event = asyncio.Event()
-        self._FIELDS: list[tuple[str, int, Callable[[int], int | float]]] = [
+        self._FIELDS: Final[list[tuple[str, int, Callable[[int], int | float]]]] = [
             (ATTR_VOLTAGE, 80 + self.HEAD_LEN, lambda x: float(x / 10)),
             (ATTR_CURRENT, 82 + self.HEAD_LEN, lambda x: float((x - 30000) / 10)),
             (ATTR_BATTERY_LEVEL, 84 + self.HEAD_LEN, lambda x: float(x / 10)),

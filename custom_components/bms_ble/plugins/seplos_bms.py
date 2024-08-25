@@ -3,7 +3,7 @@
 import asyncio
 from collections.abc import Callable
 import logging
-from typing import Any
+from typing import Any, Final
 
 from bleak import BleakClient
 from bleak.backends.device import BLEDevice
@@ -42,12 +42,13 @@ UUID_TX = normalize_uuid_str("fff2")
 class BMS(BaseBMS):
     """Seplos V3 Smart BMS class implementation."""
 
-    CMD_READ: int = 0x04
-    HEAD_LEN: int = 3
-    CRC_LEN: int = 2
-    EIA_LEN = PIB_LEN = 0x1A
-    EIB_LEN = 0x16
-    QUERY: dict[str, tuple[int, int, int]] = {
+    CMD_READ: Final[int] = 0x04
+    HEAD_LEN: Final[int] = 3
+    CRC_LEN: Final[int] = 2
+    PIB_LEN: Final[int] = 0x1A
+    EIA_LEN: Final[int] = PIB_LEN
+    EIB_LEN: Final[int] = 0x16
+    QUERY: Final[dict[str, tuple[int, int, int]]] = {
         # name: device, cmd, reg start, length
         "EIA": (0x4, 0x2000, EIA_LEN),
         "EIB": (0x4, 0x2100, EIB_LEN),
@@ -66,8 +67,8 @@ class BMS(BaseBMS):
         self._data_event = asyncio.Event()
         self._pack_count = 0
         self._char_write_handle: int | None = None
-        self._FIELDS: list[
-            tuple[str, int, int, int, bool, Callable[[int], int | float]]
+        self._FIELDS: Final[
+            list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
         ] = [
             (ATTR_TEMPERATURE, self.EIB_LEN, 20, 2, False, lambda x: float(x / 10)),
             (
