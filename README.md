@@ -2,15 +2,16 @@
 
 [![GitHub Release][releases-shield]][releases]
 [![License][license-shield]](LICENSE)
+[![Analytics][install-shield]]()
 
-This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). After installation, no configuration is required. You can use the [ESPHome Bluetooth proxy](https://esphome.io/components/bluetooth_proxy) to extend the bluetooth coverage range. By using standard dashboard cards, it is easy to visualize the current state of remote batteries.
+This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). After installation, no configuration is required. You can use the [ESPHome Bluetooth proxy][btproxy-url] to extend the bluetooth coverage range. By using standard dashboard cards, it is easy to visualize the current state of remote batteries.
 
 ![dashboard](https://github.com/user-attachments/assets/40f90f70-cd98-475f-b528-a644d587b730)
 
 ## Features
 - Zero configuration
 - Autodetects compatible batteries
-- Supports [ESPHome Bluetooth proxy](https://esphome.io/components/bluetooth_proxy) ([BT proxy limit](https://esphome.io/components/bluetooth_proxy): 3 devices/proxy)
+- Supports [ESPHome Bluetooth proxy][btproxy-url]  ([BT proxy limit][btproxy-url]: 3 devices/proxy)
 - Any number of batteries in parallel
 - Native Home Assistant integration (works with all [HA installation methods](https://www.home-assistant.io/installation/#advanced-installation-methods))
 - Readout of individual cell voltages to be able to judge battery health
@@ -58,8 +59,8 @@ Installation can be done using [HACS](https://hacs.xyz/) by [adding a custom rep
 1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "BLE Battery Management"
 
 ## Outlook
-- Add option to only have temporary connections (lowers reliability, but helps running more devices via [ESPHome Bluetooth proxy](https://esphome.io/components/bluetooth_proxy))
-- Add further battery types from [Home Assistant Add-on: BatMON](https://github.com/fl4p/batmon-ha) on request
+- Add option to only have temporary connections (lowers reliability, but helps running more devices via [ESPHome Bluetooth proxy][btproxy-url])
+- Add further battery types on [request](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.yml)
 
 ## Troubleshooting
 In case you have severe troubles,
@@ -116,3 +117,5 @@ for helping with making the integration better.
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
+[install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=Analytics&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total
+[btproxy-url]: https://esphome.io/components/bluetooth_proxy
