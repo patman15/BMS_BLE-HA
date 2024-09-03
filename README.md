@@ -84,18 +84,32 @@ To create individual sensors, go to [Settings > Devices & Services > Helper](htt
 
 Field | Content
 -- | --
-State template | ```{{ iif(has_value("sensor.smartbat_..._delta_voltage"), state_attr("sensor.smartbat_..._delta_voltage", "cell_voltages")[0], "unavailable")}}```<br>The index `[0]` can be in the range from 0 to the number of cells-1, i.e. 0-3 for a 4 cell battery.
+State template | ```{{ iif(has_value("sensor.smartbat_..._delta_voltage"), state_attr("sensor.smartbat_..._delta_voltage", "cell_voltages")[0], None) }}```<br>The index `[0]` can be in the range from 0 to the number of cells-1, i.e. 0-3 for a 4 cell battery.
 Unit of measurement | `V`
 Device class | `Voltage`
 State class | `Measurement`
 Device | `smartbat_...`
+
+or add the following snippet to your `configuration.yaml`:
+```javascript
+template:
+  - sensor:
+    - name: cell_voltage_0
+      state: >-
+        {{ state_attr('sensor.smartbat_..._delta_voltage', 'cell_voltages')[0] }}
+      unit_of_measurement: 'V'
+      state_class: measurement
+      device_class: voltage
+      availability: >- 
+        {{ has_value('sensor.smartbat_..._delta_voltage') }}
+```
 
 ### I want to know the maximum cell voltage!
 Please follow the explanations in the previous question but use the following:
 
 Field | Content
 -- | --
-State template | `{{ state_attr("sensor.smartbat_..._delta_voltage", "cell_voltages") \| max }}` 
+State template | `{%- if has_value("sensor.smartbat_..._delta_voltage") %} {{ state_attr("sensor.smartbat_..._delta_voltage", "cell_voltages") \| max }} {% else %} None {% endif -%}`
 
 There are plenty more functions you can use, e.g. min, and the full power of [templating](https://www.home-assistant.io/docs/configuration/templating/).
 
