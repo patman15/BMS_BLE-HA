@@ -10,6 +10,7 @@ from bleak import BleakClient
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
+from bleak_retry_connector import close_stale_connections, establish_connection
 
 from ..const import (
     ATTR_BATTERY_CHARGING,
@@ -54,7 +55,9 @@ class BMS(BaseBMS):
         self._data: bytearray | None = None
         self._data_final: bytearray | None = None
         self._data_event = asyncio.Event()
-        self._FIELDS: Final[list[tuple[str, int, int, bool, Callable[[int], int | float]]]] = [
+        self._FIELDS: Final[
+            list[tuple[str, int, int, bool, Callable[[int], int | float]]]
+        ] = [
             (KEY_TEMP_SENS, 26, 1, False, lambda x: x),
             (ATTR_VOLTAGE, 4, 2, False, lambda x: float(x / 100)),
             (ATTR_CURRENT, 6, 2, True, lambda x: float(x / 100)),
@@ -137,12 +140,23 @@ class BMS(BaseBMS):
 
         if self._client is None or not self._client.is_connected:
             LOGGER.debug("Connecting BMS (%s)", self._ble_device.name)
-            self._client = BleakClient(
+
+            await close_stale_connections(self._ble_device)
+
+            self._client = await establish_connection(
+                BleakClient,
                 self._ble_device,
+                self._ble_device.name or "unknown",
                 disconnected_callback=self._on_disconnect,
                 services=[UUID_SERVICE],
             )
-            await self._client.connect()
+
+            # self._client = BleakClient(
+            #     self._ble_device,
+            #     disconnected_callback=self._on_disconnect,
+            #     services=[UUID_SERVICE],
+            # )
+            # await self._client.connect()
             await self._client.start_notify(UUID_RX, self._notification_handler)
         else:
             LOGGER.debug("BMS %s already connected", self._ble_device.name)
