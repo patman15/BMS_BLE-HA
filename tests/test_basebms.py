@@ -4,31 +4,14 @@ from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
     ATTR_CURRENT,
     ATTR_CYCLE_CAP,
-    ATTR_CYCLE_CHRG,
     ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     ATTR_RUNTIME,
-    ATTR_VOLTAGE,
-    KEY_CELL_VOLTAGE,
 )
-from custom_components.bms_ble.plugins.basebms import BaseBMS
-import pytest
+from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 
 
-@pytest.fixture(params=[-13, 0, 21])
-def bms_data_fixture(request):
-    """Return a fake BMS data dictionary."""
-
-    return {
-        ATTR_VOLTAGE: 7.0,
-        ATTR_CURRENT: request.param,
-        ATTR_CYCLE_CHRG: 34,
-        f"{KEY_CELL_VOLTAGE}0": 3.456,
-        f"{KEY_CELL_VOLTAGE}1": 3.567,
-    }
-
-
-def test_calc_missing_values(bms_data_fixture) -> None:
+def test_calc_missing_values(bms_data_fixture: BMSsample) -> None:
     """Check if missing data is correctly calculated."""
     bms_data = ref = bms_data_fixture
     BaseBMS.calc_values(
