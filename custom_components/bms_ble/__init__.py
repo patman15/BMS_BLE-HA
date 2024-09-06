@@ -46,11 +46,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> boo
     coordinator = BTBmsCoordinator(hass, ble_device, bms_device=plugin.BMS(ble_device))
 
     # Query the device the first time, initialise coordinator.data
-    try:
-        await coordinator.async_config_entry_first_refresh()
-    except ConfigEntryNotReady:
-        # Ignore, e.g. timeouts, to gracefully handle connection issues
-        LOGGER.warning("Failed to initialize BMS %s, continuing", ble_device.name)
+    await coordinator.async_config_entry_first_refresh()
 
     # Insert the coordinator in the global registry
     hass.data.setdefault(DOMAIN, {})
