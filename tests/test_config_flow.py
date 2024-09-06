@@ -10,10 +10,10 @@ from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er
 
 from .bluetooth import inject_bluetooth_service_info_bleak
-from .conftest import mock_config
+from .conftest import mock_config, mock_update_min
 
 
-async def test_device_discovery(BTdiscovery, hass: HomeAssistant) -> None:
+async def test_device_discovery(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
     """Test discovery via bluetooth with a valid device."""
 
     result = await hass.config_entries.flow.async_init(
@@ -27,6 +27,12 @@ async def test_device_discovery(BTdiscovery, hass: HomeAssistant) -> None:
     assert result.get("description_placeholders") == {"name": "SmartBat-B12345"}
 
     inject_bluetooth_service_info_bleak(hass, BTdiscovery)
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.ogt_bms.BMS.async_update",
+        mock_update_min,
+    )
+
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], user_input={"not": "empty"}
@@ -104,13 +110,20 @@ async def test_already_configured(bms_fixture, hass: HomeAssistant) -> None:
     assert result.get("reason") == "already_configured"
 
 
-async def test_async_setup_entry(bms_fixture, BTdiscovery, hass: HomeAssistant) -> None:
+async def test_async_setup_entry(
+    monkeypatch, bms_fixture, BTdiscovery, hass: HomeAssistant
+) -> None:
     """Test async_setup_entry with valid input."""
 
     inject_bluetooth_service_info_bleak(hass, BTdiscovery)
 
     config = mock_config(bms=bms_fixture)
     config.add_to_hass(hass)
+
+    monkeypatch.setattr(
+        f"custom_components.bms_ble.plugins.{bms_fixture}.BMS.async_update",
+        mock_update_min,
+    )
 
     assert await hass.config_entries.async_setup(config.entry_id)
     await hass.async_block_till_done()
@@ -131,10 +144,15 @@ async def test_setup_entry_missing_unique_id(bms_fixture, hass: HomeAssistant) -
     assert config.state is ConfigEntryState.SETUP_ERROR
 
 
-async def test_user_setup(BTdiscovery, hass: HomeAssistant) -> None:
+async def test_user_setup(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
     """Check config flow for user adding previously discovered device."""
 
     inject_bluetooth_service_info_bleak(hass, BTdiscovery)
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.ogt_bms.BMS.async_update",
+        mock_update_min,
+    )    
 
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_USER}
@@ -187,7 +205,7 @@ async def test_user_setup_double_configure(
 ) -> None:
     """Check config flow for user adding previously already added device."""
 
-    def patch_async_current_ids(self) -> set[str | None]:
+    def patch_async_current_ids(_self) -> set[str | None]:
         return {"cc:cc:cc:cc:cc:cc"}
 
     monkeypatch.setattr(
@@ -237,7 +255,7 @@ async def test_migrate_invalid_v_0_1(
 
 
 async def test_migrate_entry_from_v_0_1(
-    mock_config_v0_1, BTdiscovery, hass: HomeAssistant
+    monkeypatch, mock_config_v0_1, BTdiscovery, hass: HomeAssistant
 ) -> None:
     """Test migrating entries from version 0.1."""
 
@@ -245,6 +263,11 @@ async def test_migrate_entry_from_v_0_1(
 
     config = mock_config_v0_1
     config.add_to_hass(hass)
+
+    monkeypatch.setattr(
+        f"custom_components.bms_ble.plugins.{(config.data["type"][:-3]).lower()}_bms.BMS.async_update",
+        mock_update_min,
+    )
 
     assert await hass.config_entries.async_setup(config.entry_id)
     await hass.async_block_till_done()

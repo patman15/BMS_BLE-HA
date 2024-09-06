@@ -314,3 +314,7 @@ class MockRespChar(BleakGATTCharacteristic):
         Should not be used by end user, but rather by `bleak` itself.
         """
         raise NotImplementedError
+
+async def mock_update_min(_self) -> BMSsample:
+    """Minimal version of a BMS update to mock initial coordinator update easily."""
+    return {ATTR_VOLTAGE: 12.3}
