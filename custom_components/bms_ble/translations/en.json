@@ -1,15 +1,23 @@
 {
-    "config": {
-        "abort": {
-            "already_configured": "Device is already configured",
-            "no_devices_found": "No devices found on the network",
-            "not_supported": "Device not supported"
-        },
-        "flow_title": "Setup {name}",
-        "step": {
-            "bluetooth_confirm": {
-                "description": "Do you want to set up {name}?"
-            }
-        }
+  "config": {
+    "abort": {
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
+      "no_devices_found": "No supported devices found via Bluetooth",
+      "not_supported": "Device not supported"
+    },
+    "flow_title": "Setup {name}",
+    "step": {
+      "bluetooth_confirm": {
+        "description": "[%key:component::bluetooth::config::step::bluetooth_confirm::description%]"
+      }
     }
+  },
+  "exceptions": {
+    "device_not_found": {
+      "message": "Could not find BMS ({MAC}) via Bluetooth"
+    },
+    "missing_unique_id": {
+      "message": "Missing unique ID for device."
+    }
+  }
 }

@@ -2,8 +2,8 @@
   "config": {
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
-      "no_devices_found": "No supported devices found via Bluetooth",
-      "not_supported": "Device not supported"
+      "no_devices_found": "Keine unterstützen Geräte via Bluetooth gefunden.",
+      "not_supported": "Gerät wird nicht unterstützt."
     },
     "flow_title": "Setup {name}",
     "step": {
@@ -14,10 +14,10 @@
   },
   "exceptions": {
     "device_not_found": {
-      "message": "Could not find BMS ({MAC}) via Bluetooth"
+      "message": "BMS ({MAC}) wurde nicht via Bluetooth gefunden."
     },
     "missing_unique_id": {
-      "message": "Missing unique ID for device."
+      "message": "Eindeutige ID für Gerät fehlt."
     }
   }
 }

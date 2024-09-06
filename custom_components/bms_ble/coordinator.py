@@ -7,7 +7,6 @@ from bleak.exc import BleakError
 
 from homeassistant.components import bluetooth
 from homeassistant.components.bluetooth import DOMAIN as BLUETOOTH_DOMAIN
-from homeassistant.const import ATTR_NAME
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH, DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -34,7 +33,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
             always_update=False,  # only update when sensor value has changed
         )
-
+        self._name: str = ble_device.name
         self._mac = ble_device.address
         LOGGER.debug(
             "Initializing coordinator for %s (%s) as %s",
@@ -65,24 +64,26 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
 
     async def stop(self) -> None:
         """Stop connection to BMS instance."""
-        LOGGER.debug("Stopping device %s", self.device_info.get(ATTR_NAME))
+        LOGGER.debug("%s: stopping device", self._name)
         await self._device.disconnect()
 
     async def _async_update_data(self) -> BMSsample:
         """Return the latest data from the device."""
-        LOGGER.debug("BMS %s data update", self.device_info.get(ATTR_NAME))
+        LOGGER.debug("%s: BMS data update", self._name)
 
         try:
             battery_info = await self._device.async_update()
-        except TimeoutError:
-            LOGGER.debug("Device communication timeout")
-            raise
+        except TimeoutError as err:
+            LOGGER.debug("%s: device communication timed out", self._name)
+            raise TimeoutError("device communication timed out") from err
         except BleakError as err:
+            LOGGER.debug("%s: device communicating failed: %s (%s)", self._name, err, type(err).__name__)
             raise UpdateFailed(
                 f"device communicating failed: {err!s} ({type(err).__name__})"
             ) from err
 
         if not battery_info:
+            LOGGER.debug("%s: no valid data received", self._name)
             raise UpdateFailed("no valid data received.")
 
         if (

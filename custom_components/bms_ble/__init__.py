@@ -22,7 +22,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> boo
     LOGGER.debug("Setup of %s", repr(entry))
 
     if entry.unique_id is None:
-        raise ConfigEntryError("Missing unique ID for device.")
+        raise ConfigEntryError(
+            translation_domain=DOMAIN,
+            translation_key="missing_unique_id",
+        )
 
     # migrate old entries
     migrate_sensor_entities(hass, entry)
@@ -30,18 +33,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> boo
     ble_device = async_ble_device_from_address(hass, entry.unique_id, True)
 
     if ble_device is None:
+        LOGGER.debug("Failed to discover device %s via Bluetooth", entry.unique_id)
         raise ConfigEntryNotReady(
-            f"Could not find BMS ({entry.unique_id}) via Bluetooth"
+            translation_domain=DOMAIN,
+            translation_key="device_not_found",
+            translation_placeholders={
+                "MAC": entry.unique_id,
+            },
         )
 
     plugin = await async_import_module(hass, entry.data["type"])
     coordinator = BTBmsCoordinator(hass, ble_device, bms_device=plugin.BMS(ble_device))
+
     # Query the device the first time, initialise coordinator.data
-    try:
-        await coordinator.async_config_entry_first_refresh()
-    except ConfigEntryNotReady:
-        # Ignore, e.g. timeouts, to gracefully handle connection issues
-        LOGGER.warning("Failed to initialize BMS %s, continuing", ble_device.name)
+    await coordinator.async_config_entry_first_refresh()
 
     # Insert the coordinator in the global registry
     hass.data.setdefault(DOMAIN, {})
