@@ -44,6 +44,12 @@ def mock_bluetooth(enable_bluetooth):
     """Auto mock bluetooth."""
 
 
+@pytest.fixture(params=[False, True])
+def bool_fixture(request):
+    """Return False, True for tests."""
+    return request.param
+
+
 @pytest.fixture(params=[*BMS_TYPES, "dummy_bms"])
 def bms_fixture(request):
     """Return all possible BMS variants."""

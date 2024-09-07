@@ -222,6 +222,23 @@ async def test_user_setup_double_configure(
     assert result.get("type") == FlowResultType.ABORT
 
 
+async def test_no_migration(
+    monkeypatch, bms_fixture, hass: HomeAssistant
+) -> None:
+    """Test that entries of correct version are kept."""
+
+    cfg = mock_config(bms=bms_fixture)
+    monkeypatch.setattr(cfg, "minor_version", 1)
+    cfg.add_to_hass(hass)
+
+    assert not await hass.config_entries.async_setup(cfg.entry_id)
+    await hass.async_block_till_done()
+
+    assert cfg in hass.config_entries.async_entries()
+    assert cfg.version == 1
+    assert cfg.minor_version == 1
+    assert cfg.state is ConfigEntryState.SETUP_RETRY
+
 async def test_migrate_entry_future_version(
     monkeypatch, bms_fixture, hass: HomeAssistant
 ) -> None:
