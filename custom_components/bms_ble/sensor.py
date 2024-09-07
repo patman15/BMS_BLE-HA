@@ -1,6 +1,7 @@
 """Platform for sensor integration."""
 
 from typing import Final
+
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,

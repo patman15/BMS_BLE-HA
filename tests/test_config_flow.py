@@ -2,6 +2,7 @@
 
 from custom_components.bms_ble.const import DOMAIN
 from custom_components.bms_ble.plugins.basebms import BaseBMS
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from homeassistant.config_entries import SOURCE_BLUETOOTH, SOURCE_USER, ConfigEntryState
 from homeassistant.const import CONF_ADDRESS
@@ -92,10 +93,10 @@ async def test_invalid_plugin(monkeypatch, BTdiscovery, hass: HomeAssistant) -> 
 async def test_already_configured(bms_fixture, hass: HomeAssistant) -> None:
     """Test that same device cannot be added twice."""
 
-    config = mock_config(bms_fixture)
-    config.add_to_hass(hass)
+    cfg = mock_config(bms_fixture)
+    cfg.add_to_hass(hass)
 
-    await hass.config_entries.async_setup(config.entry_id)
+    await hass.config_entries.async_setup(cfg.entry_id)
     await hass.async_block_till_done()
 
     result = await hass.config_entries.flow.async_init(
@@ -117,31 +118,31 @@ async def test_async_setup_entry(
 
     inject_bluetooth_service_info_bleak(hass, BTdiscovery)
 
-    config = mock_config(bms=bms_fixture)
-    config.add_to_hass(hass)
+    cfg = mock_config(bms=bms_fixture)
+    cfg.add_to_hass(hass)
 
     monkeypatch.setattr(
         f"custom_components.bms_ble.plugins.{bms_fixture}.BMS.async_update",
         mock_update_min,
     )
 
-    assert await hass.config_entries.async_setup(config.entry_id)
+    assert await hass.config_entries.async_setup(cfg.entry_id)
     await hass.async_block_till_done()
 
-    assert config in hass.config_entries.async_entries()
-    assert config.state is ConfigEntryState.LOADED
+    assert cfg in hass.config_entries.async_entries()
+    assert cfg.state is ConfigEntryState.LOADED
 
 
 async def test_setup_entry_missing_unique_id(bms_fixture, hass: HomeAssistant) -> None:
     """Test async_setup_entry with missing unique id."""
 
-    config = mock_config(bms=bms_fixture, unique_id=None)
-    config.add_to_hass(hass)
+    cfg = mock_config(bms=bms_fixture, unique_id=None)
+    cfg.add_to_hass(hass)
 
-    assert not await hass.config_entries.async_setup(config.entry_id)
+    assert not await hass.config_entries.async_setup(cfg.entry_id)
 
-    assert config in hass.config_entries.async_entries()
-    assert config.state is ConfigEntryState.SETUP_ERROR
+    assert cfg in hass.config_entries.async_entries()
+    assert cfg.state is ConfigEntryState.SETUP_ERROR
 
 
 async def test_user_setup(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
@@ -152,7 +153,7 @@ async def test_user_setup(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.ogt_bms.BMS.async_update",
         mock_update_min,
-    )    
+    )
 
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_USER}
@@ -226,15 +227,15 @@ async def test_migrate_entry_future_version(
 ) -> None:
     """Test migrating entries from future version."""
 
-    config = mock_config(bms=bms_fixture)
-    monkeypatch.setattr(config, "version", 999)
-    config.add_to_hass(hass)
+    cfg = mock_config(bms=bms_fixture)
+    monkeypatch.setattr(cfg, "version", 999)
+    cfg.add_to_hass(hass)
 
-    assert not await hass.config_entries.async_setup(config.entry_id)
+    assert not await hass.config_entries.async_setup(cfg.entry_id)
     await hass.async_block_till_done()
 
-    assert config in hass.config_entries.async_entries()
-    assert config.state is ConfigEntryState.MIGRATION_ERROR
+    assert cfg in hass.config_entries.async_entries()
+    assert cfg.state is ConfigEntryState.MIGRATION_ERROR
 
 
 async def test_migrate_invalid_v_0_1(
@@ -242,16 +243,16 @@ async def test_migrate_invalid_v_0_1(
 ) -> None:
     """Test migrating an invalid entry in version 0.1."""
 
-    config = mock_config(bms=bms_fixture)
-    monkeypatch.setattr(config, "version", 0)
-    monkeypatch.setattr(config, "data", {"type": None})
-    config.add_to_hass(hass)
+    cfg = mock_config(bms=bms_fixture)
+    monkeypatch.setattr(cfg, "version", 0)
+    monkeypatch.setattr(cfg, "data", {"type": None})
+    cfg.add_to_hass(hass)
 
-    assert not await hass.config_entries.async_setup(config.entry_id)
+    assert not await hass.config_entries.async_setup(cfg.entry_id)
     await hass.async_block_till_done()
 
-    assert config in hass.config_entries.async_entries()
-    assert config.state is ConfigEntryState.MIGRATION_ERROR
+    assert cfg in hass.config_entries.async_entries()
+    assert cfg.state is ConfigEntryState.MIGRATION_ERROR
 
 
 async def test_migrate_entry_from_v_0_1(
@@ -261,30 +262,30 @@ async def test_migrate_entry_from_v_0_1(
 
     inject_bluetooth_service_info_bleak(hass, BTdiscovery)
 
-    config = mock_config_v0_1
-    config.add_to_hass(hass)
+    cfg: MockConfigEntry = mock_config_v0_1
+    cfg.add_to_hass(hass)
 
     monkeypatch.setattr(
-        f"custom_components.bms_ble.plugins.{(config.data["type"][:-3]).lower()}_bms.BMS.async_update",
+        f"custom_components.bms_ble.plugins.{(cfg.data["type"][:-3]).lower()}_bms.BMS.async_update",
         mock_update_min,
     )
 
-    assert await hass.config_entries.async_setup(config.entry_id)
+    assert await hass.config_entries.async_setup(cfg.entry_id)
     await hass.async_block_till_done()
 
-    assert config in hass.config_entries.async_entries()
-    assert config.version == 1
-    assert config.minor_version == 0
-    assert config.state is ConfigEntryState.LOADED
+    assert cfg in hass.config_entries.async_entries()
+    assert cfg.version == 1
+    assert cfg.minor_version == 0
+    assert cfg.state is ConfigEntryState.LOADED
 
 
 async def test_migrate_unique_id(hass: HomeAssistant) -> None:
     """Verify that old style unique_ids are correctly migrated to new style."""
-    config = mock_config("jikong_bms")
-    config.add_to_hass(hass)
+    cfg = mock_config("jikong_bms")
+    cfg.add_to_hass(hass)
     await hass.async_block_till_done()
 
-    assert config in hass.config_entries.async_entries()
+    assert cfg in hass.config_entries.async_entries()
     config_entry = hass.config_entries.async_entries(domain=DOMAIN)[0]
 
     ent_reg = er.async_get(hass)
@@ -320,7 +321,7 @@ async def test_migrate_unique_id(hass: HomeAssistant) -> None:
         unit_of_measurement="%",
     )
 
-    await hass.config_entries.async_setup(config.entry_id)
+    await hass.config_entries.async_setup(cfg.entry_id)
     await hass.async_block_till_done()
 
     # check that "old_style" entry is migrated

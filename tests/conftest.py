@@ -23,7 +23,7 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
     BMS_TYPES,
     DOMAIN,
-    KEY_CELL_VOLTAGE,    
+    KEY_CELL_VOLTAGE,
 )
 from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 
@@ -49,6 +49,7 @@ def bms_fixture(request):
     """Return all possible BMS variants."""
     return request.param
 
+
 @pytest.fixture(params=[-13, 0, 21])
 def bms_data_fixture(request) -> BMSsample:
     """Return a fake BMS data dictionary."""
@@ -60,6 +61,7 @@ def bms_data_fixture(request) -> BMSsample:
         f"{KEY_CELL_VOLTAGE}0": 3.456,
         f"{KEY_CELL_VOLTAGE}1": 3.567,
     }
+
 
 @pytest.fixture
 def BTdiscovery() -> BluetoothServiceInfoBleak:
@@ -326,6 +328,7 @@ class MockRespChar(BleakGATTCharacteristic):
         Should not be used by end user, but rather by `bleak` itself.
         """
         raise NotImplementedError
+
 
 async def mock_update_min(_self) -> BMSsample:
     """Minimal version of a BMS update to mock initial coordinator update easily."""
