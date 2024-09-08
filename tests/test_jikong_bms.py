@@ -365,7 +365,7 @@ async def test_invalid_device(monkeypatch) -> None:
 
     result = {}
 
-    with pytest.raises(ConnectionError, match=r"^Unable to connect to.*"):
+    with pytest.raises(ConnectionError, match=r"^Failed to detect characteristics from.*"):
         result = await bms.async_update()
 
     assert result == {}
