@@ -1,7 +1,7 @@
 """Home Assistant coordinator for BLE Battery Management System integration."""
 
 from datetime import timedelta
-
+from collections import deque
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 
@@ -46,6 +46,8 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
         ):
             LOGGER.debug("device data: %s", service_info.as_dict())
 
+        self._link_q = deque([False] * 100, maxlen=100)
+
         # retrieve BMS class and initialize it
         self._device: BaseBMS = bms_device
         device_info = self._device.device_info()
@@ -67,9 +69,25 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
         LOGGER.debug("%s: stopping device", self._name)
         await self._device.disconnect()
 
+    def _seq_count(self) -> int:
+        max_len: int = 0
+        cur_len: int = 0
+
+        for element in self._link_q:
+            if not element:
+                cur_len += 1
+                if cur_len > max_len:
+                    max_len = cur_len
+            else:
+                cur_len = 0
+
+        return max_len
+
     async def _async_update_data(self) -> BMSsample:
         """Return the latest data from the device."""
         LOGGER.debug("%s: BMS data update", self._name)
+
+        self._link_q.appendleft(False)
 
         try:
             battery_info = await self._device.async_update()
@@ -77,10 +95,19 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             LOGGER.debug("%s: device communication timed out", self._name)
             raise TimeoutError("device communication timed out") from err
         except BleakError as err:
-            LOGGER.debug("%s: device communicating failed: %s (%s)", self._name, err, type(err).__name__)
+            LOGGER.debug(
+                "%s: device communicating failed: %s (%s)",
+                self._name,
+                err,
+                type(err).__name__,
+            )
             raise UpdateFailed(
                 f"device communicating failed: {err!s} ({type(err).__name__})"
             ) from err
+
+        self._link_q[0] = True
+        battery_info.update({"link_qual": self._link_q.count(True)})
+        battery_info.update({"link_down": self._seq_count()*UPDATE_INTERVAL})
 
         if not battery_info:
             LOGGER.debug("%s: no valid data received", self._name)
