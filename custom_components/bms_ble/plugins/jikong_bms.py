@@ -50,7 +50,7 @@ class BMS(BaseBMS):
         self._ble_device = ble_device
         assert self._ble_device.name is not None
         self._client: BleakClient | None = None
-        self._data: bytearray | None = None
+        self._data: bytearray = bytearray()
         self._data_final: bytearray | None = None
         self._data_event = asyncio.Event()
         self._char_write_handle: int | None = None
@@ -103,9 +103,9 @@ class BMS(BaseBMS):
             data = data[len(self.BT_MODULE_MSG) :]
 
         if data[0 : len(self.HEAD_RSP)] == self.HEAD_RSP:
-            self._data = data
-        elif len(data) and self._data is not None:
-            self._data += data
+            self._data.clear()
+
+        self._data += data
 
         LOGGER.debug(
             "(%s) Rx BLE data (%s): %s",
@@ -206,8 +206,7 @@ class BMS(BaseBMS):
 
     def _cmd(self, cmd: bytes, value: list[int] | None = None) -> bytes:
         """Assemble a Jikong BMS command."""
-        if value is None:
-            value = []
+        value = [] if value is None else value
         assert len(value) <= 13
         frame = bytes([*self.HEAD_CMD, cmd[0]])
         frame += bytes([len(value), *value])
