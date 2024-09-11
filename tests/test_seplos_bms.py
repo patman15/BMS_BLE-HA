@@ -12,7 +12,7 @@ import pytest
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
-BT_FRAME_SIZE = 50
+BT_FRAME_SIZE = 27 # ATT maximum is 512, minimal 27
 CHAR_UUID = "fff1"
 
 
@@ -227,6 +227,7 @@ class MockOversizedBleakClient(MockSeplosBleakClient):
             self._notify_callback
         ), "write to characteristics but notification not enabled"
 
+        # add garbage at the end for robustness
         resp = self._response(data) + bytearray(b"\xC0\xFF\xEE")
 
         for notify_data in [
