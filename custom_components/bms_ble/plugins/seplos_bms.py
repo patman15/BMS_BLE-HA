@@ -162,15 +162,10 @@ class BMS(BaseBMS):
         crc = crc_xmodem(self._data[: self._exp_len - 2])
         if int.from_bytes(self._data[self._exp_len - 2 : self._exp_len]) != crc:
             LOGGER.debug(
-                "%s: Rx data CRC is invalid: %i != %i",
+                "%s: Rx data CRC is invalid: 0x%X != 0x%X",
                 self._ble_device.name,
                 int.from_bytes(self._data[self._exp_len - 2 : self._exp_len]),
                 crc,
-            )
-            LOGGER.debug(
-                "%s: %s",
-                self._ble_device.name,
-                self._data[self._exp_len - 1 : self._exp_len + 1],
             )
             self._data_final[int(self._data[0])] = bytearray()  # reset invalid data
         elif (
