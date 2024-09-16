@@ -44,17 +44,20 @@ class BMS(BaseBMS):
     HEAD_CMD: Final = bytes([0xDD, 0xA5])  # read header for commands
 
     INFO_LEN: Final = 7  # minimum frame size
+    BASIC_INFO: Final = 23  # basic info data length
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        self._reconnect = reconnect
+        self._reconnect: Final[bool] = reconnect
         self._ble_device = ble_device
         assert self._ble_device.name is not None
         self._client: BleakClient | None = None
-        self._data: bytearray | None = None
+        self._data: bytearray = bytearray()
         self._data_final: bytearray | None = None
         self._data_event = asyncio.Event()
-        self._FIELDS: Final[list[tuple[str, int, int, bool, Callable[[int], int | float]]]] = [
+        self._FIELDS: Final[
+            list[tuple[str, int, int, bool, Callable[[int], int | float]]]
+        ] = [
             (KEY_TEMP_SENS, 26, 1, False, lambda x: x),
             (ATTR_VOLTAGE, 4, 2, False, lambda x: float(x / 100)),
             (ATTR_CURRENT, 6, 2, True, lambda x: float(x / 100)),
@@ -97,10 +100,9 @@ class BMS(BaseBMS):
             and (data[1] == 0x03 or data[1] == 0x04)
             and data[2] == 0x00
         ):
-            self._data = data
-        elif len(data) and self._data is not None:
-            self._data += data
+            self._data.clear()
 
+        self._data += data
         LOGGER.debug(
             "(%s) Rx BLE data (%s): %s",
             self._ble_device.name,
@@ -116,9 +118,8 @@ class BMS(BaseBMS):
         ):
             return
 
-        frame_end: int = self.INFO_LEN + self._data[3] - 1
-
-        crc = self._crc(self._data[2 : frame_end - 2])
+        frame_end: Final[int] = self.INFO_LEN + self._data[3] - 1
+        crc: Final[int] = self._crc(self._data[2 : frame_end - 2])
         if int.from_bytes(self._data[frame_end - 2 : frame_end], "big") != crc:
             LOGGER.debug(
                 "(%s) Rx data CRC is invalid: %i != %i",
@@ -178,20 +179,15 @@ class BMS(BaseBMS):
         }
 
         # calculate average temperature
-        if result[KEY_TEMP_SENS]:
-            result[ATTR_TEMPERATURE] = (
-                fmean(
-                    [
-                        int.from_bytes(data[idx : idx + 2], byteorder="big")
-                        for idx in range(
-                            27,
-                            27 + int(result[KEY_TEMP_SENS]) * 2,
-                            2,
-                        )
-                    ]
-                )
-                - 2731
-            ) / 10
+        result[ATTR_TEMPERATURE] = (
+            fmean(
+                [
+                    int.from_bytes(data[idx : idx + 2], byteorder="big")
+                    for idx in range(27, 27 + int(result[KEY_TEMP_SENS]) * 2, 2)
+                ]
+            )
+            - 2731
+        ) / 10
 
         return result
 
@@ -211,28 +207,28 @@ class BMS(BaseBMS):
         await self._connect()
         assert self._client is not None
 
-        # query basic info
-        await self._client.write_gatt_char(UUID_TX, data=self._cmd(b"\x03"))
-        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+        data = {}
+        for cmd, exp_len, dec_fct in [
+            (self._cmd(b"\x03"), self.BASIC_INFO, self._decode_data),
+            (self._cmd(b"\x04"), 0, self._cell_voltages),
+        ]:
+            await self._client.write_gatt_char(UUID_TX, data=cmd)
+            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 
-        if self._data_final is None:
-            return {}
-        if len(self._data_final) != self.INFO_LEN + self._data_final[3]:
-            LOGGER.debug(
-                "(%s) Wrong data length (%i): %s",
-                self._ble_device.name,
-                len(self._data_final),
-                self._data_final,
-            )
+            if self._data_final is None:
+                continue
+            if (
+                len(self._data_final) != self.INFO_LEN + self._data_final[3]
+                or len(self._data_final) < self.INFO_LEN + exp_len
+            ):
+                LOGGER.debug(
+                    "(%s) Wrong data length (%i): %s",
+                    self._ble_device.name,
+                    len(self._data_final),
+                    self._data_final,
+                )
 
-        data = self._decode_data(self._data_final)
-
-        # query cell block info
-        await self._client.write_gatt_char(UUID_TX, data=self._cmd(b"\x04"))
-        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-
-        if self._data_final is not None:
-            data.update(self._cell_voltages(self._data_final))
+            data.update(dec_fct(self._data_final))
 
         self.calc_values(
             data,
