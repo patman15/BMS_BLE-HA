@@ -77,7 +77,10 @@ class MockJikongBleakClient(MockBleakClient):
         """Mock the main battery info service from JiKong BMS."""
 
         class CharBase(BleakGATTCharacteristic):
-            """Basic characteristic for common properties."""
+            """Basic characteristic for common properties.
+
+            Note that Jikong BMS has two characteristics with same UUID!
+            """
 
             @property
             def service_handle(self) -> int:
@@ -133,6 +136,19 @@ class MockJikongBleakClient(MockBleakClient):
                 """Properties of this characteristic."""
                 return ["write", "write-without-response"]
 
+        class CharFaulty(CharBase):
+            """Characteristic for writing."""
+
+            @property
+            def uuid(self) -> str:
+                """The UUID for this characteristic."""
+                return normalize_uuid_str("0000")
+
+            @property
+            def properties(self) -> list[str]:
+                """Properties of this characteristic."""
+                return ["write", "write-without-response"]
+
         @property
         def handle(self) -> int:
             """The handle of this service."""
@@ -155,7 +171,11 @@ class MockJikongBleakClient(MockBleakClient):
         def characteristics(self) -> list[BleakGATTCharacteristic]:
             """List of characteristics for this service."""
 
-            return [self.CharNotify(None, 350), self.CharWrite(None, 350)]
+            return [
+                self.CharNotify(None, lambda: 350),
+                self.CharWrite(None, lambda: 350),
+                self.CharFaulty(None, lambda: 350), # leave last!
+            ]
 
         def add_characteristic(self, characteristic: BleakGATTCharacteristic) -> None:
             """Add a :py:class:`~BleakGATTCharacteristic` to the service.
@@ -365,7 +385,9 @@ async def test_invalid_device(monkeypatch) -> None:
 
     result = {}
 
-    with pytest.raises(ConnectionError, match=r"^Unable to connect to.*"):
+    with pytest.raises(
+        ConnectionError, match=r"^Failed to detect characteristics from.*"
+    ):
         result = await bms.async_update()
 
     assert result == {}
