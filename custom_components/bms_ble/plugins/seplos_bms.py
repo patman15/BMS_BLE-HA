@@ -27,29 +27,29 @@ from ..const import (
 )
 from .basebms import BaseBMS, BMSsample, crc_xmodem
 
-BAT_TIMEOUT = 5
+BAT_TIMEOUT: Final = 5
 LOGGER = logging.getLogger(__name__)
 
 # setup UUIDs
 #    serv 0000fff0-0000-1000-8000-00805f9b34fb
 # 	 char 0000fff1-0000-1000-8000-00805f9b34fb (#16): ['read', 'notify']
 # 	 char 0000fff2-0000-1000-8000-00805f9b34fb (#20): ['read', 'write-without-response', 'write']
-UUID_SERVICE = normalize_uuid_str("fff0")
-UUID_RX = normalize_uuid_str("fff1")
-UUID_TX = normalize_uuid_str("fff2")
+UUID_SERVICE: Final = normalize_uuid_str("fff0")
+UUID_RX: Final = normalize_uuid_str("fff1")
+UUID_TX: Final = normalize_uuid_str("fff2")
 
 
 class BMS(BaseBMS):
     """Seplos V3 Smart BMS class implementation."""
 
-    CMD_READ: Final[int] = 0x04
-    HEAD_LEN: Final[int] = 3
-    CRC_LEN: Final[int] = 2
-    PIB_LEN: Final[int] = 0x1A
-    EIA_LEN: Final[int] = PIB_LEN
-    EIB_LEN: Final[int] = 0x16
+    CMD_READ: Final = 0x04
+    HEAD_LEN: Final = 3
+    CRC_LEN: Final = 2
+    PIB_LEN: Final = 0x1A
+    EIA_LEN: Final = PIB_LEN
+    EIB_LEN: Final = 0x16
     QUERY: Final[dict[str, tuple[int, int, int]]] = {
-        # name: device, cmd, reg start, length
+        # name: cmd, reg start, length
         "EIA": (0x4, 0x2000, EIA_LEN),
         "EIB": (0x4, 0x2100, EIB_LEN),
         "PIB": (0x4, 0x1100, PIB_LEN),
@@ -57,12 +57,12 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        self._reconnect = reconnect
+        self._reconnect: Final[bool] = reconnect
         self._ble_device = ble_device
         assert self._ble_device.name is not None
         self._client: BleakClient | None = None
-        self._data: bytearray | None = None
-        self._exp_len: int = 0
+        self._data: bytearray = bytearray()
+        self._exp_len: int = 0  # expected packet length
         self._data_final: dict[int, bytearray] = {}
         self._data_event = asyncio.Event()
         self._pack_count = 0
@@ -136,44 +136,36 @@ class BMS(BaseBMS):
             and data[1] & 0x7F == self.CMD_READ  # include read errors
             and data[2] >= self.HEAD_LEN + self.CRC_LEN
         ):
-            self._data = data
-            self._exp_len = (
-                data[2] + self.HEAD_LEN + self.CRC_LEN
-            )  # expected packet length
+            self._data = bytearray()
+            self._exp_len = data[2] + self.HEAD_LEN + self.CRC_LEN
         elif (  # error message
             len(data) == self.HEAD_LEN + self.CRC_LEN
             and data[0] <= self._pack_count
             and data[1] & 0x80
         ):
-            LOGGER.debug("(%s) Rx BLE error: %x", self._ble_device.name, int(data[2]))
-            self._data = data
+            LOGGER.debug("%s: Rx BLE error: %x", self._ble_device.name, int(data[2]))
+            self._data = bytearray()
             self._exp_len = self.HEAD_LEN + self.CRC_LEN
-        elif len(data) and self._data is not None:
-            self._data += data
 
+        self._data += data
         LOGGER.debug(
-            "(%s) Rx BLE data (%s): %s",
+            "%s: Rx BLE data (%s): %s",
             self._ble_device.name,
             "start" if data == self._data else "cnt.",
             data,
         )
 
         # verify that data long enough
-        if self._data is None or len(self._data) < self._exp_len:
+        if len(self._data) < self._exp_len:
             return
 
         crc = crc_xmodem(self._data[: self._exp_len - 2])
         if int.from_bytes(self._data[self._exp_len - 2 : self._exp_len]) != crc:
             LOGGER.debug(
-                "(%s) Rx data CRC is invalid: %i != %i",
+                "%s: Rx data CRC is invalid: 0x%X != 0x%X",
                 self._ble_device.name,
                 int.from_bytes(self._data[self._exp_len - 2 : self._exp_len]),
                 crc,
-            )
-            LOGGER.debug(
-                "(%s): %s",
-                self._ble_device.name,
-                self._data[self._exp_len - 1 : self._exp_len + 1],
             )
             self._data_final[int(self._data[0])] = bytearray()  # reset invalid data
         elif (
@@ -181,18 +173,18 @@ class BMS(BaseBMS):
             and not self._data[1] & 0x80
         ):
             LOGGER.debug(
-                "(%s) unknown message: %s, length: %s",
+                "%s: unknown message: %s, length: %s",
                 self._ble_device.name,
                 self._data[0:2],
                 self._data[2],
             )
-            self._data = None
+            self._data = bytearray()
             return
         else:
             self._data_final[int(self._data[0]) << 8 | int(self._data[2])] = self._data
             if len(self._data) != self._exp_len:
                 LOGGER.debug(
-                    "(%s) Wrong data length (%i!=%s): %s",
+                    "%s: Wrong data length (%i!=%s): %s",
                     self._ble_device.name,
                     len(self._data),
                     self._exp_len,
@@ -274,6 +266,11 @@ class BMS(BaseBMS):
             for key, msg, idx, size, sign, func in self._FIELDS
         }
         self._pack_count = min(int(data.get(KEY_PACK_COUNT, 0)), 0x10)
+        LOGGER.debug(
+            "%s: detected %i battery packs",
+            self._ble_device.name,
+            data.get(KEY_PACK_COUNT, 0),
+        )
 
         for pack in range(1, 1 + self._pack_count):
             await self._client.write_gatt_char(

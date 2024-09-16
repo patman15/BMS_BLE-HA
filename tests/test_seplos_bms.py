@@ -12,7 +12,7 @@ import pytest
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
-BT_FRAME_SIZE = 50
+BT_FRAME_SIZE = 27  # ATT maximum is 512, minimal 27
 CHAR_UUID = "fff1"
 
 
@@ -30,7 +30,7 @@ def ref_value() -> dict:
         "power": -350.678,
         "battery_charging": False,
         "runtime": 72064,
-        "pack_count": 2,
+        "pack_count": 3,  # last packet does not report data!
         "cell#0": 3.272,
         "cell#1": 3.272,
         "cell#2": 3.272,
@@ -75,7 +75,7 @@ class MockSeplosBleakClient(MockBleakClient):
         "EIA": bytearray(
             b"\x00\x04\x34\x14\x72\x00\x00\xFF\xBD\xFF\xFF\x34\x64\x00\x00\x6D\x60\x00\x00\x00\xD5"
             b"\x00\x00\x6D\x60\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x07\x08\x00\x00\x07\x08\x00"
-            b"\x00\x02\x40\x01\xD0\x00\x02\x00\x09\x01\xDF\x03\xE7\xB3\x36"
+            b"\x00\x02\x40\x01\xD0\x00\x03\x00\x09\x01\xDF\x03\xE7\xA3\xF6"
         ),
         "EIB": bytearray(
             b"\x00\x04\x2C\x0C\xC9\x0C\xC6\x00\x02\x00\x07\x14\x72\x14\x72\x00\x00\x00\x00\x00\xFA"
@@ -96,6 +96,10 @@ class MockSeplosBleakClient(MockBleakClient):
             b"\x0D\xC7\x0D\xC7\x0D\xC7\x0D\xC7\x0D\xC8\x0D\xC8\x0D\xC9\x0B\xA5\x0B\x99\x0B\x9A\x0B"
             b"\xA4\x0A\xAB\x0A\xAB\x0A\xAB\x0A\xAB\x0B\xC4\x0B\xB5\x53\xF1"
         ),
+        "PIB3": bytearray(  # Note: incorrect answer for testing battery packet count mismatch
+            b"\x02\x04\x34"
+        )
+        + bytearray(54),
     }
 
     def _crc16(self, data: bytearray) -> int:
@@ -227,6 +231,7 @@ class MockOversizedBleakClient(MockSeplosBleakClient):
             self._notify_callback
         ), "write to characteristics but notification not enabled"
 
+        # add garbage at the end for robustness
         resp = self._response(data) + bytearray(b"\xC0\xFF\xEE")
 
         for notify_data in [
