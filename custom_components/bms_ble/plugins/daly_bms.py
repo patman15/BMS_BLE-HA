@@ -45,11 +45,13 @@ class BMS(BaseBMS):
     CMD_INFO: Final = bytearray(b"\x00\x00\x00\x3E\xD7\xB9")
     HEAD_LEN: Final = 3
     CRC_LEN: Final = 2
-    INFO_LEN: Final = 124 + HEAD_LEN + CRC_LEN
+    MAX_CELLS: Final = 32
+    MAX_TEMP: Final = 8
+    INFO_LEN: Final = 84 + HEAD_LEN + CRC_LEN + MAX_CELLS + MAX_TEMP
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        self._reconnect = reconnect
+        self._reconnect: Final[bool] = reconnect
         self._ble_device = ble_device
         assert self._ble_device.name is not None
         self._client: BleakClient | None = None
@@ -60,17 +62,9 @@ class BMS(BaseBMS):
             (ATTR_CURRENT, 82 + self.HEAD_LEN, lambda x: float((x - 30000) / 10)),
             (ATTR_BATTERY_LEVEL, 84 + self.HEAD_LEN, lambda x: float(x / 10)),
             (ATTR_CYCLE_CHRG, 96 + self.HEAD_LEN, lambda x: float(x / 10)),
-            (
-                KEY_TEMP_SENS,
-                100 + self.HEAD_LEN,
-                lambda x: int(x),  # pylint: disable=unnecessary-lambda
-            ),
-            (KEY_CELL_COUNT, 98 + self.HEAD_LEN, lambda x: x),
-            (
-                ATTR_CYCLES,
-                102 + self.HEAD_LEN,
-                lambda x: int(x),  # pylint: disable=unnecessary-lambda
-            ),
+            (KEY_CELL_COUNT, 98 + self.HEAD_LEN, lambda x: min(x, self.MAX_CELLS)),
+            (KEY_TEMP_SENS, 100 + self.HEAD_LEN, lambda x: min(x, self.MAX_TEMP)),
+            (ATTR_CYCLES, 102 + self.HEAD_LEN, lambda x: x),
             (ATTR_DELTA_VOLTAGE, 112 + self.HEAD_LEN, lambda x: float(x / 1000)),
         ]
 
@@ -159,52 +153,40 @@ class BMS(BaseBMS):
 
         data = {
             key: func(
-                int.from_bytes(
-                    self._data[idx : idx + 2],
-                    byteorder="big",
-                    signed=True,
-                )
+                int.from_bytes(self._data[idx : idx + 2], byteorder="big", signed=True)
             )
             for key, idx, func in self._FIELDS
         }
 
         # calculate average temperature
-        if data[KEY_TEMP_SENS] and data[KEY_TEMP_SENS] <= 8:
-            data[ATTR_TEMPERATURE] = (
-                fmean(
-                    [
-                        int.from_bytes(
-                            self._data[idx : idx + 2],
-                            byteorder="big",
-                            signed=True,
-                        )
-                        for idx in range(
-                            64 + self.HEAD_LEN,
-                            64 + self.HEAD_LEN + int(data[KEY_TEMP_SENS]) * 2,
-                            2,
-                        )
-                    ]
-                )
-                - 40
+        data[ATTR_TEMPERATURE] = (
+            fmean(
+                [
+                    int.from_bytes(
+                        self._data[idx : idx + 2], byteorder="big", signed=True
+                    )
+                    for idx in range(
+                        64 + self.HEAD_LEN,
+                        64 + self.HEAD_LEN + int(data[KEY_TEMP_SENS]) * 2,
+                        2,
+                    )
+                ]
             )
+            - 40
+        )
 
         # get cell voltages
-        if data[KEY_CELL_COUNT] and data[KEY_CELL_COUNT] <= 32:
-            data.update(
-                {
-                    f"{KEY_CELL_VOLTAGE}{idx}": float(
-                        int.from_bytes(
-                            self._data[
-                                self.HEAD_LEN + 2 * idx : self.HEAD_LEN + 2 * idx + 2
-                            ],
-                            byteorder="big",
-                            signed=True,
-                        )
-                        / 1000
-                    )
-                    for idx in range(int(data[KEY_CELL_COUNT]))
-                }
+        data |= {
+            f"{KEY_CELL_VOLTAGE}{idx}": float(
+                int.from_bytes(
+                    self._data[self.HEAD_LEN + 2 * idx : self.HEAD_LEN + 2 * idx + 2],
+                    byteorder="big",
+                    signed=True,
+                )
+                / 1000
             )
+            for idx in range(int(data[KEY_CELL_COUNT]))
+        }
 
         self.calc_values(
             data, {ATTR_CYCLE_CAP, ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_RUNTIME}
