@@ -13,7 +13,7 @@ In case you have troubles, please enable the debug protocol for the integration 
  6. Add an appropriate [bluetooth device matcher](https://developers.home-assistant.io/docs/creating_integration_manifest#bluetooth) to `manifest.json`. Note that this is required to match the implementation of `match_dict_list()` in the new BMS class.
  7. Test and commit the changes to the branch and create a pull request to the main repository.
 
-Note: in order to keep maintainability of this integration, pull requests are required to pass standard Home Assistant checks for integrations, python linting, and 100% line test coverage.
+Note: in order to keep maintainability of this integration, pull requests are required to pass standard Home Assistant checks for integrations, Python linting, and 100% [branch test coverage](https://coverage.readthedocs.io/en/latest/branch.html#branch).
 
 ### Any contributions you make will be under the LGPL-2.1 License
 
