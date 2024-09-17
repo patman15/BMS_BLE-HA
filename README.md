@@ -68,7 +68,7 @@ In case you have severe troubles,
 - please enable the debug protocol for the integration,
 - reproduce the issue,
 - disable the log (Home Assistant will prompt you to download the log), and finally
-- [open an issue]([https://github.com/patman15/BMS_BLE-HA/issues](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=Bug&projects=&template=bug.yml)) with a good description of what happened and attach the log.
+- [open an issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=Bug&projects=&template=bug.yml) with a good description of what happened and attach the log.
 
 ## FAQ
 ### My sensors show unknown/unavailable at startup!
@@ -113,9 +113,18 @@ State template | `{%- if has_value("sensor.smartbat_..._delta_voltage") %} {{ st
 
 There are plenty more functions you can use, e.g. min, and the full power of [templating](https://www.home-assistant.io/docs/configuration/templating/).
 
-
 ### I need a discharge sensor not the charging indicator, can I have that?
 Sure, use, e.g. a [threshold sensor](https://my.home-assistant.io/redirect/config_flow_start/?domain=threshold) based on the current to/from the battery. Negative means discharging, positiv is charging.
+
+### My BMS needs a pin, how can I enter it?
+
+Then you need to pair your device first. This is procedure is only required once for each device.
+- Open a [terminal to Home Assistant](https://www.home-assistant.io/common-tasks/supervised/#installing-and-using-the-ssh-add-on).
+- Use the command `bluetoothctl devices` to check that your devices is detected and
+- run `bluetoothctl pair <MAC_of_BMS>` to start pairing the device.
+
+Once pairing is done, the integration should automatically detect the BMS.
+
 
 ## Thanks to
 > [@gkathan](https://github.com/patman15/BMS_BLE-HA/issues/2), [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22), [@Goaheadz](https://github.com/patman15/BMS_BLE-HA/issues/24)
