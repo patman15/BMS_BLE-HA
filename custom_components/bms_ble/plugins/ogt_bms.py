@@ -93,13 +93,10 @@ class BMS(BaseBMS):
                 23: (ATTR_CYCLES, 2, None),
             }
             # add cell voltage registers, note: need to be last!
-            self._REGISTERS.update(
-                {
-                    63
-                    - reg: (f"{KEY_CELL_VOLTAGE}{reg+1}", 2, lambda x: float(x) / 1000)
-                    for reg in range(16)
-                }
-            )
+            self._REGISTERS |= {  # pragma: no branch
+                63 - reg: (f"{KEY_CELL_VOLTAGE}{reg+1}", 2, lambda x: float(x) / 1000)
+                for reg in range(16)
+            }
             self._HEADER = "+R16"
         else:
             self._REGISTERS = {}
@@ -154,7 +151,7 @@ class BMS(BaseBMS):
         )
 
         # remove remaining runtime if battery is charging
-        if self._values.get(ATTR_RUNTIME) == 0xFFFF*60:
+        if self._values.get(ATTR_RUNTIME) == 0xFFFF * 60:
             del self._values[ATTR_RUNTIME]
 
         if self._reconnect:
