@@ -266,11 +266,6 @@ class BMS(BaseBMS):
             for key, msg, idx, size, sign, func in self._FIELDS
         }
         self._pack_count = min(int(data.get(KEY_PACK_COUNT, 0)), 0x10)
-        LOGGER.debug(
-            "%s: detected %i battery packs",
-            self._ble_device.name,
-            data.get(KEY_PACK_COUNT, 0),
-        )
 
         for pack in range(1, 1 + self._pack_count):
             await self._client.write_gatt_char(
