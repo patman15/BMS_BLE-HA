@@ -171,7 +171,9 @@ class BMS(BaseBMS):
                     "(%s) Failed to detect characteristics", self._ble_device.name
                 )
                 await self._client.disconnect()
-                raise ConnectionError(f"Failed to detect characteristics from {self._ble_device.name}.")
+                raise ConnectionError(
+                    f"Failed to detect characteristics from {self._ble_device.name}."
+                )
             LOGGER.debug(
                 "(%s) Using characteristics handle #%i (notify), #%i (write)",
                 self._ble_device.name,
