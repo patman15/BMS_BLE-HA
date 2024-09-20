@@ -90,3 +90,5 @@ async def test_update(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
     assert delta_state is not None and delta_state.attributes[
         ATTR_CELL_VOLTAGES
     ] == [3, 3.123]
+
+# TODO: verify ATTR_TEMP_SENSORS

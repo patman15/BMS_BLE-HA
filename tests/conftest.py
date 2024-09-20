@@ -24,6 +24,7 @@ from custom_components.bms_ble.const import (
     BMS_TYPES,
     DOMAIN,
     KEY_CELL_VOLTAGE,
+    KEY_TEMP_VALUE,
 )
 from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 
@@ -66,6 +67,10 @@ def bms_data_fixture(request) -> BMSsample:
         ATTR_CYCLE_CHRG: 34,
         f"{KEY_CELL_VOLTAGE}0": 3.456,
         f"{KEY_CELL_VOLTAGE}1": 3.567,
+        f"{KEY_TEMP_VALUE}0": -273.15,
+        f"{KEY_TEMP_VALUE}1": 0.01,
+        f"{KEY_TEMP_VALUE}2": 35.555,
+        f"{KEY_TEMP_VALUE}3": 100.0,
     }
 
 
