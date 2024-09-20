@@ -64,6 +64,14 @@ def ref_value() -> dict:
         "cell#30": 3.528,
         "cell#31": 3.529,
         "delta_voltage": 0.003,
+        "temp#0": 24.95,
+        "temp#1": 23.75,
+        "temp#2": 23.85,
+        "temp#3": 24.85,
+        "temp#8": 24.95,
+        "temp#9": 23.75,
+        "temp#10": 23.85,
+        "temp#11": 24.85,
     }
 
 
