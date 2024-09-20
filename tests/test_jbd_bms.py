@@ -127,7 +127,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "battery_level": 100,
         "cycle_charge": 4.98,
         "cycles": 42,
-        "temperature": 22.133333333333347,
+        "temperature": 22.133,
         "cycle_capacity": 77.688,
         "power": -44.772,
         "battery_charging": False,
@@ -136,6 +136,9 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "cell#1": 3.425,
         "cell#2": 3.432,
         "cell#3": 3.417,
+        "temp#0": 22.4,
+        "temp#1": 22.3,
+        "temp#2": 21.7,
         "delta_voltage": 0.015,
     }
 
@@ -182,7 +185,7 @@ async def test_oversized_response(monkeypatch) -> None:
         "battery_level": 100,
         "cycle_charge": 4.98,
         "cycles": 42,
-        "temperature": 22.133333333333347,
+        "temperature": 22.133,
         "cycle_capacity": 77.688,
         "power": -44.772,
         "battery_charging": False,
@@ -191,6 +194,9 @@ async def test_oversized_response(monkeypatch) -> None:
         "cell#1": 3.425,
         "cell#2": 3.432,
         "cell#3": 3.417,
+        "temp#0": 22.4,
+        "temp#1": 22.3,
+        "temp#2": 21.7,        
         "delta_voltage": 0.015,
     }
 
