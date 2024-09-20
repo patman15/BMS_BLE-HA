@@ -222,14 +222,12 @@ class BMS(BaseBMS):
     def _cell_voltages(self, data: bytearray, cells: int) -> dict[str, float]:
         """Return cell voltages from status message."""
         return {
-            f"{KEY_CELL_VOLTAGE}{idx}": float(
-                int.from_bytes(
-                    data[6 + 2 * idx : 6 + 2 * idx + 2],
-                    byteorder="little",
-                    signed=True,
-                )
-                / 1000
+            f"{KEY_CELL_VOLTAGE}{idx}": int.from_bytes(
+                data[6 + 2 * idx : 6 + 2 * idx + 2],
+                byteorder="little",
+                signed=True,
             )
+            / 1000
             for idx in range(cells)
         }
 
@@ -271,7 +269,14 @@ class BMS(BaseBMS):
         data.update(self._cell_voltages(self._data_final, int(data[KEY_CELL_COUNT])))
 
         self.calc_values(
-            data, {ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_RUNTIME, ATTR_TEMPERATURE}
+            data,
+            {
+                ATTR_POWER,
+                ATTR_BATTERY_CHARGING,
+                ATTR_CYCLE_CAP,
+                ATTR_RUNTIME,
+                ATTR_TEMPERATURE,
+            },
         )
 
         if self._reconnect:

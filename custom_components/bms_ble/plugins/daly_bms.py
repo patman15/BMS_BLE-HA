@@ -160,7 +160,7 @@ class BMS(BaseBMS):
 
         # get temperatures
         data |= {
-            f"{KEY_TEMP_VALUE}{int((idx-64-self.HEAD_LEN)/2)}": float(
+            f"{KEY_TEMP_VALUE}{(idx-64-self.HEAD_LEN)>>1}": float(
                 int.from_bytes(self._data[idx : idx + 2], byteorder="big", signed=True)
                 - 40
             )
@@ -183,7 +183,14 @@ class BMS(BaseBMS):
         }
 
         self.calc_values(
-            data, {ATTR_CYCLE_CAP, ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_RUNTIME, ATTR_TEMPERATURE}
+            data,
+            {
+                ATTR_CYCLE_CAP,
+                ATTR_POWER,
+                ATTR_BATTERY_CHARGING,
+                ATTR_RUNTIME,
+                ATTR_TEMPERATURE,
+            },
         )
 
         if self._reconnect:
