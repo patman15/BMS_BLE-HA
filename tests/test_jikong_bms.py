@@ -273,7 +273,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
     assert result == {
         "cell_count": 16,
         "delta_voltage": 0.002,
-        "temperature": 18.4,
+        "temperature": 18.233,
         "voltage": 52.234,
         "current": -10.595,
         "battery_level": 42,
@@ -299,6 +299,9 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "power": -553.419,
         "battery_charging": False,
         "runtime": 39949,
+        "temp#0": 18.4,
+        "temp#1": 18.1,
+        "temp#2": 18.2,
     }
 
     # query again to check already connected state
@@ -342,7 +345,7 @@ async def test_oversized_response(monkeypatch) -> None:
     assert result == {
         "cell_count": 16,
         "delta_voltage": 0.002,
-        "temperature": 18.4,
+        "temperature": 18.233,
         "voltage": 52.234,
         "current": -10.595,
         "battery_level": 42,
@@ -368,6 +371,9 @@ async def test_oversized_response(monkeypatch) -> None:
         "power": -553.419,
         "battery_charging": False,
         "runtime": 39949,
+        "temp#0": 18.4,
+        "temp#1": 18.1,
+        "temp#2": 18.2,        
     }
 
     await bms.disconnect()

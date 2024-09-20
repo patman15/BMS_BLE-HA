@@ -24,6 +24,7 @@ from ..const import (
     ATTR_VOLTAGE,
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
+    KEY_TEMP_VALUE,
 )
 from .basebms import BaseBMS, BMSsample
 
@@ -59,7 +60,9 @@ class BMS(BaseBMS):
         ] = [
             (KEY_CELL_COUNT, 70, 4, False, lambda x: x.bit_count()),
             (ATTR_DELTA_VOLTAGE, 76, 2, False, lambda x: float(x / 1000)),
-            (ATTR_TEMPERATURE, 144, 2, True, lambda x: float(x / 10)),
+            (f"{KEY_TEMP_VALUE}0", 144, 2, True, lambda x: float(x / 10)),
+            (f"{KEY_TEMP_VALUE}1", 162, 2, True, lambda x: float(x / 10)),
+            (f"{KEY_TEMP_VALUE}2", 164, 2, True, lambda x: float(x / 10)),
             (ATTR_VOLTAGE, 150, 4, False, lambda x: float(x / 1000)),
             (ATTR_CURRENT, 158, 4, True, lambda x: float(x / 1000)),
             (ATTR_BATTERY_LEVEL, 173, 1, False, lambda x: x),
@@ -268,7 +271,7 @@ class BMS(BaseBMS):
         data.update(self._cell_voltages(self._data_final, int(data[KEY_CELL_COUNT])))
 
         self.calc_values(
-            data, {ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_RUNTIME}
+            data, {ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_RUNTIME, ATTR_TEMPERATURE}
         )
 
         if self._reconnect:
