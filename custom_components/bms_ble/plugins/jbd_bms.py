@@ -3,7 +3,6 @@
 import asyncio
 from collections.abc import Callable
 import logging
-from statistics import fmean
 from typing import Any, Final
 
 from bleak import BleakClient
