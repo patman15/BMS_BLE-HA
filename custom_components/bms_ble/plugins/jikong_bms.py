@@ -100,8 +100,8 @@ class BMS(BaseBMS):
         """Retrieve BMS data update."""
 
         if data[0 : len(self.BT_MODULE_MSG)] == self.BT_MODULE_MSG:
+            LOGGER.debug("(%s) filtering AT cmd", self._ble_device.name)
             if len(data) == len(self.BT_MODULE_MSG):
-                LOGGER.debug("(%s) filtering AT cmd", self._ble_device.name)
                 return
             data = data[len(self.BT_MODULE_MSG) :]
 
@@ -118,11 +118,7 @@ class BMS(BaseBMS):
         )
 
         # verify that data long enough and if answer is cell info (0x2)
-        if (
-            self._data is None
-            or len(self._data) < self.INFO_LEN
-            or self._data[4] != 0x2
-        ):
+        if len(self._data) < self.INFO_LEN or self._data[4] != 0x2:
             return
 
         crc = self._crc(self._data[0 : self.INFO_LEN - 1])
