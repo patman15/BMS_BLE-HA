@@ -106,7 +106,7 @@ class BMS(BaseBMS):
             data = data[len(self.BT_MODULE_MSG) :]
 
         if data[0 : len(self.HEAD_RSP)] == self.HEAD_RSP:
-            self._data.clear()
+            self._data = bytearray()
 
         self._data += data
 
