@@ -2,6 +2,7 @@
 
 from typing import Final
 
+from homeassistant.components.bluetooth import async_last_service_info
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -23,7 +24,7 @@ from homeassistant.const import (
     UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import format_mac
+from homeassistant.helpers.device_registry import DeviceInfo, format_mac
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -117,6 +118,7 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
     SensorEntityDescription(
         key=ATTR_RSSI,
         translation_key=ATTR_RSSI,
+        icon="mdi:bluetooth-connect",
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
@@ -127,15 +129,19 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
 
 
 async def async_setup_entry(
-    _hass: HomeAssistant,
+    hass: HomeAssistant,
     config_entry: BTBmsConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Add sensors for passed config_entry in Home Assistant."""
 
     bms: BTBmsCoordinator = config_entry.runtime_data
+    mac: str = format_mac(config_entry.unique_id)
     for descr in SENSOR_TYPES:
-        async_add_entities([BMSSensor(bms, descr, format_mac(config_entry.unique_id))])
+        if descr.key == ATTR_RSSI:
+            async_add_entities([RSSISensor(hass, descr, mac, bms.device_info)])
+            continue
+        async_add_entities([BMSSensor(bms, descr, mac)])
 
 
 class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ignore[reportIncompatibleMethodOverride]
@@ -170,3 +176,44 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
     def native_value(self) -> int | float | None:  # type: ignore[reportIncompatibleVariableOverride]
         """Return the sensor value."""
         return self.coordinator.data.get(self.entity_description.key)
+
+
+class RSSISensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverride]
+    """The Bluetooth RSSI sensor."""
+
+    _attr_has_entity_name = True
+    _attr_native_value = -127
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        descr: SensorEntityDescription,
+        unique_id: str,
+        device_info: DeviceInfo,
+    ) -> None:
+        """Intitialize the BMS sensor."""
+        self._hass: Final = hass
+        self._mac: Final = unique_id.upper()
+        self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
+        self._attr_device_info = device_info
+        self.entity_description = descr
+
+    async def async_update(self) -> None:
+        """Update RSSI sensor value."""
+        self._attr_available = False
+
+        if (
+            service_info := async_last_service_info(
+                self._hass, address=self._mac, connectable=True
+            )
+        ) is not None:
+            self._attr_available = True
+            self._attr_native_value = service_info.rssi
+
+        LOGGER.debug(
+            "%s: RSSI value: %i dBm, available = %s",
+            self._mac,
+            self._attr_native_value,
+            self._attr_available,
+        )
+        self.async_write_ha_state()

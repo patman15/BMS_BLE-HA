@@ -86,12 +86,6 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             LOGGER.debug("%s: no valid data received", self._name)
             raise UpdateFailed("no valid data received.")
 
-        if (
-            service_info := bluetooth.async_last_service_info(
-                self.hass, address=self._mac, connectable=True
-            )
-        ) is not None:
-            battery_info.update({ATTR_RSSI: service_info.rssi})
 
         LOGGER.debug("BMS data sample %s", battery_info)
         return battery_info

@@ -1,8 +1,8 @@
 """Constants for the BLE Battery Management System integration."""
 
 import logging
-
 from typing import Final
+
 from homeassistant.const import (  # noqa: F401
     ATTR_BATTERY_CHARGING,
     ATTR_BATTERY_LEVEL,
@@ -20,6 +20,7 @@ BMS_TYPES: Final = [
 DOMAIN: Final = "bms_ble"
 LOGGER: Final = logging.getLogger(__package__)
 UPDATE_INTERVAL: Final = 30  # in seconds
+SCAN_INTERVAL = UPDATE_INTERVAL * 0.9  # diagnosis interval [s]
 
 # attributes (do not change)
 ATTR_DELTA_VOLTAGE: Final = "delta_voltage"  # [V]
