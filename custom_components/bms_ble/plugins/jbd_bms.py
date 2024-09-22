@@ -100,7 +100,7 @@ class BMS(BaseBMS):
             and (data[1] == 0x03 or data[1] == 0x04)
             and data[2] == 0x00
         ):
-            self._data.clear()
+            self._data = bytearray()
 
         self._data += data
         LOGGER.debug(
@@ -112,8 +112,7 @@ class BMS(BaseBMS):
 
         # verify that data long enough and has correct frame ending (0x77)
         if (
-            self._data is None
-            or len(self._data) < self.INFO_LEN + self._data[3]
+            len(self._data) < self.INFO_LEN + self._data[3]
             or self._data[self.INFO_LEN + self._data[3] - 1] != 0x77
         ):
             return
