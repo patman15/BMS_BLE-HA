@@ -57,21 +57,18 @@ class BMS(BaseBMS):
         self._char_write_handle: int | None = None
         self._FIELDS: Final[
             list[tuple[str, int, int, bool, Callable[[int], int | float]]]
-        ] = [
+        ] = [  # Protocol: JK02_32S; JK02_24S has offset -32
             (KEY_CELL_COUNT, 70, 4, False, lambda x: x.bit_count()),
             (ATTR_DELTA_VOLTAGE, 76, 2, False, lambda x: float(x / 1000)),
-            (f"{KEY_TEMP_VALUE}0", 144, 2, True, lambda x: float(x / 10)),
-            (f"{KEY_TEMP_VALUE}1", 162, 2, True, lambda x: float(x / 10)),
-            (f"{KEY_TEMP_VALUE}2", 164, 2, True, lambda x: float(x / 10)),
-            (f"{KEY_TEMP_VALUE}3", 254, 2, True, lambda x: float(x / 10)),
-            (f"{KEY_TEMP_VALUE}4", 256, 2, True, lambda x: float(x / 10)),
-            (f"{KEY_TEMP_VALUE}5", 258, 2, True, lambda x: float(x / 10)),
             (ATTR_VOLTAGE, 150, 4, False, lambda x: float(x / 1000)),
             (ATTR_CURRENT, 158, 4, True, lambda x: float(x / 1000)),
             (ATTR_BATTERY_LEVEL, 173, 1, False, lambda x: x),
             (ATTR_CYCLE_CHRG, 174, 4, False, lambda x: float(x / 1000)),
             (ATTR_CYCLES, 182, 4, False, lambda x: x),
-        ]  # Protocol: JK02_32S; JK02_24S has offset -32
+        ] + [  # add temperature sensors
+            (f"{KEY_TEMP_VALUE}{i}", addr, 2, True, lambda x: float(x / 10))
+            for i, addr in [(0, 144), (1, 162), (2, 164), (3, 256), (4, 258)]
+        ]
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
