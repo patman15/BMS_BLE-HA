@@ -167,7 +167,7 @@ async def test_user_setup(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None
     assert data_schema.schema.get(CONF_ADDRESS).serialize() == {
         "selector": {
             "select": {
-                "options": [{"value": "cc:cc:cc:cc:cc:cc", "label": "SmartBat-B12345"}],
+                "options": [{"value": "cc:cc:cc:cc:cc:cc", "label": "SmartBat-B12345 (cc:cc:cc:cc:cc:cc)"}],
                 "multiple": False,
                 "custom_value": False,
                 "sort": False,
