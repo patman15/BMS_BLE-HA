@@ -1,6 +1,7 @@
 """Base class defintion for battery management systems (BMS)."""
 
 from abc import ABCMeta, abstractmethod
+from statistics import fmean
 from typing import Any
 
 from bleak.backends.device import BLEDevice
@@ -21,7 +22,9 @@ from ..const import (
     ATTR_POWER,
     ATTR_RUNTIME,
     ATTR_VOLTAGE,
+    ATTR_TEMPERATURE,
     KEY_CELL_VOLTAGE,
+    KEY_TEMP_VALUE,
 )
 
 type BMSsample = dict[str, int | float | bool]
@@ -101,6 +104,10 @@ class BaseBMS(metaclass=ABCMeta):
                 v for k, v in data.items() if k.startswith(KEY_CELL_VOLTAGE)
             ]
             data[ATTR_DELTA_VOLTAGE] = round(max(cell_voltages) - min(cell_voltages), 3)
+        # calculate temperature (average of all sensors)
+        if can_calc(ATTR_TEMPERATURE, frozenset({f"{KEY_TEMP_VALUE}0"})):
+            temp_values = [v for k, v in data.items() if k.startswith(KEY_TEMP_VALUE)]
+            data[ATTR_TEMPERATURE] = round(fmean(temp_values),3)
 
     async def disconnect(self) -> None:
         """Disconnect connection to BMS if active."""

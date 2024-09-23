@@ -37,8 +37,10 @@ from .const import (
     ATTR_POWER,
     ATTR_RSSI,
     ATTR_RUNTIME,
+    ATTR_TEMP_SENSORS,
     DOMAIN,
     KEY_CELL_VOLTAGE,
+    KEY_TEMP_VALUE,
 )
 from .coordinator import BTBmsCoordinator
 
@@ -155,13 +157,22 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
     @property
     def extra_state_attributes(self) -> dict[str, list[float]] | None:  # type: ignore[reportIncompatibleVariableOverride]
         """Return entity specific state attributes, e.g. cell voltages."""
-        # TODO: add sorting?
+        # add cell voltages to delta voltage sensor
         if self.entity_description.key == ATTR_DELTA_VOLTAGE:
             return {
                 ATTR_CELL_VOLTAGES: [
                     v
                     for k, v in self.coordinator.data.items()
                     if k.startswith(KEY_CELL_VOLTAGE)
+                ]
+            }
+        # add individual temperature values to temperature sensor
+        if self.entity_description.key == ATTR_TEMPERATURE:
+            return {
+                ATTR_TEMP_SENSORS: [
+                    v
+                    for k, v in self.coordinator.data.items()
+                    if k.startswith(KEY_TEMP_VALUE)
                 ]
             }
         return None

@@ -7,6 +7,7 @@ from custom_components.bms_ble.const import (
     ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     ATTR_RUNTIME,
+    ATTR_TEMPERATURE,
 )
 from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 
@@ -22,6 +23,7 @@ def test_calc_missing_values(bms_data_fixture: BMSsample) -> None:
             ATTR_POWER,
             ATTR_RUNTIME,
             ATTR_DELTA_VOLTAGE,
+            ATTR_TEMPERATURE,
             "invalid",
         },
     )
@@ -35,6 +37,7 @@ def test_calc_missing_values(bms_data_fixture: BMSsample) -> None:
         ),
         ATTR_BATTERY_CHARGING: bms_data[ATTR_CURRENT]
         > 0,  # battery is charging if current is positive
+        ATTR_TEMPERATURE: -34.396,
     }
     if bms_data[ATTR_CURRENT] < 0:
         ref |= {ATTR_RUNTIME: 9415}

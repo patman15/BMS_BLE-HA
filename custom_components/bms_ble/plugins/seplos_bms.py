@@ -24,6 +24,7 @@ from ..const import (
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
     KEY_PACK_COUNT,
+    KEY_TEMP_VALUE,
 )
 from .basebms import BaseBMS, BMSsample, crc_xmodem
 
@@ -48,6 +49,7 @@ class BMS(BaseBMS):
     PIB_LEN: Final = 0x1A
     EIA_LEN: Final = PIB_LEN
     EIB_LEN: Final = 0x16
+    TEMP_START: Final = HEAD_LEN + 32
     QUERY: Final[dict[str, tuple[int, int, int]]] = {
         # name: cmd, reg start, length
         "EIA": (0x4, 0x2000, EIA_LEN),
@@ -283,20 +285,35 @@ class BMS(BaseBMS):
                     )
                     for idx in range(16)
                 ]
-                data.update(
-                    {
-                        ATTR_DELTA_VOLTAGE: max(
-                            float(data.get(ATTR_DELTA_VOLTAGE, 0)),
-                            round(max(pack_cells) - min(pack_cells), 3),
+                # update per pack delta voltage
+                data |= {
+                    ATTR_DELTA_VOLTAGE: max(
+                        float(data.get(ATTR_DELTA_VOLTAGE, 0)),
+                        round(max(pack_cells) - min(pack_cells), 3),
+                    )
+                }
+                # add individual cell voltages
+                data |= {
+                    f"{KEY_CELL_VOLTAGE}{idx+16*(pack-1)}": pack_cells[idx]
+                    for idx in range(16)
+                }
+                # add temperature sensors (4x cell temperature + 4 reserved)
+                data |= {
+                    f"{KEY_TEMP_VALUE}{idx+8*(pack-1)}": (
+                        int.from_bytes(
+                            self._data_final[pack << 8 | self.PIB_LEN * 2][
+                                self.TEMP_START
+                                + idx * 2 : self.TEMP_START
+                                + idx * 2
+                                + 2
+                            ],
+                            byteorder="big",
                         )
-                    }
-                )
-                data.update(
-                    {
-                        f"{KEY_CELL_VOLTAGE}{idx+16*(pack-1)}": pack_cells[idx]
-                        for idx in range(16)
-                    }
-                )
+                        - 2731.5
+                    )
+                    / 10
+                    for idx in range(4)
+                }
 
         self.calc_values(
             data, {ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_RUNTIME}

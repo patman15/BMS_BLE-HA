@@ -3,7 +3,6 @@
 import asyncio
 from collections.abc import Callable
 import logging
-from statistics import fmean
 from typing import Any, Final
 
 from bleak import BleakClient
@@ -25,6 +24,7 @@ from ..const import (
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
     KEY_TEMP_SENS,
+    KEY_TEMP_VALUE,
 )
 from .basebms import BaseBMS, BMSsample
 
@@ -58,7 +58,7 @@ class BMS(BaseBMS):
         self._FIELDS: Final[
             list[tuple[str, int, int, bool, Callable[[int], int | float]]]
         ] = [
-            (KEY_TEMP_SENS, 26, 1, False, lambda x: x),
+            (KEY_TEMP_SENS, 26, 1, False, lambda x: x),  # count is not limited
             (ATTR_VOLTAGE, 4, 2, False, lambda x: float(x / 100)),
             (ATTR_CURRENT, 6, 2, True, lambda x: float(x / 100)),
             (ATTR_BATTERY_LEVEL, 23, 1, False, lambda x: x),
@@ -178,15 +178,12 @@ class BMS(BaseBMS):
         }
 
         # calculate average temperature
-        result[ATTR_TEMPERATURE] = (
-            fmean(
-                [
-                    int.from_bytes(data[idx : idx + 2], byteorder="big")
-                    for idx in range(27, 27 + int(result[KEY_TEMP_SENS]) * 2, 2)
-                ]
+        result |= {
+            f"{KEY_TEMP_VALUE}{(idx-27)>>1}": (
+                (int.from_bytes(data[idx : idx + 2], byteorder="big") - 2731) / 10
             )
-            - 2731
-        ) / 10
+            for idx in range(27, 27 + int(result[KEY_TEMP_SENS]) * 2, 2)
+        }
 
         return result
 
@@ -237,6 +234,7 @@ class BMS(BaseBMS):
                 ATTR_CYCLE_CAP,
                 ATTR_RUNTIME,
                 ATTR_DELTA_VOLTAGE,
+                ATTR_TEMPERATURE,
             },
         )
 
