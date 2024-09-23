@@ -136,7 +136,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         titles = []
         for address, discovery in self._discovered_devices.items():
-            titles.append({"value": address, "label": discovery.name})
+            titles.append({"value": address, "label": f"{discovery.name} ({address})"})
 
         return self.async_show_form(
             step_id="user",
