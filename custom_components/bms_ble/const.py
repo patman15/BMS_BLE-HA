@@ -15,6 +15,7 @@ BMS_TYPES: Final = [
     "jbd_bms",
     "jikong_bms",
     "ogt_bms",
+	"pwrcore_bms",
     "seplos_bms",
 ]  # available BMS types
 DOMAIN: Final = "bms_ble"
