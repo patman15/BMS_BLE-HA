@@ -20,7 +20,6 @@ BMS_TYPES: Final = [
 DOMAIN: Final = "bms_ble"
 LOGGER: Final = logging.getLogger(__package__)
 UPDATE_INTERVAL: Final = 30  # in seconds
-SCAN_INTERVAL = UPDATE_INTERVAL * 0.9  # diagnosis interval [s]
 
 # attributes (do not change)
 ATTR_CELL_VOLTAGES: Final = "cell_voltages"  # [V]
