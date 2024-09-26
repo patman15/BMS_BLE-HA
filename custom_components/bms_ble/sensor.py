@@ -35,6 +35,7 @@ from .const import (
     ATTR_CYCLE_CAP,
     ATTR_CYCLES,
     ATTR_DELTA_VOLTAGE,
+    ATTR_LQ,
     ATTR_POWER,
     ATTR_RSSI,
     ATTR_RUNTIME,
@@ -127,7 +128,8 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     SensorEntityDescription(
-        key="link_qual",
+        key=ATTR_LQ,
+        translation_key=ATTR_LQ,
         name="Link quality",
         icon="mdi:link",
         native_unit_of_measurement=PERCENTAGE,
@@ -149,7 +151,10 @@ async def async_setup_entry(
     mac: str = format_mac(config_entry.unique_id)
     for descr in SENSOR_TYPES:
         if descr.key == ATTR_RSSI:
-            async_add_entities([RSSISensor(hass, descr, mac, bms.device_info)])
+            async_add_entities([RSSISensor(bms, descr, mac)])
+            continue
+        if descr.key == ATTR_LQ:
+            async_add_entities([LQSensor(bms, descr, mac)])
             continue
         async_add_entities([BMSSensor(bms, descr, mac)])
 
@@ -195,35 +200,58 @@ class RSSISensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverri
     _attr_native_value = -127
 
     def __init__(
-        self,
-        hass: HomeAssistant,
-        descr: SensorEntityDescription,
-        unique_id: str,
-        device_info: DeviceInfo,
+        self, bms: BTBmsCoordinator, descr: SensorEntityDescription, unique_id: str
     ) -> None:
         """Intitialize the BMS sensor."""
-        self._hass: Final = hass
-        self._mac: Final = unique_id.upper()
+
         self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
-        self._attr_device_info = device_info
+        self._attr_device_info = bms.device_info
         self.entity_description = descr
+        self._bms = bms
 
     async def async_update(self) -> None:
         """Update RSSI sensor value."""
-        self._attr_available = False
 
-        if (
-            service_info := async_last_service_info(
-                self._hass, address=self._mac, connectable=True
-            )
-        ) is not None:
-            self._attr_available = True
-            self._attr_native_value = service_info.rssi
+        self._attr_native_value = self._bms.rssi
+        self._attr_available = self._attr_native_value is not None
 
         LOGGER.debug(
-            "%s: RSSI value: %i dBm, available: %s",
-            self._mac,
+            "%s: RSSI value: %i dBm",
+            self._bms.name,
+            (
+                self._attr_native_value
+                if self._attr_native_value is not None
+                else "unknown"
+            ),
+        )
+        self.async_write_ha_state()
+
+
+class LQSensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverride]
+    """The BMS link quality sensor."""
+
+    _attr_has_entity_name = True
+    _attr_available = True
+    _attr_native_value = 0
+
+    def __init__(
+        self, bms: BTBmsCoordinator, descr: SensorEntityDescription, unique_id: str
+    ) -> None:
+        """Intitialize the BMS link quality sensor."""
+
+        self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
+        self._attr_device_info = bms.device_info
+        self.entity_description = descr
+        self._bms = bms
+
+    async def async_update(self) -> None:
+        """Update BMS link quality sensor value."""
+
+        self._attr_native_value = self._bms.link_quality
+
+        LOGGER.debug(
+            "%s: Link quality: %i %%",
+            self._bms.name,
             self._attr_native_value,
-            self._attr_available,
         )
         self.async_write_ha_state()
