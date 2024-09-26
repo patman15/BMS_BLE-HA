@@ -2,7 +2,6 @@
 
 from typing import Final
 
-from homeassistant.components.bluetooth import async_last_service_info
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
@@ -24,7 +23,7 @@ from homeassistant.const import (
     UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import DeviceInfo, format_mac
+from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -223,18 +222,10 @@ class RSSISensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverri
     async def async_update(self) -> None:
         """Update RSSI sensor value."""
 
-        self._attr_native_value = self._bms.rssi
-        self._attr_available = self._attr_native_value is not None
+        self._attr_native_value = self._bms.rssi or -127
+        self._attr_available = self._bms.rssi is not None
 
-        LOGGER.debug(
-            "%s: RSSI value: %i dBm",
-            self._bms.name,
-            (
-                self._attr_native_value
-                if self._attr_native_value is not None
-                else "unknown"
-            ),
-        )
+        LOGGER.debug("%s: RSSI value: %i dBm", self._bms.name, self._attr_native_value)
         self.async_write_ha_state()
 
 
@@ -242,7 +233,6 @@ class LQSensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverride
     """The BMS link quality sensor."""
 
     _attr_has_entity_name = True
-    _attr_available = True
     _attr_native_value = 0
 
     def __init__(
@@ -259,6 +249,7 @@ class LQSensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverride
         """Update BMS link quality sensor value."""
 
         self._attr_native_value = self._bms.link_quality
+        self._attr_available = self._bms.rssi is not None
 
         LOGGER.debug(
             "%s: Link quality: %i %%",
