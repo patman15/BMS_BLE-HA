@@ -91,6 +91,10 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "temperature": 21.5,
         "cycle_capacity": 4838.4,
         "power": 42.0,
+        "temp#0": 20.0,
+        "temp#1": 21.0,
+        "temp#2": 22.0,
+        "temp#3": 23.0,
         "battery_charging": True,
     }
 

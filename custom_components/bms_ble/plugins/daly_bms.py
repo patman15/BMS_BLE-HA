@@ -3,7 +3,6 @@
 import asyncio
 from collections.abc import Callable
 import logging
-from statistics import fmean
 from typing import Any, Final
 
 from bleak import BleakClient
@@ -26,6 +25,7 @@ from ..const import (
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
     KEY_TEMP_SENS,
+    KEY_TEMP_VALUE,
 )
 from .basebms import BaseBMS, BMSsample, crc_xmodem
 
@@ -158,22 +158,16 @@ class BMS(BaseBMS):
             for key, idx, func in self._FIELDS
         }
 
-        # calculate average temperature
-        data[ATTR_TEMPERATURE] = (
-            fmean(
-                [
-                    int.from_bytes(
-                        self._data[idx : idx + 2], byteorder="big", signed=True
-                    )
-                    for idx in range(
-                        64 + self.HEAD_LEN,
-                        64 + self.HEAD_LEN + int(data[KEY_TEMP_SENS]) * 2,
-                        2,
-                    )
-                ]
+        # get temperatures
+        data |= {
+            f"{KEY_TEMP_VALUE}{(idx-64-self.HEAD_LEN)>>1}": float(
+                int.from_bytes(self._data[idx : idx + 2], byteorder="big", signed=True)
+                - 40
             )
-            - 40
-        )
+            for idx in range(
+                64 + self.HEAD_LEN, 64 + self.HEAD_LEN + int(data[KEY_TEMP_SENS]) * 2, 2
+            )
+        }
 
         # get cell voltages
         data |= {
@@ -189,7 +183,14 @@ class BMS(BaseBMS):
         }
 
         self.calc_values(
-            data, {ATTR_CYCLE_CAP, ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_RUNTIME}
+            data,
+            {
+                ATTR_CYCLE_CAP,
+                ATTR_POWER,
+                ATTR_BATTERY_CHARGING,
+                ATTR_RUNTIME,
+                ATTR_TEMPERATURE,
+            },
         )
 
         if self._reconnect:

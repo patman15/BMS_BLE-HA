@@ -24,6 +24,7 @@ from ..const import (
     ATTR_VOLTAGE,
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
+    KEY_TEMP_VALUE,
 )
 from .basebms import BaseBMS, BMSsample
 
@@ -56,16 +57,18 @@ class BMS(BaseBMS):
         self._char_write_handle: int | None = None
         self._FIELDS: Final[
             list[tuple[str, int, int, bool, Callable[[int], int | float]]]
-        ] = [
+        ] = [  # Protocol: JK02_32S; JK02_24S has offset -32
             (KEY_CELL_COUNT, 70, 4, False, lambda x: x.bit_count()),
             (ATTR_DELTA_VOLTAGE, 76, 2, False, lambda x: float(x / 1000)),
-            (ATTR_TEMPERATURE, 144, 2, True, lambda x: float(x / 10)),
             (ATTR_VOLTAGE, 150, 4, False, lambda x: float(x / 1000)),
             (ATTR_CURRENT, 158, 4, True, lambda x: float(x / 1000)),
             (ATTR_BATTERY_LEVEL, 173, 1, False, lambda x: x),
             (ATTR_CYCLE_CHRG, 174, 4, False, lambda x: float(x / 1000)),
             (ATTR_CYCLES, 182, 4, False, lambda x: x),
-        ]  # Protocol: JK02_32S; JK02_24S has offset -32
+        ] + [  # add temperature sensors
+            (f"{KEY_TEMP_VALUE}{i}", addr, 2, True, lambda x: float(x / 10))
+            for i, addr in [(0, 144), (1, 162), (2, 164), (3, 256), (4, 258)]
+        ]
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -97,13 +100,13 @@ class BMS(BaseBMS):
         """Retrieve BMS data update."""
 
         if data[0 : len(self.BT_MODULE_MSG)] == self.BT_MODULE_MSG:
+            LOGGER.debug("(%s) filtering AT cmd", self._ble_device.name)
             if len(data) == len(self.BT_MODULE_MSG):
-                LOGGER.debug("(%s) filtering AT cmd", self._ble_device.name)
                 return
             data = data[len(self.BT_MODULE_MSG) :]
 
         if data[0 : len(self.HEAD_RSP)] == self.HEAD_RSP:
-            self._data.clear()
+            self._data = bytearray()
 
         self._data += data
 
@@ -115,11 +118,7 @@ class BMS(BaseBMS):
         )
 
         # verify that data long enough and if answer is cell info (0x2)
-        if (
-            self._data is None
-            or len(self._data) < self.INFO_LEN
-            or self._data[4] != 0x2
-        ):
+        if len(self._data) < self.INFO_LEN or self._data[4] != 0x2:
             return
 
         crc = self._crc(self._data[0 : self.INFO_LEN - 1])
@@ -219,14 +218,12 @@ class BMS(BaseBMS):
     def _cell_voltages(self, data: bytearray, cells: int) -> dict[str, float]:
         """Return cell voltages from status message."""
         return {
-            f"{KEY_CELL_VOLTAGE}{idx}": float(
-                int.from_bytes(
-                    data[6 + 2 * idx : 6 + 2 * idx + 2],
-                    byteorder="little",
-                    signed=True,
-                )
-                / 1000
+            f"{KEY_CELL_VOLTAGE}{idx}": int.from_bytes(
+                data[6 + 2 * idx : 6 + 2 * idx + 2],
+                byteorder="little",
+                signed=True,
             )
+            / 1000
             for idx in range(cells)
         }
 
@@ -268,7 +265,14 @@ class BMS(BaseBMS):
         data.update(self._cell_voltages(self._data_final, int(data[KEY_CELL_COUNT])))
 
         self.calc_values(
-            data, {ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_RUNTIME}
+            data,
+            {
+                ATTR_POWER,
+                ATTR_BATTERY_CHARGING,
+                ATTR_CYCLE_CAP,
+                ATTR_RUNTIME,
+                ATTR_TEMPERATURE,
+            },
         )
 
         if self._reconnect:
