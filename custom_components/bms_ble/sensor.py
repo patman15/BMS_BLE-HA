@@ -40,6 +40,7 @@ from .const import (
     ATTR_RUNTIME,
     DOMAIN,
     KEY_CELL_VOLTAGE,
+    LOGGER,
 )
 from .coordinator import BTBmsCoordinator
 
@@ -122,6 +123,15 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    SensorEntityDescription(
+        key="link_qual",
+        name="Link quality",
+        icon="mdi:link",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
@@ -211,7 +221,7 @@ class RSSISensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverri
             self._attr_native_value = service_info.rssi
 
         LOGGER.debug(
-            "%s: RSSI value: %i dBm, available = %s",
+            "%s: RSSI value: %i dBm, available: %s",
             self._mac,
             self._attr_native_value,
             self._attr_available,

@@ -1,7 +1,7 @@
 """Home Assistant coordinator for BLE Battery Management System integration."""
 
 from datetime import timedelta
-
+from collections import deque
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 
@@ -33,14 +33,15 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
             always_update=False,  # only update when sensor value has changed
         )
-        self._name: str = ble_device.name
-        self._mac = ble_device.address
         LOGGER.debug(
             "Initializing coordinator for %s (%s) as %s",
             ble_device.name,
             ble_device.address,
             bms_device.device_id(),
         )
+        self._name: str = ble_device.name
+        self._mac = ble_device.address
+        self._link_q = deque([False], maxlen=100)  # track BMS update issues
         if service_info := bluetooth.async_last_service_info(
             self.hass, address=self._mac, connectable=True
         ):
@@ -70,6 +71,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
     async def _async_update_data(self) -> BMSsample:
         """Return the latest data from the device."""
         LOGGER.debug("%s: BMS data update", self._name)
+        self._link_q.append(False)
 
         try:
             battery_info = await self._device.async_update()
@@ -81,6 +83,9 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             raise UpdateFailed(
                 f"device communicating failed: {err!s} ({type(err).__name__})"
             ) from err
+
+        self._link_q[-1] = True
+        battery_info.update({"link_qual": int(self._link_q.count(True)/len(self._link_q))})
 
         if not battery_info:
             LOGGER.debug("%s: no valid data received", self._name)
