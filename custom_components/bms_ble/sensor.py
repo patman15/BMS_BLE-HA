@@ -142,7 +142,7 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
 
 
 async def async_setup_entry(
-    hass: HomeAssistant,
+    _hass: HomeAssistant,
     config_entry: BTBmsConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
@@ -206,8 +206,9 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
 class RSSISensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverride]
     """The Bluetooth RSSI sensor."""
 
+    LIMIT: Final = 127  # limit to +/- this range
     _attr_has_entity_name = True
-    _attr_native_value = -127
+    _attr_native_value = -LIMIT
 
     def __init__(
         self, bms: BTBmsCoordinator, descr: SensorEntityDescription, unique_id: str
@@ -222,7 +223,9 @@ class RSSISensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverri
     async def async_update(self) -> None:
         """Update RSSI sensor value."""
 
-        self._attr_native_value = self._bms.rssi or -127
+        self._attr_native_value = max(
+            min(self._bms.rssi or -self.LIMIT, self.LIMIT), -self.LIMIT
+        )
         self._attr_available = self._bms.rssi is not None
 
         LOGGER.debug("%s: RSSI value: %i dBm", self._bms.name, self._attr_native_value)
