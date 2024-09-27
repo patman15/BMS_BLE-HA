@@ -91,10 +91,12 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
         """Return the latest data from the device."""
 
         LOGGER.debug("%s: BMS data update", self.name)
-        self._link_q.append(False)
 
         try:
             battery_info = await self._device.async_update()
+            if not battery_info:
+                LOGGER.debug("%s: no valid data received", self.name)
+                raise UpdateFailed("no valid data received.")
         except TimeoutError as err:
             LOGGER.debug("%s: device communication timed out", self.name)
             raise TimeoutError("device communication timed out") from err
@@ -108,10 +110,8 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             raise UpdateFailed(
                 f"device communicating failed: {err!s} ({type(err).__name__})"
             ) from err
-
-        if not battery_info:
-            LOGGER.debug("%s: no valid data received", self.name)
-            raise UpdateFailed("no valid data received.")
+        finally:
+            self._link_q.append(False)
 
         self._link_q[-1] = True  # set success
         LOGGER.debug("BMS data sample %s", battery_info)
