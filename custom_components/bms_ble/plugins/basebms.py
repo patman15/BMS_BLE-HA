@@ -157,7 +157,6 @@ class BaseBMS(metaclass=ABCMeta):
             return
 
         self.logger.debug("Connecting BMS (%s)", self._ble_device.name)
-
         await self._client.connect()
         await self._init_characteristics()
 
