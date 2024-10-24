@@ -64,7 +64,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
     """Test Daly BMS data update."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.daly_bms.BleakClient",
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockDalyBleakClient,
     )
 
@@ -109,7 +109,7 @@ async def test_invalid_response(monkeypatch) -> None:
     """Test data update with BMS returning invalid data."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.daly_bms.BleakClient",
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockInvalidBleakClient,
     )
 

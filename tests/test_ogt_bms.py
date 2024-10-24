@@ -117,7 +117,7 @@ async def test_update(monkeypatch, ogt_bms_fixture, reconnect_fixture) -> None:
     """Test OGT BMS data update."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.ogt_bms.BleakClient",
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockOGTBleakClient,
     )
 
@@ -167,7 +167,7 @@ async def test_invalid_response(monkeypatch) -> None:
     """Test data update with BMS returning invalid data and read timeout."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.ogt_bms.BleakClient",
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockInvalidBleakClient,
     )
 
@@ -184,7 +184,7 @@ async def test_invalid_bms_type(monkeypatch) -> None:
     """Test BMS with invalid type 'C'."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.ogt_bms.BleakClient",
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockOGTBleakClient,
     )
 

@@ -26,8 +26,13 @@ LOGGER = logging.getLogger(__name__)
 class BMS(BaseBMS):
     """Dummy battery class implementation."""
 
+    _UUID_SERVICE: str = "#change_me"
+    _UUID_RX: str = "#change_me"
+    _UUID_TX: str = "#change_me"
+
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
+        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
         LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
 
     @staticmethod
@@ -40,10 +45,10 @@ class BMS(BaseBMS):
         """Return device information for the battery management system."""
         return {"manufacturer": "Dummy Manufacturer", "model": "dummy model"}
 
-    async def disconnect(self) -> None:
-        """Disconnect connection to BMS if active."""
+    def _notification_handler(self, _sender, data: bytearray) -> None:
+        """Gets called when the RX characteristics sends a notify event."""
 
-    async def async_update(self) -> BMSsample:
+    async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         data = {
             ATTR_VOLTAGE: 12,

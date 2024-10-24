@@ -109,7 +109,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
     """Test JBD BMS data update."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.jbd_bms.BleakClient",
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockJBDBleakClient,
     )
 
@@ -153,7 +153,7 @@ async def test_invalid_response(monkeypatch) -> None:
     """Test data update with BMS returning invalid data (wrong CRC)."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.jbd_bms.BleakClient",
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockInvalidBleakClient,
     )
 
@@ -170,7 +170,7 @@ async def test_oversized_response(monkeypatch) -> None:
     """Test data update with BMS returning oversized data, result shall still be ok."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.jbd_bms.BleakClient",
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockOversizedBleakClient,
     )
 

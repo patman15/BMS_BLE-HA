@@ -253,7 +253,7 @@ async def test_update(monkeypatch, ref_value, reconnect_fixture) -> None:
     """Test Seplos BMS data update."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.seplos_bms.BleakClient",
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockSeplosBleakClient,
     )
 
@@ -279,7 +279,7 @@ async def test_wrong_crc(monkeypatch) -> None:
     """Test data update with BMS returning invalid data (wrong CRC)."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.seplos_bms.BleakClient",
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockWrongCRCBleakClient,
     )
 
@@ -295,7 +295,7 @@ async def test_wrong_crc(monkeypatch) -> None:
 async def test_error_response(monkeypatch) -> None:
     """Test data update with BMS returning error message."""
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.seplos_bms.BleakClient",
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockErrRespBleakClient,
     )
 
@@ -312,7 +312,7 @@ async def test_oversized_response(monkeypatch, ref_value) -> None:
     """Test data update with BMS returning oversized data, result shall still be ok."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.seplos_bms.BleakClient",
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockOversizedBleakClient,
     )
 
@@ -328,7 +328,7 @@ async def test_oversized_response(monkeypatch, ref_value) -> None:
 async def test_invalid_message(monkeypatch) -> None:
     """Test data update with BMS returning error message."""
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.seplos_bms.BleakClient",
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockInvalidMessageBleakClient,
     )
 

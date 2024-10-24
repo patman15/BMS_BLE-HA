@@ -184,6 +184,7 @@ class Mock_BMS(BaseBMS):
         self, exc: Exception | None = None, ret_value: BMSsample | None = None
     ) -> None:  # , ble_device, reconnect: bool = False
         """Initialize BMS."""
+        super().__init__(LOGGER, lambda char, data: None, generate_ble_device(address=""), False)
         LOGGER.debug("%s init(), Test except: %s", self.device_id(), str(exc))
         self._exception = exc
         self._ret_value: BMSsample = (
@@ -210,7 +211,7 @@ class Mock_BMS(BaseBMS):
     async def disconnect(self) -> None:
         """Disconnect connection to BMS if active."""
 
-    async def async_update(self) -> BMSsample:
+    async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         if self._exception:
             raise self._exception

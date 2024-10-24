@@ -5,9 +5,7 @@ from collections.abc import Callable
 import logging
 from typing import Any, Final
 
-from bleak import BleakClient
 from bleak.backends.device import BLEDevice
-from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 
 from ..const import (
@@ -31,14 +29,15 @@ BAT_TIMEOUT: Final = 1
 
 # magic crypt sequence of length 16
 CRYPT_SEQ: Final = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
-# setup UUIDs, e.g. for receive: '0000fff4-0000-1000-8000-00805f9b34fb'
-UUID_RX: Final = normalize_uuid_str("fff4")
-UUID_TX: Final = normalize_uuid_str("fff6")
-UUID_SERVICE: Final = normalize_uuid_str("fff0")
 
 
 class BMS(BaseBMS):
     """Offgridtec LiFePO4 Smart Pro type A and type B battery class implementation."""
+
+    # setup UUIDs, e.g. for receive: '0000fff4-0000-1000-8000-00805f9b34fb'
+    _UUID_RX = normalize_uuid_str("fff4")
+    _UUID_TX = normalize_uuid_str("fff6")
+    _UUID_SERVICE = normalize_uuid_str("fff0")
 
     IDX_NAME: Final = 0
     IDX_LEN: Final = 1
@@ -46,21 +45,17 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        self._reconnect = reconnect
-        self._ble_device = ble_device
-        self._client: BleakClient | None = None
+        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
         self._data_event = asyncio.Event()
-
-        assert self._ble_device.name is not None
-        self._type = self._ble_device.name[9]
+        self._type = self.name[9] if len(self.name) >= 9 else "?"
         self._key = sum(
-            CRYPT_SEQ[int(c, 16)] for c in (f"{int(self._ble_device.name[10:]):0>4X}")
+            CRYPT_SEQ[int(c, 16)] for c in (f"{int(self.name[10:]):0>4X}")
         ) + (5 if (self._type == "A") else 8)
         LOGGER.info(
             "%s type: %c, ID: %s, key: 0x%x",
             self.device_id(),
             self._type,
-            self._ble_device.name[10:],
+            self.name[10:],
             self._key,
         )
         self._values: BMSsample  # dictionary of BMS return values
@@ -108,12 +103,12 @@ class BMS(BaseBMS):
         return [
             {
                 "local_name": "SmartBat-A*",
-                "service_uuid": UUID_SERVICE,
+                "service_uuid": BMS._UUID_SERVICE,
                 "connectable": True,
             },
             {
                 "local_name": "SmartBat-B*",
-                "service_uuid": UUID_SERVICE,
+                "service_uuid": BMS._UUID_SERVICE,
                 "connectable": True,
             },
         ]
@@ -127,11 +122,10 @@ class BMS(BaseBMS):
         await self._data_event.wait()
         self._data_event.clear()
 
-    async def async_update(self) -> BMSsample:
+    async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
         await self._connect()
-        assert self._client is not None
 
         self._values = {}
         for key in list(self._REGISTERS):
@@ -154,15 +148,7 @@ class BMS(BaseBMS):
         if self._values.get(ATTR_RUNTIME) == 0xFFFF * 60:
             del self._values[ATTR_RUNTIME]
 
-        if self._reconnect:
-            # disconnect after data update to force reconnect next time (slow!)
-            await self.disconnect()
         return self._values
-
-    def _on_disconnect(self, _client: BleakClient) -> None:
-        """Disconnect callback function."""
-
-        LOGGER.debug("Disconnected from BMS (%s)", self._ble_device.name)
 
     def _notification_handler(self, sender, data: bytearray) -> None:
         LOGGER.debug("Received BLE data: %s", data)
@@ -170,7 +156,7 @@ class BMS(BaseBMS):
         valid, reg, nat_value = self._ogt_response(data)
 
         # check that descrambled message is valid and from the right characteristic
-        if valid and sender.uuid == UUID_RX:
+        if valid and sender.uuid == BMS._UUID_RX:
             name, _length, func = self._REGISTERS[reg]
             value = func(nat_value) if func else nat_value
             LOGGER.debug(
@@ -184,32 +170,6 @@ class BMS(BaseBMS):
         else:
             LOGGER.debug("Response data is invalid")
         self._data_event.set()
-
-    async def _connect(self) -> None:
-        """Connect to the BMS and setup notification if not connected."""
-
-        if self._client is None or not self._client.is_connected:
-            LOGGER.debug("Connecting BMS (%s)", self._ble_device.name)
-            self._client = BleakClient(
-                self._ble_device,
-                disconnected_callback=self._on_disconnect,
-                services=[UUID_SERVICE],
-            )
-            await self._client.connect()
-            await self._client.start_notify(UUID_RX, self._notification_handler)
-        else:
-            LOGGER.debug("BMS %s already connected", self._ble_device.name)
-
-    async def disconnect(self) -> None:
-        """Disconnect the BMS, includes stoping notifications."""
-
-        if self._client and self._client.is_connected:
-            LOGGER.debug("Disconnecting BMS (%s)", self._ble_device.name)
-            try:
-                self._data_event.clear()
-                await self._client.disconnect()
-            except BleakError:
-                LOGGER.warning("Disconnect failed!")
 
     def _ogt_response(self, resp: bytearray) -> tuple[bool, int, int]:
         """Descramble a response from the BMS."""
@@ -241,8 +201,7 @@ class BMS(BaseBMS):
 
     async def _read(self, reg: int) -> None:
         """Read a specific BMS register."""
-        assert self._client is not None
 
         msg = self._ogt_command(reg)
         LOGGER.debug("BLE cmd frame %s", msg)
-        await self._client.write_gatt_char(UUID_TX, data=msg)
+        await self._client.write_gatt_char(BMS._UUID_TX, data=msg)
