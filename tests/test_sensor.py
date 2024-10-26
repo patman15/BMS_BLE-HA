@@ -1,6 +1,5 @@
 """Test the BLE Battery Management System integration sensor definition."""
 
-import pytest
 from datetime import timedelta
 
 from custom_components.bms_ble.const import (
@@ -16,7 +15,6 @@ from custom_components.bms_ble.const import (
     UPDATE_INTERVAL,
 )
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
-from homeassistant.helpers import entity_registry as er
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
