@@ -1,5 +1,6 @@
 """Test the BLE Battery Management System integration sensor definition."""
 
+import pytest
 from datetime import timedelta
 
 from custom_components.bms_ble.const import (
@@ -7,6 +8,7 @@ from custom_components.bms_ble.const import (
     ATTR_CURRENT,
     ATTR_CYCLES,
     ATTR_DELTA_VOLTAGE,
+    ATTR_LQ,
     ATTR_POWER,
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
@@ -14,7 +16,7 @@ from custom_components.bms_ble.const import (
     UPDATE_INTERVAL,
 )
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
-
+from homeassistant.helpers import entity_registry as er
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
@@ -26,7 +28,7 @@ from .conftest import mock_config
 async def test_update(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
     """Test sensor value updates through coordinator."""
 
-    async def patch_async_update(self):
+    async def patch_async_update(_self):
         """Patch async_update to return a specific value."""
         return {
             "voltage": 17.0,
@@ -35,6 +37,11 @@ async def test_update(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
             "cell#1": 3.123,
             "delta_voltage": 0.123,
         }
+
+    monkeypatch.setattr(
+        "homeassistant.helpers.entity.Entity.entity_registry_enabled_default",
+        lambda _: True,
+    )
 
     config = mock_config(bms="dummy_bms")
     config.add_to_hass(hass)
@@ -46,7 +53,7 @@ async def test_update(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
 
     assert config in hass.config_entries.async_entries()
     assert config.state is ConfigEntryState.LOADED
-    assert len(hass.states.async_all(["sensor"])) == 9
+    assert len(hass.states.async_all(["sensor"])) == 11
     data = {
         entity.entity_id: entity.state for entity in hass.states.async_all(["sensor"])
     }
@@ -58,7 +65,9 @@ async def test_update(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
         "sensor.smartbat_b12345_stored_energy": "unknown",
         f"sensor.smartbat_b12345_{ATTR_CYCLES}": "unknown",
         f"sensor.smartbat_b12345_{ATTR_DELTA_VOLTAGE}": "unknown",
+        f"sensor.smartbat_b12345_{ATTR_LQ}": "0",
         f"sensor.smartbat_b12345_{ATTR_POWER}": "18.0",
+        "sensor.smartbat_b12345_signal_strength": "-127",
         f"sensor.smartbat_b12345_{ATTR_RUNTIME}": "unknown",
     }
 
@@ -82,7 +91,9 @@ async def test_update(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
         "sensor.smartbat_b12345_stored_energy": "unknown",
         f"sensor.smartbat_b12345_{ATTR_CYCLES}": "unknown",
         f"sensor.smartbat_b12345_{ATTR_DELTA_VOLTAGE}": "0.123",
+        f"sensor.smartbat_b12345_{ATTR_LQ}": "66",  # initial update + one UPDATE_INTERVAL
         f"sensor.smartbat_b12345_{ATTR_POWER}": "unknown",
+        "sensor.smartbat_b12345_signal_strength": "-61",
         f"sensor.smartbat_b12345_{ATTR_RUNTIME}": "unknown",
     }
     # check delta voltage sensor has cell voltage as attribute array

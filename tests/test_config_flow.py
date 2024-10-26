@@ -34,7 +34,6 @@ async def test_device_discovery(monkeypatch, BTdiscovery, hass: HomeAssistant) -
         mock_update_min,
     )
 
-
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], user_input={"not": "empty"}
     )
@@ -51,7 +50,7 @@ async def test_device_discovery(monkeypatch, BTdiscovery, hass: HomeAssistant) -
     assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 10
 
     entities = er.async_get(hass).entities
-    assert len(entities) == 11  # sensors, binary_sensors, rssi
+    assert len(entities) == 12  # sensors, binary_sensors, rssi
 
     # check correct unique_id format of all sensor entries
     for entry in entities.get_entries_for_config_entry_id(result_detail.entry_id):
