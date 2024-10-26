@@ -4,7 +4,6 @@ from custom_components.bms_ble.const import (
     ATTR_CURRENT,
     ATTR_CYCLE_CHRG,
     ATTR_CYCLES,
-    ATTR_RSSI,
     ATTR_VOLTAGE,
 )
 from custom_components.bms_ble.coordinator import BTBmsCoordinator
@@ -21,6 +20,8 @@ async def test_update(
 ) -> None:
     """Test setting up creates the sensors."""
 
+    discovery_info = BTdiscovery
+
     def mock_last_service_info(hass, address, connectable) -> None:
         assert (
             isinstance(hass, HomeAssistant)
@@ -30,27 +31,37 @@ async def test_update(
 
     if (advertisement_avail := bool_fixture) is False:
         monkeypatch.setattr(
-            "homeassistant.components.bluetooth.async_last_service_info",
+            "custom_components.bms_ble.coordinator.async_last_service_info",
             mock_last_service_info,
         )
 
-    coordinator = BTBmsCoordinator(hass, BTdiscovery.device, Mock_BMS())
+    coordinator = BTBmsCoordinator(hass, discovery_info.device, Mock_BMS())
 
-    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
+    inject_bluetooth_service_info_bleak(hass, discovery_info)
 
     await coordinator.async_refresh()
     result = coordinator.data
     assert coordinator.last_update_success
-
-    await coordinator.stop()
 
     assert result == {
         ATTR_VOLTAGE: 13,
         ATTR_CURRENT: 1.7,
         ATTR_CYCLE_CHRG: 19,
         ATTR_CYCLES: 23,
-    } | ({ATTR_RSSI: BTdiscovery.rssi} if advertisement_avail else {})
+    }
+    assert coordinator.rssi == (-61 if advertisement_avail else None)
+    assert coordinator.link_quality == 50
 
+    # second update (modify rssi, and check link quality again)
+    discovery_info.rssi = -85
+    inject_bluetooth_service_info_bleak(hass, discovery_info)
+    await coordinator.async_refresh()
+    result = coordinator.data
+
+    assert coordinator.rssi == (-85 if advertisement_avail else None)
+    assert coordinator.link_quality == 66
+
+    await coordinator.stop()
 
 async def test_nodata(BTdiscovery, hass: HomeAssistant) -> None:
     """Test if coordinator raises exception in case no data, e.g. invalid CRC, is returned."""
@@ -66,6 +77,8 @@ async def test_nodata(BTdiscovery, hass: HomeAssistant) -> None:
     await coordinator.stop()
 
     assert result is None
+    assert coordinator.rssi == -61
+    assert coordinator.link_quality == 0
 
 
 async def test_update_exception(

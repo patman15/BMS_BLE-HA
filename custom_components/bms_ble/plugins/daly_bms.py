@@ -43,6 +43,7 @@ class BMS(BaseBMS):
 
     HEAD_READ: Final = bytearray(b"\xD2\x03")
     CMD_INFO: Final = bytearray(b"\x00\x00\x00\x3E\xD7\xB9")
+    MOS_INFO: Final = bytearray(b"\x00\x3E\x00\x09\xF7\xA3")
     HEAD_LEN: Final = 3
     CRC_LEN: Final = 2
     MAX_CELLS: Final = 32
@@ -144,6 +145,25 @@ class BMS(BaseBMS):
         await self._connect()
         assert self._client is not None
 
+        await self._client.write_gatt_char(UUID_TX, data=self.HEAD_READ + self.MOS_INFO)
+
+        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+
+        data = {}
+
+        if self._data is not None:
+            LOGGER.debug("%s: MOS info: %s", self._ble_device.name, self._data)
+            data |= {
+                f"{KEY_TEMP_VALUE}0": float(
+                    int.from_bytes(
+                        self._data[self.HEAD_LEN + 8 : self.HEAD_LEN + 10],
+                        byteorder="big",
+                        signed=True,
+                    )
+                    - 40
+                )
+            }
+
         await self._client.write_gatt_char(UUID_TX, data=self.HEAD_READ + self.CMD_INFO)
 
         await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
@@ -151,7 +171,7 @@ class BMS(BaseBMS):
         if self._data is None or len(self._data) != self.INFO_LEN:
             return {}
 
-        data = {
+        data |= {
             key: func(
                 int.from_bytes(self._data[idx : idx + 2], byteorder="big", signed=True)
             )
@@ -160,7 +180,7 @@ class BMS(BaseBMS):
 
         # get temperatures
         data |= {
-            f"{KEY_TEMP_VALUE}{(idx-64-self.HEAD_LEN)>>1}": float(
+            f"{KEY_TEMP_VALUE}{(idx-62-self.HEAD_LEN)>>1}": float(
                 int.from_bytes(self._data[idx : idx + 2], byteorder="big", signed=True)
                 - 40
             )
