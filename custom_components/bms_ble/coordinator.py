@@ -38,8 +38,8 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
         )
         LOGGER.debug(
             "Initializing coordinator for %s (%s) as %s",
-            ble_device.name,
-            ble_device.address,
+            self._name,
+            self._mac,
             bms_device.device_id(),
         )
         self.name: str = ble_device.name
@@ -55,11 +55,11 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
         device_info = self._device.device_info()
         self.device_info = DeviceInfo(
             identifiers={
-                (DOMAIN, ble_device.name),
-                (BLUETOOTH_DOMAIN, ble_device.address),
+                (DOMAIN, self._mac),
+                (BLUETOOTH_DOMAIN, self._mac),
             },
-            connections={(CONNECTION_BLUETOOTH, ble_device.address)},
-            name=ble_device.name,
+            connections={(CONNECTION_BLUETOOTH, self._mac)},
+            name=self.name,
             configuration_url=None,
             # properties used in GUI:
             manufacturer=device_info.get("manufacturer"),
