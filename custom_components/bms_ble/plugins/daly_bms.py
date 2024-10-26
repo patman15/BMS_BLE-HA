@@ -217,5 +217,4 @@ class BMS(BaseBMS):
             # disconnect after data update to force reconnect next time (slow!)
             await self.disconnect()
 
-        LOGGER.debug(f"{data=}")
         return data
