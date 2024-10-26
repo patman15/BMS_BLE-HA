@@ -9,8 +9,7 @@ from bleak import BleakClient
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
-
-from ..const import (
+from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
     ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
@@ -26,6 +25,7 @@ from ..const import (
     KEY_CELL_VOLTAGE,
     KEY_TEMP_VALUE,
 )
+
 from .basebms import BaseBMS, BMSsample
 
 BAT_TIMEOUT: Final = 10

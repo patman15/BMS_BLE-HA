@@ -9,8 +9,7 @@ from bleak import BleakClient
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
-
-from ..const import (
+from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
     ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
@@ -26,6 +25,7 @@ from ..const import (
     KEY_PACK_COUNT,
     KEY_TEMP_VALUE,
 )
+
 from .basebms import BaseBMS, BMSsample, crc_xmodem
 
 BAT_TIMEOUT: Final = 5
@@ -228,7 +228,7 @@ class BMS(BaseBMS):
 
     def _cmd(self, device: int, cmd: int, start: int, count: int) -> bytearray:
         """Assemble a Seplos BMS command."""
-        assert device >= 0x00 and (device <= 0x10 or device == 0xC0 or device == 0xE0)
+        assert device >= 0x00 and (device <= 0x10 or device in (0xC0, 0xE0))
         assert cmd in (0x01, 0x04)  # allow only read commands
         assert start >= 0 and count > 0 and start + count <= 0xFFFF
         frame = bytearray([device, cmd])

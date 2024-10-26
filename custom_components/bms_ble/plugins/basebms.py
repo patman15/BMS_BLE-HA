@@ -5,15 +5,7 @@ from statistics import fmean
 from typing import Any
 
 from bleak.backends.device import BLEDevice
-
-from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
-from homeassistant.components.bluetooth.match import (
-    BluetoothMatcherOptional,
-    ble_device_matches,
-)
-from homeassistant.util.unit_conversion import _HRS_TO_SECS
-
-from ..const import (
+from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
     ATTR_CURRENT,
     ATTR_CYCLE_CAP,
@@ -21,11 +13,18 @@ from ..const import (
     ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     ATTR_RUNTIME,
-    ATTR_VOLTAGE,
     ATTR_TEMPERATURE,
+    ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
     KEY_TEMP_VALUE,
 )
+
+from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
+from homeassistant.components.bluetooth.match import (
+    BluetoothMatcherOptional,
+    ble_device_matches,
+)
+from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 type BMSsample = dict[str, int | float | bool]
 
@@ -107,7 +106,7 @@ class BaseBMS(metaclass=ABCMeta):
         # calculate temperature (average of all sensors)
         if can_calc(ATTR_TEMPERATURE, frozenset({f"{KEY_TEMP_VALUE}0"})):
             temp_values = [v for k, v in data.items() if k.startswith(KEY_TEMP_VALUE)]
-            data[ATTR_TEMPERATURE] = round(fmean(temp_values),3)
+            data[ATTR_TEMPERATURE] = round(fmean(temp_values), 3)
 
     async def disconnect(self) -> None:
         """Disconnect connection to BMS if active."""

@@ -9,8 +9,7 @@ from bleak import BleakClient
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
-
-from ..const import (
+from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
     ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
@@ -24,6 +23,7 @@ from ..const import (
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
 )
+
 from .basebms import BaseBMS, BMSsample
 
 LOGGER: Final = logging.getLogger(__name__)
