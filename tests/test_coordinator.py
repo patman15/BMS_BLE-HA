@@ -1,19 +1,15 @@
 """Test the BLE Battery Management System update coordinator."""
 
-from datetime import timedelta
 from custom_components.bms_ble.const import (
     ATTR_CURRENT,
     ATTR_CYCLE_CHRG,
     ATTR_CYCLES,
     ATTR_VOLTAGE,
-    UPDATE_INTERVAL,
 )
 from custom_components.bms_ble.coordinator import BTBmsCoordinator
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
-from pytest_homeassistant_custom_component.common import async_fire_time_changed
-import homeassistant.util.dt as dt_util
 
 from .bluetooth import inject_bluetooth_service_info_bleak
 from .conftest import Mock_BMS
