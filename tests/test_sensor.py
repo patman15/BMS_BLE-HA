@@ -9,6 +9,7 @@ from custom_components.bms_ble.const import (
     ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     ATTR_RUNTIME,
+    ATTR_TEMP_SENSORS,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     UPDATE_INTERVAL,
@@ -26,7 +27,7 @@ from .conftest import mock_config
 async def test_update(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
     """Test sensor value updates through coordinator."""
 
-    async def patch_async_update(self):
+    async def patch_async_update(_self):
         """Patch async_update to return a specific value."""
         return {
             "voltage": 17.0,
@@ -34,6 +35,10 @@ async def test_update(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
             "cell#0": 3,
             "cell#1": 3.123,
             "delta_voltage": 0.123,
+            "temperature": 43.86,
+            "temp#0": 73,
+            "temp#1": 31.4,
+            "temp#2": 27.18,
         }
 
     config = mock_config(bms="dummy_bms")
@@ -77,7 +82,7 @@ async def test_update(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
     assert data == {
         f"sensor.smartbat_b12345_{ATTR_VOLTAGE}": "17.0",
         "sensor.smartbat_b12345_battery": "unknown",
-        f"sensor.smartbat_b12345_{ATTR_TEMPERATURE}": "unknown",
+        f"sensor.smartbat_b12345_{ATTR_TEMPERATURE}": "43.86",
         f"sensor.smartbat_b12345_{ATTR_CURRENT}": "0",
         "sensor.smartbat_b12345_stored_energy": "unknown",
         f"sensor.smartbat_b12345_{ATTR_CYCLES}": "unknown",
@@ -86,9 +91,13 @@ async def test_update(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
         f"sensor.smartbat_b12345_{ATTR_RUNTIME}": "unknown",
     }
     # check delta voltage sensor has cell voltage as attribute array
-    delta_state = hass.states.get("sensor.smartbat_b12345_delta_voltage")
+    delta_state = hass.states.get(f"sensor.smartbat_b12345_{ATTR_DELTA_VOLTAGE}")
     assert delta_state is not None and delta_state.attributes[
         ATTR_CELL_VOLTAGES
     ] == [3, 3.123]
 
-# TODO: verify ATTR_TEMP_SENSORS
+    # check temperature sensor has individual sensors as attribute array
+    temp_state = hass.states.get(f"sensor.smartbat_b12345_{ATTR_TEMPERATURE}")
+    assert temp_state is not None and temp_state.attributes[
+        ATTR_TEMP_SENSORS
+    ] == [73, 31.4, 27.18]
