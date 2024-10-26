@@ -36,14 +36,14 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
             always_update=False,  # only update when sensor value has changed
         )
+        self.name: str = ble_device.name
+        self._mac = ble_device.address
         LOGGER.debug(
             "Initializing coordinator for %s (%s) as %s",
-            self._name,
+            self.name,
             self._mac,
             bms_device.device_id(),
         )
-        self.name: str = ble_device.name
-        self._mac = ble_device.address
         self._link_q = deque([False], maxlen=100)  # track BMS update issues
         if service_info := async_last_service_info(
             self.hass, address=self._mac, connectable=True
