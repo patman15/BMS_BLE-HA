@@ -76,7 +76,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
         except TimeoutError as err:
             LOGGER.debug("%s: device communication timed out", self._name)
             raise TimeoutError("device communication timed out") from err
-        except BleakError as err:
+        except (BleakError, EOFError) as err:
             LOGGER.debug("%s: device communicating failed: %s (%s)", self._name, err, type(err).__name__)
             raise UpdateFailed(
                 f"device communicating failed: {err!s} ({type(err).__name__})"
