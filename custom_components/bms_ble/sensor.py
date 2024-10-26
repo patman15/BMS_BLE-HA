@@ -34,6 +34,7 @@ from .const import (
     ATTR_CYCLE_CAP,
     ATTR_CYCLES,
     ATTR_DELTA_VOLTAGE,
+    ATTR_LQ,
     ATTR_POWER,
     ATTR_RSSI,
     ATTR_RUNTIME,
@@ -41,6 +42,7 @@ from .const import (
     DOMAIN,
     KEY_CELL_VOLTAGE,
     KEY_TEMP_VALUE,
+    LOGGER,
 )
 from .coordinator import BTBmsCoordinator
 
@@ -119,9 +121,20 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
     SensorEntityDescription(
         key=ATTR_RSSI,
         translation_key=ATTR_RSSI,
+        icon="mdi:bluetooth-connect",
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    SensorEntityDescription(
+        key=ATTR_LQ,
+        translation_key=ATTR_LQ,
+        name="Link quality",
+        icon="mdi:link",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
@@ -136,8 +149,15 @@ async def async_setup_entry(
     """Add sensors for passed config_entry in Home Assistant."""
 
     bms: BTBmsCoordinator = config_entry.runtime_data
+    mac: str = format_mac(config_entry.unique_id)
     for descr in SENSOR_TYPES:
-        async_add_entities([BMSSensor(bms, descr, format_mac(config_entry.unique_id))])
+        if descr.key == ATTR_RSSI:
+            async_add_entities([RSSISensor(bms, descr, mac)])
+            continue
+        if descr.key == ATTR_LQ:
+            async_add_entities([LQSensor(bms, descr, mac)])
+            continue
+        async_add_entities([BMSSensor(bms, descr, mac)])
 
 
 class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ignore[reportIncompatibleMethodOverride]
@@ -181,3 +201,62 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
     def native_value(self) -> int | float | None:  # type: ignore[reportIncompatibleVariableOverride]
         """Return the sensor value."""
         return self.coordinator.data.get(self.entity_description.key)
+
+
+class RSSISensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverride]
+    """The Bluetooth RSSI sensor."""
+
+    LIMIT: Final = 127  # limit to +/- this range
+    _attr_has_entity_name = True
+    _attr_native_value = -LIMIT
+
+    def __init__(
+        self, bms: BTBmsCoordinator, descr: SensorEntityDescription, unique_id: str
+    ) -> None:
+        """Intitialize the BMS sensor."""
+
+        self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
+        self._attr_device_info = bms.device_info
+        self.entity_description = descr
+        self._bms = bms
+
+    async def async_update(self) -> None:
+        """Update RSSI sensor value."""
+
+        self._attr_native_value = max(
+            min(self._bms.rssi or -self.LIMIT, self.LIMIT), -self.LIMIT
+        )
+        self._attr_available = self._bms.rssi is not None
+
+        LOGGER.debug("%s: RSSI value: %i dBm", self._bms.name, self._attr_native_value)
+        self.async_write_ha_state()
+
+
+class LQSensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverride]
+    """The BMS link quality sensor."""
+
+    _attr_has_entity_name = True
+    _attr_native_value = 0
+
+    def __init__(
+        self, bms: BTBmsCoordinator, descr: SensorEntityDescription, unique_id: str
+    ) -> None:
+        """Intitialize the BMS link quality sensor."""
+
+        self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
+        self._attr_device_info = bms.device_info
+        self.entity_description = descr
+        self._bms = bms
+
+    async def async_update(self) -> None:
+        """Update BMS link quality sensor value."""
+
+        self._attr_native_value = self._bms.link_quality
+        self._attr_available = self._bms.rssi is not None
+
+        LOGGER.debug(
+            "%s: Link quality: %i %%",
+            self._bms.name,
+            self._attr_native_value,
+        )
+        self.async_write_ha_state()
