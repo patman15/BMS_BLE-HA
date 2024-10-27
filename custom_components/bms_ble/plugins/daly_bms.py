@@ -7,8 +7,7 @@ from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
-
-from ..const import (
+from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
     ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
@@ -25,6 +24,7 @@ from ..const import (
     KEY_TEMP_SENS,
     KEY_TEMP_VALUE,
 )
+
 from .basebms import BaseBMS, BMSsample, crc_xmodem
 
 BAT_TIMEOUT: Final = 10
@@ -40,6 +40,7 @@ class BMS(BaseBMS):
     _UUID_SERVICE = normalize_uuid_str("fff0")
     HEAD_READ: Final = bytearray(b"\xD2\x03")
     CMD_INFO: Final = bytearray(b"\x00\x00\x00\x3E\xD7\xB9")
+    MOS_INFO: Final = bytearray(b"\x00\x3E\x00\x09\xF7\xA3")
     HEAD_LEN: Final = 3
     CRC_LEN: Final = 2
     MAX_CELLS: Final = 32
@@ -106,6 +107,25 @@ class BMS(BaseBMS):
         """Update battery status information."""
         await self._connect()
 
+        await self._client.write_gatt_char(BMS._UUID_TX, data=self.HEAD_READ + self.MOS_INFO)
+
+        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+
+        data = {}
+
+        if self._data is not None:
+            LOGGER.debug("%s: MOS info: %s", self._ble_device.name, self._data)
+            data |= {
+                f"{KEY_TEMP_VALUE}0": float(
+                    int.from_bytes(
+                        self._data[self.HEAD_LEN + 8 : self.HEAD_LEN + 10],
+                        byteorder="big",
+                        signed=True,
+                    )
+                    - 40
+                )
+            }
+
         await self._client.write_gatt_char(
             BMS._UUID_TX, data=self.HEAD_READ + self.CMD_INFO
         )
@@ -115,7 +135,7 @@ class BMS(BaseBMS):
         if self._data is None or len(self._data) != self.INFO_LEN:
             return {}
 
-        data = {
+        data |= {
             key: func(
                 int.from_bytes(self._data[idx : idx + 2], byteorder="big", signed=True)
             )
@@ -124,7 +144,7 @@ class BMS(BaseBMS):
 
         # get temperatures
         data |= {
-            f"{KEY_TEMP_VALUE}{(idx-64-self.HEAD_LEN)>>1}": float(
+            f"{KEY_TEMP_VALUE}{(idx-62-self.HEAD_LEN)>>1}": float(
                 int.from_bytes(self._data[idx : idx + 2], byteorder="big", signed=True)
                 - 40
             )

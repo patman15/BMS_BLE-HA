@@ -149,7 +149,7 @@ def mock_config_v0_1(request, unique_id="cc:cc:cc:cc:cc:cc"):
     )
 
 
-@pytest.fixture(params=[TimeoutError, BleakError])
+@pytest.fixture(params=[TimeoutError, BleakError, EOFError])
 def mock_coordinator_exception(request):
     """Return possible exceptions for mock BMS update function."""
     return request.param

@@ -11,14 +11,7 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 
-from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
-from homeassistant.components.bluetooth.match import (
-    BluetoothMatcherOptional,
-    ble_device_matches,
-)
-from homeassistant.util.unit_conversion import _HRS_TO_SECS
-
-from ..const import (
+from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
     ATTR_CURRENT,
     ATTR_CYCLE_CAP,
@@ -26,11 +19,18 @@ from ..const import (
     ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     ATTR_RUNTIME,
-    ATTR_VOLTAGE,
     ATTR_TEMPERATURE,
+    ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
     KEY_TEMP_VALUE,
 )
+
+from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
+from homeassistant.components.bluetooth.match import (
+    BluetoothMatcherOptional,
+    ble_device_matches,
+)
+from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 type BMSsample = dict[str, int | float | bool]
 
@@ -177,7 +177,7 @@ class BaseBMS(metaclass=ABCMeta):
         """
 
     async def async_update(self) -> BMSsample:
-        """Retrieve updated values from the BMS."""
+        """Retrieve updated values from the BMS using method of the subclass."""
         data = await self._async_update()
 
         if self._reconnect:

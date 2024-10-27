@@ -17,6 +17,7 @@ class MockDalyBleakClient(MockBleakClient):
 
     HEAD_READ = bytearray(b"\xD2\x03")
     CMD_INFO = bytearray(b"\x00\x00\x00\x3E\xD7\xB9")
+    MOS_INFO = bytearray(b"\x00\x3E\x00\x09\xF7\xA3")    
 
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
@@ -27,6 +28,11 @@ class MockDalyBleakClient(MockBleakClient):
             return bytearray(
                 b"\xd2\x03|\x10\x1f\x10)\x103\x10=\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00<\x00=\x00>\x00?\x00\x00\x00\x00\x00\x00\x00\x00\x00\x8cuN\x03\x84\x10=\x10\x1f\x00\x00\x00\x00\x00\x00\r\x80\x00\x04\x00\x04\x009\x00\x01\x00\x00\x00\x01\x10.\x01\x41\x00*\x00\x00\x00\x00\x00\x00\x00\x00\xa0\xdf"
             ) # {'voltage': 14.0, 'current': 3.0, 'battery_level': 90.0, 'cycles': 57, 'cycle_charge': 345.6, 'numTemp': 4, 'temperature': 21.5, 'cycle_capacity': 4838.400000000001, 'power': 42.0, 'battery_charging': True, 'runtime': none!, 'delta_voltage': 0.321}
+
+        if char_specifier == normalize_uuid_str("fff2") and data == (
+            self.HEAD_READ + self.MOS_INFO
+        ):
+            return bytearray(b"\xd2\x03\x12\x00\x00\x00\x00\x75\x30\x00\x00\x00\x4e\xff\xff\xff\xff\xff\xff\xff\xff\x0b\x4e")
 
         return bytearray()
 
@@ -88,13 +94,14 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "cell_count": 4,
         "delta_voltage": 0.321,
         "temp_sensors": 4,
-        "temperature": 21.5,
+        "temperature": 24.8,
         "cycle_capacity": 4838.4,
         "power": 42.0,
-        "temp#0": 20.0,
-        "temp#1": 21.0,
-        "temp#2": 22.0,
-        "temp#3": 23.0,
+        "temp#0": 38.0,
+        "temp#1": 20.0,
+        "temp#2": 21.0,
+        "temp#3": 22.0,
+        "temp#4": 23.0,
         "battery_charging": True,
     }
 

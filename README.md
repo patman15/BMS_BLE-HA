@@ -31,16 +31,28 @@ The integration provides the following information about the battery
 
 Platform | Description | Unit | Details
 -- | -- | -- | --
-`sensor` | SoC (state of charge) | `%` | range 100% (full) to 0% (battery empty)
-`sensor` | stored energy | `Wh` | currently stored energy
-`sensor` | voltage | `V` | overall battery voltage
+`binary_sensor` | battery charging | `bool` | indicates `True` if battery is charging
+`sensor` | charge cycles | `#` | lifetime number of charge cycles
 `sensor` | current | `A` | positive for charging, negative for discharging
-`sensor` | power | `W` | positive for charging, negative for discharging
-`sensor` | temperature | `°C` | individual temperature values are available as attribute to this sensor, if the BMS supports multiple sensors
-`sensor` | (remaining) runtime | `s` | remaining discharge time till SoC 0%
-`sensor` | charge cycles | `#` |
 `sensor` | delta voltage | `V` | maximum difference between any two cells; individual cell voltage are available as attribute to this sensor
-`binary_sensor` | battery charging indicator | `bool` | true if battery is charging
+`sensor` | power | `W` | positive for charging, negative for discharging
+`sensor` | runtime | `s` | remaining discharge time till SoC 0%
+`sensor` | SoC | `%` | state of charge, range 100% (full) to 0% (battery empty)
+`sensor` | stored energy | `Wh` | currently stored energy
+`sensor` | temperature | `°C` | individual temperature values are available as attribute to this sensor, if the BMS supports multiple sensors
+`sensor` | voltage | `V` | overall battery voltage
+`sensor`* | link quality  | `%` | successful BMS queries out of all attempts
+`sensor`* | RSSI          | `dBm`| received signal strength indicator
+
+*) In case sensors are reported `unavailable` please enable the diagnostic sensors, i.e. `RSSI` and `link quality` and check your connection quality. The value of `link quality` results from (temporarily) bad `RSSI` values, which are impacted by disturbances of the Bluetooth communication.
+
+Quality | link quality [%] | RSSI [dBm]
+--  | -- | --
+excellent | 98 to 100 | -50 to high
+good | 90 to 98 | -60 to -70
+fair | 80 to 90 | -70 to -80
+weak | 60 to 80 | -80 to -90
+bad | 0 to 60  | -90 to low
 
 
 ## Installation
