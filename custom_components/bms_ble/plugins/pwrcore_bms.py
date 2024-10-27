@@ -86,7 +86,7 @@ class BMS(BaseBMS):
     def matcher_dict_list() -> list[dict[str, Any]]:
         """Provide BluetoothMatcher definition."""
         return [
-            # {"local_name": "DXB-*", "service_uuid": UUID_SERVICE, "connectable": True},
+            {"local_name": "DXB-*", "service_uuid": UUID_SERVICE, "connectable": True},
             {"local_name": "TBA-*", "service_uuid": UUID_SERVICE, "connectable": True},
         ]
 
