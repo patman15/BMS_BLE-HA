@@ -39,7 +39,7 @@ type BMSsample = dict[str, int | float | bool]
 class BaseBMS(metaclass=ABCMeta):
     """Base class for battery management system."""
 
-    _UUID_SERVICE: str = ""
+    _UUID_SERVICES: list[str] = []
     _UUID_RX: str = ""
     _UUID_TX: str = ""
 
@@ -149,7 +149,7 @@ class BaseBMS(metaclass=ABCMeta):
         """Connect to the BMS and setup notification if not connected."""
 
         assert (
-            self._UUID_SERVICE != "" and self._UUID_RX != "" and self._UUID_TX != ""
+            self._UUID_SERVICES != "" and self._UUID_RX != "" and self._UUID_TX != ""
         ), "You must define _UUID_SERVICE, _UUID_RX, and _UUID_TX in the subclass"
 
         if self._client.is_connected:

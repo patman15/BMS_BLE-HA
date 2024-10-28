@@ -37,7 +37,7 @@ class BMS(BaseBMS):
     # setup UUIDs, e.g. for receive: '0000fff4-0000-1000-8000-00805f9b34fb'
     _UUID_RX = normalize_uuid_str("fff4")
     _UUID_TX = normalize_uuid_str("fff6")
-    _UUID_SERVICE = normalize_uuid_str("fff0")
+    _UUID_SERVICES = [normalize_uuid_str("fff0")]
 
     IDX_NAME: Final = 0
     IDX_LEN: Final = 1
@@ -102,12 +102,12 @@ class BMS(BaseBMS):
         return [
             {
                 "local_name": "SmartBat-A*",
-                "service_uuid": BMS._UUID_SERVICE,
+                "service_uuid": BMS._UUID_SERVICES[0],
                 "connectable": True,
             },
             {
                 "local_name": "SmartBat-B*",
-                "service_uuid": BMS._UUID_SERVICE,
+                "service_uuid": BMS._UUID_SERVICES[0],
                 "connectable": True,
             },
         ]

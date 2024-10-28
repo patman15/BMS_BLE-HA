@@ -36,7 +36,7 @@ class BMS(BaseBMS):
     #    serv 0000fff0-0000-1000-8000-00805f9b34fb
     # 	 char 0000fff1-0000-1000-8000-00805f9b34fb (#16): ['read', 'notify']
     # 	 char 0000fff2-0000-1000-8000-00805f9b34fb (#20): ['read', 'write-without-response', 'write']
-    _UUID_SERVICE = normalize_uuid_str("fff0")
+    _UUID_SERVICES = [normalize_uuid_str("fff0")]
     _UUID_RX = normalize_uuid_str("fff1")
     _UUID_TX = normalize_uuid_str("fff2")
 
@@ -101,12 +101,12 @@ class BMS(BaseBMS):
         return [
             {
                 "local_name": "SP0*",
-                "service_uuid": BMS._UUID_SERVICE,
+                "service_uuid": BMS._UUID_SERVICES[0],
                 "connectable": True,
             },
             {
                 "local_name": "SP1*",
-                "service_uuid": BMS._UUID_SERVICE,
+                "service_uuid": BMS._UUID_SERVICES[0],
                 "connectable": True,
             },
         ]

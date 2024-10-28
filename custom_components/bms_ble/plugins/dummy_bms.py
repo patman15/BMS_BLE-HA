@@ -25,7 +25,7 @@ LOGGER = logging.getLogger(__name__)
 class BMS(BaseBMS):
     """Dummy battery class implementation."""
 
-    _UUID_SERVICE: str = "#change_me"
+    _UUID_SERVICES: list[str] = ["#change_me"]  # usually only one
     _UUID_RX: str = "#change_me"
     _UUID_TX: str = "#change_me"
 
