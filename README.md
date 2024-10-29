@@ -18,6 +18,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 
 ### Supported Devices
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
+- CBT Power BMS (Creabest batteries)
 - Daly BMS (show up as `DL-`&#x2026;)
 - JK BMS, Jikong, (HW version >=11 required)
 - JBD BMS, Jiabaida
