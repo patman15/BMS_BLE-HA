@@ -30,8 +30,7 @@
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
-      "service_uuid": "0000ffe5-0000-1000-8000-00805f9b34fb",
-      "manufacturer_id": 0
+      "service_uuid": "0000ffb0-0000-1000-8000-00805f9b34fb"
     }
   ],
   "codeowners": ["@patman15"],
@@ -43,5 +42,5 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bms_ble", "daly_bms", "jbd_bms", "jikong_bms", "ogt_bms", "seplos_bms"],
   "requirements": [],
-  "version": "1.7.1"
+  "version": "1.8.0"
 }
