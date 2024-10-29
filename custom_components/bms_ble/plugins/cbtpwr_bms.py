@@ -126,7 +126,7 @@ class BMS(BaseBMS):
 
     def _crc(self, frame: bytes) -> int:
         """Calculate CBT Power frame CRC."""
-        return sum(frame)
+        return sum(frame) & 0xFF
 
     def _gen_frame(self, cmd: bytes, value: list[int] | None = None) -> bytes:
         """Assemble a CBT Power BMS command."""
