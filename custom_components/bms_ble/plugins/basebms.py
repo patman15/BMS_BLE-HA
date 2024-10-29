@@ -3,9 +3,9 @@
 import asyncio.events
 from abc import ABCMeta, abstractmethod
 from collections.abc import Callable
+import logging
 from statistics import fmean
 from typing import Any, Final
-import logging
 
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -51,6 +51,7 @@ class BaseBMS(metaclass=ABCMeta):
         reconnect: bool = False,
     ) -> None:
         """Intialize the BMS.
+
         logger: logger for the BMS instance
         notification_handler: the callback used for notifications from 'UUID_RX' characteristics
         ble_device: the Bleak device to connect to
@@ -178,9 +179,7 @@ class BaseBMS(metaclass=ABCMeta):
 
     @abstractmethod
     async def _async_update(self) -> BMSsample:
-        """Returns a dictionary of BMS values, where the keys need to match
-        the keys in the SENSOR_TYPES list.
-        """
+        """Return a dictionary of BMS values, where the keys need to match the keys in the SENSOR_TYPES list."""
 
     async def async_update(self) -> BMSsample:
         """Retrieve updated values from the BMS using method of the subclass."""
