@@ -43,9 +43,10 @@ class BMS(BaseBMS):
     _UUID_SERVICES = [normalize_uuid_str("ffe5"), normalize_uuid_str("ffe0")]
 
     HEAD: Final = bytes([0xAA, 0x55])
-    TAIL: Final = bytes([0x0D, 0x0A])
-    MIN_FRAME: Final = len(HEAD) + len(TAIL) + 3  # CMD, LEN, CRC each 1 Byte
-    CRC_POS: Final = -len(TAIL) - 1
+    TAIL_RX: Final = bytes([0x0D, 0x0A])
+    TAIL_TX: Final = bytes([0x0A, 0x0D])
+    MIN_FRAME: Final = len(HEAD) + len(TAIL_RX) + 3  # CMD, LEN, CRC each 1 Byte
+    CRC_POS: Final = -len(TAIL_RX) - 1
     LEN_POS: Final = 3
     CELL_VOLTAGE_CMDS: Final = range(5, 8)
 
@@ -107,7 +108,7 @@ class BMS(BaseBMS):
             )
             return
 
-        if not data.startswith(self.HEAD) or not data.endswith(self.TAIL):
+        if not data.startswith(self.HEAD) or not data.endswith(self.TAIL_RX):
             LOGGER.debug("(%s) Incorrect frame start/end: %s", self.name, data)
             return
 
@@ -135,7 +136,7 @@ class BMS(BaseBMS):
         frame = bytes([*self.HEAD, cmd[0]])
         frame += bytes([len(value), *value])
         frame += bytes([self._crc(frame[len(self.HEAD) :])])
-        frame += bytes([*self.TAIL])
+        frame += bytes([*self.TAIL_TX])
         return frame
 
     def _cell_voltages(self, data: bytearray, cells: int) -> dict[str, float]:
