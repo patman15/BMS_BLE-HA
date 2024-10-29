@@ -38,6 +38,7 @@ ATTR_TEMP_SENSORS: Final = "temperature_sensors"  # [°C]
 # temporary dictionary keys (do not change)
 KEY_CELL_COUNT: Final = "cell_count"  # [#]
 KEY_CELL_VOLTAGE: Final = "cell#"  # [V]
+KEY_DESIGN_CAP: Final = "design_capacity"  # [Ah]
 KEY_PACK_COUNT: Final = "pack_count"  # [#]
 KEY_TEMP_SENS: Final = "temp_sensors"  # [#]
 KEY_TEMP_VALUE: Final = "temp#"  # [°C]
