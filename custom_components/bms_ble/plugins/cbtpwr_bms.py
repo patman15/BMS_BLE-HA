@@ -97,7 +97,6 @@ class BMS(BaseBMS):
 
         LOGGER.debug("(%s) Rx BLE data: %s", self._ble_device.name, data)
 
-        self._data = bytearray()  # TODO: verify if needed!
         # verify that data long enough
         if (
             len(data) < self.MIN_FRAME
@@ -182,21 +181,21 @@ class BMS(BaseBMS):
                 )
             }
 
-            voltages = {}
-            for cmd in self.CELL_VOLTAGE_CMDS:
-                await self._client.write_gatt_char(
-                    self._UUID_TX, data=self._gen_frame(cmd.to_bytes(1))
-                )
-                try:
-                    await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-                except TimeoutError:
-                    break
-                voltages = self._cell_voltages(self._data, 5)
-                if invalid := [k for k, v in voltages.items() if v == 0]:
-                    for k in invalid:
-                        voltages.pop(k)
-                    break
-            data |= voltages
+        voltages = {}
+        for cmd in self.CELL_VOLTAGE_CMDS:
+            await self._client.write_gatt_char(
+                self._UUID_TX, data=self._gen_frame(cmd.to_bytes(1))
+            )
+            try:
+                await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+            except TimeoutError:
+                break
+            voltages = self._cell_voltages(self._data, 5)
+            if invalid := [k for k, v in voltages.items() if v == 0]:
+                for k in invalid:
+                    voltages.pop(k)
+                break
+        data |= voltages
 
         if self._data is None:
             return {}
