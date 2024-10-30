@@ -151,11 +151,12 @@ class BaseBMS(metaclass=ABCMeta):
             return
 
         self.logger.debug("Connecting BMS (%s)", self._ble_device.name)
-        self._client = BleakClient(
-            self._ble_device,
-            disconnected_callback=self._on_disconnect,
-            services=[self._UUID_SERVICE],
-        )
+        if self._client is None:
+            self._client = BleakClient(
+                self._ble_device,
+                disconnected_callback=self._on_disconnect,
+                services=[self._UUID_SERVICE],
+            )
         await self._client.connect()
         await self._init_characteristics()
 
