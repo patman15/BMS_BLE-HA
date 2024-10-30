@@ -344,3 +344,7 @@ class MockRespChar(BleakGATTCharacteristic):
 async def mock_update_min(_self) -> BMSsample:
     """Minimal version of a BMS update to mock initial coordinator update easily."""
     return {ATTR_VOLTAGE: 12.3}
+
+async def mock_update_exc(_self) -> BMSsample:
+    """Failing version of a BMS update to mock initial coordinator update easily."""
+    raise BleakError

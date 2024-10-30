@@ -140,11 +140,12 @@ class BMS(BaseBMS):
 
         if self._client is None or not self._client.is_connected:
             LOGGER.debug("Connecting BMS (%s)", self._ble_device.name)
-            self._client = BleakClient(
-                self._ble_device,
-                disconnected_callback=self._on_disconnect,
-                services=[UUID_SERVICE],
-            )
+            if self._client is None:
+                self._client = BleakClient(
+                    self._ble_device,
+                    disconnected_callback=self._on_disconnect,
+                    services=[UUID_SERVICE],
+                )
             await self._client.connect()
             char_notify_handle: int | None = None
             self._char_write_handle = None
