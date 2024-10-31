@@ -31,7 +31,6 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
         LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
         super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
 
