@@ -17,7 +17,17 @@ class MockDalyBleakClient(MockBleakClient):
 
     HEAD_READ = bytearray(b"\xD2\x03")
     CMD_INFO = bytearray(b"\x00\x00\x00\x3E\xD7\xB9")
-    MOS_INFO = bytearray(b"\x00\x3E\x00\x09\xF7\xA3")    
+    MOS_INFO = bytearray(b"\x00\x3E\x00\x09\xF7\xA3")
+
+    def _cmd_resp(self) -> bytearray:
+        return bytearray(
+            b"\xd2\x03|\x10\x1f\x10)\x103\x10=\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00<\x00=\x00>\x00?\x00\x00\x00\x00\x00\x00\x00\x00\x00\x8cuN\x03\x84\x10=\x10\x1f\x00\x00\x00\x00\x00\x00\r\x80\x00\x04\x00\x04\x009\x00\x01\x00\x00\x00\x01\x10.\x01\x41\x00*\x00\x00\x00\x00\x00\x00\x00\x00\xa0\xdf"
+        )  # {'voltage': 14.0, 'current': 3.0, 'battery_level': 90.0, 'cycles': 57, 'cycle_charge': 345.6, 'numTemp': 4, 'temperature': 21.5, 'cycle_capacity': 4838.400000000001, 'power': 42.0, 'battery_charging': True, 'runtime': none!, 'delta_voltage': 0.321}
+
+    def _mos_resp(self) -> bytearray:
+        return bytearray(
+            b"\xd2\x03\x12\x00\x00\x00\x00\x75\x30\x00\x00\x00\x4e\xff\xff\xff\xff\xff\xff\xff\xff\x0b\x4e"
+        )
 
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
@@ -25,14 +35,12 @@ class MockDalyBleakClient(MockBleakClient):
         if char_specifier == normalize_uuid_str("fff2") and data == (
             self.HEAD_READ + self.CMD_INFO
         ):
-            return bytearray(
-                b"\xd2\x03|\x10\x1f\x10)\x103\x10=\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00<\x00=\x00>\x00?\x00\x00\x00\x00\x00\x00\x00\x00\x00\x8cuN\x03\x84\x10=\x10\x1f\x00\x00\x00\x00\x00\x00\r\x80\x00\x04\x00\x04\x009\x00\x01\x00\x00\x00\x01\x10.\x01\x41\x00*\x00\x00\x00\x00\x00\x00\x00\x00\xa0\xdf"
-            ) # {'voltage': 14.0, 'current': 3.0, 'battery_level': 90.0, 'cycles': 57, 'cycle_charge': 345.6, 'numTemp': 4, 'temperature': 21.5, 'cycle_capacity': 4838.400000000001, 'power': 42.0, 'battery_charging': True, 'runtime': none!, 'delta_voltage': 0.321}
+            return self._cmd_resp()
 
         if char_specifier == normalize_uuid_str("fff2") and data == (
             self.HEAD_READ + self.MOS_INFO
         ):
-            return bytearray(b"\xd2\x03\x12\x00\x00\x00\x00\x75\x30\x00\x00\x00\x4e\xff\xff\xff\xff\xff\xff\xff\xff\x0b\x4e")
+            return self._mos_resp()
 
         return bytearray()
 
@@ -47,6 +55,15 @@ class MockDalyBleakClient(MockBleakClient):
         assert self._notify_callback is not None
         self._notify_callback(
             "MockDalyBleakClient", self._response(char_specifier, data)
+        )
+
+
+class MockDalyNoMOSBleakClient(MockDalyBleakClient):
+    """Emulate a Daly BMS BleakClient without MOS temperature."""
+
+    def _mos_resp(self) -> bytearray:
+        return bytearray(
+            b"\xd2\x03\x12\x00\x00\x00\x00\x00\x00\x00\x00\x00\x4e\xff\xff\xff\xff\xff\xff\xff\xff\x0b\x4e"
         )
 
 
@@ -66,12 +83,12 @@ class MockInvalidBleakClient(MockDalyBleakClient):
         raise BleakError
 
 
-async def test_update(monkeypatch, reconnect_fixture) -> None:
+async def test_update(monkeypatch, bool_fixture, reconnect_fixture) -> None:
     """Test Daly BMS data update."""
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.daly_bms.BleakClient",
-        MockDalyBleakClient,
+        MockDalyBleakClient if bool_fixture else MockDalyNoMOSBleakClient,
     )
 
     bms = BMS(
@@ -81,33 +98,48 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
 
     result = await bms.async_update()
 
-    assert result == {
-        "voltage": 14.0,
-        "current": 3.0,
-        "battery_level": 90.0,
-        "cycles": 57,
-        "cycle_charge": 345.6,
-        "cell#0": 4.127,
-        "cell#1": 4.137,
-        "cell#2": 4.147,
-        "cell#3": 4.157,
-        "cell_count": 4,
-        "delta_voltage": 0.321,
-        "temp_sensors": 4,
-        "temperature": 24.8,
-        "cycle_capacity": 4838.4,
-        "power": 42.0,
-        "temp#0": 38.0,
-        "temp#1": 20.0,
-        "temp#2": 21.0,
-        "temp#3": 22.0,
-        "temp#4": 23.0,
-        "battery_charging": True,
-    }
+    assert (
+        result
+        == {
+            "voltage": 14.0,
+            "current": 3.0,
+            "battery_level": 90.0,
+            "cycles": 57,
+            "cycle_charge": 345.6,
+            "cell#0": 4.127,
+            "cell#1": 4.137,
+            "cell#2": 4.147,
+            "cell#3": 4.157,
+            "cell_count": 4,
+            "delta_voltage": 0.321,
+            "temp_sensors": 4,
+            "cycle_capacity": 4838.4,
+            "power": 42.0,
+            "battery_charging": True,
+        }
+        | ({
+            "temp#0": 38.0,
+            "temp#1": 20.0,
+            "temp#2": 21.0,
+            "temp#3": 22.0,
+            "temp#4": 23.0,
+            "temperature": 24.8,
+        }
+        if bool_fixture
+        else {
+            "temp#0": 20.0,
+            "temp#1": 21.0,
+            "temp#2": 22.0,
+            "temp#3": 23.0,
+            "temperature": 21.5,
+        })
+    )
 
     # query again to check already connected state
     result = await bms.async_update()
-    assert bms._client and bms._client.is_connected is not reconnect_fixture # noqa: SLF001
+    assert (
+        bms._client and bms._client.is_connected is not reconnect_fixture
+    )  # noqa: SLF001
 
     await bms.disconnect()
 
