@@ -14,10 +14,10 @@ from .bluetooth import inject_bluetooth_service_info_bleak
 from .conftest import mock_config
 
 
-async def test_update(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
+async def test_update(monkeypatch, patch_bleakclient, BTdiscovery, hass: HomeAssistant) -> None:
     """Test binary sensor value updates through coordinator."""
 
-    async def patch_device(self):
+    async def patch_device(_self):
         """Patch async ble device from address to return a given value."""
         return {"voltage": 17.0, "current": 0}
 

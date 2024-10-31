@@ -7,7 +7,7 @@ from .conftest import mock_config, mock_update_exc, mock_update_min
 
 
 async def test_init_fail(
-    monkeypatch, bms_fixture, BTdiscovery, hass: HomeAssistant
+    monkeypatch, patch_bleakclient, bms_fixture, BTdiscovery, hass: HomeAssistant
 ) -> None:
     """Test entries are unloaded correctly."""
 
@@ -51,7 +51,7 @@ async def test_init_fail(
 
 
 async def test_unload_entry(
-    monkeypatch, bms_fixture, bool_fixture, BTdiscovery, hass: HomeAssistant
+    monkeypatch, patch_bleakclient, bms_fixture, bool_fixture, BTdiscovery, hass: HomeAssistant
 ) -> None:
     """Test entries are unloaded correctly."""
     unload_fail: bool = bool_fixture

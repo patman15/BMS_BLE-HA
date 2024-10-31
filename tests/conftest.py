@@ -75,6 +75,17 @@ def bms_data_fixture(request) -> BMSsample:
 
 
 @pytest.fixture
+def patch_bleakclient(monkeypatch) -> None:
+    """Patch BleakClient to a mock as BT is not available.
+    required because BTdiscovery cannot be used to generate a BleakClient in async_setup()
+    """
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
+        MockBleakClient,
+    )
+
+
+@pytest.fixture
 def BTdiscovery() -> BluetoothServiceInfoBleak:
     """Return a valid Bluetooth object for testing."""
     return BluetoothServiceInfoBleak(
@@ -179,6 +190,8 @@ def ogt_bms_fixture(request) -> str:
 
 class Mock_BMS(BaseBMS):
     """Mock Battery Management System."""
+
+    _UUID_SERVICE = "cafe"
 
     def __init__(
         self, exc: Exception | None = None, ret_value: BMSsample | None = None

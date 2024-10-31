@@ -59,7 +59,11 @@ class BaseBMS(metaclass=ABCMeta):
         self._notification_method: Final = notification_handler
         self._ble_device: Final = ble_device
         self._reconnect: Final = reconnect
-        self._client: BleakClient | None = None
+        self._client: Final = BleakClient(
+            self._ble_device,
+            disconnected_callback=self._on_disconnect,
+            services=[self._UUID_SERVICE],
+        )
         self.name: Final[str] = self._ble_device.name or "undefined"
 
     @staticmethod
@@ -151,12 +155,12 @@ class BaseBMS(metaclass=ABCMeta):
             return
 
         self.logger.debug("Connecting BMS (%s)", self._ble_device.name)
-        if self._client is None:
-            self._client = BleakClient(
-                self._ble_device,
-                disconnected_callback=self._on_disconnect,
-                services=[self._UUID_SERVICE],
-            )
+        # if self._client is None:
+        #     self._client = BleakClient(
+        #         self._ble_device,
+        #         disconnected_callback=self._on_disconnect,
+        #         services=[self._UUID_SERVICE],
+        #     )
         await self._client.connect()
         await self._init_characteristics()
 

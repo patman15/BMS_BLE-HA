@@ -88,7 +88,7 @@ def inject_advertisement_with_time_and_source_connectable(
         )
     )
 
-
+# NOTE: you cannot init BleakCLient from this information!
 def inject_bluetooth_service_info_bleak(
     hass: HomeAssistant, info: BluetoothServiceInfoBleak
 ) -> None:
