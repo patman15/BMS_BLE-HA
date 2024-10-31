@@ -150,24 +150,19 @@ class BaseBMS(metaclass=ABCMeta):
             self._UUID_SERVICE != "" and self._UUID_RX != "" and self._UUID_TX != ""
         ), "You must define _UUID_SERVICE, _UUID_RX, and _UUID_TX in the subclass"
 
-        if self._client is not None and self._client.is_connected:
+        if self._client.is_connected:
             self.logger.debug("BMS %s already connected", self.name)
             return
 
         self.logger.debug("Connecting BMS (%s)", self._ble_device.name)
-        # if self._client is None:
-        #     self._client = BleakClient(
-        #         self._ble_device,
-        #         disconnected_callback=self._on_disconnect,
-        #         services=[self._UUID_SERVICE],
-        #     )
+
         await self._client.connect()
         await self._init_characteristics()
 
     async def disconnect(self) -> None:
         """Disconnect the BMS, includes stoping notifications."""
 
-        if self._client and self._client.is_connected:
+        if self._client.is_connected:
             self.logger.debug("Disconnecting BMS (%s)", self.name)
             try:
                 self._data_event.clear()
