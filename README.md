@@ -71,6 +71,8 @@ Installation can be done using [HACS](https://hacs.xyz/) by [adding a custom rep
 1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "BLE Battery Management"
 
 ## Outlook
+- Add support for [Supervolt V1 2019-2023](https://github.com/patman15/BMS_BLE-HA/issues/57)
+- Implement status report of the BMS, e.g. warnings, errors as (single) binary sensor (ok, not ok)
 - Add option to only have temporary connections (lowers reliability, but helps running more devices via [ESPHome Bluetooth proxy][btproxy-url])
 - Add further battery types on [request](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.yml)
 

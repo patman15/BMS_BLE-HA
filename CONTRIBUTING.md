@@ -8,7 +8,7 @@ In case you have troubles, please enable the debug protocol for the integration 
  1. Fork the repository and create a branch with the name of the new BMS to add.
  2. Add a new file to the `plugins` folder called, e.g. `my_bms.py`
  3. Populate the file with class called `BMS` derived from `BaseBMS`(see basebms.py). A dummy implementation without the actual functionality to query the BMS can befound below in section _Dummy BMS Example_
- 4. Make sure that the dictionary returned by `async_update()` has (all) keys listed in `SENSOR_TYPES` (see `sensor.py`), __except__ for the RSSI value which is automatically added by the data update coordinator. To make it simple, just follow the `ATTR_*` import in the example code below.
+ 4. Make sure that the dictionary returned by `async_update()` has (all) keys listed in `SENSOR_TYPES` (see `sensor.py`), __except__ for `ATTR_LQ` and `ATTR_RSSI` which are automatically handled. To make it simple, just follow the `ATTR_*` import in the example code below.
  5. In `const.py` add the filename (without extention), e.g. `my_bms`, to the constant `BMS_TYPES`.
  6. Add an appropriate [bluetooth device matcher](https://developers.home-assistant.io/docs/creating_integration_manifest#bluetooth) to `manifest.json`. Note that this is required to match the implementation of `match_dict_list()` in the new BMS class.
  7. Test and commit the changes to the branch and create a pull request to the main repository.
