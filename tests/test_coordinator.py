@@ -59,7 +59,7 @@ async def test_update(
     assert coordinator.rssi == (-85 if advertisement_avail else None)
     assert coordinator.link_quality == 66
 
-    await coordinator.stop()
+    await coordinator.async_shutdown()
 
 
 async def test_nodata(patch_bleakclient, BTdiscovery, hass: HomeAssistant) -> None:
@@ -73,7 +73,7 @@ async def test_nodata(patch_bleakclient, BTdiscovery, hass: HomeAssistant) -> No
     result = coordinator.data
     assert not coordinator.last_update_success
 
-    await coordinator.stop()
+    await coordinator.async_shutdown()
 
     assert result is None
     assert coordinator.rssi == -61

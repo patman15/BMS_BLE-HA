@@ -158,7 +158,7 @@ async def test_update(monkeypatch, ogt_bms_fixture, reconnect_fixture) -> None:
 
     # query again to check already connected state
     result = await bms.async_update()
-    assert bms._client and bms._client.is_connected is not reconnect_fixture
+    assert bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
 
@@ -175,8 +175,7 @@ async def test_invalid_response(monkeypatch) -> None:
 
     result = await bms.async_update()
     assert result == {}
-    assert bms._client and bms._client.is_connected  # noqa: SLF001
-
+    assert bms._client.is_connected
     await bms.disconnect()
 
 
@@ -191,5 +190,7 @@ async def test_invalid_bms_type(monkeypatch) -> None:
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "SmartBat-C12294", None, -73))
 
     result = await bms.async_update()
-
     assert result == {}
+    assert bms._client.is_connected
+    await bms.disconnect()
+
