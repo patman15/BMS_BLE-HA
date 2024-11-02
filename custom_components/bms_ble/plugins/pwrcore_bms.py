@@ -25,8 +25,6 @@ from ..const import (
     ATTR_VOLTAGE,
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
-    KEY_TEMP_SENS,
-    KEY_TEMP_VALUE,
 )
 from .basebms import BaseBMS, BMSsample
 
@@ -77,9 +75,7 @@ class BMS(BaseBMS):
             (ATTR_CYCLE_CHRG, Cmd.LEGINFO1, 12, 2, lambda x: float(x) / 1000),
             (ATTR_TEMPERATURE, Cmd.LEGINFO2, 12, 2, lambda x: round(float(x) * 0.1 - 273.15, 1)),
             (KEY_CELL_COUNT, Cmd.CELLVOLT, 6, 1, lambda x: min(x, self.MAX_CELLS)),
-            # (KEY_TEMP_SENS, Cmd.GETINFO, 100, lambda x: min(x, self.MAX_TEMP)),
             (ATTR_CYCLES, Cmd.LEGINFO2, 8, 2, lambda x: x),
-            # (ATTR_DELTA_VOLTAGE, Cmd.GETINFO, 112, lambda x: float(x / 1000)),
         ]
 
     @staticmethod
@@ -107,12 +103,13 @@ class BMS(BaseBMS):
     async def _notification_handler(self, _sender, data: bytearray) -> None:
         LOGGER.debug("%s: Received BLE data: %s", self.name, data)
 
-        # ignore ACK responses
-        if data[0] & 0x80:
-            return
-
         if len(data) != self.PAGE_LEN:
             LOGGER.debug("%s: Invalid page length (%i)", self.name, len(data))
+            return
+
+        # ignore ACK responses
+        if data[0] & 0x80:
+            LOGGER.debug("%s: Ignore acknowledge message", self.name)
             return
 
         assert self._client is not None, "Received notification without client."
@@ -133,6 +130,11 @@ class BMS(BaseBMS):
         LOGGER.debug("%s: %s %s", self.name, "start" if page == 1 else "cnt.", data)
 
         if page == maxpg:
+            LOGGER.debug(
+                "%s: checksum 0x%X",
+                self.name,
+                int.from_bytes(self._data[-4:-2], byteorder="big"),
+            )
             if int.from_bytes(self._data[-4:-2], byteorder="big") != self._crc(
                 self._data[3:-4]
             ):
@@ -144,6 +146,7 @@ class BMS(BaseBMS):
                 )
                 self._data = bytearray()
                 self._data_final = None  # reset invalid data
+                self._data_event.set()
                 return
             self._data_final = self._data
             self._data_event.set()
