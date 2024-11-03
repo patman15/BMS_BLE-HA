@@ -64,7 +64,7 @@ class BaseBMS(metaclass=ABCMeta):
         self._client: Final = BleakClient(
             self._ble_device,
             disconnected_callback=self._on_disconnect,
-            services=[self._UUID_SERVICE],
+            services=[*self._UUID_SERVICES],
         )
         self.name: Final[str] = self._ble_device.name or "undefined"
         self._data_event = asyncio.Event()
