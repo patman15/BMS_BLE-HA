@@ -24,7 +24,7 @@ from custom_components.bms_ble.const import (
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
 )
-from .basebms import BaseBMS, BMSsample
+from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 
 BAT_TIMEOUT: Final = 10
 LOGGER: Final = logging.getLogger(__name__)
@@ -59,7 +59,6 @@ class BMS(BaseBMS):
         assert self._ble_device.name is not None  # required for unlock
         self._data: bytearray = bytearray()
         self._data_final: bytearray | None = None
-        self._data_event = asyncio.Event()
         self._FIELDS: Final[
             list[tuple[str, Cmd, int, int, Callable[[int], int | float]]]
         ] = [
@@ -90,10 +89,6 @@ class BMS(BaseBMS):
     def device_info() -> dict[str, str]:
         """Return device information for the battery management system."""
         return {"manufacturer": "D-powercore", "model": "Smart BMS"}
-
-    async def _wait_event(self) -> None:
-        await self._data_event.wait()
-        self._data_event.clear()
 
     async def _notification_handler(self, _sender, data: bytearray) -> None:
         LOGGER.debug("%s: Received BLE data: %s", self.name, data)
