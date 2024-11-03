@@ -7,6 +7,8 @@ from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
+from homeassistant.util.unit_conversion import _HRS_TO_SECS
+
 from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
     ATTR_BATTERY_LEVEL,
@@ -19,13 +21,9 @@ from custom_components.bms_ble.const import (
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
-    KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
     KEY_DESIGN_CAP,
-    KEY_TEMP_VALUE,
 )
-
-from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 from .basebms import BaseBMS, BMSsample
 
@@ -48,7 +46,8 @@ class BMS(BaseBMS):
     MIN_FRAME: Final = len(HEAD) + len(TAIL_RX) + 3  # CMD, LEN, CRC each 1 Byte
     CRC_POS: Final = -len(TAIL_RX) - 1
     LEN_POS: Final = 3
-    CELL_VOLTAGE_CMDS: Final = range(5, 8)
+    CMD_POS: Final = 2
+    CELL_VOLTAGE_CMDS: Final[list[int]] = [0x5, 0x6, 0x7, 0x8]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
@@ -58,8 +57,6 @@ class BMS(BaseBMS):
         self._FIELDS: Final[
             list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
         ] = [
-            # (KEY_CELL_COUNT, 70, 4, False, lambda x: x.bit_count()),
-            # (ATTR_DELTA_VOLTAGE, 76, 2, False, lambda x: float(x / 1000)),
             (ATTR_VOLTAGE, 0x0B, 4, 4, False, lambda x: float(x / 1000)),
             (ATTR_CURRENT, 0x0B, 8, 4, True, lambda x: float(x / 1000)),
             (ATTR_TEMPERATURE, 0x09, 4, 2, False, lambda x: x),
@@ -67,10 +64,7 @@ class BMS(BaseBMS):
             (KEY_DESIGN_CAP, 0x15, 4, 2, False, lambda x: x),
             (ATTR_CYCLES, 0x15, 6, 2, False, lambda x: x),
             (ATTR_RUNTIME, 0x0C, 14, 2, False, lambda x: float(x * _HRS_TO_SECS / 100)),
-        ]  # + [  # add temperature sensors
-        #  (f"{KEY_TEMP_VALUE}{i}", addr, 2, True, lambda x: float(x / 10))
-        #  for i, addr in [(0, 144), (1, 162), (2, 164), (3, 256), (4, 258)]
-        # ]
+        ]
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -138,16 +132,16 @@ class BMS(BaseBMS):
         frame += bytes([*self.TAIL_TX])
         return frame
 
-    def _cell_voltages(self, data: bytearray, cells: int) -> dict[str, float]:
+    def _cell_voltages(self, data: bytearray) -> dict[str, float]:
         """Return cell voltages from status message."""
         return {
-            f"{KEY_CELL_VOLTAGE}{idx}": int.from_bytes(
+            f"{KEY_CELL_VOLTAGE}{idx+(data[self.CMD_POS]-5)*5}": int.from_bytes(
                 data[4 + 2 * idx : 6 + 2 * idx],
                 byteorder="little",
                 signed=True,
             )
             / 1000
-            for idx in range(cells)
+            for idx in range(5)
         }
 
     async def _async_update(self) -> BMSsample:
@@ -157,19 +151,23 @@ class BMS(BaseBMS):
 
         data = {}
         resp_cache = {}  # variable to avoid multiple queries with same command
-        # (ATTR_VOLTAGE, 0x0B, 150, 4, False, lambda x: float(x / 1000)),
         for field, cmd, pos, size, sign, fct in self._FIELDS:
             LOGGER.debug("(%s) request %s info", self.name, field)
             if resp_cache.get(cmd) is None:
                 await self._client.write_gatt_char(
                     self._UUID_TX, data=self._gen_frame(cmd.to_bytes(1))
                 )
-                LOGGER.debug(f"({self.name}) {cmd=} {size=} {sign=}")
                 try:
                     await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
                 except TimeoutError:
                     continue
-                if self._data is None:
+                if cmd != self._data[self.CMD_POS]:
+                    LOGGER.debug(
+                        "(%s): incorrect response 0x%x to command 0x%x",
+                        self.name,
+                        self._data[self.CMD_POS],
+                        cmd,
+                    )
                     continue
                 resp_cache[cmd] = self._data.copy()
             LOGGER.debug("(%s) %s", self.name, resp_cache)
@@ -190,15 +188,12 @@ class BMS(BaseBMS):
                 await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
             except TimeoutError:
                 break
-            voltages = self._cell_voltages(self._data, 5)
+            voltages |= self._cell_voltages(self._data)
             if invalid := [k for k, v in voltages.items() if v == 0]:
                 for k in invalid:
                     voltages.pop(k)
                 break
         data |= voltages
-
-        if self._data is None:
-            return {}
 
         # get cycle charge from design capacity and SoC
         if data.get(KEY_DESIGN_CAP) and data.get(ATTR_BATTERY_LEVEL):
