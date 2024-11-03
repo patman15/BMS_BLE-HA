@@ -6,12 +6,10 @@ from enum import Enum
 import logging
 from typing import Any, Final
 
-from bleak import BleakClient
 from bleak.backends.device import BLEDevice
-from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 
-from ..const import (
+from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
     ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
@@ -31,11 +29,6 @@ from .basebms import BaseBMS, BMSsample
 BAT_TIMEOUT: Final = 10
 LOGGER: Final = logging.getLogger(__name__)
 
-# setup UUIDs, e.g. for receive: '0000fff0-0000-1000-8000-00805f9b34fb'
-UUID_RX: Final = normalize_uuid_str("fff4")
-UUID_TX: Final = normalize_uuid_str("fff3")
-UUID_SERVICE: Final = normalize_uuid_str("fff0")
-
 
 class Cmd(Enum):
     """BMS operation codes."""
@@ -53,16 +46,17 @@ class Cmd(Enum):
 class BMS(BaseBMS):
     """D-powercore Smart BMS class implementation."""
 
+    # setup UUIDs, e.g. for receive: '0000fff0-0000-1000-8000-00805f9b34fb'
+    _UUID_RX = normalize_uuid_str("fff4")
+    _UUID_TX = normalize_uuid_str("fff3")
+    _UUID_SERVICE = normalize_uuid_str("fff0")
     PAGE_LEN: Final = 20
     MAX_CELLS: Final = 64  # TODO: remove?
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        self._reconnect: Final[bool] = reconnect
-        self._ble_device = ble_device
+        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
         assert self._ble_device.name is not None  # required for unlock
-        self.name = self._ble_device.name
-        self._client: BleakClient | None = None
         self._data: bytearray = bytearray()
         self._data_final: bytearray | None = None
         self._data_event = asyncio.Event()
@@ -73,7 +67,13 @@ class BMS(BaseBMS):
             (ATTR_CURRENT, Cmd.LEGINFO1, 8, 2, lambda x: x),
             (ATTR_BATTERY_LEVEL, Cmd.LEGINFO1, 14, 1, lambda x: x),
             (ATTR_CYCLE_CHRG, Cmd.LEGINFO1, 12, 2, lambda x: float(x) / 1000),
-            (ATTR_TEMPERATURE, Cmd.LEGINFO2, 12, 2, lambda x: round(float(x) * 0.1 - 273.15, 1)),
+            (
+                ATTR_TEMPERATURE,
+                Cmd.LEGINFO2,
+                12,
+                2,
+                lambda x: round(float(x) * 0.1 - 273.15, 1),
+            ),
             (KEY_CELL_COUNT, Cmd.CELLVOLT, 6, 1, lambda x: min(x, self.MAX_CELLS)),
             (ATTR_CYCLES, Cmd.LEGINFO2, 8, 2, lambda x: x),
         ]
@@ -82,8 +82,8 @@ class BMS(BaseBMS):
     def matcher_dict_list() -> list[dict[str, Any]]:
         """Provide BluetoothMatcher definition."""
         return [
-            {"local_name": "DXB-*", "service_uuid": UUID_SERVICE, "connectable": True},
-            {"local_name": "TBA-*", "service_uuid": UUID_SERVICE, "connectable": True},
+            {"local_name": "DXB-*", "service_uuid": BMS._UUID_SERVICE, "connectable": True},
+            {"local_name": "TBA-*", "service_uuid": BMS._UUID_SERVICE, "connectable": True},
         ]
 
     @staticmethod
@@ -94,11 +94,6 @@ class BMS(BaseBMS):
     async def _wait_event(self) -> None:
         await self._data_event.wait()
         self._data_event.clear()
-
-    def _on_disconnect(self, _client: BleakClient) -> None:
-        """Disconnect callback function."""
-
-        LOGGER.debug("Disconnected from BMS (%s)", self.name)
 
     async def _notification_handler(self, _sender, data: bytearray) -> None:
         LOGGER.debug("%s: Received BLE data: %s", self.name, data)
@@ -112,9 +107,8 @@ class BMS(BaseBMS):
             LOGGER.debug("%s: Ignore acknowledge message", self.name)
             return
 
-        assert self._client is not None, "Received notification without client."
         await self._client.write_gatt_char(  # acknowledge received frame
-            UUID_TX, bytearray([data[0] | 0x80]) + data[1:]
+            BMS._UUID_TX, bytearray([data[0] | 0x80]) + data[1:]
         )
 
         size: Final[int] = int(data[0])
@@ -122,7 +116,6 @@ class BMS(BaseBMS):
         maxpg: Final[int] = int(data[1] & 0xF)
 
         if page == 1:
-            # TODO: add check that all previous frames were received
             self._data = bytearray()
 
         self._data += data[2 : size + 2]
@@ -169,39 +162,17 @@ class BMS(BaseBMS):
         LOGGER.debug("%s: sending cmd: %s", self.name, frame)
         return frame
 
-    async def _connect(self) -> None:
+    async def _init_characteristics(self) -> None:
         """Connect to the BMS and setup notification if not connected."""
+        await super()._init_characteristics()
 
-        if self._client is None or not self._client.is_connected:
-            LOGGER.debug("Connecting BMS (%s)", self.name)
-            self._client = BleakClient(
-                self._ble_device,
-                disconnected_callback=self._on_disconnect,
-                services=[UUID_SERVICE],
+        # unlock BMS if not TBA version
+        if not self.name.startswith("TBA-"):
+            pwd = int(self.name[-4:], 16)
+            await self._client.write_gatt_char(
+                BMS._UUID_TX,
+                self._cmd_frame(Cmd.UNLOCK, bytes([(pwd >> 8) & 0xFF, pwd & 0xFF])),
             )
-            await self._client.connect()
-            await self._client.start_notify(UUID_RX, self._notification_handler)
-
-            # unlock BMS if not TBA version
-            if not self.name.startswith("TBA-"):
-                pwd = int(self.name[-4:], 16)
-                await self._client.write_gatt_char(
-                    UUID_TX,
-                    self._cmd_frame(Cmd.UNLOCK, bytes([(pwd >> 8) & 0xFF, pwd & 0xFF])),
-                )
-        else:
-            LOGGER.debug("BMS %s already connected", self.name)
-
-    async def disconnect(self) -> None:
-        """Disconnect the BMS and includes stoping notifications."""
-
-        if self._client and self._client.is_connected:
-            LOGGER.debug("Disconnecting BMS (%s)", self.name)
-            try:
-                self._data_event.clear()
-                await self._client.disconnect()
-            except BleakError:
-                LOGGER.warning("Disconnect failed!")
 
     def _cell_voltages(self, data: bytearray, cells: int) -> dict[str, float]:
         """Return cell voltages from status message."""
@@ -213,14 +184,15 @@ class BMS(BaseBMS):
             for idx in range(cells)
         }
 
-    async def async_update(self) -> BMSsample:
+    async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         await self._connect()
-        assert self._client is not None
 
         data = {}
         for request in [Cmd.LEGINFO1, Cmd.LEGINFO2, Cmd.CELLVOLT]:
-            await self._client.write_gatt_char(UUID_TX, self._cmd_frame(request, b""))
+            await self._client.write_gatt_char(
+                BMS._UUID_TX, self._cmd_frame(request, b"")
+            )
             await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 
             if self._data_final is None:
@@ -250,9 +222,5 @@ class BMS(BaseBMS):
                 ATTR_RUNTIME,
             },
         )
-
-        if self._reconnect:
-            # disconnect after data update to force reconnect next time (slow!)
-            await self.disconnect()
 
         return data

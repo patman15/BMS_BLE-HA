@@ -121,7 +121,7 @@ async def test_update(monkeypatch, dev_name, reconnect_fixture) -> None:
     """Test D-pwercore BMS data update."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.pwrcore_bms.BleakClient",
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockPwrcoreBleakClient,
     )
 
@@ -163,7 +163,7 @@ async def test_update(monkeypatch, dev_name, reconnect_fixture) -> None:
     # query again to check already connected state
     result = await bms.async_update()
     assert (
-        bms._client and bms._client.is_connected is not reconnect_fixture
+        bms._client.is_connected is not reconnect_fixture
     )  # noqa: SLF001
 
     await bms.disconnect()
@@ -178,7 +178,7 @@ async def test_invalid_response(monkeypatch, dev_name) -> None:
     )
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.pwrcore_bms.BleakClient",
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockInvalidBleakClient,
     )
 
@@ -199,7 +199,7 @@ async def test_wrong_crc(monkeypatch, dev_name) -> None:
     )
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.pwrcore_bms.BleakClient",
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockWrongCRCBleakClient,
     )
 
