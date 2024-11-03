@@ -22,7 +22,7 @@ from custom_components.bms_ble.const import (
     KEY_CELL_VOLTAGE,
 )
 
-from .basebms import BaseBMS, BMSsample
+from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 
 LOGGER: Final = logging.getLogger(__name__)
 BAT_TIMEOUT: Final = 1
@@ -46,7 +46,6 @@ class BMS(BaseBMS):
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
         super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
-        self._data_event = asyncio.Event()
         self._type = self.name[9] if len(self.name) >= 9 else "?"
         self._key = sum(
             CRYPT_SEQ[int(c, 16)] for c in (f"{int(self.name[10:]):0>4X}")
@@ -117,10 +116,6 @@ class BMS(BaseBMS):
     def device_info() -> dict[str, str]:
         """Return a dictionary of device information."""
         return {"manufacturer": "Offgridtec", "model": "LiFePo4 Smart Pro"}
-
-    async def _wait_event(self) -> None:
-        await self._data_event.wait()
-        self._data_event.clear()
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""

@@ -23,8 +23,7 @@ from custom_components.bms_ble.const import (
     KEY_PACK_COUNT,
     KEY_TEMP_VALUE,
 )
-
-from .basebms import BaseBMS, BMSsample, crc_xmodem
+from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample, crc_xmodem
 
 BAT_TIMEOUT: Final = 5
 LOGGER = logging.getLogger(__name__)
@@ -61,7 +60,6 @@ class BMS(BaseBMS):
         self._data: bytearray = bytearray()
         self._exp_len: int = 0  # expected packet length
         self._data_final: dict[int, bytearray] = {}
-        self._data_event = asyncio.Event()
         self._pack_count = 0
         self._char_write_handle: int | None = None
         self._FIELDS: Final[
@@ -117,12 +115,6 @@ class BMS(BaseBMS):
     def device_info() -> dict[str, str]:
         """Return device information for the battery management system."""
         return {"manufacturer": "Seplos", "model": "Smart BMS V3"}
-
-    async def _wait_event(self) -> None:
-        """Wait for data event and clear it."""
-        await self._data_event.wait()
-
-        self._data_event.clear()
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Retrieve BMS data update."""

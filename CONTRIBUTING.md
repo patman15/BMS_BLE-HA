@@ -40,8 +40,7 @@ from custom_components.bms_ble.const import (
     # ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
 )
-
-from .basebms import BaseBMS, BMSsample
+from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 
 LOGGER = logging.getLogger(__name__)
 
@@ -55,8 +54,8 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
         LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
+        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:

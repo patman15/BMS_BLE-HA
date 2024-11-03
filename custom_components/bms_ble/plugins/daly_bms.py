@@ -24,8 +24,7 @@ from custom_components.bms_ble.const import (
     KEY_TEMP_SENS,
     KEY_TEMP_VALUE,
 )
-
-from .basebms import BaseBMS, BMSsample, crc_xmodem
+from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample, crc_xmodem
 
 BAT_TIMEOUT: Final = 10
 LOGGER: Final = logging.getLogger(__name__)
@@ -52,7 +51,6 @@ class BMS(BaseBMS):
         """Intialize private BMS members."""
         super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
         self._data: bytearray | None = None
-        self._data_event = asyncio.Event()
         self._FIELDS: Final[list[tuple[str, int, Callable[[int], int | float]]]] = [
             (ATTR_VOLTAGE, 80 + self.HEAD_LEN, lambda x: float(x / 10)),
             (ATTR_CURRENT, 82 + self.HEAD_LEN, lambda x: float((x - 30000) / 10)),
@@ -80,10 +78,6 @@ class BMS(BaseBMS):
         """Return device information for the battery management system."""
         return {"manufacturer": "Daly", "model": "Smart BMS"}
 
-    async def _wait_event(self) -> None:
-        await self._data_event.wait()
-        self._data_event.clear()
-
     def _notification_handler(self, _sender, data: bytearray) -> None:
         LOGGER.debug("Received BLE data: %s", data)
 
@@ -108,7 +102,9 @@ class BMS(BaseBMS):
         """Update battery status information."""
         await self._connect()
 
-        await self._client.write_gatt_char(BMS._UUID_TX, data=self.HEAD_READ + self.MOS_INFO)
+        await self._client.write_gatt_char(
+            BMS._UUID_TX, data=self.HEAD_READ + self.MOS_INFO
+        )
         await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 
         data = {}

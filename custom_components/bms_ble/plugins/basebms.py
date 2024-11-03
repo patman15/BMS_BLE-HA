@@ -1,5 +1,6 @@
 """Base class defintion for battery management systems (BMS)."""
 
+import asyncio.events
 from abc import ABCMeta, abstractmethod
 from collections.abc import Callable
 from statistics import fmean
@@ -10,6 +11,13 @@ from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
+
+from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
+from homeassistant.components.bluetooth.match import (
+    BluetoothMatcherOptional,
+    ble_device_matches,
+)
+from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
@@ -24,13 +32,6 @@ from custom_components.bms_ble.const import (
     KEY_CELL_VOLTAGE,
     KEY_TEMP_VALUE,
 )
-
-from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
-from homeassistant.components.bluetooth.match import (
-    BluetoothMatcherOptional,
-    ble_device_matches,
-)
-from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 type BMSsample = dict[str, int | float | bool]
 
@@ -65,6 +66,7 @@ class BaseBMS(metaclass=ABCMeta):
             services=[self._UUID_SERVICE],
         )
         self.name: Final[str] = self._ble_device.name or "undefined"
+        self._data_event = asyncio.Event()
 
     @staticmethod
     @abstractmethod
@@ -169,6 +171,11 @@ class BaseBMS(metaclass=ABCMeta):
                 await self._client.disconnect()
             except BleakError:
                 self.logger.warning("Disconnect failed!")
+
+    async def _wait_event(self) -> None:
+        """Wait for data event and clear it."""
+        await self._data_event.wait()
+        self._data_event.clear()
 
     @abstractmethod
     async def _async_update(self) -> BMSsample:

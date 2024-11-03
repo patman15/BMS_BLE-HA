@@ -17,8 +17,7 @@ from custom_components.bms_ble.const import (
     # ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
 )
-
-from .basebms import BaseBMS, BMSsample
+from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 
 LOGGER = logging.getLogger(__name__)
 

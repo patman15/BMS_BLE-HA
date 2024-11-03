@@ -24,7 +24,7 @@ from custom_components.bms_ble.const import (
     KEY_TEMP_VALUE,
 )
 
-from .basebms import BaseBMS, BMSsample
+from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 
 BAT_TIMEOUT: Final = 10
 LOGGER: Final = logging.getLogger(__name__)
@@ -50,7 +50,6 @@ class BMS(BaseBMS):
         super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
         self._data_final: bytearray | None = None
-        self._data_event = asyncio.Event()
         self._char_write_handle: int | None = None
         self._FIELDS: Final[
             list[tuple[str, int, int, bool, Callable[[int], int | float]]]
@@ -82,11 +81,6 @@ class BMS(BaseBMS):
     def device_info() -> dict[str, str]:
         """Return device information for the battery management system."""
         return {"manufacturer": "Jikong", "model": "Smart BMS"}
-
-    async def _wait_event(self) -> None:
-        """Wait for data event and clear it."""
-        await self._data_event.wait()
-        self._data_event.clear()
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Retrieve BMS data update."""
