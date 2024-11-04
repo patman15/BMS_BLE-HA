@@ -31,15 +31,8 @@ LOGGER: Final = logging.getLogger(__name__)
 
 class BMS(BaseBMS):
     """JBD Smart BMS class implementation."""
-
-    # setup UUIDs, e.g. for receive: '0000fff1-0000-1000-8000-00805f9b34fb'
-    _UUID_RX = normalize_uuid_str("ff01")
-    _UUID_TX = normalize_uuid_str("ff02")
-    _UUID_SERVICES = [normalize_uuid_str("ff00")]
-
     HEAD_RSP: Final = bytes([0xDD])  # header for responses
     HEAD_CMD: Final = bytes([0xDD, 0xA5])  # read header for commands
-
     INFO_LEN: Final = 7  # minimum frame size
     BASIC_INFO: Final = 23  # basic info data length
 
@@ -64,7 +57,7 @@ class BMS(BaseBMS):
         """Provide BluetoothMatcher definition."""
         return [
             {
-                "service_uuid": BMS._UUID_SERVICES[0],
+                "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             },
         ]
@@ -73,6 +66,22 @@ class BMS(BaseBMS):
     def device_info() -> dict[str, str]:
         """Return device information for the battery management system."""
         return {"manufacturer": "Jiabaida", "model": "Smart BMS"}
+
+    @staticmethod
+    def uuid_services() -> list[str]:
+        """Return list of 128-bit UUIDs of services required by BMS"""
+        return [normalize_uuid_str("ff00")]
+
+    @staticmethod
+    def uuid_rx() -> str:
+        """Return 16-bit UUID of characteristic that provides notification/read property."""
+        return "ff01"
+
+    @staticmethod
+    def uuid_tx() -> str:
+        """Return 16-bit UUID of characteristic that provides write property."""
+        return "ff02"
+
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         if self._data_event.is_set():
@@ -158,14 +167,12 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        await self._connect()
-
         data = {}
         for cmd, exp_len, dec_fct in [
             (self._cmd(b"\x03"), self.BASIC_INFO, self._decode_data),
             (self._cmd(b"\x04"), 0, self._cell_voltages),
         ]:
-            await self._client.write_gatt_char(BMS._UUID_TX, data=cmd)
+            await self._client.write_gatt_char(BMS.uuid_tx(), data=cmd)
             await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 
             if self._data_final is None:

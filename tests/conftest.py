@@ -191,15 +191,13 @@ def ogt_bms_fixture(request) -> str:
 class Mock_BMS(BaseBMS):
     """Mock Battery Management System."""
 
-    _UUID_SERVICE = "cafe"
-    _UUID_RX = "feed"
-    _UUID_TX = "cafe"
-
     def __init__(
         self, exc: Exception | None = None, ret_value: BMSsample | None = None
     ) -> None:  # , ble_device, reconnect: bool = False
         """Initialize BMS."""
-        super().__init__(LOGGER, lambda char, data: None, generate_ble_device(address=""), False)
+        super().__init__(
+            LOGGER, lambda char, data: None, generate_ble_device(address=""), False
+        )
         LOGGER.debug("%s init(), Test except: %s", self.device_id(), str(exc))
         self._exception = exc
         self._ret_value: BMSsample = (
@@ -222,6 +220,21 @@ class Mock_BMS(BaseBMS):
     def device_info() -> dict[str, str]:
         """Return device information for the battery management system."""
         return {"manufacturer": "Mock Manufacturer", "model": "mock model"}
+
+    @staticmethod
+    def uuid_services() -> list[str]:
+        """Return list of services required by BMS"""
+        return [normalize_uuid_str("cafe")]
+
+    @staticmethod
+    def uuid_rx() -> str:
+        """Return characteristic that provides notification/read property."""
+        return "feed"
+
+    @staticmethod
+    def uuid_tx() -> str:
+        """Return characteristic that provides write property."""
+        return "cafe"
 
     async def disconnect(self) -> None:
         """Disconnect connection to BMS if active."""
@@ -363,6 +376,7 @@ class MockRespChar(BleakGATTCharacteristic):
 async def mock_update_min(_self) -> BMSsample:
     """Minimal version of a BMS update to mock initial coordinator update easily."""
     return {ATTR_VOLTAGE: 12.3}
+
 
 async def mock_update_exc(_self) -> BMSsample:
     """Failing version of a BMS update to mock initial coordinator update easily."""

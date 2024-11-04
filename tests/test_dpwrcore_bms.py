@@ -27,7 +27,7 @@ class MockDPwrcoreBleakClient(MockBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if char_specifier != normalize_uuid_str("fff3"):
+        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) != normalize_uuid_str("fff3"):
             return bytearray()
         cmd: int = int(bytearray(data)[5])
         if cmd == 0x60:
@@ -80,7 +80,7 @@ class MockWrongCRCBleakClient(MockDPwrcoreBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if char_specifier != normalize_uuid_str("fff3"):
+        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) != normalize_uuid_str("fff3"):
             return bytearray()
         cmd: int = int(bytearray(data)[5])
         if cmd == 0x60:
@@ -108,7 +108,7 @@ class MockInvalidBleakClient(MockDPwrcoreBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if char_specifier == normalize_uuid_str("fff3"):
+        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) == normalize_uuid_str("fff3"):
             return bytearray(b"invalid_value")
 
         return bytearray()

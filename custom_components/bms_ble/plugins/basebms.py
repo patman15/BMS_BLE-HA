@@ -39,10 +39,6 @@ type BMSsample = dict[str, int | float | bool]
 class BaseBMS(metaclass=ABCMeta):
     """Base class for battery management system."""
 
-    _UUID_SERVICES: list[str] = []
-    _UUID_RX: str = ""
-    _UUID_TX: str = ""
-
     def __init__(
         self,
         logger: logging.Logger,
@@ -55,7 +51,7 @@ class BaseBMS(metaclass=ABCMeta):
         """Intialize the BMS.
 
         logger: logger for the BMS instance
-        notification_handler: the callback used for notifications from 'UUID_RX' characteristics
+        notification_handler: the callback used for notifications from 'uuid_rx()' characteristics
         ble_device: the Bleak device to connect to
         reconnect: if true, the connection will be closed after each update
         """
@@ -66,7 +62,7 @@ class BaseBMS(metaclass=ABCMeta):
         self._client: Final = BleakClient(
             self._ble_device,
             disconnected_callback=self._on_disconnect,
-            services=[*self._UUID_SERVICES],
+            services=[*self.uuid_services()],
         )
         self.name: Final[str] = self._ble_device.name or "undefined"
         self._data_event = asyncio.Event()
@@ -99,6 +95,21 @@ class BaseBMS(metaclass=ABCMeta):
                 return True
         return False
 
+    @staticmethod
+    @abstractmethod
+    def uuid_services() -> list[str]:
+        """Return list of 128-bit UUIDs of services required by BMS"""
+
+    @staticmethod
+    @abstractmethod
+    def uuid_rx() -> str:
+        """Return 16-bit UUID of characteristic that provides notification/read property."""
+
+    @staticmethod
+    @abstractmethod
+    def uuid_tx() -> str:
+        """Return 16-bit UUID of characteristic that provides write property."""
+
     @classmethod
     def calc_values(cls, data: BMSsample, values: set[str]):
         """Calculate missing BMS values from existing ones.
@@ -108,7 +119,7 @@ class BaseBMS(metaclass=ABCMeta):
         """
 
         def can_calc(value: str, using: frozenset[str]) -> bool:
-            """Check that value to add does not exist, is requested, and needed parameters are available."""
+            """Check value to add does not exist, is requested, and needed data is available."""
             return (value in values) and (value not in data) and using.issubset(data)
 
         # calculate cycle capacity from voltage and cycle charge
@@ -146,14 +157,10 @@ class BaseBMS(metaclass=ABCMeta):
         self.logger.debug("Disconnected from BMS (%s)", self.name)
 
     async def _init_characteristics(self) -> None:
-        await self._client.start_notify(self._UUID_RX, self._notification_method)
+        await self._client.start_notify(self.uuid_rx(), self._notification_method)
 
     async def _connect(self) -> None:
         """Connect to the BMS and setup notification if not connected."""
-
-        assert (
-            self._UUID_SERVICES != "" and self._UUID_RX != "" and self._UUID_TX != ""
-        ), "You must define _UUID_SERVICE, _UUID_RX, and _UUID_TX in the subclass"
 
         if self._client.is_connected:
             self.logger.debug("BMS %s already connected", self.name)
@@ -185,6 +192,8 @@ class BaseBMS(metaclass=ABCMeta):
 
     async def async_update(self) -> BMSsample:
         """Retrieve updated values from the BMS using method of the subclass."""
+        await self._connect()
+
         data = await self._async_update()
 
         if self._reconnect:

@@ -32,14 +32,6 @@ LOGGER = logging.getLogger(__name__)
 class BMS(BaseBMS):
     """Seplos V3 Smart BMS class implementation."""
 
-    # setup UUIDs
-    #    serv 0000fff0-0000-1000-8000-00805f9b34fb
-    # 	 char 0000fff1-0000-1000-8000-00805f9b34fb (#16): ['read', 'notify']
-    # 	 char 0000fff2-0000-1000-8000-00805f9b34fb (#20): ['read', 'write-without-response', 'write']
-    _UUID_SERVICES = [normalize_uuid_str("fff0")]
-    _UUID_RX = normalize_uuid_str("fff1")
-    _UUID_TX = normalize_uuid_str("fff2")
-
     CMD_READ: Final = 0x04
     HEAD_LEN: Final = 3
     CRC_LEN: Final = 2
@@ -101,12 +93,12 @@ class BMS(BaseBMS):
         return [
             {
                 "local_name": "SP0*",
-                "service_uuid": BMS._UUID_SERVICES[0],
+                "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             },
             {
                 "local_name": "SP1*",
-                "service_uuid": BMS._UUID_SERVICES[0],
+                "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             },
         ]
@@ -115,6 +107,25 @@ class BMS(BaseBMS):
     def device_info() -> dict[str, str]:
         """Return device information for the battery management system."""
         return {"manufacturer": "Seplos", "model": "Smart BMS V3"}
+    
+    # setup UUIDs
+    #    serv 0000fff0-0000-1000-8000-00805f9b34fb
+    # 	 char 0000fff1-0000-1000-8000-00805f9b34fb (#16): ['read', 'notify']
+    # 	 char 0000fff2-0000-1000-8000-00805f9b34fb (#20): ['read', 'write-without-response', 'write']
+    @staticmethod
+    def uuid_services() -> list[str]:
+        """Return list of 128-bit UUIDs of services required by BMS"""
+        return [normalize_uuid_str("fff0")]
+
+    @staticmethod
+    def uuid_rx() -> str:
+        """Return 16-bit UUID of characteristic that provides notification/read property."""
+        return "fff1"
+
+    @staticmethod
+    def uuid_tx() -> str:
+        """Return 16-bit UUID of characteristic that provides write property."""
+        return "fff2"
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Retrieve BMS data update."""
@@ -203,12 +214,9 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-
-        await self._connect()
-
         for block in ["EIA", "EIB"]:
             await self._client.write_gatt_char(
-                BMS._UUID_TX, data=self._cmd(0x0, *self.QUERY[block])
+                BMS.uuid_tx(), data=self._cmd(0x0, *self.QUERY[block])
             )
             await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
             # check if a valid frame was received otherwise terminate immediately
@@ -231,7 +239,7 @@ class BMS(BaseBMS):
 
         for pack in range(1, 1 + self._pack_count):
             await self._client.write_gatt_char(
-                BMS._UUID_TX, data=self._cmd(pack, *self.QUERY["PIB"])
+                BMS.uuid_tx(), data=self._cmd(pack, *self.QUERY["PIB"])
             )
             await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
             # get cell voltages

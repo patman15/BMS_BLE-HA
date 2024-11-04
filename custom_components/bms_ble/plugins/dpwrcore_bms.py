@@ -45,13 +45,8 @@ class Cmd(Enum):
 
 class BMS(BaseBMS):
     """D-powercore Smart BMS class implementation."""
-
-    # setup UUIDs, e.g. for receive: '0000fff0-0000-1000-8000-00805f9b34fb'
-    _UUID_RX = normalize_uuid_str("fff4")
-    _UUID_TX = normalize_uuid_str("fff3")
-    _UUID_SERVICE = normalize_uuid_str("fff0")
     PAGE_LEN: Final = 20
-    MAX_CELLS: Final = 64  # TODO: remove?
+    MAX_CELLS: Final = 32
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
@@ -81,14 +76,29 @@ class BMS(BaseBMS):
     def matcher_dict_list() -> list[dict[str, Any]]:
         """Provide BluetoothMatcher definition."""
         return [
-            {"local_name": "DXB-*", "service_uuid": BMS._UUID_SERVICE, "connectable": True},
-            {"local_name": "TBA-*", "service_uuid": BMS._UUID_SERVICE, "connectable": True},
+            {"local_name": "DXB-*", "service_uuid": BMS.uuid_services()[0], "connectable": True},
+            {"local_name": "TBA-*", "service_uuid": BMS.uuid_services()[0], "connectable": True},
         ]
 
     @staticmethod
     def device_info() -> dict[str, str]:
         """Return device information for the battery management system."""
         return {"manufacturer": "D-powercore", "model": "Smart BMS"}
+
+    @staticmethod
+    def uuid_services() -> list[str]:
+        """Return list of 128-bit UUIDs of services required by BMS"""
+        return [normalize_uuid_str("fff0")]
+
+    @staticmethod
+    def uuid_rx() -> str:
+        """Return 16-bit UUID of characteristic that provides notification/read property."""
+        return "fff4"
+
+    @staticmethod
+    def uuid_tx() -> str:
+        """Return 16-bit UUID of characteristic that provides write property."""
+        return "fff3"
 
     async def _notification_handler(self, _sender, data: bytearray) -> None:
         LOGGER.debug("%s: Received BLE data: %s", self.name, data)
@@ -103,7 +113,7 @@ class BMS(BaseBMS):
             return
 
         await self._client.write_gatt_char(  # acknowledge received frame
-            BMS._UUID_TX, bytearray([data[0] | 0x80]) + data[1:]
+            BMS.uuid_tx(), bytearray([data[0] | 0x80]) + data[1:]
         )
 
         size: Final[int] = int(data[0])
@@ -165,7 +175,7 @@ class BMS(BaseBMS):
         if not self.name.startswith("TBA-"):
             pwd = int(self.name[-4:], 16)
             await self._client.write_gatt_char(
-                BMS._UUID_TX,
+                BMS.uuid_tx(),
                 self._cmd_frame(Cmd.UNLOCK, bytes([(pwd >> 8) & 0xFF, pwd & 0xFF])),
             )
 
@@ -181,12 +191,10 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        await self._connect()
-
         data = {}
         for request in [Cmd.LEGINFO1, Cmd.LEGINFO2, Cmd.CELLVOLT]:
             await self._client.write_gatt_char(
-                BMS._UUID_TX, self._cmd_frame(request, b"")
+                BMS.uuid_tx(), self._cmd_frame(request, b"")
             )
             await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 

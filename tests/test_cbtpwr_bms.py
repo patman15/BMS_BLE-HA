@@ -18,7 +18,7 @@ class MockCBTpwrBleakClient(MockBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if char_specifier != normalize_uuid_str("ffe9"):
+        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) != normalize_uuid_str("ffe9"):
             return bytearray()
         cmd: int = int(bytearray(data)[2])
         assert bytearray(data)[4] == cmd, "incorrect CRC"
@@ -80,7 +80,7 @@ class MockInvalidBleakClient(MockCBTpwrBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if char_specifier != normalize_uuid_str("ffe9"):
+        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) != normalize_uuid_str("ffe9"):
             return bytearray()
         cmd: int = int(bytearray(data)[2])
         if cmd == 0x0B:
@@ -108,7 +108,7 @@ class MockPartBaseDatBleakClient(MockCBTpwrBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if char_specifier != normalize_uuid_str("ffe9"):
+        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) != normalize_uuid_str("ffe9"):
             return bytearray()
         cmd: int = int(bytearray(data)[2])
         if cmd == 0x0B:
@@ -125,7 +125,7 @@ class MockAllCellsBleakClient(MockCBTpwrBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if char_specifier != normalize_uuid_str("ffe9"):
+        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) != normalize_uuid_str("ffe9"):
             return bytearray()
         cmd: int = int(bytearray(data)[2])
         if cmd == 0x05:

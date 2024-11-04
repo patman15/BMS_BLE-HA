@@ -33,16 +33,9 @@ LOGGER: Final = logging.getLogger(__name__)
 class BMS(BaseBMS):
     """Jikong Smart BMS class implementation."""
 
-    # setup UUIDs, e.g. for receive: '0000fff1-0000-1000-8000-00805f9b34fb'
-
-    _UUID_RX = normalize_uuid_str("ffe1")
-    _UUID_TX = "invalid"
-    _UUID_SERVICES = [normalize_uuid_str("ffe0")]
-
     HEAD_RSP: Final = bytes([0x55, 0xAA, 0xEB, 0x90])  # header for responses
     HEAD_CMD: Final = bytes([0xAA, 0x55, 0x90, 0xEB])  # header for commands (endiness!)
     BT_MODULE_MSG: Final = bytes([0x41, 0x54, 0x0D, 0x0A])  # AT\r\n from BLE module
-
     INFO_LEN: Final = 300
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -71,7 +64,7 @@ class BMS(BaseBMS):
         """Provide BluetoothMatcher definition."""
         return [
             {
-                "service_uuid": BMS._UUID_SERVICES[0],
+                "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
                 "manufacturer_id": 0x0B65,
             },
@@ -81,6 +74,21 @@ class BMS(BaseBMS):
     def device_info() -> dict[str, str]:
         """Return device information for the battery management system."""
         return {"manufacturer": "Jikong", "model": "Smart BMS"}
+
+    @staticmethod
+    def uuid_services() -> list[str]:
+        """Return list of 128-bit UUIDs of services required by BMS"""
+        return [normalize_uuid_str("ffe0")]
+
+    @staticmethod
+    def uuid_rx() -> str:
+        """Return 16-bit UUID of characteristic that provides notification/read property."""
+        return "ffe1"
+
+    @staticmethod
+    def uuid_tx() -> str:
+        """Return 16-bit UUID of characteristic that provides write property."""
+        return "ffe1"
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Retrieve BMS data update."""
@@ -134,7 +142,9 @@ class BMS(BaseBMS):
                     char.handle,
                     char.properties,
                 )
-                if char.uuid == BMS._UUID_RX:
+                if char.uuid == normalize_uuid_str(
+                    BMS.uuid_rx()
+                ) or char.uuid == normalize_uuid_str(BMS.uuid_tx()):
                     if "notify" in char.properties:
                         char_notify_handle = char.handle
                     if (
@@ -200,9 +210,6 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-
-        await self._connect()
-
         if not self._data_event.is_set():
             # request cell info (only if data is not constantly published)
             LOGGER.debug("(%s) request cell info", self._ble_device.name)

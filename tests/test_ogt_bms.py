@@ -39,7 +39,7 @@ class MockOGTBleakClient(MockBleakClient):
     async def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if char_specifier == normalize_uuid_str("fff6"):
+        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) == normalize_uuid_str("fff6"):
             assert self._ble_device.name is not None
             if self._ble_device.name[9] == "A":
                 assert bytearray(data)[0:4] == bytearray(
@@ -88,7 +88,7 @@ class MockInvalidBleakClient(MockOGTBleakClient):
     async def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if char_specifier == normalize_uuid_str("fff6"):
+        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) == normalize_uuid_str("fff6"):
             return bytearray(b"invalid_value")
 
         return bytearray()

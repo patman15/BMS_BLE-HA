@@ -33,12 +33,6 @@ CRYPT_SEQ: Final = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
 
 class BMS(BaseBMS):
     """Offgridtec LiFePO4 Smart Pro type A and type B battery class implementation."""
-
-    # setup UUIDs, e.g. for receive: '0000fff4-0000-1000-8000-00805f9b34fb'
-    _UUID_RX = normalize_uuid_str("fff4")
-    _UUID_TX = normalize_uuid_str("fff6")
-    _UUID_SERVICES = [normalize_uuid_str("fff0")]
-
     IDX_NAME: Final = 0
     IDX_LEN: Final = 1
     IDX_FCT: Final = 2
@@ -102,12 +96,12 @@ class BMS(BaseBMS):
         return [
             {
                 "local_name": "SmartBat-A*",
-                "service_uuid": BMS._UUID_SERVICES[0],
+                "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             },
             {
                 "local_name": "SmartBat-B*",
-                "service_uuid": BMS._UUID_SERVICES[0],
+                "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             },
         ]
@@ -117,11 +111,23 @@ class BMS(BaseBMS):
         """Return a dictionary of device information."""
         return {"manufacturer": "Offgridtec", "model": "LiFePo4 Smart Pro"}
 
+    @staticmethod
+    def uuid_services() -> list[str]:
+        """Return list of 128-bit UUIDs of services required by BMS"""
+        return [normalize_uuid_str("fff0")]
+
+    @staticmethod
+    def uuid_rx() -> str:
+        """Return 16-bit UUID of characteristic that provides notification/read property."""
+        return "fff4"
+
+    @staticmethod
+    def uuid_tx() -> str:
+        """Return 16-bit UUID of characteristic that provides write property."""
+        return "fff6"
+
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-
-        await self._connect()
-
         self._values = {}
         for key in list(self._REGISTERS):
             await self._read(key)
@@ -151,7 +157,7 @@ class BMS(BaseBMS):
         valid, reg, nat_value = self._ogt_response(data)
 
         # check that descrambled message is valid and from the right characteristic
-        if valid and sender.uuid == BMS._UUID_RX:
+        if valid and sender.uuid == normalize_uuid_str(BMS.uuid_rx()):
             name, _length, func = self._REGISTERS[reg]
             value = func(nat_value) if func else nat_value
             LOGGER.debug(
@@ -199,4 +205,4 @@ class BMS(BaseBMS):
 
         msg = self._ogt_command(reg)
         LOGGER.debug("BLE cmd frame %s", msg)
-        await self._client.write_gatt_char(BMS._UUID_TX, data=msg)
+        await self._client.write_gatt_char(BMS.uuid_tx(), data=msg)

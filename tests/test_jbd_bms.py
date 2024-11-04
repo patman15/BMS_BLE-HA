@@ -26,7 +26,8 @@ class MockJBDBleakClient(MockBleakClient):
     ) -> bytearray:
 
         if (
-            char_specifier == normalize_uuid_str("ff02")
+            isinstance(char_specifier, str)
+            and normalize_uuid_str(char_specifier) == normalize_uuid_str("ff02")
             and bytearray(data)[0] == self.HEAD_CMD
         ):
             if bytearray(data)[1:3] == self.CMD_INFO:
@@ -66,7 +67,9 @@ class MockInvalidBleakClient(MockJBDBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if char_specifier == normalize_uuid_str("ff02"):
+        if isinstance(char_specifier, str) and normalize_uuid_str(
+            char_specifier
+        ) == normalize_uuid_str("ff02"):
             return bytearray(b"\xdd\x03\x00\x1d") + bytearray(31) + bytearray(b"\x77")
 
         return bytearray()
@@ -83,7 +86,8 @@ class MockOversizedBleakClient(MockJBDBleakClient):
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
         if (
-            char_specifier == normalize_uuid_str("ff02")
+            isinstance(char_specifier, str)
+            and normalize_uuid_str(char_specifier) == normalize_uuid_str("ff02")
             and bytearray(data)[0] == self.HEAD_CMD
         ):
             if bytearray(data)[1:3] == self.CMD_INFO:
@@ -144,7 +148,9 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
 
     # query again to check already connected state
     result = await bms.async_update()
-    assert bms._client and bms._client.is_connected is not reconnect_fixture  # noqa: SLF001
+    assert (
+        bms._client and bms._client.is_connected is not reconnect_fixture
+    )  # noqa: SLF001
 
     await bms.disconnect()
 
@@ -196,7 +202,7 @@ async def test_oversized_response(monkeypatch) -> None:
         "cell#3": 3.417,
         "temp#0": 22.4,
         "temp#1": 22.3,
-        "temp#2": 21.7,        
+        "temp#2": 21.7,
         "delta_voltage": 0.015,
     }
 

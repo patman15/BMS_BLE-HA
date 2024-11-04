@@ -24,8 +24,7 @@ from custom_components.bms_ble.const import (
     KEY_CELL_VOLTAGE,
     KEY_DESIGN_CAP,
 )
-
-from .basebms import BaseBMS, BMSsample
+from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 
 BAT_TIMEOUT: Final = 1
 LOGGER: Final = logging.getLogger(__name__)
@@ -33,12 +32,6 @@ LOGGER: Final = logging.getLogger(__name__)
 
 class BMS(BaseBMS):
     """CBT Power Smart BMS class implementation."""
-
-    # setup UUIDs, e.g. for receive: '0000fff1-0000-1000-8000-00805f9b34fb'
-
-    _UUID_RX = normalize_uuid_str("ffe4")
-    _UUID_TX = normalize_uuid_str("ffe9")
-    _UUID_SERVICES = [normalize_uuid_str("ffe5"), normalize_uuid_str("ffe0")]
 
     HEAD: Final = bytes([0xAA, 0x55])
     TAIL_RX: Final = bytes([0x0D, 0x0A])
@@ -81,10 +74,20 @@ class BMS(BaseBMS):
         """Return device information for the battery management system."""
         return {"manufacturer": "CBT Power", "model": "Smart BMS"}
 
-    async def _wait_event(self) -> None:
-        """Wait for data event and clear it."""
-        await self._data_event.wait()
-        self._data_event.clear()
+    @staticmethod
+    def uuid_services() -> list[str]:
+        """Return list of services required by BMS"""
+        return [normalize_uuid_str("ffe5"), normalize_uuid_str("ffe0")]
+
+    @staticmethod
+    def uuid_rx() -> str:
+        """Return characteristic that provides notification/read property."""
+        return "ffe4"
+
+    @staticmethod
+    def uuid_tx() -> str:
+        """Return characteristic that provides write property."""
+        return "ffe9"
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Retrieve BMS data update."""
@@ -146,16 +149,13 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-
-        await self._connect()
-
         data = {}
         resp_cache = {}  # variable to avoid multiple queries with same command
         for field, cmd, pos, size, sign, fct in self._FIELDS:
             LOGGER.debug("(%s) request %s info", self.name, field)
             if resp_cache.get(cmd) is None:
                 await self._client.write_gatt_char(
-                    self._UUID_TX, data=self._gen_frame(cmd.to_bytes(1))
+                    BMS.uuid_tx(), data=self._gen_frame(cmd.to_bytes(1))
                 )
                 try:
                     await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
@@ -182,7 +182,7 @@ class BMS(BaseBMS):
         voltages = {}
         for cmd in self.CELL_VOLTAGE_CMDS:
             await self._client.write_gatt_char(
-                self._UUID_TX, data=self._gen_frame(cmd.to_bytes(1))
+                BMS.uuid_tx(), data=self._gen_frame(cmd.to_bytes(1))
             )
             try:
                 await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)

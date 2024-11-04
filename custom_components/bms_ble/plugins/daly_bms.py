@@ -33,10 +33,6 @@ LOGGER: Final = logging.getLogger(__name__)
 class BMS(BaseBMS):
     """Daly Smart BMS class implementation."""
 
-    # setup UUIDs, e.g. for receive: '0000fff1-0000-1000-8000-00805f9b34fb'
-    _UUID_RX = normalize_uuid_str("fff1")
-    _UUID_TX = normalize_uuid_str("fff2")
-    _UUID_SERVICES = [normalize_uuid_str("fff0")]
     HEAD_READ: Final = bytearray(b"\xD2\x03")
     CMD_INFO: Final = bytearray(b"\x00\x00\x00\x3E\xD7\xB9")
     MOS_INFO: Final = bytearray(b"\x00\x3E\x00\x09\xF7\xA3")
@@ -68,7 +64,7 @@ class BMS(BaseBMS):
         return [
             {
                 "local_name": "DL-*",
-                "service_uuid": BMS._UUID_SERVICES[0],
+                "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             }
         ]
@@ -77,6 +73,21 @@ class BMS(BaseBMS):
     def device_info() -> dict[str, str]:
         """Return device information for the battery management system."""
         return {"manufacturer": "Daly", "model": "Smart BMS"}
+
+    @staticmethod
+    def uuid_services() -> list[str]:
+        """Return list of 128-bit UUIDs of services required by BMS"""
+        return [normalize_uuid_str("fff0")]
+
+    @staticmethod
+    def uuid_rx() -> str:
+        """Return 16-bit UUID of characteristic that provides notification/read property."""
+        return "fff1"
+
+    @staticmethod
+    def uuid_tx() -> str:
+        """Return 16-bit UUID of characteristic that provides write property."""
+        return "fff2"
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         LOGGER.debug("Received BLE data: %s", data)
@@ -100,10 +111,8 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        await self._connect()
-
         await self._client.write_gatt_char(
-            BMS._UUID_TX, data=self.HEAD_READ + self.MOS_INFO
+            BMS.uuid_tx(), data=self.HEAD_READ + self.MOS_INFO
         )
         await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 
@@ -122,7 +131,7 @@ class BMS(BaseBMS):
             }
 
         await self._client.write_gatt_char(
-            BMS._UUID_TX, data=self.HEAD_READ + self.CMD_INFO
+            BMS.uuid_tx(), data=self.HEAD_READ + self.CMD_INFO
         )
 
         await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
