@@ -27,8 +27,7 @@ import logging
 from typing import Any
 
 from bleak.backends.device import BLEDevice
-
-from ..const import (
+from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
     # ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
@@ -41,7 +40,7 @@ from ..const import (
     # ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
 )
-from .basebms import BaseBMS, BMSsample
+from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 
 LOGGER = logging.getLogger(__name__)
 
@@ -49,9 +48,14 @@ LOGGER = logging.getLogger(__name__)
 class BMS(BaseBMS):
     """Dummy battery class implementation."""
 
+    _UUID_SERVICE: str = "#change_me"
+    _UUID_RX: str = "#change_me"
+    _UUID_TX: str = "#change_me"
+
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
         LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
+        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -63,10 +67,10 @@ class BMS(BaseBMS):
         """Return device information for the battery management system."""
         return {"manufacturer": "Dummy Manufacturer", "model": "dummy model"}
 
-    async def disconnect(self) -> None:
-        """Disconnect connection to BMS if active."""
+    def _notification_handler(self, _sender, data: bytearray) -> None:
+        """Gets called when the RX characteristics sends a notify event."""
 
-    async def async_update(self) -> BMSsample:
+    async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         data = {
             ATTR_VOLTAGE: 12,

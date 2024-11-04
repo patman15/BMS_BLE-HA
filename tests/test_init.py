@@ -7,7 +7,7 @@ from .conftest import mock_config, mock_update_exc, mock_update_min
 
 
 async def test_init_fail(
-    monkeypatch, bms_fixture, BTdiscovery, hass: HomeAssistant
+    monkeypatch, patch_bleakclient, bms_fixture, BTdiscovery, hass: HomeAssistant
 ) -> None:
     """Test entries are unloaded correctly."""
 
@@ -18,12 +18,12 @@ async def test_init_fail(
 
     trace_fct = {"stop_called": False}
 
-    async def mock_coord_stop(_self) -> None:
+    async def mock_coord_shutdown(_self) -> None:
         trace_fct["stop_called"] = True
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.BTBmsCoordinator.stop",
-        mock_coord_stop,
+        "custom_components.bms_ble.BTBmsCoordinator.async_shutdown",
+        mock_coord_shutdown,
     )
 
     inject_bluetooth_service_info_bleak(hass, BTdiscovery)
@@ -51,7 +51,7 @@ async def test_init_fail(
 
 
 async def test_unload_entry(
-    monkeypatch, bms_fixture, bool_fixture, BTdiscovery, hass: HomeAssistant
+    monkeypatch, patch_bleakclient, bms_fixture, bool_fixture, BTdiscovery, hass: HomeAssistant
 ) -> None:
     """Test entries are unloaded correctly."""
     unload_fail: bool = bool_fixture
@@ -77,7 +77,7 @@ async def test_unload_entry(
     # run removal of entry (actual test)
     trace_fct = {"stop_called": False}
 
-    def mock_coord_stop(_self) -> None:
+    def mock_coord_shutdown(_self) -> None:
         trace_fct["stop_called"] = True
 
     async def mock_unload_platforms(_self, _entry, _platforms) -> bool:
@@ -90,8 +90,8 @@ async def test_unload_entry(
         )
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.BTBmsCoordinator.stop",
-        mock_coord_stop,
+        "custom_components.bms_ble.BTBmsCoordinator.async_shutdown",
+        mock_coord_shutdown,
     )
     assert await hass.config_entries.async_remove(cfg.entry_id)
 

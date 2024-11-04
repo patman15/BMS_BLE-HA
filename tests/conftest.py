@@ -75,6 +75,17 @@ def bms_data_fixture(request) -> BMSsample:
 
 
 @pytest.fixture
+def patch_bleakclient(monkeypatch) -> None:
+    """Patch BleakClient to a mock as BT is not available.
+    required because BTdiscovery cannot be used to generate a BleakClient in async_setup()
+    """
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
+        MockBleakClient,
+    )
+
+
+@pytest.fixture
 def BTdiscovery() -> BluetoothServiceInfoBleak:
     """Return a valid Bluetooth object for testing."""
     return BluetoothServiceInfoBleak(
@@ -180,10 +191,15 @@ def ogt_bms_fixture(request) -> str:
 class Mock_BMS(BaseBMS):
     """Mock Battery Management System."""
 
+    _UUID_SERVICE = "cafe"
+    _UUID_RX = "feed"
+    _UUID_TX = "cafe"
+
     def __init__(
         self, exc: Exception | None = None, ret_value: BMSsample | None = None
     ) -> None:  # , ble_device, reconnect: bool = False
         """Initialize BMS."""
+        super().__init__(LOGGER, lambda char, data: None, generate_ble_device(address=""), False)
         LOGGER.debug("%s init(), Test except: %s", self.device_id(), str(exc))
         self._exception = exc
         self._ret_value: BMSsample = (
@@ -210,8 +226,10 @@ class Mock_BMS(BaseBMS):
     async def disconnect(self) -> None:
         """Disconnect connection to BMS if active."""
 
-    async def async_update(self) -> BMSsample:
+    async def _async_update(self) -> BMSsample:
         """Update battery status information."""
+        await self._connect()
+
         if self._exception:
             raise self._exception
 
@@ -228,7 +246,7 @@ class MockBleakClient(BleakClient):
         services: Iterable[str] | None = None,
     ) -> None:
         """Mock init."""
-        LOGGER.debug("Mock init")
+        LOGGER.debug("MockBleakClient init")
         super().__init__(
             address_or_ble_device.address
         )  # call with address to avoid backend resolving
@@ -252,6 +270,7 @@ class MockBleakClient(BleakClient):
     async def connect(self, *_args, **_kwargs):
         """Mock connect."""
         assert not self._connected, "connect called, but client already connected."
+        LOGGER.debug("MockBleakClient connecting %s", self._ble_device.address)
         self._connected = True
         return True
 
@@ -283,7 +302,7 @@ class MockBleakClient(BleakClient):
     async def disconnect(self) -> bool:
         """Mock disconnect."""
         assert self._connected, "Disconnect called, but client not connected."
-
+        LOGGER.debug("MockBleakClient disconnecting %s", self._ble_device.address)
         self._connected = False
         if self._disconnect_callback is not None:
             self._disconnect_callback(self)

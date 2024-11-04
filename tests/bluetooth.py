@@ -1,4 +1,4 @@
-"""Test helpers for bluetooth copied from HA 2024.5.0.
+"""Test helpers for bluetooth copied from HA 2024.11.0.
 
 Source: /tests/components/bluetooth/__init__.py
 """
@@ -88,7 +88,7 @@ def inject_advertisement_with_time_and_source_connectable(
         )
     )
 
-
+# NOTE: you cannot init BleakCLient from this information!
 def inject_bluetooth_service_info_bleak(
     hass: HomeAssistant, info: BluetoothServiceInfoBleak
 ) -> None:
@@ -100,7 +100,7 @@ def inject_bluetooth_service_info_bleak(
         service_uuids=info.service_uuids,
         rssi=info.rssi,
     )
-    device = generate_ble_device(
+    device = generate_ble_device(  # type: ignore[no-untyped-call]
         address=info.address,
         name=info.name,
         details={},

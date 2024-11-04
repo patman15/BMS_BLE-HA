@@ -259,7 +259,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
     """Test Jikong BMS data update."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.jikong_bms.BleakClient",
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockJikongBleakClient,
     )
 
@@ -319,7 +319,7 @@ async def test_invalid_response(monkeypatch) -> None:
     """Test data update with BMS returning invalid data."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.jikong_bms.BleakClient",
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockInvalidBleakClient,
     )
 
@@ -336,7 +336,7 @@ async def test_oversized_response(monkeypatch) -> None:
     """Test data update with BMS returning oversized data, result shall still be ok."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.jikong_bms.BleakClient",
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockOversizedBleakClient,
     )
 
@@ -387,7 +387,7 @@ async def test_invalid_device(monkeypatch) -> None:
     """Test data update with BMS returning invalid data."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.jikong_bms.BleakClient",
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockWrongBleakClient,
     )
 

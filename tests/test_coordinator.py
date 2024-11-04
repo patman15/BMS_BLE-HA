@@ -16,11 +16,9 @@ from .conftest import Mock_BMS
 
 
 async def test_update(
-    monkeypatch, bool_fixture, BTdiscovery, hass: HomeAssistant
+    monkeypatch, patch_bleakclient, bool_fixture, BTdiscovery, hass: HomeAssistant
 ) -> None:
     """Test setting up creates the sensors."""
-
-    discovery_info = BTdiscovery
 
     def mock_last_service_info(hass, address, connectable) -> None:
         assert (
@@ -35,9 +33,9 @@ async def test_update(
             mock_last_service_info,
         )
 
-    coordinator = BTBmsCoordinator(hass, discovery_info.device, Mock_BMS())
+    coordinator = BTBmsCoordinator(hass, BTdiscovery.device, Mock_BMS())
 
-    inject_bluetooth_service_info_bleak(hass, discovery_info)
+    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
 
     await coordinator.async_refresh()
     result = coordinator.data
@@ -53,17 +51,18 @@ async def test_update(
     assert coordinator.link_quality == 50
 
     # second update (modify rssi, and check link quality again)
-    discovery_info.rssi = -85
-    inject_bluetooth_service_info_bleak(hass, discovery_info)
+    BTdiscovery.rssi = -85
+    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
     await coordinator.async_refresh()
     result = coordinator.data
 
     assert coordinator.rssi == (-85 if advertisement_avail else None)
     assert coordinator.link_quality == 66
 
-    await coordinator.stop()
+    await coordinator.async_shutdown()
 
-async def test_nodata(BTdiscovery, hass: HomeAssistant) -> None:
+
+async def test_nodata(patch_bleakclient, BTdiscovery, hass: HomeAssistant) -> None:
     """Test if coordinator raises exception in case no data, e.g. invalid CRC, is returned."""
 
     coordinator = BTBmsCoordinator(hass, BTdiscovery.device, Mock_BMS(ret_value={}))
@@ -74,7 +73,7 @@ async def test_nodata(BTdiscovery, hass: HomeAssistant) -> None:
     result = coordinator.data
     assert not coordinator.last_update_success
 
-    await coordinator.stop()
+    await coordinator.async_shutdown()
 
     assert result is None
     assert coordinator.rssi == -61
@@ -82,7 +81,7 @@ async def test_nodata(BTdiscovery, hass: HomeAssistant) -> None:
 
 
 async def test_update_exception(
-    BTdiscovery, mock_coordinator_exception, hass: HomeAssistant
+    patch_bleakclient, BTdiscovery, mock_coordinator_exception, hass: HomeAssistant
 ) -> None:
     """Test if coordinator raises appropriate exception from BMS."""
 

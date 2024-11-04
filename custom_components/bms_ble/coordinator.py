@@ -81,10 +81,10 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
 
         return int(self._link_q.count(True) * 100 / len(self._link_q))
 
-    async def stop(self) -> None:
-        """Stop connection to BMS instance."""
-
-        LOGGER.debug("%s: stopping device", self.name)
+    async def async_shutdown(self) -> None:
+        """Shutdown coordinator and any connection."""
+        LOGGER.debug("%s: shuting down BMS device", self.name)
+        await super().async_shutdown()
         await self._device.disconnect()
 
     async def _async_update_data(self) -> BMSsample:

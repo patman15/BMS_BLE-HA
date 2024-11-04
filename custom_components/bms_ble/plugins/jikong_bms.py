@@ -5,9 +5,7 @@ from collections.abc import Callable
 import logging
 from typing import Any, Final
 
-from bleak import BleakClient
 from bleak.backends.device import BLEDevice
-from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
@@ -26,18 +24,20 @@ from custom_components.bms_ble.const import (
     KEY_TEMP_VALUE,
 )
 
-from .basebms import BaseBMS, BMSsample
+from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 
 BAT_TIMEOUT: Final = 10
 LOGGER: Final = logging.getLogger(__name__)
 
-# setup UUIDs, e.g. for receive: '0000fff1-0000-1000-8000-00805f9b34fb'
-UUID_CHAR: Final = normalize_uuid_str("ffe1")
-UUID_SERVICE: Final = normalize_uuid_str("ffe0")
-
 
 class BMS(BaseBMS):
     """Jikong Smart BMS class implementation."""
+
+    # setup UUIDs, e.g. for receive: '0000fff1-0000-1000-8000-00805f9b34fb'
+
+    _UUID_RX = normalize_uuid_str("ffe1")
+    _UUID_TX = "invalid"
+    _UUID_SERVICE = normalize_uuid_str("ffe0")
 
     HEAD_RSP: Final = bytes([0x55, 0xAA, 0xEB, 0x90])  # header for responses
     HEAD_CMD: Final = bytes([0xAA, 0x55, 0x90, 0xEB])  # header for commands (endiness!)
@@ -47,13 +47,9 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        self._reconnect = reconnect
-        self._ble_device = ble_device
-        assert self._ble_device.name is not None
-        self._client: BleakClient | None = None
+        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
         self._data_final: bytearray | None = None
-        self._data_event = asyncio.Event()
         self._char_write_handle: int | None = None
         self._FIELDS: Final[
             list[tuple[str, int, int, bool, Callable[[int], int | float]]]
@@ -75,7 +71,7 @@ class BMS(BaseBMS):
         """Provide BluetoothMatcher definition."""
         return [
             {
-                "service_uuid": UUID_SERVICE,
+                "service_uuid": BMS._UUID_SERVICE,
                 "connectable": True,
                 "manufacturer_id": 0x0B65,
             },
@@ -85,16 +81,6 @@ class BMS(BaseBMS):
     def device_info() -> dict[str, str]:
         """Return device information for the battery management system."""
         return {"manufacturer": "Jikong", "model": "Smart BMS"}
-
-    async def _wait_event(self) -> None:
-        """Wait for data event and clear it."""
-        await self._data_event.wait()
-        self._data_event.clear()
-
-    def _on_disconnect(self, _client: BleakClient) -> None:
-        """Disconnect callback function."""
-
-        LOGGER.debug("Disconnected from BMS (%s)", self._ble_device.name)
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Retrieve BMS data update."""
@@ -135,72 +121,47 @@ class BMS(BaseBMS):
 
         self._data_event.set()
 
-    async def _connect(self) -> None:
-        """Connect to the BMS and setup notification if not connected."""
-
-        if self._client is None or not self._client.is_connected:
-            LOGGER.debug("Connecting BMS (%s)", self._ble_device.name)
-            if self._client is None:
-                self._client = BleakClient(
-                    self._ble_device,
-                    disconnected_callback=self._on_disconnect,
-                    services=[UUID_SERVICE],
-                )
-            await self._client.connect()
-            char_notify_handle: int | None = None
-            self._char_write_handle = None
-            for service in self._client.services:
-                for char in service.characteristics:
-                    LOGGER.debug(
-                        "(%s) Discovered %s (#%i): %s",
-                        self._ble_device.name,
-                        char.uuid,
-                        char.handle,
-                        char.properties,
-                    )
-                    if char.uuid == UUID_CHAR:
-                        if "notify" in char.properties:
-                            char_notify_handle = char.handle
-                        if (
-                            "write" in char.properties
-                            or "write-without-response" in char.properties
-                        ):
-                            self._char_write_handle = char.handle
-            if char_notify_handle is None or self._char_write_handle is None:
+    async def _init_characteristics(self) -> None:
+        """initialize RX/TX characteristics"""
+        char_notify_handle: int | None = None
+        self._char_write_handle = None
+        for service in self._client.services:
+            for char in service.characteristics:
                 LOGGER.debug(
-                    "(%s) Failed to detect characteristics", self._ble_device.name
+                    "(%s) Discovered %s (#%i): %s",
+                    self._ble_device.name,
+                    char.uuid,
+                    char.handle,
+                    char.properties,
                 )
-                await self._client.disconnect()
-                raise ConnectionError(
-                    f"Failed to detect characteristics from {self._ble_device.name}."
-                )
-            LOGGER.debug(
-                "(%s) Using characteristics handle #%i (notify), #%i (write)",
-                self._ble_device.name,
-                char_notify_handle,
-                self._char_write_handle,
+                if char.uuid == BMS._UUID_RX:
+                    if "notify" in char.properties:
+                        char_notify_handle = char.handle
+                    if (
+                        "write" in char.properties
+                        or "write-without-response" in char.properties
+                    ):
+                        self._char_write_handle = char.handle
+        if char_notify_handle is None or self._char_write_handle is None:
+            LOGGER.debug("(%s) Failed to detect characteristics", self._ble_device.name)
+            await self._client.disconnect()
+            raise ConnectionError(
+                f"Failed to detect characteristics from {self._ble_device.name}."
             )
-            await self._client.start_notify(
-                char_notify_handle or 0, self._notification_handler
-            )
+        LOGGER.debug(
+            "(%s) Using characteristics handle #%i (notify), #%i (write)",
+            self._ble_device.name,
+            char_notify_handle,
+            self._char_write_handle,
+        )
+        await self._client.start_notify(
+            char_notify_handle or 0, self._notification_handler
+        )
 
-            # query device info
-            await self._client.write_gatt_char(
-                self._char_write_handle or 0, data=self._cmd(b"\x97")
-            )
-        else:
-            LOGGER.debug("BMS %s already connected", self._ble_device.name)
-
-    async def disconnect(self) -> None:
-        """Disconnect the BMS and includes stoping notifications."""
-
-        if self._client and self._client.is_connected:
-            LOGGER.debug("Disconnecting BMS (%s)", self._ble_device.name)
-            try:
-                self._data_event.clear()
-                await self._client.disconnect()
-            except BleakError:
-                LOGGER.warning("Disconnect failed!")
+        # query device info
+        await self._client.write_gatt_char(
+            self._char_write_handle or 0, data=self._cmd(b"\x97")
+        )
 
     def _crc(self, frame: bytes) -> int:
         """Calculate Jikong frame CRC."""
@@ -237,11 +198,10 @@ class BMS(BaseBMS):
             for key, idx, size, sign, func in self._FIELDS
         }
 
-    async def async_update(self) -> BMSsample:
+    async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
         await self._connect()
-        assert self._client is not None
 
         if not self._data_event.is_set():
             # request cell info (only if data is not constantly published)
@@ -275,9 +235,5 @@ class BMS(BaseBMS):
                 ATTR_TEMPERATURE,
             },
         )
-
-        if self._reconnect:
-            # disconnect after data update to force reconnect next time (slow!)
-            await self.disconnect()
 
         return data

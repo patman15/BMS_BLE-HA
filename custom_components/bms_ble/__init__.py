@@ -55,7 +55,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> boo
 
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     except:
-        await coordinator.stop()
+        await coordinator.async_shutdown()
         raise
 
     return True
@@ -64,7 +64,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> boo
 async def async_unload_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> bool:
     """Unload a config entry."""
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        await entry.runtime_data.stop()
+        await entry.runtime_data.async_shutdown()
 
     LOGGER.debug("Unloaded config entry: %s, ok? %s!", entry.unique_id, str(unload_ok))
     return unload_ok
