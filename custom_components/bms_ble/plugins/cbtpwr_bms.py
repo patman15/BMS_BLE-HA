@@ -7,7 +7,6 @@ from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
-from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
@@ -24,7 +23,9 @@ from custom_components.bms_ble.const import (
     KEY_CELL_VOLTAGE,
     KEY_DESIGN_CAP,
 )
-from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
+from homeassistant.util.unit_conversion import _HRS_TO_SECS
+
+from .basebms import BaseBMS, BMSsample
 
 BAT_TIMEOUT: Final = 1
 LOGGER: Final = logging.getLogger(__name__)
@@ -76,7 +77,7 @@ class BMS(BaseBMS):
 
     @staticmethod
     def uuid_services() -> list[str]:
-        """Return list of services required by BMS"""
+        """Return list of services required by BMS."""
         return [normalize_uuid_str("ffe5"), normalize_uuid_str("ffe0")]
 
     @staticmethod

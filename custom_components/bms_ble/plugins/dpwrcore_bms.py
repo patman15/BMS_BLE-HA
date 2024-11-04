@@ -24,7 +24,8 @@ from custom_components.bms_ble.const import (
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
 )
-from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
+
+from .basebms import BaseBMS, BMSsample
 
 BAT_TIMEOUT: Final = 10
 LOGGER: Final = logging.getLogger(__name__)
@@ -96,7 +97,7 @@ class BMS(BaseBMS):
 
     @staticmethod
     def uuid_services() -> list[str]:
-        """Return list of 128-bit UUIDs of services required by BMS"""
+        """Return list of 128-bit UUIDs of services required by BMS."""
         return [normalize_uuid_str("fff0")]
 
     @staticmethod

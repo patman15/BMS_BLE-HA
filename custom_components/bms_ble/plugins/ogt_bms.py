@@ -7,6 +7,7 @@ from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
+
 from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
     ATTR_BATTERY_LEVEL,
@@ -22,7 +23,7 @@ from custom_components.bms_ble.const import (
     KEY_CELL_VOLTAGE,
 )
 
-from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
+from .basebms import BaseBMS, BMSsample
 
 LOGGER: Final = logging.getLogger(__name__)
 BAT_TIMEOUT: Final = 1
@@ -114,7 +115,7 @@ class BMS(BaseBMS):
 
     @staticmethod
     def uuid_services() -> list[str]:
-        """Return list of 128-bit UUIDs of services required by BMS"""
+        """Return list of 128-bit UUIDs of services required by BMS."""
         return [normalize_uuid_str("fff0")]
 
     @staticmethod

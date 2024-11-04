@@ -1,9 +1,9 @@
 """Base class defintion for battery management systems (BMS)."""
 
-import asyncio.events
-import logging
 from abc import ABCMeta, abstractmethod
-from collections.abc import Callable, Awaitable
+import asyncio.events
+from collections.abc import Awaitable, Callable
+import logging
 from statistics import fmean
 from typing import Any, Final
 
@@ -11,13 +11,6 @@ from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
-
-from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
-from homeassistant.components.bluetooth.match import (
-    BluetoothMatcherOptional,
-    ble_device_matches,
-)
-from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
@@ -32,6 +25,12 @@ from custom_components.bms_ble.const import (
     KEY_CELL_VOLTAGE,
     KEY_TEMP_VALUE,
 )
+from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
+from homeassistant.components.bluetooth.match import (
+    BluetoothMatcherOptional,
+    ble_device_matches,
+)
+from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 type BMSsample = dict[str, int | float | bool]
 
@@ -98,7 +97,7 @@ class BaseBMS(metaclass=ABCMeta):
     @staticmethod
     @abstractmethod
     def uuid_services() -> list[str]:
-        """Return list of 128-bit UUIDs of services required by BMS"""
+        """Return list of 128-bit UUIDs of services required by BMS."""
 
     @staticmethod
     @abstractmethod
@@ -113,6 +112,7 @@ class BaseBMS(metaclass=ABCMeta):
     @staticmethod
     def _calc_values() -> set[str]:
         """Return values that the BMS cannot provide and need to be calculated.
+
         See calc_values() function for the required input to actually do so.
         """
         return set()

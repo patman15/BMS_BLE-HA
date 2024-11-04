@@ -13,7 +13,7 @@ from homeassistant.const import (  # noqa: F401
 BMS_TYPES: Final = [
     "cbtpwr_bms",
     "daly_bms",
-	"dpwrcore_bms",
+    "dpwrcore_bms",
     "jbd_bms",
     "jikong_bms",
     "ogt_bms",
@@ -26,8 +26,8 @@ UPDATE_INTERVAL: Final = 30  # in seconds
 # attributes (do not change)
 ATTR_CELL_VOLTAGES: Final = "cell_voltages"  # [V]
 ATTR_CURRENT: Final = "current"  # [A]
-ATTR_CYCLE_CHRG: Final = "cycle_charge"  # [Ah]
 ATTR_CYCLE_CAP: Final = "cycle_capacity"  # [Wh]
+ATTR_CYCLE_CHRG: Final = "cycle_charge"  # [Ah]
 ATTR_CYCLES: Final = "cycles"  # [#]
 ATTR_DELTA_VOLTAGE: Final = "delta_voltage"  # [V]
 ATTR_LQ: Final = "link_quality"  # [%]
