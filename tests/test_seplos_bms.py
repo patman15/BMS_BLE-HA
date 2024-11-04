@@ -327,6 +327,12 @@ async def test_oversized_response(monkeypatch, ref_value) -> None:
 
 async def test_invalid_message(monkeypatch) -> None:
     """Test data update with BMS returning error message."""
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.seplos_bms.BAT_TIMEOUT",
+        0.1,
+    )
+
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.basebms.BleakClient",
         MockInvalidMessageBleakClient,

@@ -175,7 +175,7 @@ async def test_invalid_response(monkeypatch, dev_name) -> None:
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.dpwrcore_bms.BAT_TIMEOUT",
-        1,
+        0.1,
     )
 
     monkeypatch.setattr(
@@ -196,7 +196,7 @@ async def test_wrong_crc(monkeypatch, dev_name) -> None:
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.dpwrcore_bms.BAT_TIMEOUT",
-        1,
+        0.1,
     )
 
     monkeypatch.setattr(

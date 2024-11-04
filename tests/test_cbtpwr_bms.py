@@ -205,7 +205,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
     # query again to check already connected state
     result = await bms.async_update()
     assert (
-        bms._client and bms._client.is_connected is not reconnect_fixture
+        bms._client.is_connected is not reconnect_fixture
     )  # noqa: SLF001
 
     await bms.disconnect()
@@ -216,7 +216,7 @@ async def test_invalid_response(monkeypatch) -> None:
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.cbtpwr_bms.BAT_TIMEOUT",
-        0.5,
+        0.1,
     )
 
     monkeypatch.setattr(
@@ -237,7 +237,7 @@ async def test_partly_base_data(monkeypatch) -> None:
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.cbtpwr_bms.BAT_TIMEOUT",
-        0.5,
+        0.1,
     )
 
     monkeypatch.setattr(
@@ -263,7 +263,7 @@ async def test_all_cell_voltages(monkeypatch) -> None:
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.cbtpwr_bms.BAT_TIMEOUT",
-        0.5,
+        0.1,
     )
 
     monkeypatch.setattr(
