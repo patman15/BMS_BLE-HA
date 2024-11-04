@@ -2,7 +2,7 @@
 
 import asyncio.events
 from abc import ABCMeta, abstractmethod
-from collections.abc import Callable
+from collections.abc import Callable, Awaitable
 from statistics import fmean
 from typing import Any, Final
 import logging
@@ -46,7 +46,9 @@ class BaseBMS(metaclass=ABCMeta):
     def __init__(
         self,
         logger: logging.Logger,
-        notification_handler: Callable[[BleakGATTCharacteristic, bytearray], None],
+        notification_handler: Callable[
+            [BleakGATTCharacteristic, bytearray], None | Awaitable[None]
+        ],
         ble_device: BLEDevice,
         reconnect: bool = False,
     ) -> None:
@@ -157,7 +159,6 @@ class BaseBMS(metaclass=ABCMeta):
             return
 
         self.logger.debug("Connecting BMS (%s)", self._ble_device.name)
-
         await self._client.connect()
         await self._init_characteristics()
 
