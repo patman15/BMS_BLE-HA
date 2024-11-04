@@ -7,7 +7,7 @@ from uuid import UUID
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
-from custom_components.bms_ble.plugins.pwrcore_bms import BMS
+from custom_components.bms_ble.plugins.dpwrcore_bms import BMS
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -19,7 +19,7 @@ def patch_dev_name(request) -> str:
     return request.param + "MockBLEDevice_C0FE"
 
 
-class MockPwrcoreBleakClient(MockBleakClient):
+class MockDPwrcoreBleakClient(MockBleakClient):
     """Emulate a D-powercore BMS BleakClient."""
 
     PAGE_LEN = 20
@@ -75,7 +75,8 @@ class MockPwrcoreBleakClient(MockBleakClient):
             )
 
 
-class MockWrongCRCBleakClient(MockPwrcoreBleakClient):
+class MockWrongCRCBleakClient(MockDPwrcoreBleakClient):
+    """Emulate a D-powercore BMS BleakClient that replies with wrong CRC"""    
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
@@ -101,8 +102,8 @@ class MockWrongCRCBleakClient(MockPwrcoreBleakClient):
         return bytearray()
 
 
-class MockInvalidBleakClient(MockPwrcoreBleakClient):
-    """Emulate a D-powercore BMS BleakClient."""
+class MockInvalidBleakClient(MockDPwrcoreBleakClient):
+    """Emulate a D-powercore BMS BleakClient replying garbage."""
 
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
@@ -122,7 +123,7 @@ async def test_update(monkeypatch, dev_name, reconnect_fixture) -> None:
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockPwrcoreBleakClient,
+        MockDPwrcoreBleakClient,
     )
 
     bms = BMS(
@@ -173,7 +174,7 @@ async def test_invalid_response(monkeypatch, dev_name) -> None:
     """Test data update with BMS returning invalid data."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.pwrcore_bms.BAT_TIMEOUT",
+        "custom_components.bms_ble.plugins.dpwrcore_bms.BAT_TIMEOUT",
         1,
     )
 
@@ -194,7 +195,7 @@ async def test_wrong_crc(monkeypatch, dev_name) -> None:
     """Test data update with BMS returning invalid data."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.pwrcore_bms.BAT_TIMEOUT",
+        "custom_components.bms_ble.plugins.dpwrcore_bms.BAT_TIMEOUT",
         1,
     )
 

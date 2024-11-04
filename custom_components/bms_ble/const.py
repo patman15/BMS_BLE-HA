@@ -12,10 +12,10 @@ from homeassistant.const import (  # noqa: F401
 
 BMS_TYPES: Final = [
     "daly_bms",
+	"dpwrcore_bms",
     "jbd_bms",
     "jikong_bms",
     "ogt_bms",
-	"pwrcore_bms",
     "seplos_bms",
 ]  # available BMS types
 DOMAIN: Final = "bms_ble"
