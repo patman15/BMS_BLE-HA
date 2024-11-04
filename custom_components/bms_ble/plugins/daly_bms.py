@@ -36,7 +36,7 @@ class BMS(BaseBMS):
     # setup UUIDs, e.g. for receive: '0000fff1-0000-1000-8000-00805f9b34fb'
     _UUID_RX = normalize_uuid_str("fff1")
     _UUID_TX = normalize_uuid_str("fff2")
-    _UUID_SERVICE = normalize_uuid_str("fff0")
+    _UUID_SERVICES = [normalize_uuid_str("fff0")]
     HEAD_READ: Final = bytearray(b"\xD2\x03")
     CMD_INFO: Final = bytearray(b"\x00\x00\x00\x3E\xD7\xB9")
     MOS_INFO: Final = bytearray(b"\x00\x3E\x00\x09\xF7\xA3")
@@ -68,7 +68,7 @@ class BMS(BaseBMS):
         return [
             {
                 "local_name": "DL-*",
-                "service_uuid": BMS._UUID_SERVICE,
+                "service_uuid": BMS._UUID_SERVICES[0],
                 "connectable": True,
             }
         ]

@@ -1,11 +1,11 @@
 """Base class defintion for battery management systems (BMS)."""
 
 import asyncio.events
+import logging
 from abc import ABCMeta, abstractmethod
 from collections.abc import Callable, Awaitable
 from statistics import fmean
 from typing import Any, Final
-import logging
 
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -39,7 +39,7 @@ type BMSsample = dict[str, int | float | bool]
 class BaseBMS(metaclass=ABCMeta):
     """Base class for battery management system."""
 
-    _UUID_SERVICE: str = ""
+    _UUID_SERVICES: list[str] = []
     _UUID_RX: str = ""
     _UUID_TX: str = ""
 
@@ -53,6 +53,7 @@ class BaseBMS(metaclass=ABCMeta):
         reconnect: bool = False,
     ) -> None:
         """Intialize the BMS.
+
         logger: logger for the BMS instance
         notification_handler: the callback used for notifications from 'UUID_RX' characteristics
         ble_device: the Bleak device to connect to
@@ -65,7 +66,7 @@ class BaseBMS(metaclass=ABCMeta):
         self._client: Final = BleakClient(
             self._ble_device,
             disconnected_callback=self._on_disconnect,
-            services=[self._UUID_SERVICE],
+            services=[*self._UUID_SERVICES],
         )
         self.name: Final[str] = self._ble_device.name or "undefined"
         self._data_event = asyncio.Event()
@@ -151,7 +152,7 @@ class BaseBMS(metaclass=ABCMeta):
         """Connect to the BMS and setup notification if not connected."""
 
         assert (
-            self._UUID_SERVICE != "" and self._UUID_RX != "" and self._UUID_TX != ""
+            self._UUID_SERVICES != "" and self._UUID_RX != "" and self._UUID_TX != ""
         ), "You must define _UUID_SERVICE, _UUID_RX, and _UUID_TX in the subclass"
 
         if self._client.is_connected:
@@ -180,9 +181,7 @@ class BaseBMS(metaclass=ABCMeta):
 
     @abstractmethod
     async def _async_update(self) -> BMSsample:
-        """Returns a dictionary of BMS values, where the keys need to match
-        the keys in the SENSOR_TYPES list.
-        """
+        """Return a dictionary of BMS values, where the keys need to match the keys in the SENSOR_TYPES list."""
 
     async def async_update(self) -> BMSsample:
         """Retrieve updated values from the BMS using method of the subclass."""

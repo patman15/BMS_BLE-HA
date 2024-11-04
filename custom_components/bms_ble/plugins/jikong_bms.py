@@ -37,7 +37,7 @@ class BMS(BaseBMS):
 
     _UUID_RX = normalize_uuid_str("ffe1")
     _UUID_TX = "invalid"
-    _UUID_SERVICE = normalize_uuid_str("ffe0")
+    _UUID_SERVICES = [normalize_uuid_str("ffe0")]
 
     HEAD_RSP: Final = bytes([0x55, 0xAA, 0xEB, 0x90])  # header for responses
     HEAD_CMD: Final = bytes([0xAA, 0x55, 0x90, 0xEB])  # header for commands (endiness!)
@@ -71,7 +71,7 @@ class BMS(BaseBMS):
         """Provide BluetoothMatcher definition."""
         return [
             {
-                "service_uuid": BMS._UUID_SERVICE,
+                "service_uuid": BMS._UUID_SERVICES[0],
                 "connectable": True,
                 "manufacturer_id": 0x0B65,
             },
