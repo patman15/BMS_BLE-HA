@@ -1,6 +1,7 @@
 """Base class defintion for battery management systems (BMS)."""
 
 import asyncio.events
+import logging
 from abc import ABCMeta, abstractmethod
 from collections.abc import Callable, Awaitable
 from statistics import fmean
