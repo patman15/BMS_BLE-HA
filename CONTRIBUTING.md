@@ -81,6 +81,13 @@ class BMS(BaseBMS):
         """Return 16-bit UUID of characteristic that provides write property."""
         return "#changeme"
 
+    @staticmethod
+    def _calc_values() -> set[str]:
+        return {
+            ATTR_POWER,
+            ATTR_BATTERY_CHARGING,
+        }  # calculate further values from BMS provided set ones
+
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Gets called when the RX characteristics sends a notify event."""
 
@@ -93,10 +100,7 @@ class BMS(BaseBMS):
         data = {
             ATTR_VOLTAGE: 12,
             ATTR_CURRENT: 1.5,
-        }  # set fixed values for dummy battery, replace with implementation in _notification_handler
+        }  # set fixed values, replace with implementation in _notification_handler
 
-        self.calc_values(
-            data, {ATTR_POWER, ATTR_BATTERY_CHARGING}
-        )  # calculate further values from previously set ones
         return data
 ```
