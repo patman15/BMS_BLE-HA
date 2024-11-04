@@ -33,6 +33,7 @@ CRYPT_SEQ: Final = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
 
 class BMS(BaseBMS):
     """Offgridtec LiFePO4 Smart Pro type A and type B battery class implementation."""
+
     IDX_NAME: Final = 0
     IDX_LEN: Final = 1
     IDX_FCT: Final = 2
@@ -126,6 +127,10 @@ class BMS(BaseBMS):
         """Return 16-bit UUID of characteristic that provides write property."""
         return "fff6"
 
+    @staticmethod
+    def _calc_values() -> set[str]:
+        return {ATTR_CYCLE_CAP, ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_DELTA_VOLTAGE}
+
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         self._values = {}
@@ -139,11 +144,6 @@ class BMS(BaseBMS):
                 )
             if key > 48 and f"{KEY_CELL_VOLTAGE}{64-key}" not in self._values:
                 break
-
-        self.calc_values(
-            self._values,
-            {ATTR_CYCLE_CAP, ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_DELTA_VOLTAGE},
-        )
 
         # remove remaining runtime if battery is charging
         if self._values.get(ATTR_RUNTIME) == 0xFFFF * 60:

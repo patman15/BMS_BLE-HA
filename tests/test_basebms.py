@@ -15,7 +15,7 @@ from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 def test_calc_missing_values(bms_data_fixture: BMSsample) -> None:
     """Check if missing data is correctly calculated."""
     bms_data = ref = bms_data_fixture
-    BaseBMS.calc_values(
+    BaseBMS._add_missing_values(
         bms_data,
         {
             ATTR_BATTERY_CHARGING,

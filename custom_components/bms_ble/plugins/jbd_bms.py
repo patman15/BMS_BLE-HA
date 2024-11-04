@@ -31,6 +31,7 @@ LOGGER: Final = logging.getLogger(__name__)
 
 class BMS(BaseBMS):
     """JBD Smart BMS class implementation."""
+
     HEAD_RSP: Final = bytes([0xDD])  # header for responses
     HEAD_CMD: Final = bytes([0xDD, 0xA5])  # read header for commands
     INFO_LEN: Final = 7  # minimum frame size
@@ -82,6 +83,16 @@ class BMS(BaseBMS):
         """Return 16-bit UUID of characteristic that provides write property."""
         return "ff02"
 
+    @staticmethod
+    def _calc_values() -> set[str]:
+        return {
+            ATTR_POWER,
+            ATTR_BATTERY_CHARGING,
+            ATTR_CYCLE_CAP,
+            ATTR_RUNTIME,
+            ATTR_DELTA_VOLTAGE,
+            ATTR_TEMPERATURE,
+        }
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         if self._data_event.is_set():
@@ -189,17 +200,5 @@ class BMS(BaseBMS):
                 )
 
             data.update(dec_fct(self._data_final))
-
-        self.calc_values(
-            data,
-            {
-                ATTR_POWER,
-                ATTR_BATTERY_CHARGING,
-                ATTR_CYCLE_CAP,
-                ATTR_RUNTIME,
-                ATTR_DELTA_VOLTAGE,
-                ATTR_TEMPERATURE,
-            },
-        )
 
         return data

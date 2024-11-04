@@ -89,6 +89,16 @@ class BMS(BaseBMS):
         """Return characteristic that provides write property."""
         return "ffe9"
 
+    @staticmethod
+    def _calc_values() -> set[str]:
+        return {
+            ATTR_POWER,
+            ATTR_BATTERY_CHARGING,
+            ATTR_DELTA_VOLTAGE,
+            ATTR_CYCLE_CAP,
+            ATTR_TEMPERATURE,
+        }
+
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Retrieve BMS data update."""
 
@@ -203,17 +213,5 @@ class BMS(BaseBMS):
         # remove runtime if not discharging
         if data.get(ATTR_CURRENT, 0) >= 0:
             data.pop(ATTR_RUNTIME, None)
-
-        self.calc_values(
-            data,
-            {
-                ATTR_POWER,
-                ATTR_BATTERY_CHARGING,
-                ATTR_DELTA_VOLTAGE,
-                ATTR_CYCLE_CAP,
-                #                ATTR_RUNTIME, # is available?
-                ATTR_TEMPERATURE,
-            },
-        )
 
         return data

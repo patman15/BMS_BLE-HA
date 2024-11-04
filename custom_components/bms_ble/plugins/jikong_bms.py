@@ -90,6 +90,16 @@ class BMS(BaseBMS):
         """Return 16-bit UUID of characteristic that provides write property."""
         return "ffe1"
 
+    @staticmethod
+    def _calc_values() -> set[str]:
+        return {
+            ATTR_POWER,
+            ATTR_BATTERY_CHARGING,
+            ATTR_CYCLE_CAP,
+            ATTR_RUNTIME,
+            ATTR_TEMPERATURE,
+        }
+
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Retrieve BMS data update."""
 
@@ -231,16 +241,5 @@ class BMS(BaseBMS):
 
         data = self._decode_data(self._data_final)
         data.update(self._cell_voltages(self._data_final, int(data[KEY_CELL_COUNT])))
-
-        self.calc_values(
-            data,
-            {
-                ATTR_POWER,
-                ATTR_BATTERY_CHARGING,
-                ATTR_CYCLE_CAP,
-                ATTR_RUNTIME,
-                ATTR_TEMPERATURE,
-            },
-        )
 
         return data

@@ -110,13 +110,22 @@ class BaseBMS(metaclass=ABCMeta):
     def uuid_tx() -> str:
         """Return 16-bit UUID of characteristic that provides write property."""
 
+    @staticmethod
+    def _calc_values() -> set[str]:
+        """Return values that the BMS cannot provide and need to be calculated.
+        See calc_values() function for the required input to actually do so.
+        """
+        return set()
+
     @classmethod
-    def calc_values(cls, data: BMSsample, values: set[str]):
+    def _add_missing_values(cls, data: BMSsample, values: set[str]):
         """Calculate missing BMS values from existing ones.
 
         data: data dictionary from BMS
         values: list of values to add to the dictionary
         """
+        if not values:
+            return
 
         def can_calc(value: str, using: frozenset[str]) -> bool:
             """Check value to add does not exist, is requested, and needed data is available."""
@@ -195,6 +204,8 @@ class BaseBMS(metaclass=ABCMeta):
         await self._connect()
 
         data = await self._async_update()
+
+        self._add_missing_values(data, self._calc_values())
 
         if self._reconnect:
             # disconnect after data update to force reconnect next time (slow!)

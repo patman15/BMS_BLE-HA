@@ -107,7 +107,7 @@ class BMS(BaseBMS):
     def device_info() -> dict[str, str]:
         """Return device information for the battery management system."""
         return {"manufacturer": "Seplos", "model": "Smart BMS V3"}
-    
+
     # setup UUIDs
     #    serv 0000fff0-0000-1000-8000-00805f9b34fb
     # 	 char 0000fff1-0000-1000-8000-00805f9b34fb (#16): ['read', 'notify']
@@ -126,6 +126,10 @@ class BMS(BaseBMS):
     def uuid_tx() -> str:
         """Return 16-bit UUID of characteristic that provides write property."""
         return "fff2"
+
+    @staticmethod
+    def _calc_values() -> set[str]:
+        return {ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_RUNTIME}
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Retrieve BMS data update."""
@@ -285,10 +289,6 @@ class BMS(BaseBMS):
                     / 10
                     for idx in range(4)
                 }
-
-        self.calc_values(
-            data, {ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_RUNTIME}
-        )
 
         self._data_final.clear()
 

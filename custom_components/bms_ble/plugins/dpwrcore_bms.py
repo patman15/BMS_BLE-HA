@@ -45,6 +45,7 @@ class Cmd(Enum):
 
 class BMS(BaseBMS):
     """D-powercore Smart BMS class implementation."""
+
     PAGE_LEN: Final = 20
     MAX_CELLS: Final = 32
 
@@ -76,8 +77,16 @@ class BMS(BaseBMS):
     def matcher_dict_list() -> list[dict[str, Any]]:
         """Provide BluetoothMatcher definition."""
         return [
-            {"local_name": "DXB-*", "service_uuid": BMS.uuid_services()[0], "connectable": True},
-            {"local_name": "TBA-*", "service_uuid": BMS.uuid_services()[0], "connectable": True},
+            {
+                "local_name": "DXB-*",
+                "service_uuid": BMS.uuid_services()[0],
+                "connectable": True,
+            },
+            {
+                "local_name": "TBA-*",
+                "service_uuid": BMS.uuid_services()[0],
+                "connectable": True,
+            },
         ]
 
     @staticmethod
@@ -99,6 +108,16 @@ class BMS(BaseBMS):
     def uuid_tx() -> str:
         """Return 16-bit UUID of characteristic that provides write property."""
         return "fff3"
+
+    @staticmethod
+    def _calc_values() -> set[str]:
+        return {
+            ATTR_BATTERY_CHARGING,
+            ATTR_CYCLE_CAP,
+            ATTR_DELTA_VOLTAGE,
+            ATTR_POWER,
+            ATTR_RUNTIME,
+        }
 
     async def _notification_handler(self, _sender, data: bytearray) -> None:
         LOGGER.debug("%s: Received BLE data: %s", self.name, data)
@@ -214,16 +233,5 @@ class BMS(BaseBMS):
                 data.update(
                     self._cell_voltages(self._data_final, int(data[KEY_CELL_COUNT]))
                 )
-
-        self.calc_values(
-            data,
-            {
-                ATTR_BATTERY_CHARGING,
-                ATTR_CYCLE_CAP,
-                ATTR_DELTA_VOLTAGE,
-                ATTR_POWER,
-                ATTR_RUNTIME,
-            },
-        )
 
         return data
