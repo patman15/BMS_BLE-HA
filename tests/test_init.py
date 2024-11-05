@@ -51,7 +51,12 @@ async def test_init_fail(
 
 
 async def test_unload_entry(
-    monkeypatch, patch_bleakclient, bms_fixture, bool_fixture, BTdiscovery, hass: HomeAssistant
+    monkeypatch,
+    patch_bleakclient,
+    bms_fixture,
+    bool_fixture,
+    BTdiscovery,
+    hass: HomeAssistant,
 ) -> None:
     """Test entries are unloaded correctly."""
     unload_fail: bool = bool_fixture
@@ -67,18 +72,8 @@ async def test_unload_entry(
         mock_update_min,
     )
 
-    assert await hass.config_entries.async_setup(cfg.entry_id)
-    await hass.async_block_till_done()
-
-    # verify it is loaded
-    assert cfg in hass.config_entries.async_entries()
-    assert cfg.state is ConfigEntryState.LOADED
-
-    # run removal of entry (actual test)
-    trace_fct = {"stop_called": False}
-
     def mock_coord_shutdown(_self) -> None:
-        trace_fct["stop_called"] = True
+        trace_fct["shutdown_called"] = True
 
     async def mock_unload_platforms(_self, _entry, _platforms) -> bool:
         return False
@@ -93,16 +88,25 @@ async def test_unload_entry(
         "custom_components.bms_ble.BTBmsCoordinator.async_shutdown",
         mock_coord_shutdown,
     )
-    assert await hass.config_entries.async_remove(cfg.entry_id)
 
-    assert (
-        trace_fct["stop_called"] is not unload_fail
-    ), "Failed to call coordinator stop()."
+    assert await hass.config_entries.async_setup(cfg.entry_id)
+    await hass.async_block_till_done()
+
+    # verify it is loaded
+    assert cfg in hass.config_entries.async_entries()
+    assert cfg.state is ConfigEntryState.LOADED
+
+    # run removal of entry (actual test)
+    trace_fct = {"shutdown_called": False}
+
+    assert await hass.config_entries.async_remove(cfg.entry_id)
+    await hass.async_block_till_done()
+
+    assert trace_fct["shutdown_called"], "Failed to call coordinator async_shutdown()."
     assert (
         cfg not in hass.config_entries.async_entries()
     ), "Failed to remove configuration entry."
     # Assert platforms unloaded
-    await hass.async_block_till_done()
     assert (
         len(hass.states.async_all(["sensor", "binary_sensor"])) == 0
     ), "Failed to remove platforms."
