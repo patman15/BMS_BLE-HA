@@ -21,9 +21,9 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - CBT Power BMS (Creabest batteries)
 - D-powercore BMS (show up as `DXB-`&#x2026;), Fliteboard batteries (show up as `TBA-`&#x2026;)
 - Daly BMS (show up as `DL-`&#x2026;)
+- E&J Technology BMS, Supervolt v1 batteries
 - JK BMS, Jikong, (HW version >=11 required)
-- JBD BMS, Jiabaida
-- Supervolt batteries (JBD BMS)
+- JBD BMS, Jiabaida, Supervolt v3 batteries
 - Seplos v3 (show up as `SP0`&#x2026; or `SP1`&#x2026;)
 
 New device types can be easily added via the plugin architecture of this integration. See the [contribution guidelines](CONTRIBUTING.md) for details.
