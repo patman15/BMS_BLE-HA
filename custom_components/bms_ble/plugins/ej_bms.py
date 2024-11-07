@@ -72,8 +72,7 @@ class BMS(BaseBMS):
         """Provide BluetoothMatcher definition."""
         return [
             {
-                "local_name": "libatt",
-                "service_uuid": BMS.uuid_services()[0],
+                "local_name": "libatt*",
                 "manufacturer_id": 21320,
                 "connectable": True,
             }
@@ -82,7 +81,7 @@ class BMS(BaseBMS):
     @staticmethod
     def device_info() -> dict[str, str]:
         """Return device information for the battery management system."""
-        return {"manufacturer": "E&J Technology"}
+        return {"manufacturer": "E&J Technology", "model": "Smart BMS"}
 
     @staticmethod
     def uuid_services() -> list[str]:

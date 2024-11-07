@@ -39,8 +39,7 @@
       "service_uuid": "0000ffb0-0000-1000-8000-00805f9b34fb"
     },
     {
-      "local_name": "libatt",
-      "service_uuid": "6e400001-b5a3-f393-e0a9-e50e24dcca9e",
+      "local_name": "libatt*",
       "manufacturer_id": 21320
     }
   ],
