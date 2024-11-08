@@ -9,15 +9,15 @@ from bleak.uuids import normalize_uuid_str
 
 from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
-    # ATTR_BATTERY_LEVEL,
+    ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
-    # ATTR_CYCLE_CAP,
-    # ATTR_CYCLE_CHRG,
-    # ATTR_CYCLES,
+    ATTR_CYCLE_CAP,
+    ATTR_CYCLE_CHRG,
+    ATTR_CYCLES,
     ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
-    # ATTR_RUNTIME,
-    # ATTR_TEMPERATURE,
+    ATTR_RUNTIME,
+    ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
 )
@@ -46,11 +46,10 @@ class BMS(BaseBMS):
         ] = [
             (ATTR_VOLTAGE, 12, 2, False, lambda x: float(x / 1000)),
             (ATTR_CURRENT, 48, 4, True, lambda x: float(x / 1000)),
-            # (ATTR_TEMPERATURE, 0x09, 4, 2, False, lambda x: x),
-            # (ATTR_BATTERY_LEVEL, 0x0A, 4, 1, False, lambda x: x),
-            # (KEY_DESIGN_CAP, 0x15, 4, 2, False, lambda x: x),
-            # (ATTR_CYCLES, 0x15, 6, 2, False, lambda x: x),
-            # (ATTR_RUNTIME, 0x0C, 14, 2, False, lambda x: float(x * _HRS_TO_SECS / 100)),
+            (ATTR_TEMPERATURE, 56, 2, False, lambda x: x),
+            (ATTR_BATTERY_LEVEL, 90, 2, False, lambda x: x),
+            (ATTR_CYCLE_CAP, 62, 2, False, lambda x: float(x / 100)),
+            (ATTR_CYCLES, 96, 4, False, lambda x: x),
         ]
 
     @staticmethod
@@ -89,7 +88,9 @@ class BMS(BaseBMS):
         return {
             ATTR_BATTERY_CHARGING,
             ATTR_DELTA_VOLTAGE,
+            ATTR_CYCLE_CHRG,
             ATTR_POWER,
+            ATTR_RUNTIME,
         }  # calculate further values from BMS provided set ones
 
     def _notification_handler(self, _sender, data: bytearray) -> None:

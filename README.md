@@ -23,6 +23,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Daly BMS (show up as `DL-`&#x2026;)
 - JK BMS, Jikong, (HW version >=11 required)
 - JBD BMS, Jiabaida
+- Redodo batteries
 - Supervolt batteries (JBD BMS)
 - Seplos v3 (show up as `SP0`&#x2026; or `SP1`&#x2026;)
 
@@ -143,7 +144,7 @@ Once pairing is done, the integration should automatically detect the BMS.
 
 
 ## Thanks to
-> [@gkathan](https://github.com/patman15/BMS_BLE-HA/issues/2), [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22), [@Goaheadz](https://github.com/patman15/BMS_BLE-HA/issues/24), [@alros100, @majonessyltetoy](https://github.com/patman15/BMS_BLE-HA/issues/52), [@snipah, @Gruni22](https://github.com/patman15/BMS_BLE-HA/issues/59)
+> [@gkathan](https://github.com/patman15/BMS_BLE-HA/issues/2), [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22), [@Goaheadz](https://github.com/patman15/BMS_BLE-HA/issues/24), [@alros100, @majonessyltetoy](https://github.com/patman15/BMS_BLE-HA/issues/52), [@snipah, @Gruni22](https://github.com/patman15/BMS_BLE-HA/issues/59), [@azisto](https://github.com/patman15/BMS_BLE-HA/issues/78)
 
 for helping with making the integration better.
 
