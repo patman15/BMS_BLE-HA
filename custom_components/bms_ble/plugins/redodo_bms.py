@@ -137,7 +137,6 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        LOGGER.debug("(%s) replace with command to UUID %s", self.name, BMS.uuid_tx())
         await self._client.write_gatt_char(
             BMS.uuid_tx(), data=b"\x00\x00\x04\x01\x13\x55\xaa\x17"
         )
