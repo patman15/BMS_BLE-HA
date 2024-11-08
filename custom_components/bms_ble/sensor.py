@@ -236,6 +236,7 @@ class LQSensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverride
     """The BMS link quality sensor."""
 
     _attr_has_entity_name = True
+    _attr_available = True  # always available
     _attr_native_value = 0
 
     def __init__(
@@ -252,7 +253,6 @@ class LQSensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverride
         """Update BMS link quality sensor value."""
 
         self._attr_native_value = self._bms.link_quality
-        self._attr_available = self._bms.rssi is not None
 
         LOGGER.debug(
             "%s: Link quality: %i %%",
