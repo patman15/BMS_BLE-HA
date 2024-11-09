@@ -2,7 +2,7 @@
 
 import asyncio
 import logging
-from typing import Any, Final, Callable
+from typing import Any, Callable, Final
 
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
