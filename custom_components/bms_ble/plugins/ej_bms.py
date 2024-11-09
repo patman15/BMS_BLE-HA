@@ -126,14 +126,15 @@ class BMS(BaseBMS):
             )
             return
 
-        # if self._crc(data) != int(data[-3:-1], 16):
-        #     LOGGER.debug(
-        #         "%s: incorrect checksum 0x%X != 0x%X",
-        #         self.name,
-        #         int(self._data[-3:-1], 16),
-        #         self._crc(data),
-        #     )
-        #     return
+        crc: Final = self._crc(data[1:-3])
+        if crc != int(data[-3:-1], 16):
+            LOGGER.debug(
+                "%s: incorrect checksum 0x%X != 0x%X",
+                self.name,
+                int(data[-3:-1], 16),
+                crc,
+            )
+            return
 
         LOGGER.debug(
             "%s: address: 0x%X, commnad 0x%X, version: 0x%X",
@@ -145,8 +146,8 @@ class BMS(BaseBMS):
         self._data = data
         self._data_event.set()
 
-    # def _crc(self, data: bytes) -> int:
-    #     return sum(data) + 8  # FIXME!
+    def _crc(self, data: bytes) -> int:
+        return (sum(data) ^ 0xFF) & 0xFF
 
     def _cell_voltages(self, data: bytearray) -> dict[str, float]:
         """Return cell voltages from status message."""
