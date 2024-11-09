@@ -78,7 +78,9 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "power": -38.108,
         "battery_charging": False,
         "battery_level": 65,
-        "cycle_capacity": 68.89,
+        "cycle_charge": 68.89,
+        "cycle_capacity": 1829.443,
+        "runtime": 172825,
         "temperature": 23,
         "cycles": 3,
     }

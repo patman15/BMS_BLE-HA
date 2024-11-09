@@ -48,7 +48,7 @@ class BMS(BaseBMS):
             (ATTR_CURRENT, 48, 4, True, lambda x: float(x / 1000)),
             (ATTR_TEMPERATURE, 56, 2, False, lambda x: x),
             (ATTR_BATTERY_LEVEL, 90, 2, False, lambda x: x),
-            (ATTR_CYCLE_CAP, 62, 2, False, lambda x: float(x / 100)),
+            (ATTR_CYCLE_CHRG, 62, 2, False, lambda x: float(x / 100)),
             (ATTR_CYCLES, 96, 4, False, lambda x: x),
         ]
 
@@ -88,7 +88,7 @@ class BMS(BaseBMS):
         return {
             ATTR_BATTERY_CHARGING,
             ATTR_DELTA_VOLTAGE,
-            ATTR_CYCLE_CHRG,
+            ATTR_CYCLE_CAP,
             ATTR_POWER,
             ATTR_RUNTIME,
         }  # calculate further values from BMS provided set ones
