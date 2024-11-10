@@ -22,7 +22,6 @@ BMS_TYPES: Final = [
 DOMAIN: Final = "bms_ble"
 LOGGER: Final = logging.getLogger(__package__)
 UPDATE_INTERVAL: Final = 30  # [s]
-MAX_CONNECT_RETRIES: Final = 4  # [#]
 
 # attributes (do not change)
 ATTR_CELL_VOLTAGES: Final = "cell_voltages"  # [V]

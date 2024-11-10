@@ -25,7 +25,6 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
     KEY_TEMP_VALUE,
-    MAX_CONNECT_RETRIES,
 )
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.components.bluetooth.match import (
@@ -182,7 +181,6 @@ class BaseBMS(metaclass=ABCMeta):
             client_class=BleakClient,
             device=self._ble_device,
             name=self._ble_device.address,
-            max_attempts=MAX_CONNECT_RETRIES,
             disconnected_callback=self._on_disconnect,
             services=[*self.uuid_services()],
         )
