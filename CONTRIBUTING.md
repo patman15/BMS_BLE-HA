@@ -20,16 +20,18 @@ Note: in order to keep maintainability of this integration, pull requests are re
 In short, when you submit code changes, your submissions are understood to be under the same [LGPL-2.1 license](LICENSE) that covers the project. Feel free to contact the maintainers if that's a concern.
 
 ### Dummy BMS Example
-Note: In order for the example to work, you need to set the UUIDs of the service, the characteristic providing notifications, and the characteristic for sending commands to. While the device must be in Bluetooth range, the actual communication does not matter. Always the fixed values in the code will be shown.
+Note: In order for the [example](custom_components/bms_ble/plugins/dummy_bms.py) to work, you need to set the UUIDs of the service, the characteristic providing notifications, and the characteristic for sending commands to. While the device must be in Bluetooth range, the actual communication does not matter. Always the fixed values in the code will be shown.
 
 ```python
 """Module to support Dummy BMS."""
 
+# import asyncio
 import logging
 from typing import Any
 
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
+
 from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
     # ATTR_BATTERY_LEVEL,
@@ -43,9 +45,11 @@ from custom_components.bms_ble.const import (
     # ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
 )
-from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
+
+from .basebms import BaseBMS, BMSsample
 
 LOGGER = logging.getLogger(__name__)
+BAT_TIMEOUT = 10
 
 
 class BMS(BaseBMS):
@@ -68,7 +72,7 @@ class BMS(BaseBMS):
 
     @staticmethod
     def uuid_services() -> list[str]:
-        """Return list of 128-bit UUIDs of services required by BMS"""
+        """Return list of 128-bit UUIDs of services required by BMS."""
         return [normalize_uuid_str("0000")]  # change service UUID here!
 
     @staticmethod
@@ -89,18 +93,18 @@ class BMS(BaseBMS):
         }  # calculate further values from BMS provided set ones
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
-        """Gets called when the RX characteristics sends a notify event."""
+        """Handle the RX characteristics notify event (new data arrives)."""
+        # LOGGER.debug("%s: Received BLE data: %s", self.name, data.hex(' '))
+        # self._data_event.set()
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         LOGGER.debug("(%s) replace with command to UUID %s", self.name, BMS.uuid_tx())
-        # await self._client.write_gatt_char(BMS.uuid_tx(), data=b"<some_command>"")
+        # await self._client.write_gatt_char(BMS.uuid_tx(), data=b"<some_command>")
         # await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 
-        data = {
+        return {
             ATTR_VOLTAGE: 12,
             ATTR_CURRENT: 1.5,
         }  # set fixed values, replace with implementation in _notification_handler
-
-        return data
 ```
