@@ -54,6 +54,7 @@
   "integration_type": "device",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
+  "loggers": ["bleak_retry_connector"],
   "requirements": [],
   "version": "1.9.0"
 }

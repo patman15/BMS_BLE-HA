@@ -45,7 +45,7 @@ Platform | Description | Unit | Details
 `sensor` | stored energy | `Wh` | currently stored energy
 `sensor` | temperature | `°C` | individual temperature values are available as attribute to this sensor, if the BMS supports multiple sensors
 `sensor` | voltage | `V` | overall battery voltage
-`sensor`* | link quality  | `%` | successful BMS queries out of all attempts
+`sensor`* | link quality  | `%` | successful BMS queries from the last hundred update periods
 `sensor`* | RSSI          | `dBm`| received signal strength indicator
 
 *) In case sensors are reported `unavailable` please enable the diagnostic sensors, i.e. `RSSI` and `link quality` and check your connection quality. The value of `link quality` results from (temporarily) bad `RSSI` values, which are impacted by disturbances of the Bluetooth communication.

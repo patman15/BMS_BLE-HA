@@ -2,6 +2,7 @@
 
 from collections import deque
 from datetime import timedelta
+from time import monotonic
 
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
@@ -92,6 +93,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
 
         LOGGER.debug("%s: BMS data update", self.name)
 
+        start = monotonic()
         try:
             battery_info = await self._device.async_update()
             if not battery_info:
@@ -111,7 +113,9 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
                 f"device communicating failed: {err!s} ({type(err).__name__})"
             ) from err
         finally:
-            self._link_q.append(False)
+            self._link_q.extend(
+                [False] * (1 + int((monotonic() - start) / UPDATE_INTERVAL))
+            )
 
         self._link_q[-1] = True  # set success
         LOGGER.debug("BMS data sample %s", battery_info)

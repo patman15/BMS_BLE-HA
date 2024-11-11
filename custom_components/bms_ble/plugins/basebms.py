@@ -11,6 +11,7 @@ from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
+from bleak_retry_connector import establish_connection
 
 from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
@@ -58,7 +59,7 @@ class BaseBMS(metaclass=ABCMeta):
         self._notification_method: Final = notification_handler
         self._ble_device: Final = ble_device
         self._reconnect: Final = reconnect
-        self._client: Final = BleakClient(
+        self._client = BleakClient(
             self._ble_device,
             disconnected_callback=self._on_disconnect,
             services=[*self.uuid_services()],
@@ -184,7 +185,13 @@ class BaseBMS(metaclass=ABCMeta):
             return
 
         self.logger.debug("Connecting BMS (%s)", self._ble_device.name)
-        await self._client.connect()
+        self._client = await establish_connection(
+            client_class=BleakClient,
+            device=self._ble_device,
+            name=self._ble_device.address,
+            disconnected_callback=self._on_disconnect,
+            services=[*self.uuid_services()],
+        )
         await self._init_characteristics()
 
     async def disconnect(self) -> None:
