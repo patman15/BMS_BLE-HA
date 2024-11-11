@@ -70,15 +70,21 @@ class BMS(BaseBMS):
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
         # LOGGER.debug("%s: Received BLE data: %s", self.name, data.hex(' '))
+        # 
+        # # do things like checking correctness of frame here and
+        # # store it into a instance variable, e.g. self._data
+        #
         # self._data_event.set()
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         LOGGER.debug("(%s) replace with command to UUID %s", self.name, BMS.uuid_tx())
         # await self._client.write_gatt_char(BMS.uuid_tx(), data=b"<some_command>")
-        # await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+        # await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT) # wait for data update
+        # #
+        # # parse data from self._data here
 
         return {
             ATTR_VOLTAGE: 12,
             ATTR_CURRENT: 1.5,
-        }  # set fixed values, replace with implementation in _notification_handler
+        }  # fixed values, replace parsed data
