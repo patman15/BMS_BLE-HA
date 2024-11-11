@@ -17,14 +17,16 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Readout of individual cell voltages to be able to judge battery health
 
 ### Supported Devices
-- Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
 - CBT Power BMS (Creabest batteries)
 - D-powercore BMS (show up as `DXB-`&#x2026;), Fliteboard batteries (show up as `TBA-`&#x2026;)
 - Daly BMS (show up as `DL-`&#x2026;)
 - E&J Technology BMS, Supervolt v1 batteries
-- JK BMS, Jikong, (HW version >=11 required)
 - JBD BMS, Jiabaida, Supervolt v3 batteries
+- JK BMS, Jikong, (HW version >=11 required)
+- Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
+- Redodo batteries
 - Seplos v3 (show up as `SP0`&#x2026; or `SP1`&#x2026;)
+- Supervolt batteries (JBD BMS)
 
 New device types can be easily added via the plugin architecture of this integration. See the [contribution guidelines](CONTRIBUTING.md) for details.
 
@@ -143,7 +145,7 @@ Once pairing is done, the integration should automatically detect the BMS.
 
 
 ## Thanks to
-> [@gkathan](https://github.com/patman15/BMS_BLE-HA/issues/2), [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22), [@Goaheadz](https://github.com/patman15/BMS_BLE-HA/issues/24), [@alros100, @majonessyltetoy](https://github.com/patman15/BMS_BLE-HA/issues/52), [@snipah, @Gruni22](https://github.com/patman15/BMS_BLE-HA/issues/59), [@BikeAtor, @Karatzie](https://github.com/patman15/BMS_BLE-HA/issues/57)
+> [@gkathan](https://github.com/patman15/BMS_BLE-HA/issues/2), [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22), [@Goaheadz](https://github.com/patman15/BMS_BLE-HA/issues/24), [@alros100, @majonessyltetoy](https://github.com/patman15/BMS_BLE-HA/issues/52), [@snipah, @Gruni22](https://github.com/patman15/BMS_BLE-HA/issues/59), [@azisto](https://github.com/patman15/BMS_BLE-HA/issues/78), [@BikeAtor, @Karatzie](https://github.com/patman15/BMS_BLE-HA/issues/57)
 
 for helping with making the integration better.
 

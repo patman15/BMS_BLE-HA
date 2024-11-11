@@ -7,4 +7,4 @@ async def test_critical_constants() -> None:
     """Test general constants are not altered for debugging."""
 
     assert UPDATE_INTERVAL == 30  # ensure that update interval is 30 seconds
-    assert len(BMS_TYPES) == 8  # check number of BMS types
+    assert len(BMS_TYPES) == 9  # check number of BMS types

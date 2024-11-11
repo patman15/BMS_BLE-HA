@@ -39,6 +39,10 @@
       "service_uuid": "0000ffb0-0000-1000-8000-00805f9b34fb"
     },
     {
+      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
+      "manufacturer_id": 22618
+    },
+    {
       "local_name": "libatt*",
       "manufacturer_id": 21320
     }
@@ -51,5 +55,5 @@
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "requirements": [],
-  "version": "1.8.0"
+  "version": "1.9.0"
 }
