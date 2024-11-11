@@ -10,14 +10,21 @@ body:
   attributes:
     label: Checklist
     options:
+      - label: I have tried the latest version of BMS_BLE-HA.
       - label: I have enabled debug logging for my installation.
-        required: true
-      - label: I have filled out the issue template to the best of my ability.
         required: true
       - label: This issue only contains 1 issue (if you have multiple issues, open one issue for each issue).
         required: true
       - label: This issue is not a duplicate issue of any [previous issue](https://github.com/patman15/BMS_BLE-HA/issues?q=is%3Aissue+label%3Abug).
         required: true
+      - label: I have filled out the issue template to the best of my ability.
+        required: true
+- type: input
+  attributes:
+    label: "Provide the type of BMS you used:"
+    description: "Please give the BMS/battery manufacturer and any version (HW, SW) that you know."
+  validations:
+    required: true
 - type: textarea
   attributes:
     label: "Describe the issue"
@@ -33,12 +40,10 @@ body:
       2.
       3.
       ...
-  validations:
-    required: true
-- type: textarea
+- type: markdown
   attributes:
     label: "Debug logs"
-    description: "To enable debug logs check this https://www.home-assistant.io/integrations/logger/, this **needs** to include _everything_ from startup of Home Assistant to the point where you encounter the issue."
+    description: "To enable debug logs check this https://www.home-assistant.io/integrations/logger/, this **needs** to include _everything_ from startup of Home Assistant to the point where you encounter the issue. Please attach logs as file and do not paste them here!"
     render: text
   validations:
     required: true
