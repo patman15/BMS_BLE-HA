@@ -35,6 +35,7 @@ body:
   attributes:
     label: Reproduction steps
     description: "Without steps to reproduce, it will be hard to fix. It is very important that you fill out this part."
+    render: text
     value: |
       1.
       2.
