@@ -21,16 +21,9 @@ body:
 
 - type: textarea
   attributes:
-    label: "Is your feature request related to a problem? Please describe."
-    description: "A clear and concise description of what the problem is."
-    placeholder: "I'm always frustrated when [...]"
-  validations:
-    required: true
-
-- type: textarea
-  attributes:
-    label: "Describe the solution you'd like"
-    description: "A clear and concise description of what you want to happen."
+    label: "Please describe the enhancement you would like to have."
+    description: "A clear and concise description of what you want to add or how a behaviour should be modified."
+    render: text
   validations:
     required: true
 
@@ -38,6 +31,6 @@ body:
   attributes:
     label: "Additional context"
     description: "Add any other context (documentation) or screenshots about the feature request here."
-    placeholder: "For new BMS, please provide any links to documentation, the BT protocol, emulators, other open source implementations, or the like."
+    placeholder: "For new BMS, please provide any links to documentation, the BT protocol, link to an Android app, other open source implementations, or the like."
   validations:
     required: false
