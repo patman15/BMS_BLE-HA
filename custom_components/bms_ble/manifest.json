@@ -37,6 +37,10 @@
     },
     {
       "service_uuid": "0000ffb0-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "libatt*",
+      "manufacturer_id": 21320
     }
   ],
   "codeowners": ["@patman15"],

@@ -131,6 +131,20 @@ class BaseBMS(metaclass=ABCMeta):
             """Check value to add does not exist, is requested, and needed data is available."""
             return (value in values) and (value not in data) and using.issubset(data)
 
+        # calculate total voltage (sum of all cell voltages)
+        if can_calc(ATTR_VOLTAGE, frozenset({f"{KEY_CELL_VOLTAGE}0"})):
+            cell_voltages = [
+                v for k, v in data.items() if k.startswith(KEY_CELL_VOLTAGE)
+            ]
+            data[ATTR_VOLTAGE] = round(sum(cell_voltages), 3)
+
+        # calculate delta voltage (maximum cell voltage difference)
+        if can_calc(ATTR_DELTA_VOLTAGE, frozenset({f"{KEY_CELL_VOLTAGE}1"})):
+            cell_voltages = [
+                v for k, v in data.items() if k.startswith(KEY_CELL_VOLTAGE)
+            ]
+            data[ATTR_DELTA_VOLTAGE] = round(max(cell_voltages) - min(cell_voltages), 3)
+
         # calculate cycle capacity from voltage and cycle charge
         if can_calc(ATTR_CYCLE_CAP, frozenset({ATTR_VOLTAGE, ATTR_CYCLE_CHRG})):
             data[ATTR_CYCLE_CAP] = round(data[ATTR_VOLTAGE] * data[ATTR_CYCLE_CHRG], 3)
@@ -149,12 +163,6 @@ class BaseBMS(metaclass=ABCMeta):
                 data[ATTR_RUNTIME] = int(
                     data[ATTR_CYCLE_CHRG] / abs(data[ATTR_CURRENT]) * _HRS_TO_SECS
                 )
-        # calculate delta voltage (maximum cell voltage difference)
-        if can_calc(ATTR_DELTA_VOLTAGE, frozenset({f"{KEY_CELL_VOLTAGE}1"})):
-            cell_voltages = [
-                v for k, v in data.items() if k.startswith(KEY_CELL_VOLTAGE)
-            ]
-            data[ATTR_DELTA_VOLTAGE] = round(max(cell_voltages) - min(cell_voltages), 3)
         # calculate temperature (average of all sensors)
         if can_calc(ATTR_TEMPERATURE, frozenset({f"{KEY_TEMP_VALUE}0"})):
             temp_values = [v for k, v in data.items() if k.startswith(KEY_TEMP_VALUE)]
