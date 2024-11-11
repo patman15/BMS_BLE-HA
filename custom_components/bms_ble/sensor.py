@@ -73,6 +73,7 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
     SensorEntityDescription(
         key=ATTR_CURRENT,
         translation_key=ATTR_CURRENT,
+        icon="mdi:current-dc",
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.CURRENT,
@@ -236,6 +237,7 @@ class LQSensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverride
     """The BMS link quality sensor."""
 
     _attr_has_entity_name = True
+    _attr_available = True  # always available
     _attr_native_value = 0
 
     def __init__(
@@ -252,7 +254,6 @@ class LQSensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverride
         """Update BMS link quality sensor value."""
 
         self._attr_native_value = self._bms.link_quality
-        self._attr_available = self._bms.rssi is not None
 
         LOGGER.debug(
             "%s: Link quality: %i %%",

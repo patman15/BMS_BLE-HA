@@ -8,6 +8,8 @@ from custom_components.bms_ble.const import (
     ATTR_POWER,
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
+    ATTR_VOLTAGE,
+    KEY_CELL_VOLTAGE
 )
 from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 
@@ -24,6 +26,7 @@ def test_calc_missing_values(bms_data_fixture: BMSsample) -> None:
             ATTR_RUNTIME,
             ATTR_DELTA_VOLTAGE,
             ATTR_TEMPERATURE,
+            ATTR_VOLTAGE,  # check that not overwritten
             "invalid",
         },
     )
@@ -41,5 +44,17 @@ def test_calc_missing_values(bms_data_fixture: BMSsample) -> None:
     }
     if bms_data[ATTR_CURRENT] < 0:
         ref |= {ATTR_RUNTIME: 9415}
+
+    assert bms_data == ref
+
+
+def test_calc_voltage() -> None:
+    """Check if missing data is correctly calculated."""
+    bms_data = ref = {f"{KEY_CELL_VOLTAGE}0": 3.456, f"{KEY_CELL_VOLTAGE}1": 3.567}
+    BaseBMS._add_missing_values(
+        bms_data,
+        {ATTR_VOLTAGE},
+    )
+    ref = ref | {ATTR_VOLTAGE: 7.023}
 
     assert bms_data == ref
