@@ -71,7 +71,7 @@ Installation can be done using [HACS](https://hacs.xyz/) by [adding a custom rep
 1. Download _all_ the files from the `custom_components/bms_ble/` directory (folder) in this repository.
 1. Place the files you downloaded in the new directory (folder) you created.
 1. Restart Home Assistant
-1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "BLE Battery Management"
+1. In the HA UI go to "Configuration" -> "Integrations" click "+" and [search](https://my.home-assistant.io/redirect/config_flow_start/?domain=bms_ble) for "BLE Battery Management"
 
 ## Outlook
 - Clean-up of translations
@@ -82,7 +82,7 @@ Installation can be done using [HACS](https://hacs.xyz/) by [adding a custom rep
 ## Troubleshooting
 In case you have severe troubles,
 
-- please enable the debug protocol for the integration,
+- please [enable the debug protocol](https://www.home-assistant.io/docs/configuration/troubleshooting/#debug-logs-and-diagnostics) for the [BLE Battery Management integration](https://my.home-assistant.io/redirect/integration/?domain=bms_ble),
 - reproduce the issue,
 - disable the log (Home Assistant will prompt you to download the log), and finally
 - [open an issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=Bug&projects=&template=bug.yml) with a good description of what happened and attach the log.
