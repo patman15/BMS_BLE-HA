@@ -65,7 +65,7 @@ class BaseBMS(metaclass=ABCMeta):
             services=[*self.uuid_services()],
         )
         self.name: Final[str] = self._ble_device.name or "undefined"
-        self._data_event = asyncio.Event()
+        self._data_event: Final[asyncio.Event] = asyncio.Event()
 
     @staticmethod
     @abstractmethod
