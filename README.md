@@ -45,10 +45,10 @@ Platform | Description | Unit | Details
 `sensor` | temperature | `°C` | individual temperature values are available as attribute to this sensor, if the BMS supports multiple sensors
 `sensor` | voltage | `V` | overall battery voltage
 `sensor`* | link quality  | `%` | successful BMS queries from the last hundred update periods
-`sensor`* | RSSI          | `dBm`| received signal strength indicator
+`sensor`* | RSSI          | `dBm`| received signal strength indicator 
 
 *) In case sensors are reported `unavailable` please enable the diagnostic sensors, i.e. `RSSI` and `link quality` and check your connection quality. The value of `link quality` results from (temporarily) bad `RSSI` values, which are impacted by disturbances of the Bluetooth communication.
-
+ 
 Quality | link quality [%] | RSSI [dBm]
 --  | -- | --
 excellent | 98 to 100 | -50 to high
@@ -73,20 +73,6 @@ Installation can be done using [HACS](https://hacs.xyz/) by [adding a custom rep
 1. Restart Home Assistant
 1. In the HA UI go to "Configuration" -> "Integrations" click "+" and [search](https://my.home-assistant.io/redirect/config_flow_start/?domain=bms_ble) for "BLE Battery Management"
 
-## Outlook
-- Clean-up of translations
-- Implement status report of the BMS, e.g. warnings, errors as (single) binary sensor (ok, not ok)
-- Add option to only have temporary connections (lowers reliability, but helps running more devices via [ESPHome Bluetooth proxy][btproxy-url])
-- Add further battery types on [request](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.yml)
-
-## Troubleshooting
-In case you have severe troubles,
-
-- please [enable the debug protocol](https://www.home-assistant.io/docs/configuration/troubleshooting/#debug-logs-and-diagnostics) for the [BLE Battery Management integration](https://my.home-assistant.io/redirect/integration/?domain=bms_ble),
-- reproduce the issue,
-- disable the log (Home Assistant will prompt you to download the log), and finally
-- [open an issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=Bug&projects=&template=bug.yml) with a good description of what happened and attach the log.
-
 ## FAQ
 ### My sensors show unknown/unavailable at startup!
 The polling interval is 30 seconds. So at startup it takes a few minutes to detect the battery and query the sensors. Then data will be available.
@@ -108,7 +94,7 @@ State class | `Measurement`
 Device | `smartbat_...`
 
 or add the following snippet to your `configuration.yaml`:
-```javascript
+```yaml
 template:
   - sensor:
     - name: cell_voltage_0
@@ -142,6 +128,19 @@ Then you need to pair your device first. This is procedure is only required once
 
 Once pairing is done, the integration should automatically detect the BMS.
 
+## Troubleshooting
+In case you have severe troubles,
+
+- please [enable the debug protocol](https://www.home-assistant.io/docs/configuration/troubleshooting/#debug-logs-and-diagnostics) for the [BLE Battery Management integration](https://my.home-assistant.io/redirect/integration/?domain=bms_ble),
+- reproduce the issue,
+- disable the log (Home Assistant will prompt you to download the log), and finally
+- [open an issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=Bug&projects=&template=bug.yml) with a good description of what happened and attach the log.
+
+## Outlook
+- Clean-up of translations
+- Implement status report of the BMS, e.g. warnings, errors as (single) binary sensor (ok, not ok)
+- Add option to only have temporary connections (lowers reliability, but helps running more devices via [ESPHome Bluetooth proxy][btproxy-url])
+- Add further battery types on [request](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.yml)
 
 ## Thanks to
 > [@gkathan](https://github.com/patman15/BMS_BLE-HA/issues/2), [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22), [@Goaheadz](https://github.com/patman15/BMS_BLE-HA/issues/24), [@alros100, @majonessyltetoy](https://github.com/patman15/BMS_BLE-HA/issues/52), [@snipah, @Gruni22](https://github.com/patman15/BMS_BLE-HA/issues/59), [@azisto](https://github.com/patman15/BMS_BLE-HA/issues/78), [@BikeAtor, @Karatzie](https://github.com/patman15/BMS_BLE-HA/issues/57)
