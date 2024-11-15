@@ -18,7 +18,9 @@ class MockCBTpwrBleakClient(MockBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) != normalize_uuid_str("ffe9"):
+        if isinstance(char_specifier, str) and normalize_uuid_str(
+            char_specifier
+        ) != normalize_uuid_str("ffe9"):
             return bytearray()
         cmd: int = int(bytearray(data)[2])
         assert bytearray(data)[4] == cmd, "incorrect CRC"
@@ -80,7 +82,9 @@ class MockInvalidBleakClient(MockCBTpwrBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) != normalize_uuid_str("ffe9"):
+        if isinstance(char_specifier, str) and normalize_uuid_str(
+            char_specifier
+        ) != normalize_uuid_str("ffe9"):
             return bytearray()
         cmd: int = int(bytearray(data)[2])
         if cmd == 0x0B:
@@ -93,8 +97,8 @@ class MockInvalidBleakClient(MockCBTpwrBleakClient):
             )  # wrong CRC
         if cmd == 0x0A:
             return bytearray(
-                b"\xAA\x55\x0B\x06\x64\x13\x0D\x00\x00\x00\x95\x0D\x0A"
-            )  # wrong answer to capacity request
+                b"\xAA\x55\x0B\x08\x58\x34\x00\x00\xBC\xF3\xFF\xFF\x4C\x0D\x0A"
+            )  # wrong answer to capacity request (0xA) with 0xB: voltage, current -> power, charging
         return bytearray()
 
     async def disconnect(self) -> bool:
@@ -108,7 +112,9 @@ class MockPartBaseDatBleakClient(MockCBTpwrBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) != normalize_uuid_str("ffe9"):
+        if isinstance(char_specifier, str) and normalize_uuid_str(
+            char_specifier
+        ) != normalize_uuid_str("ffe9"):
             return bytearray()
         cmd: int = int(bytearray(data)[2])
         if cmd == 0x0B:
@@ -125,7 +131,9 @@ class MockAllCellsBleakClient(MockCBTpwrBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) != normalize_uuid_str("ffe9"):
+        if isinstance(char_specifier, str) and normalize_uuid_str(
+            char_specifier
+        ) != normalize_uuid_str("ffe9"):
             return bytearray()
         cmd: int = int(bytearray(data)[2])
         if cmd == 0x05:
@@ -204,9 +212,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
 
     # query again to check already connected state
     result = await bms.async_update()
-    assert (
-        bms._client.is_connected is not reconnect_fixture
-    )  # noqa: SLF001
+    assert bms._client.is_connected is not reconnect_fixture  # noqa: SLF001
 
     await bms.disconnect()
 
@@ -227,7 +233,12 @@ async def test_invalid_response(monkeypatch) -> None:
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
     result = await bms.async_update()
-    assert result == {}
+    assert result == {
+        "battery_charging": False,
+        "current": -3.14,
+        "power": -42.076,
+        "voltage": 13.4,
+    }
 
     await bms.disconnect()
 
