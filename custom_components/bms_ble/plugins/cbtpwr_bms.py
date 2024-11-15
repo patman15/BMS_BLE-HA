@@ -34,20 +34,19 @@ LOGGER: Final = logging.getLogger(__name__)
 class BMS(BaseBMS):
     """CBT Power Smart BMS class implementation."""
 
-    HEAD: Final = bytes([0xAA, 0x55])
-    TAIL_RX: Final = bytes([0x0D, 0x0A])
-    TAIL_TX: Final = bytes([0x0A, 0x0D])
-    MIN_FRAME: Final = len(HEAD) + len(TAIL_RX) + 3  # CMD, LEN, CRC each 1 Byte
-    CRC_POS: Final = -len(TAIL_RX) - 1
-    LEN_POS: Final = 3
-    CMD_POS: Final = 2
+    HEAD: Final[bytes] = bytes([0xAA, 0x55])
+    TAIL_RX: Final[bytes] = bytes([0x0D, 0x0A])
+    TAIL_TX: Final[bytes] = bytes([0x0A, 0x0D])
+    MIN_FRAME: Final[int] = len(HEAD) + len(TAIL_RX) + 3  # CMD, LEN, CRC each 1 Byte
+    CRC_POS: Final[int] = -len(TAIL_RX) - 1
+    LEN_POS: Final[int] = 3
+    CMD_POS: Final[int] = 2
     CELL_VOLTAGE_CMDS: Final[list[int]] = [0x5, 0x6, 0x7, 0x8]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
         super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
-        self._data_event = asyncio.Event()
         self._FIELDS: Final[
             list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
         ] = [
@@ -59,6 +58,7 @@ class BMS(BaseBMS):
             (ATTR_CYCLES, 0x15, 6, 2, False, lambda x: x),
             (ATTR_RUNTIME, 0x0C, 14, 2, False, lambda x: float(x * _HRS_TO_SECS / 100)),
         ]
+        self._CMDS: Final[list[int]] = list(set(field[1] for field in self._FIELDS))
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -162,33 +162,33 @@ class BMS(BaseBMS):
         """Update battery status information."""
         data = {}
         resp_cache = {}  # variable to avoid multiple queries with same command
+        for cmd in self._CMDS:
+            LOGGER.debug("(%s) request command 0x%X.", self.name, cmd)
+            await self._client.write_gatt_char(
+                BMS.uuid_tx(), data=self._gen_frame(cmd.to_bytes(1))
+            )
+            try:
+                await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+            except TimeoutError:
+                continue
+            if cmd != self._data[self.CMD_POS]:
+                LOGGER.debug(
+                    "(%s): incorrect response 0x%x to command 0x%x",
+                    self.name,
+                    self._data[self.CMD_POS],
+                    cmd,
+                )
+            resp_cache[self._data[self.CMD_POS]] = self._data.copy()
+
         for field, cmd, pos, size, sign, fct in self._FIELDS:
-            LOGGER.debug("(%s) request %s info", self.name, field)
-            if resp_cache.get(cmd) is None:
-                await self._client.write_gatt_char(
-                    BMS.uuid_tx(), data=self._gen_frame(cmd.to_bytes(1))
-                )
-                try:
-                    await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-                except TimeoutError:
-                    continue
-                if cmd != self._data[self.CMD_POS]:
-                    LOGGER.debug(
-                        "(%s): incorrect response 0x%x to command 0x%x",
-                        self.name,
-                        self._data[self.CMD_POS],
-                        cmd,
+            if resp_cache.get(cmd):
+                data |= {
+                    field: fct(
+                        int.from_bytes(
+                            resp_cache[cmd][pos : pos + size], "little", signed=sign
+                        )
                     )
-                    continue
-                resp_cache[cmd] = self._data.copy()
-            LOGGER.debug("(%s) %s", self.name, resp_cache)
-            data |= {
-                field: fct(
-                    int.from_bytes(
-                        resp_cache[cmd][pos : pos + size], "little", signed=sign
-                    )
-                )
-            }
+                }
 
         voltages = {}
         for cmd in self.CELL_VOLTAGE_CMDS:
