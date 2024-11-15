@@ -20,6 +20,7 @@ from custom_components.bms_ble.const import (
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
+    KEY_TEMP_VALUE,
 )
 
 from .basebms import BaseBMS, BMSsample
@@ -34,6 +35,7 @@ class BMS(BaseBMS):
     CRC_POS: Final = -1  # last byte
     HEAD_LEN: Final = 3
     MAX_CELLS: Final = 16
+    MAX_TEMP: Final = 5
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -46,7 +48,6 @@ class BMS(BaseBMS):
         ] = [
             (ATTR_VOLTAGE, 12, 2, False, lambda x: float(x / 1000)),
             (ATTR_CURRENT, 48, 4, True, lambda x: float(x / 1000)),
-            (ATTR_TEMPERATURE, 56, 2, False, lambda x: x),
             (ATTR_BATTERY_LEVEL, 90, 2, False, lambda x: x),
             (ATTR_CYCLE_CHRG, 62, 2, False, lambda x: float(x / 100)),
             (ATTR_CYCLES, 96, 4, False, lambda x: x),
@@ -91,6 +92,7 @@ class BMS(BaseBMS):
             ATTR_CYCLE_CAP,
             ATTR_POWER,
             ATTR_RUNTIME,
+            ATTR_TEMPERATURE,
         }  # calculate further values from BMS provided set ones
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
@@ -135,6 +137,21 @@ class BMS(BaseBMS):
             if int.from_bytes(data[16 + 2 * idx : 16 + 2 * idx + 2], byteorder="little")
         }
 
+    def _temp_sensors(self, data: bytearray, sensors: int) -> dict[str, int]:
+        return {
+            f"{KEY_TEMP_VALUE}{idx}": int.from_bytes(
+                data[52 + idx * 2 : 54 + idx * 2],
+                byteorder="little",
+                signed=False,
+            )
+            for idx in range(sensors)
+            if int.from_bytes(
+                data[52 + idx * 2 : 54 + idx * 2],
+                byteorder="little",
+                signed=False,
+            )
+        }
+
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         await self._client.write_gatt_char(
@@ -142,11 +159,15 @@ class BMS(BaseBMS):
         )
         await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 
-        return {
-            key: func(
-                int.from_bytes(
-                    self._data[idx : idx + size], byteorder="little", signed=sign
+        return (
+            {
+                key: func(
+                    int.from_bytes(
+                        self._data[idx : idx + size], byteorder="little", signed=sign
+                    )
                 )
-            )
-            for key, idx, size, sign, func in self._FIELDS
-        } | self._cell_voltages(self._data, self.MAX_CELLS)
+                for key, idx, size, sign, func in self._FIELDS
+            }
+            | self._cell_voltages(self._data, self.MAX_CELLS)
+            | self._temp_sensors(self._data, self.MAX_TEMP)
+        )

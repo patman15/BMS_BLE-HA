@@ -81,7 +81,10 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "cycle_charge": 68.89,
         "cycle_capacity": 1829.443,
         "runtime": 172825,
-        "temperature": 23,
+        "temp#0": 23,
+        "temp#1": 22,
+        "temp#2": 23,
+        "temperature": 22.667,
         "cycles": 3,
     }
 
