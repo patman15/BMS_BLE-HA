@@ -17,14 +17,14 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Readout of individual cell voltages to be able to judge battery health
 
 ### Supported Devices
-- CBT Power BMS (Creabest batteries)
+- CBT Power BMS, Creabest batteries
 - D-powercore BMS (show up as `DXB-`&#x2026;), Fliteboard batteries (show up as `TBA-`&#x2026;)
 - Daly BMS (show up as `DL-`&#x2026;)
 - E&J Technology BMS, Supervolt v1 batteries
 - JBD BMS, Jiabaida, Supervolt v3 batteries
 - JK BMS, Jikong, (HW version >=11 required)
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
-- Redodo batteries
+- LiTime, Redodo batteries
 - Seplos v3 (show up as `SP0`&#x2026; or `SP1`&#x2026;)
 
 New device types can be easily added via the plugin architecture of this integration. See the [contribution guidelines](CONTRIBUTING.md) for details.
