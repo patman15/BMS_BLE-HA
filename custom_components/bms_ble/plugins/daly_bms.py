@@ -123,24 +123,27 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        await self._client.write_gatt_char(
-            BMS.uuid_tx(), data=self.HEAD_READ + self.MOS_INFO
-        )
-        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-
         data = {}
-        if self._data is not None and sum(self._data[self.MOS_TEMP_POS :][:2]):
-            LOGGER.debug("%s: MOS info: %s", self._ble_device.name, self._data)
-            data |= {
-                f"{KEY_TEMP_VALUE}0": float(
-                    int.from_bytes(
-                        self._data[self.MOS_TEMP_POS :][:2],
-                        byteorder="big",
-                        signed=True,
+        try:
+            await self._client.write_gatt_char(
+                BMS.uuid_tx(), data=self.HEAD_READ + self.MOS_INFO
+            )
+            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+
+            if self._data is not None and sum(self._data[self.MOS_TEMP_POS :][:2]):
+                LOGGER.debug("%s: MOS info: %s", self._ble_device.name, self._data)
+                data |= {
+                    f"{KEY_TEMP_VALUE}0": float(
+                        int.from_bytes(
+                            self._data[self.MOS_TEMP_POS :][:2],
+                            byteorder="big",
+                            signed=True,
+                        )
+                        - 40
                     )
-                    - 40
-                )
-            }
+                }
+        except TimeoutError:
+            LOGGER.debug("%s: no MOS info available.")
 
         await self._client.write_gatt_char(
             BMS.uuid_tx(), data=self.HEAD_READ + self.CMD_INFO
