@@ -21,7 +21,9 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - D-powercore BMS (show up as `DXB-`&#x2026;), Fliteboard batteries (show up as `TBA-`&#x2026;)
 - Daly BMS (show up as `DL-`&#x2026;)
 - E&J Technology BMS, Supervolt v1 batteries
-- JBD BMS, Jiabaida, Supervolt v3 batteries
+- JBD BMS, Jiabaida
+- - accurat batteries
+- - Supervolt v3 batteries
 - JK BMS, Jikong, (HW version >=11 required)
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
 - LiTime, Redodo batteries
