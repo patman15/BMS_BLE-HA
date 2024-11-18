@@ -125,10 +125,11 @@ class BMS(BaseBMS):
         """Update battery status information."""
         data = {}
         try:
+            # request MOS temperature (possible outcome: response, empty response, no response)
             await self._client.write_gatt_char(
                 BMS.uuid_tx(), data=self.HEAD_READ + self.MOS_INFO
             )
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT/5)
 
             if self._data is not None and sum(self._data[self.MOS_TEMP_POS :][:2]):
                 LOGGER.debug("%s: MOS info: %s", self._ble_device.name, self._data)
@@ -143,7 +144,7 @@ class BMS(BaseBMS):
                     )
                 }
         except TimeoutError:
-            LOGGER.debug("%s: no MOS info available.")
+            LOGGER.debug("%s: no MOS temperature available.", self.name)
 
         await self._client.write_gatt_char(
             BMS.uuid_tx(), data=self.HEAD_READ + self.CMD_INFO
