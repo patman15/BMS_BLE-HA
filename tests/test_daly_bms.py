@@ -1,6 +1,5 @@
 """Test the Daly BMS implementation."""
 
-from asyncio import sleep
 from collections.abc import Buffer
 from uuid import UUID
 
