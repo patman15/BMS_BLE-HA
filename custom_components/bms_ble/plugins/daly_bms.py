@@ -105,7 +105,7 @@ class BMS(BaseBMS):
         LOGGER.debug("Received BLE data: %s", data)
 
         if (
-            len(data) < 3
+            len(data) < self.HEAD_LEN
             or data[0:2] != self.HEAD_READ
             or int(data[2]) + 1 != len(data) - len(self.HEAD_READ) - self.CRC_LEN
             or int.from_bytes(data[-2:], byteorder="big") != crc_xmodem(data[:-2])

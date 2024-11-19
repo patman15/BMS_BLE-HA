@@ -58,7 +58,7 @@ class BMS(BaseBMS):
             (ATTR_CYCLES, 0x15, 6, 2, False, lambda x: x),
             (ATTR_RUNTIME, 0x0C, 14, 2, False, lambda x: float(x * _HRS_TO_SECS / 100)),
         ]
-        self._CMDS: Final[list[int]] = list(set(field[1] for field in self._FIELDS))
+        self._CMDS: Final[list[int]] = list({field[1] for field in self._FIELDS})
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
