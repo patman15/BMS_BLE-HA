@@ -159,11 +159,13 @@ class BaseBMS(metaclass=ABCMeta):
             data[ATTR_BATTERY_CHARGING] = data[ATTR_CURRENT] > 0
 
         # calculate runtime from current and cycle charge
-        if can_calc(ATTR_RUNTIME, frozenset({ATTR_CURRENT, ATTR_CYCLE_CHRG})):
-            if data[ATTR_CURRENT] < 0:
-                data[ATTR_RUNTIME] = int(
-                    data[ATTR_CYCLE_CHRG] / abs(data[ATTR_CURRENT]) * _HRS_TO_SECS
-                )
+        if (
+            can_calc(ATTR_RUNTIME, frozenset({ATTR_CURRENT, ATTR_CYCLE_CHRG}))
+            and data[ATTR_CURRENT] < 0
+        ):
+            data[ATTR_RUNTIME] = int(
+                data[ATTR_CYCLE_CHRG] / abs(data[ATTR_CURRENT]) * _HRS_TO_SECS
+            )
         # calculate temperature (average of all sensors)
         if can_calc(ATTR_TEMPERATURE, frozenset({f"{KEY_TEMP_VALUE}0"})):
             temp_values = [v for k, v in data.items() if k.startswith(KEY_TEMP_VALUE)]
