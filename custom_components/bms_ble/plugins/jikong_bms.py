@@ -223,6 +223,7 @@ class BMS(BaseBMS):
         """Update battery status information."""
         if not self._data_event.is_set():
             # request cell info (only if data is not constantly published)
+            await asyncio.sleep(1) # delay after connect to wait BMS ready
             LOGGER.debug("(%s) request cell info", self._ble_device.name)
             await self._client.write_gatt_char(
                 self._char_write_handle or 0, data=self._cmd(b"\x96")
