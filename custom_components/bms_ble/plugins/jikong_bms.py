@@ -45,6 +45,7 @@ class BMS(BaseBMS):
         self._data: bytearray = bytearray()
         self._data_final: bytearray | None = None
         self._char_write_handle: int | None = None
+        self._valid_replies: list[int] = [0x2]
         self._FIELDS: Final[
             list[tuple[str, int, int, bool, Callable[[int], int | float]]]
         ] = [  # Protocol: JK02_32S; JK02_24S has offset -32
@@ -110,7 +111,9 @@ class BMS(BaseBMS):
                 return
             data = data[len(self.BT_MODULE_MSG) :]
 
-        if data[0 : len(self.HEAD_RSP)] == self.HEAD_RSP:
+        if (
+            len(self._data) >= self.INFO_LEN and data.startswith(self.HEAD_RSP)
+        ) or not self._data.startswith(self.HEAD_RSP):
             self._data = bytearray()
 
         self._data += data
@@ -123,7 +126,17 @@ class BMS(BaseBMS):
         )
 
         # verify that data long enough and if answer is cell info (0x2)
-        if len(self._data) < self.INFO_LEN or self._data[4] != 0x2:
+        if len(self._data) < self.INFO_LEN:
+            return
+
+        if self._data[4] not in self._valid_replies:
+            LOGGER.debug(
+                "(%s) wrong message type %i (length %i): %s",
+                self.name,
+                self._data[4],
+                len(self._data),
+                self._data,
+            )
             return
 
         crc = self._crc(self._data[0 : self.INFO_LEN - 1])
@@ -179,10 +192,13 @@ class BMS(BaseBMS):
             char_notify_handle or 0, self._notification_handler
         )
 
-        # query device info
+        # query device info frame (0x3)
+        self._valid_replies.append(0x3)
         await self._client.write_gatt_char(
             self._char_write_handle or 0, data=self._cmd(b"\x97")
         )
+        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+        self._valid_replies.remove(0x3)
 
     def _crc(self, frame: bytes) -> int:
         """Calculate Jikong frame CRC."""
@@ -223,7 +239,6 @@ class BMS(BaseBMS):
         """Update battery status information."""
         if not self._data_event.is_set():
             # request cell info (only if data is not constantly published)
-            await asyncio.sleep(1) # delay after connect to wait BMS ready
             LOGGER.debug("(%s) request cell info", self._ble_device.name)
             await self._client.write_gatt_char(
                 self._char_write_handle or 0, data=self._cmd(b"\x96")
