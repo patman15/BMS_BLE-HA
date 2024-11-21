@@ -37,7 +37,7 @@ class BMS(BaseBMS):
     HEAD_RSP: Final = bytes([0x55, 0xAA, 0xEB, 0x90])  # header for responses
     HEAD_CMD: Final = bytes([0xAA, 0x55, 0x90, 0xEB])  # header for commands (endiness!)
     BT_MODULE_MSG: Final = bytes([0x41, 0x54, 0x0D, 0x0A])  # AT\r\n from BLE module
-    INFO_LEN: Final = 300
+    INFO_LEN: Final[int] = 300
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
@@ -243,11 +243,11 @@ class BMS(BaseBMS):
             await self._client.write_gatt_char(
                 self._char_write_handle or 0, data=self._cmd(b"\x96")
             )
-
-        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 
         if self._data_final is None:
             return {}
+
         if len(self._data_final) != self.INFO_LEN:
             LOGGER.debug(
                 "(%s) Wrong data length (%i): %s",
