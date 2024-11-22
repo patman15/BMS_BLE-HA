@@ -37,6 +37,7 @@ class BMS(BaseBMS):
     HEAD_RSP: Final = bytes([0x55, 0xAA, 0xEB, 0x90])  # header for responses
     HEAD_CMD: Final = bytes([0xAA, 0x55, 0x90, 0xEB])  # header for commands (endiness!)
     BT_MODULE_MSG: Final = bytes([0x41, 0x54, 0x0D, 0x0A])  # AT\r\n from BLE module
+    TYPE_POS: Final[int] = 4  # frame type is right after the header
     INFO_LEN: Final[int] = 300
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -45,7 +46,7 @@ class BMS(BaseBMS):
         self._data: bytearray = bytearray()
         self._data_final: bytearray | None = None
         self._char_write_handle: int | None = None
-        self._valid_replies: list[int] = [0x2]
+        self._valid_replies: list[int] = [0x2]  # BMS ready confirmation
         self._FIELDS: Final[
             list[tuple[str, int, int, bool, Callable[[int], int | float]]]
         ] = [  # Protocol: JK02_32S; JK02_24S has offset -32
@@ -105,14 +106,15 @@ class BMS(BaseBMS):
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Retrieve BMS data update."""
 
-        if data[0 : len(self.BT_MODULE_MSG)] == self.BT_MODULE_MSG:
-            LOGGER.debug("(%s) filtering AT cmd", self._ble_device.name)
+        if data.startswith(self.BT_MODULE_MSG):
+            LOGGER.debug("(%s) filtering AT cmd", self.name)
             if len(data) == len(self.BT_MODULE_MSG):
                 return
             data = data[len(self.BT_MODULE_MSG) :]
 
         if (
-            len(self._data) >= self.INFO_LEN and data.startswith(self.HEAD_RSP)
+            len(self._data) >= self.INFO_LEN
+            and (data.startswith(self.HEAD_RSP) or data.startswith(self.HEAD_CMD))
         ) or not self._data.startswith(self.HEAD_RSP):
             self._data = bytearray()
 
@@ -120,32 +122,45 @@ class BMS(BaseBMS):
 
         LOGGER.debug(
             "(%s) Rx BLE data (%s): %s",
-            self._ble_device.name,
+            self.name,
             "start" if data == self._data else "cnt.",
             data,
         )
 
-        # verify that data long enough and if answer is cell info (0x2)
-        if len(self._data) < self.INFO_LEN:
+        # verify that data long enough
+        if (
+            len(self._data) < self.INFO_LEN and self._data.startswith(self.HEAD_RSP)
+        ) or len(self._data) < self.TYPE_POS:
             return
 
-        if self._data[4] not in self._valid_replies:
+        # check that message type is expected
+        if self._data[self.TYPE_POS] not in self._valid_replies:
             LOGGER.debug(
-                "(%s) wrong message type %i (length %i): %s",
+                "(%s) unexpected message type 0x%x (length %i): %s",
                 self.name,
-                self._data[4],
+                self._data[self.TYPE_POS],
                 len(self._data),
                 self._data,
             )
             return
 
-        crc = self._crc(self._data[0 : self.INFO_LEN - 1])
-        if self._data[self.INFO_LEN - 1] != crc:
+        # trim message in case oversized
+        if len(self._data) > self.INFO_LEN:
+            LOGGER.debug(
+                "(%s) Wrong data length (%i): %s",
+                self.name,
+                len(self._data),
+                self._data,
+            )
+            self._data = self._data[: self.INFO_LEN]
+
+        crc = self._crc(self._data[:-1])
+        if self._data[-1] != crc:
             LOGGER.debug(
                 "(%s) Rx data CRC is invalid: %i != %i",
-                self._ble_device.name,
-                self._data[self.INFO_LEN - 1],
-                self._crc(self._data[0 : self.INFO_LEN - 1]),
+                self.name,
+                self._data[-1],
+                self._crc(self._data[:-1]),
             )
             self._data_final = None  # reset invalid data
         else:
@@ -161,7 +176,7 @@ class BMS(BaseBMS):
             for char in service.characteristics:
                 LOGGER.debug(
                     "(%s) Discovered %s (#%i): %s",
-                    self._ble_device.name,
+                    self.name,
                     char.uuid,
                     char.handle,
                     char.properties,
@@ -177,14 +192,14 @@ class BMS(BaseBMS):
                     ):
                         self._char_write_handle = char.handle
         if char_notify_handle is None or self._char_write_handle is None:
-            LOGGER.debug("(%s) Failed to detect characteristics", self._ble_device.name)
+            LOGGER.debug("(%s) Failed to detect characteristics", self.name)
             await self._client.disconnect()
             raise ConnectionError(
-                f"Failed to detect characteristics from {self._ble_device.name}."
+                f"Failed to detect characteristics from {self.name}."
             )
         LOGGER.debug(
             "(%s) Using characteristics handle #%i (notify), #%i (write)",
-            self._ble_device.name,
+            self.name,
             char_notify_handle,
             self._char_write_handle,
         )
@@ -192,13 +207,13 @@ class BMS(BaseBMS):
             char_notify_handle or 0, self._notification_handler
         )
 
-        # query device info frame (0x3)
-        self._valid_replies.append(0x3)
+        # query device info frame and wait for BMS ready (0xC8)
+        self._valid_replies.append(0xC8)
         await self._client.write_gatt_char(
             self._char_write_handle or 0, data=self._cmd(b"\x97")
         )
         await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-        self._valid_replies.remove(0x3)
+        self._valid_replies.remove(0xC8)
 
     def _crc(self, frame: bytes) -> int:
         """Calculate Jikong frame CRC."""
@@ -239,7 +254,7 @@ class BMS(BaseBMS):
         """Update battery status information."""
         if not self._data_event.is_set():
             # request cell info (only if data is not constantly published)
-            LOGGER.debug("(%s) request cell info", self._ble_device.name)
+            LOGGER.debug("(%s) request cell info", self.name)
             await self._client.write_gatt_char(
                 self._char_write_handle or 0, data=self._cmd(b"\x96")
             )
@@ -247,14 +262,6 @@ class BMS(BaseBMS):
 
         if self._data_final is None:
             return {}
-
-        if len(self._data_final) != self.INFO_LEN:
-            LOGGER.debug(
-                "(%s) Wrong data length (%i): %s",
-                self._ble_device.name,
-                len(self._data_final),
-                self._data_final,
-            )
 
         data = self._decode_data(self._data_final)
         data.update(self._cell_voltages(self._data_final, int(data[KEY_CELL_COUNT])))
