@@ -38,7 +38,7 @@ Platform | Description | Unit | Details
 -- | -- | -- | --
 `binary_sensor` | battery charging | `bool` | indicates `True` if battery is charging
 `sensor` | charge cycles | `#` | lifetime number of charge cycles
-`sensor` | current | `A` | positive for charging, negative for discharging
+`sensor` | current | `A` | positive for charging, negative for discharging; if supported, balance current is available as attribute to this sensor
 `sensor` | delta voltage | `V` | maximum difference between any two cells; individual cell voltage are available as attribute to this sensor
 `sensor` | power | `W` | positive for charging, negative for discharging
 `sensor` | runtime | `s` | remaining discharge time till SoC 0%
