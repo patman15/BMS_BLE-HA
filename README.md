@@ -32,7 +32,12 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 New device types can be easily added via the plugin architecture of this integration. See the [contribution guidelines](CONTRIBUTING.md) for details.
 
 ### Provided Information
-The integration provides the following information about the battery
+> [!CAUTION]
+> This integration (including Home Assistant) **shall not be used for safety relevant operations**! The correctness or availability of data cannot be guaranteed (see [warranty section of the license](LICENSE)),
+> since the implementation is mostly based on openly available information or non-validated vendor specifications.
+> Further, issues with the Bluetooth connection, e.g. disturbances, can lead to unavailable or incorrect values.
+> 
+> **Do not rely** on the values to control actions that prevent battery damage, overheating (fire), or similar.
 
 Platform | Description | Unit | Details
 -- | -- | -- | --
