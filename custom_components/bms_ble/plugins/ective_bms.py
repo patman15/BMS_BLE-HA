@@ -1,0 +1,136 @@
+"""Module to support Ective BMS."""
+
+import asyncio
+import logging
+from collections.abc import Callable
+from typing import Any, Final
+
+from bleak.backends.device import BLEDevice
+from bleak.uuids import normalize_uuid_str
+
+from custom_components.bms_ble.const import (
+    ATTR_BATTERY_CHARGING,
+    ATTR_BATTERY_LEVEL,
+    ATTR_CURRENT,
+    ATTR_CYCLE_CAP,
+    ATTR_CYCLE_CHRG,
+    ATTR_CYCLES,
+    ATTR_DELTA_VOLTAGE,
+    ATTR_POWER,
+    ATTR_RUNTIME,
+    ATTR_TEMPERATURE,
+    ATTR_VOLTAGE,
+    KEY_CELL_VOLTAGE,
+)
+
+from .basebms import BaseBMS, BMSsample
+
+LOGGER = logging.getLogger(__name__)
+BAT_TIMEOUT = 10
+
+
+class BMS(BaseBMS):
+    """Ective battery class implementation."""
+
+    HEAD_RSP: Final = bytes([0x5E])  # header for responses
+    _CELLS: Final = 16
+    _INFO_LEN: Final = 113
+
+    def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
+        """Initialize BMS."""
+        LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
+        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        self._data: bytearray = bytearray()
+        self._FIELDS: Final[
+            list[tuple[str, int, int, bool, Callable[[int], int | float]]]
+        ] = [
+            (ATTR_VOLTAGE, 1, 8, False, lambda x: float(x / 1000)),
+            (ATTR_CURRENT, 9, 8, True, lambda x: float(x / 1000)),
+            (ATTR_BATTERY_LEVEL, 29, 4, False, lambda x: x),
+            (ATTR_CYCLE_CHRG, 17, 8, False, lambda x: float(x / 1000)),
+            (ATTR_CYCLES, 25, 4, False, lambda x: x),
+            (ATTR_TEMPERATURE, 33, 4, False, lambda x: round(x * 0.1 - 273.15, 1)),
+        ]
+
+    @staticmethod
+    def matcher_dict_list() -> list[dict[str, Any]]:
+        """Provide BluetoothMatcher definition."""
+        return [{"local_name": "NWJ20*", "connectable": True}]
+
+    @staticmethod
+    def device_info() -> dict[str, str]:
+        """Return device information for the battery management system."""
+        return {"manufacturer": "Ective", "model": "Smart BMS"}
+
+    @staticmethod
+    def uuid_services() -> list[str]:
+        """Return list of 128-bit UUIDs of services required by BMS."""
+        return [normalize_uuid_str("ffe0")]  # change service UUID here!
+
+    @staticmethod
+    def uuid_rx() -> str:
+        """Return 16-bit UUID of characteristic that provides notification/read property."""
+        return "ffe4"
+
+    @staticmethod
+    def uuid_tx() -> str:
+        """Return 16-bit UUID of characteristic that provides write property."""
+        raise NotImplementedError
+
+    @staticmethod
+    def _calc_values() -> set[str]:
+        return {
+            ATTR_BATTERY_CHARGING,
+            ATTR_CYCLE_CAP,
+            ATTR_DELTA_VOLTAGE,
+            ATTR_POWER,
+            ATTR_RUNTIME,
+        }  # calculate further values from BMS provided set ones
+
+    def _notification_handler(self, _sender, data: bytearray) -> None:
+        """Handle the RX characteristics notify event (new data arrives)."""
+        LOGGER.debug("%s: Received BLE data: %s", self.name, data)
+
+        # check if answer is a heading of basic info (0x3) or cell block info (0x4)
+        if data.startswith(self.HEAD_RSP):
+            self._data = bytearray()
+
+        self._data += data
+        LOGGER.debug(
+            "(%s) Rx BLE data (%s): %s",
+            self._ble_device.name,
+            "start" if data == self._data else "cnt.",
+            data,
+        )
+
+        if len(self._data) < self._INFO_LEN:
+            return
+
+        self._data_event.set()
+
+    def _cell_voltages(self, data: bytearray) -> dict[str, float]:
+        """Return cell voltages from status message."""
+        return {
+            f"{KEY_CELL_VOLTAGE}{idx}": self._conv_int(
+                data[45 + idx * 4 : 49 + idx * 4], False
+            )
+            / 1000
+            for idx in range(self._CELLS)
+            if self._conv_int(data[45 + idx * 4 : 49 + idx * 4], False)
+        }
+
+    def _conv_int(self, data: bytearray, sign: bool) -> int:
+        return int.from_bytes(
+            int(data, 16).to_bytes(len(data) >> 1, byteorder="little", signed=False),
+            byteorder="big",
+            signed=sign,
+        )
+
+    async def _async_update(self) -> BMSsample:
+        """Update battery status information."""
+
+        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+        return {
+            key: func(self._conv_int(self._data[idx : idx + size], sign))
+            for key, idx, size, sign, func in self._FIELDS
+        } | self._cell_voltages(self._data)
