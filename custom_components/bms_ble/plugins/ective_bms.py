@@ -55,7 +55,14 @@ class BMS(BaseBMS):
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
         """Provide BluetoothMatcher definition."""
-        return [{"local_name": "NWJ20*", "connectable": True}]
+        return [
+            {
+                "local_name": "$PFLAC*",
+                "service_uuid": BMS.uuid_services()[0],
+                "manufacturer_id": 65535,
+                "connectable": True,
+            }
+        ]
 
     @staticmethod
     def device_info() -> dict[str, str]:

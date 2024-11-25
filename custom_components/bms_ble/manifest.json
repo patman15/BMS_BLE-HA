@@ -47,7 +47,9 @@
       "manufacturer_id": 21320
     },
     {
-      "local_name": "NWJ20*"
+      "local_name": "$PFLAC*",
+      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
+      "manufacturer_id": 65535
     }
   ],
   "codeowners": ["@patman15"],
