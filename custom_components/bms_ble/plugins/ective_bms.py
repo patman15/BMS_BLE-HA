@@ -32,9 +32,10 @@ BAT_TIMEOUT = 10
 class BMS(BaseBMS):
     """Ective battery class implementation."""
 
-    HEAD_RSP: Final = bytes([0x5E])  # header for responses
+    _HEAD_RSP: Final = bytes([0x5E])  # header for responses
     _CELLS: Final = 16
     _INFO_LEN: Final = 113
+    _CRC_LEN: Final = 4
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -99,10 +100,10 @@ class BMS(BaseBMS):
         LOGGER.debug("%s: Received BLE data: %s", self.name, data)
 
         # check if answer is a heading of basic info (0x3) or cell block info (0x4)
-        if data.startswith(self.HEAD_RSP):
+        if data.startswith(self._HEAD_RSP):
             self._data = bytearray()
 
-        self._data += data
+        self._data += data.rstrip(b"\x00")
         LOGGER.debug(
             "(%s) Rx BLE data (%s): %s",
             self._ble_device.name,
@@ -113,7 +114,25 @@ class BMS(BaseBMS):
         if len(self._data) < self._INFO_LEN:
             return
 
+        if not self._data.startswith(self._HEAD_RSP):
+            self._data = bytearray()
+            return
+
+        crc = self._crc(self._data[1 : -self._CRC_LEN])
+        if crc != int(self._data[-self._CRC_LEN :], 16):
+            LOGGER.debug(
+                "%s: incorrect checksum 0x%X != 0x%X",
+                self.name,
+                int(self._data[-self._CRC_LEN :], 16),
+                crc,
+            )
+            self._data = bytearray()
+            return
+
         self._data_event.set()
+
+    def _crc(self, data: bytearray) -> int:
+        return sum(int(data[idx : idx + 2], 16) for idx in range(0, len(data), 2))
 
     def _cell_voltages(self, data: bytearray) -> dict[str, float]:
         """Return cell voltages from status message."""

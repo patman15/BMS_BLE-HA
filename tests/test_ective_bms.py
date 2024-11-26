@@ -1,11 +1,10 @@
 """Test the Ective BMS implementation."""
 
 import pytest
-from collections.abc import Buffer, Callable, Awaitable
+from collections.abc import Callable, Awaitable
 from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
-from bleak.uuids import normalize_uuid_str
 from custom_components.bms_ble.plugins.ective_bms import BMS
 
 from .bluetooth import generate_ble_device
@@ -17,9 +16,8 @@ BT_FRAME_SIZE = 32
 class MockEctiveBleakClient(MockBleakClient):
     """Emulate a Ective BMS BleakClient."""
 
-    def _send_info(self) -> None:
-        assert self._notify_callback is not None
-        resp = bytearray(
+    def _response(self) -> bytearray:
+        return bytearray(
             b"\x5E\x38\x34\x33\x35\x30\x30\x30\x30\x33\x38\x43\x44\x46\x46\x46\x46"
             b"\x32\x43\x46\x39\x30\x32\x30\x30\x39\x37\x30\x31\x36\x32\x30\x30"
             b"\x45\x31\x30\x42\x30\x30\x30\x30\x30\x30\x30\x30"
@@ -27,10 +25,14 @@ class MockEctiveBleakClient(MockBleakClient):
             b"\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30"
             b"\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30"
             b"\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30"
-            b"\x30\x36\x38\x31\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x30\x38\x38\x46\x00\x00\x00\x00\x00\x00\x00\x00"
         )
+
+    def _send_info(self) -> None:
+        assert self._notify_callback is not None
         for notify_data in [
-            resp[i : i + BT_FRAME_SIZE] for i in range(0, len(resp), BT_FRAME_SIZE)
+            self._response()[i : i + BT_FRAME_SIZE]
+            for i in range(0, len(self._response()), BT_FRAME_SIZE)
         ]:
             self._notify_callback("MockEctiveBleakClient", notify_data)
 
@@ -107,44 +109,64 @@ async def test_tx_notimplemented(monkeypatch) -> None:
     with pytest.raises(NotImplementedError):
         _ret = bms.uuid_tx()
 
-# TODO: implement CRC?!
-# @pytest.fixture(
-#     name="wrong_response",
-#     params=[
-#         b"x009031001E0000001400080016F4~",  # wrong SOI
-#         b":009031001E0000001400080016F4x",  # wrong EOI
-#         b":009031001D0000001400080016F4~",  # wrong length
-#         b":009031001E00000002000A000AD9~",  # wrong CRC
-#     ],
-# )
-# def response(request):
-#     """Return all possible BMS variants."""
-#     return request.param
+
+@pytest.fixture(
+    name="wrong_response",
+    params=[
+        b"\x5E\x38\x34\x33\x35\x30\x30\x30\x30\x33\x38\x43\x44\x46\x46\x46\x46"
+        b"\x32\x43\x46\x39\x30\x32\x30\x30\x39\x37\x30\x31\x36\x32\x30\x30"
+        b"\x45\x31\x30\x42\x30\x30\x30\x30\x30\x30\x30\x30"
+        b"\x35\x45\x30\x44\x37\x31\x30\x44\x36\x35\x30\x44\x35\x45\x30\x44"
+        b"\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30"
+        b"\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30"
+        b"\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30"
+        b"\x30\x38\x38\x45\x00\x00\x00\x00\x00\x00\x00\x00",  # wrong CRC
+        b"\x5A\x38\x34\x33\x35\x30\x30\x30\x30\x33\x38\x43\x44\x46\x46\x46\x46"
+        b"\x32\x43\x46\x39\x30\x32\x30\x30\x39\x37\x30\x31\x36\x32\x30\x30"
+        b"\x45\x31\x30\x42\x30\x30\x30\x30\x30\x30\x30\x30"
+        b"\x35\x45\x30\x44\x37\x31\x30\x44\x36\x35\x30\x44\x35\x45\x30\x44"
+        b"\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30"
+        b"\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30"
+        b"\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30"
+        b"\x30\x38\x38\x46\x00\x00\x00\x00\x00\x00\x00\x00",  # wrong SOF
+        b"\x5E\x34\x33\x35\x30\x30\x30\x30\x33\x38\x43\x44\x46\x46\x46\x46"
+        b"\x32\x43\x46\x39\x30\x32\x30\x30\x39\x37\x30\x31\x36\x32\x30\x30"
+        b"\x45\x31\x30\x42\x30\x30\x30\x30\x30\x30\x30\x30"
+        b"\x35\x45\x30\x44\x37\x31\x30\x44\x36\x35\x30\x44\x35\x45\x30\x44"
+        b"\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30"
+        b"\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30"
+        b"\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30"
+        b"\x30\x38\x38\x46",  # wrong length (1st byte missing)
+    ],
+)
+def response(request) -> bytearray:
+    """Return all possible BMS variants."""
+    return request.param
 
 
-# async def test_invalid_response(monkeypatch, wrong_response) -> None:
-#     """Test data up date with BMS returning invalid data."""
+async def test_invalid_response(monkeypatch, wrong_response) -> None:
+    """Test data up date with BMS returning invalid data."""
 
-#     monkeypatch.setattr(
-#         "custom_components.bms_ble.plugins.ej_bms.BAT_TIMEOUT",
-#         0.1,
-#     )
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.ective_bms.BAT_TIMEOUT",
+        0.1,
+    )
 
-#     monkeypatch.setattr(
-#         "tests.test_ej_bms.MockEJBleakClient._response",
-#         lambda _s, _c_, d: wrong_response,
-#     )
+    monkeypatch.setattr(
+        "tests.test_ective_bms.MockEctiveBleakClient._response",
+        lambda _s: wrong_response,
+    )
 
-#     monkeypatch.setattr(
-#         "custom_components.bms_ble.plugins.basebms.BleakClient",
-#         MockEctiveBleakClient,
-#     )
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
+        MockEctiveBleakClient,
+    )
 
-#     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
-#     result = {}
-#     with pytest.raises(TimeoutError):
-#         result = await bms.async_update()
+    result = {}
+    with pytest.raises(TimeoutError):
+        result = await bms.async_update()
 
-#     assert not result
-#     await bms.disconnect()
+    assert not result
+    await bms.disconnect()
