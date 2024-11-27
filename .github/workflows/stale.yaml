@@ -17,6 +17,6 @@ jobs:
           close-issue-message: 'This issue was closed because it has been stalled for 15 days with no activity.'
           exempt-issue-labels: 'bug'
           exempt-all-assignees: true
-          days-before-stale: 45
-          days-before-close: 15
+          days-before-stale: 32
+          days-before-close: 8
           days-before-pr-close: -1
