@@ -97,14 +97,13 @@ class BMS(BaseBMS):
         }
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
-        if self._data_event.is_set():
-            return
-
         # check if answer is a heading of basic info (0x3) or cell block info (0x4)
         if (
-            data[0 : len(self.HEAD_RSP)] == self.HEAD_RSP
+            data.startswith(self.HEAD_RSP)
             and (data[1] == 0x03 or data[1] == 0x04)
             and data[2] == 0x00
+            and len(self._data) > self.INFO_LEN
+            and len(self._data) >= self.INFO_LEN + self._data[3]
         ):
             self._data = bytearray()
 
@@ -116,14 +115,19 @@ class BMS(BaseBMS):
             data,
         )
 
-        # verify that data long enough and has correct frame ending (0x77)
-        if (
-            len(self._data) < self.INFO_LEN + self._data[3]
-            or self._data[self.INFO_LEN + self._data[3] - 1] != 0x77
-        ):
+        # verify that data long enough
+        if len(self._data) < self.INFO_LEN + self._data[3]:
             return
 
+        # check correct frame ending (0x77)
         frame_end: Final[int] = self.INFO_LEN + self._data[3] - 1
+        if self._data[frame_end] != 0x77:
+            LOGGER.debug(
+                "(%s) incorrect frame end (length: %i).", self.name, len(self._data)
+            )
+            self._data_event.set()
+            return
+
         crc: Final[int] = self._crc(self._data[2 : frame_end - 2])
         if int.from_bytes(self._data[frame_end - 2 : frame_end], "big") != crc:
             LOGGER.debug(
