@@ -97,9 +97,8 @@ class BMS(BaseBMS):
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
-        LOGGER.debug("%s: Received BLE data: %s", self.name, data)
 
-        # check if answer is a heading of basic info (0x3) or cell block info (0x4)
+        # check for beginning of frame
         if data.startswith(self._HEAD_RSP):
             self._data = bytearray()
 
