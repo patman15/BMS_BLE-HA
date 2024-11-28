@@ -42,6 +42,7 @@ class BMS(BaseBMS):
         LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
         super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
+        self._data_final: bytearray = bytearray()
         self._FIELDS: Final[
             list[tuple[str, int, int, bool, Callable[[int], int | float]]]
         ] = [
@@ -100,7 +101,7 @@ class BMS(BaseBMS):
 
         # check for beginning of frame
         if data.startswith(self._HEAD_RSP):
-            self._data = bytearray()
+            self._data.clear()
 
         self._data += data.rstrip(b"\x00")
         LOGGER.debug(
@@ -114,7 +115,7 @@ class BMS(BaseBMS):
             return
 
         if not self._data.startswith(self._HEAD_RSP):
-            self._data = bytearray()
+            self._data.clear()
             return
 
         crc = self._crc(self._data[1 : -self._CRC_LEN])
@@ -125,9 +126,10 @@ class BMS(BaseBMS):
                 int(self._data[-self._CRC_LEN :], 16),
                 crc,
             )
-            self._data = bytearray()
+            self._data.clear()
             return
 
+        self._data_final = self._data.copy()
         self._data_event.set()
 
     def _crc(self, data: bytearray) -> int:
@@ -156,6 +158,6 @@ class BMS(BaseBMS):
 
         await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
         return {
-            key: func(self._conv_int(self._data[idx : idx + size], sign))
+            key: func(self._conv_int(self._data_final[idx : idx + size], sign))
             for key, idx, size, sign, func in self._FIELDS
-        } | self._cell_voltages(self._data)
+        } | self._cell_voltages(self._data_final)
