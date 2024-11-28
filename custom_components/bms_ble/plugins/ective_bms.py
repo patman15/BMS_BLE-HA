@@ -26,16 +26,16 @@ from custom_components.bms_ble.const import (
 from .basebms import BaseBMS, BMSsample
 
 LOGGER = logging.getLogger(__name__)
-BAT_TIMEOUT = 10
+BAT_TIMEOUT: Final[int] = 10
 
 
 class BMS(BaseBMS):
     """Ective battery class implementation."""
 
-    _HEAD_RSP: Final = bytes([0x5E])  # header for responses
-    _CELLS: Final = 16
-    _INFO_LEN: Final = 113
-    _CRC_LEN: Final = 4
+    _HEAD_RSP: Final[bytes] = bytes([0x5E])  # header for responses
+    _CELLS: Final[int] = 16
+    _INFO_LEN: Final[int] = 113
+    _CRC_LEN: Final[int] = 4
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
