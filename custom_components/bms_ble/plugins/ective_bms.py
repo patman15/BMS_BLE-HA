@@ -36,6 +36,7 @@ class BMS(BaseBMS):
     _CELLS: Final[int] = 16
     _INFO_LEN: Final[int] = 113
     _CRC_LEN: Final[int] = 4
+    _HEX_CHARS: Final[set] = set("0123456789ABCDEF")
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -99,11 +100,11 @@ class BMS(BaseBMS):
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
 
-        # check for beginning of frame
-        if data.startswith(self._HEAD_RSP):
+        data = data.strip(b"\x00") # remove leading/trailing string end
+        if data.startswith(self._HEAD_RSP):  # check for beginning of frame
             self._data.clear()
 
-        self._data += data.rstrip(b"\x00")
+        self._data += data
         LOGGER.debug(
             "(%s) Rx BLE data (%s): %s",
             self._ble_device.name,
@@ -114,14 +115,18 @@ class BMS(BaseBMS):
         if len(self._data) < self._INFO_LEN:
             return
 
-        if not self._data.startswith(self._HEAD_RSP):
+        if not (
+            self._data.startswith(self._HEAD_RSP)
+            and set(self._data.decode()[3:]).issubset(self._HEX_CHARS)
+        ):
+            LOGGER.debug("(%s) incorrect frame coding: %s", self.name, self._data)
             self._data.clear()
             return
 
-        crc = self._crc(self._data[1 : -self._CRC_LEN])
+        crc: Final[int] = self._crc(self._data[1 : -self._CRC_LEN])
         if crc != int(self._data[-self._CRC_LEN :], 16):
             LOGGER.debug(
-                "%s: incorrect checksum 0x%X != 0x%X",
+                "(%s) incorrect checksum 0x%X != 0x%X",
                 self.name,
                 int(self._data[-self._CRC_LEN :], 16),
                 crc,
