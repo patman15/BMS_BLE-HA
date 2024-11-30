@@ -32,10 +32,10 @@ BAT_TIMEOUT = 10
 class BMS(BaseBMS):
     """Dummy battery class implementation."""
 
-    CRC_POS: Final = -1  # last byte
-    HEAD_LEN: Final = 3
-    MAX_CELLS: Final = 16
-    MAX_TEMP: Final = 5
+    CRC_POS: Final[int] = -1  # last byte
+    HEAD_LEN: Final[int] = 3
+    MAX_CELLS: Final[int] = 16
+    MAX_TEMP: Final[int] = 5
     _FIELDS: Final[list[tuple[str, int, int, bool, Callable[[int], int | float]]]] = [
         (ATTR_VOLTAGE, 12, 2, False, lambda x: float(x / 1000)),
         (ATTR_CURRENT, 48, 4, True, lambda x: float(x / 1000)),

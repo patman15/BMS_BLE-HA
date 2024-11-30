@@ -34,13 +34,13 @@ LOGGER = logging.getLogger(__name__)
 class BMS(BaseBMS):
     """Seplos V3 Smart BMS class implementation."""
 
-    CMD_READ: Final = 0x04
-    HEAD_LEN: Final = 3
-    CRC_LEN: Final = 2
-    PIB_LEN: Final = 0x1A
-    EIA_LEN: Final = PIB_LEN
-    EIB_LEN: Final = 0x16
-    TEMP_START: Final = HEAD_LEN + 32
+    CMD_READ: Final[int] = 0x04
+    HEAD_LEN: Final[int] = 3
+    CRC_LEN: Final[int] = 2
+    PIB_LEN: Final[int] = 0x1A
+    EIA_LEN: Final[int] = PIB_LEN
+    EIB_LEN: Final[int] = 0x16
+    TEMP_START: Final[int] = HEAD_LEN + 32
     QUERY: Final[dict[str, tuple[int, int, int]]] = {
         # name: cmd, reg start, length
         "EIA": (0x4, 0x2000, EIA_LEN),
@@ -57,7 +57,7 @@ class BMS(BaseBMS):
             EIA_LEN,
             4,
             4,
-            False,
+            True,
             lambda x: float((BMS._swap32(x, True)) / 10),
         ),
         (ATTR_CYCLE_CHRG, EIA_LEN, 8, 4, False, lambda x: float(BMS._swap32(x) / 100)),

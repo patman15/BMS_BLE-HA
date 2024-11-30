@@ -33,7 +33,7 @@ class BMS(BaseBMS):
     """Ective battery class implementation."""
 
     _HEAD_RSP: Final[bytes] = bytes([0x5E])  # header for responses
-    _CELLS: Final[int] = 16
+    _MAX_CELLS: Final[int] = 16
     _INFO_LEN: Final[int] = 113
     _CRC_LEN: Final[int] = 4
     _HEX_CHARS: Final[set] = set("0123456789ABCDEF")
@@ -147,7 +147,7 @@ class BMS(BaseBMS):
                 data[45 + idx * 4 : 49 + idx * 4], False
             )
             / 1000
-            for idx in range(BMS._CELLS)
+            for idx in range(BMS._MAX_CELLS)
             if BMS._conv_int(data[45 + idx * 4 : 49 + idx * 4], False)
         }
 

@@ -38,7 +38,7 @@ class Cmd(Enum):
 class BMS(BaseBMS):
     """Dummy battery class implementation."""
 
-    _CELLS: Final[int] = 16
+    _MAX_CELLS: Final[int] = 16
     _FIELDS: Final[list[tuple[str, Cmd, int, int, Callable[[int], int | float]]]] = [
         (ATTR_CURRENT, Cmd.RT, 89, 8, lambda x: float((x >> 16) - (x & 0xFFFF)) / 100),
         (ATTR_BATTERY_LEVEL, Cmd.RT, 123, 2, lambda x: x),
@@ -142,7 +142,7 @@ class BMS(BaseBMS):
         return {
             f"{KEY_CELL_VOLTAGE}{idx}": int(data[25 + 4 * idx : 25 + 4 * idx + 4], 16)
             / 1000
-            for idx in range(BMS._CELLS)
+            for idx in range(BMS._MAX_CELLS)
             if int(data[25 + 4 * idx : 25 + 4 * idx + 4], 16)
         }
 

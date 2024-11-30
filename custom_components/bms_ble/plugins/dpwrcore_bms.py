@@ -47,8 +47,8 @@ class Cmd(Enum):
 class BMS(BaseBMS):
     """D-powercore Smart BMS class implementation."""
 
-    PAGE_LEN: Final[int] = 20
-    MAX_CELLS: Final[int] = 32
+    _PAGE_LEN: Final[int] = 20
+    _MAX_CELLS: Final[int] = 32
     _FIELDS: Final[list[tuple[str, Cmd, int, int, Callable[[int], int | float]]]] = [
         (ATTR_VOLTAGE, Cmd.LEGINFO1, 6, 2, lambda x: float(x) / 10),
         (ATTR_CURRENT, Cmd.LEGINFO1, 8, 2, lambda x: x),
@@ -61,7 +61,7 @@ class BMS(BaseBMS):
             2,
             lambda x: round(float(x) * 0.1 - 273.15, 1),
         ),
-        (KEY_CELL_COUNT, Cmd.CELLVOLT, 6, 1, lambda x: min(x, BMS.MAX_CELLS)),
+        (KEY_CELL_COUNT, Cmd.CELLVOLT, 6, 1, lambda x: min(x, BMS._MAX_CELLS)),
         (ATTR_CYCLES, Cmd.LEGINFO2, 8, 2, lambda x: x),
     ]
 
@@ -121,7 +121,7 @@ class BMS(BaseBMS):
     async def _notification_handler(self, _sender, data: bytearray) -> None:
         LOGGER.debug("%s: Received BLE data: %s", self.name, data)
 
-        if len(data) != BMS.PAGE_LEN:
+        if len(data) != BMS._PAGE_LEN:
             LOGGER.debug("%s: invalid page length (%i)", self.name, len(data))
             return
 
@@ -176,7 +176,7 @@ class BMS(BaseBMS):
             + bytes([(checksum >> 8) & 0xFF, checksum & 0xFF, 0x0D, 0x0A])
         )
         frame = bytes([len(frame) + 2, 0x11]) + frame
-        frame += bytes(BMS.PAGE_LEN - len(frame))
+        frame += bytes(BMS._PAGE_LEN - len(frame))
 
         return frame
 
