@@ -14,6 +14,7 @@ BMS_TYPES: Final = [
     "cbtpwr_bms",
     "daly_bms",
     "dpwrcore_bms",
+    "ective_bms",
     "ej_bms",
     "jbd_bms",
     "jikong_bms",
