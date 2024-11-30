@@ -36,24 +36,22 @@ class BMS(BaseBMS):
 
     HEAD_RSP: Final = bytes([0xDD])  # header for responses
     HEAD_CMD: Final = bytes([0xDD, 0xA5])  # read header for commands
-    INFO_LEN: Final = 7  # minimum frame size
-    BASIC_INFO: Final = 23  # basic info data length
+    INFO_LEN: Final[int] = 7  # minimum frame size
+    BASIC_INFO: Final[int] = 23  # basic info data length
+    _FIELDS: Final[list[tuple[str, int, int, bool, Callable[[int], int | float]]]] = [
+        (KEY_TEMP_SENS, 26, 1, False, lambda x: x),  # count is not limited
+        (ATTR_VOLTAGE, 4, 2, False, lambda x: float(x / 100)),
+        (ATTR_CURRENT, 6, 2, True, lambda x: float(x / 100)),
+        (ATTR_BATTERY_LEVEL, 23, 1, False, lambda x: x),
+        (ATTR_CYCLE_CHRG, 8, 2, False, lambda x: float(x / 100)),
+        (ATTR_CYCLES, 12, 2, False, lambda x: x),
+    ]  # general protocol v4
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
         super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
         self._data_final: bytearray | None = None
-        self._FIELDS: Final[
-            list[tuple[str, int, int, bool, Callable[[int], int | float]]]
-        ] = [
-            (KEY_TEMP_SENS, 26, 1, False, lambda x: x),  # count is not limited
-            (ATTR_VOLTAGE, 4, 2, False, lambda x: float(x / 100)),
-            (ATTR_CURRENT, 6, 2, True, lambda x: float(x / 100)),
-            (ATTR_BATTERY_LEVEL, 23, 1, False, lambda x: x),
-            (ATTR_CYCLE_CHRG, 8, 2, False, lambda x: float(x / 100)),
-            (ATTR_CYCLES, 12, 2, False, lambda x: x),
-        ]  # general protocol v4
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -116,11 +114,11 @@ class BMS(BaseBMS):
         )
 
         # verify that data long enough
-        if len(self._data) < self.INFO_LEN + self._data[3]:
+        if len(self._data) < BMS.INFO_LEN + self._data[3]:
             return
 
         # check correct frame ending (0x77)
-        frame_end: Final[int] = self.INFO_LEN + self._data[3] - 1
+        frame_end: Final[int] = BMS.INFO_LEN + self._data[3] - 1
         if self._data[frame_end] != 0x77:
             LOGGER.debug(
                 "%s: incorrect frame end (length: %i).", self.name, len(self._data)
@@ -128,7 +126,7 @@ class BMS(BaseBMS):
             self._data_event.set()
             return
 
-        crc: Final[int] = self._crc(self._data[2 : frame_end - 2])
+        crc: Final[int] = BMS._crc(self._data[2 : frame_end - 2])
         if int.from_bytes(self._data[frame_end - 2 : frame_end], "big") != crc:
             LOGGER.debug(
                 "%s: RX data CRC is invalid: 0x%X != 0x%X",
@@ -142,23 +140,26 @@ class BMS(BaseBMS):
 
         self._data_event.set()
 
-    def _crc(self, frame: bytes) -> int:
+    @staticmethod
+    def _crc(frame: bytes) -> int:
         """Calculate JBD frame CRC."""
         return 0x10000 - sum(frame)
 
-    def _cmd(self, cmd: bytes) -> bytes:
+    @staticmethod
+    def _cmd(cmd: bytes) -> bytes:
         """Assemble a JBD BMS command."""
-        frame = bytes([*self.HEAD_CMD, cmd[0], 0x00])
-        frame += self._crc(frame[2:4]).to_bytes(2, "big")
+        frame = bytes([*BMS.HEAD_CMD, cmd[0], 0x00])
+        frame += BMS._crc(frame[2:4]).to_bytes(2, "big")
         frame += bytes([0x77])
         return frame
 
-    def _decode_data(self, data: bytearray) -> dict[str, int | float]:
+    @staticmethod
+    def _decode_data(data: bytearray) -> dict[str, int | float]:
         result = {
             key: func(
                 int.from_bytes(data[idx : idx + size], byteorder="big", signed=sign)
             )
-            for key, idx, size, sign, func in self._FIELDS
+            for key, idx, size, sign, func in BMS._FIELDS
         }
 
         # calculate average temperature
@@ -171,7 +172,8 @@ class BMS(BaseBMS):
 
         return result
 
-    def _cell_voltages(self, data: bytearray) -> dict[str, float]:
+    @staticmethod
+    def _cell_voltages(data: bytearray) -> dict[str, float]:
         return {
             f"{KEY_CELL_VOLTAGE}{idx}": float(
                 int.from_bytes(
@@ -186,8 +188,8 @@ class BMS(BaseBMS):
         """Update battery status information."""
         data = {}
         for cmd, exp_len, dec_fct in [
-            (self._cmd(b"\x03"), self.BASIC_INFO, self._decode_data),
-            (self._cmd(b"\x04"), 0, self._cell_voltages),
+            (BMS._cmd(b"\x03"), BMS.BASIC_INFO, BMS._decode_data),
+            (BMS._cmd(b"\x04"), 0, BMS._cell_voltages),
         ]:
             await self._client.write_gatt_char(BMS.uuid_tx(), data=cmd)
             await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
@@ -195,8 +197,8 @@ class BMS(BaseBMS):
             if self._data_final is None:
                 continue
             if (
-                len(self._data_final) != self.INFO_LEN + self._data_final[3]
-                or len(self._data_final) < self.INFO_LEN + exp_len
+                len(self._data_final) != BMS.INFO_LEN + self._data_final[3]
+                or len(self._data_final) < BMS.INFO_LEN + exp_len
             ):
                 LOGGER.debug(
                     "%s: wrong data length (%i): %s",

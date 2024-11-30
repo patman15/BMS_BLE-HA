@@ -37,6 +37,14 @@ class BMS(BaseBMS):
     _INFO_LEN: Final[int] = 113
     _CRC_LEN: Final[int] = 4
     _HEX_CHARS: Final[set] = set("0123456789ABCDEF")
+    _FIELDS: Final[list[tuple[str, int, int, bool, Callable[[int], int | float]]]] = [
+        (ATTR_VOLTAGE, 1, 8, False, lambda x: float(x / 1000)),
+        (ATTR_CURRENT, 9, 8, True, lambda x: float(x / 1000)),
+        (ATTR_BATTERY_LEVEL, 29, 4, False, lambda x: x),
+        (ATTR_CYCLE_CHRG, 17, 8, False, lambda x: float(x / 1000)),
+        (ATTR_CYCLES, 25, 4, False, lambda x: x),
+        (ATTR_TEMPERATURE, 33, 4, False, lambda x: round(x * 0.1 - 273.15, 1)),
+    ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -44,16 +52,6 @@ class BMS(BaseBMS):
         super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
         self._data_final: bytearray = bytearray()
-        self._FIELDS: Final[
-            list[tuple[str, int, int, bool, Callable[[int], int | float]]]
-        ] = [
-            (ATTR_VOLTAGE, 1, 8, False, lambda x: float(x / 1000)),
-            (ATTR_CURRENT, 9, 8, True, lambda x: float(x / 1000)),
-            (ATTR_BATTERY_LEVEL, 29, 4, False, lambda x: x),
-            (ATTR_CYCLE_CHRG, 17, 8, False, lambda x: float(x / 1000)),
-            (ATTR_CYCLES, 25, 4, False, lambda x: x),
-            (ATTR_TEMPERATURE, 33, 4, False, lambda x: round(x * 0.1 - 273.15, 1)),
-        ]
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -100,8 +98,8 @@ class BMS(BaseBMS):
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
 
-        data = data.strip(b"\x00") # remove leading/trailing string end
-        if data.startswith(self._HEAD_RSP):  # check for beginning of frame
+        data = data.strip(b"\x00")  # remove leading/trailing string end
+        if data.startswith(BMS._HEAD_RSP):  # check for beginning of frame
             self._data.clear()
 
         self._data += data
@@ -112,23 +110,23 @@ class BMS(BaseBMS):
             data,
         )
 
-        if len(self._data) < self._INFO_LEN:
+        if len(self._data) < BMS._INFO_LEN:
             return
 
         if not (
-            self._data.startswith(self._HEAD_RSP)
-            and set(self._data.decode()[3:]).issubset(self._HEX_CHARS)
+            self._data.startswith(BMS._HEAD_RSP)
+            and set(self._data.decode()[3:]).issubset(BMS._HEX_CHARS)
         ):
             LOGGER.debug("%s: incorrect frame coding: %s", self.name, self._data)
             self._data.clear()
             return
 
-        crc: Final[int] = self._crc(self._data[1 : -self._CRC_LEN])
-        if crc != int(self._data[-self._CRC_LEN :], 16):
+        crc: Final[int] = BMS._crc(self._data[1 : -BMS._CRC_LEN])
+        if crc != int(self._data[-BMS._CRC_LEN :], 16):
             LOGGER.debug(
                 "%s: incorrect checksum 0x%X != 0x%X",
                 self.name,
-                int(self._data[-self._CRC_LEN :], 16),
+                int(self._data[-BMS._CRC_LEN :], 16),
                 crc,
             )
             self._data.clear()
@@ -137,21 +135,24 @@ class BMS(BaseBMS):
         self._data_final = self._data.copy()
         self._data_event.set()
 
-    def _crc(self, data: bytearray) -> int:
+    @staticmethod
+    def _crc(data: bytearray) -> int:
         return sum(int(data[idx : idx + 2], 16) for idx in range(0, len(data), 2))
 
-    def _cell_voltages(self, data: bytearray) -> dict[str, float]:
+    @staticmethod
+    def _cell_voltages(data: bytearray) -> dict[str, float]:
         """Return cell voltages from status message."""
         return {
-            f"{KEY_CELL_VOLTAGE}{idx}": self._conv_int(
+            f"{KEY_CELL_VOLTAGE}{idx}": BMS._conv_int(
                 data[45 + idx * 4 : 49 + idx * 4], False
             )
             / 1000
-            for idx in range(self._CELLS)
-            if self._conv_int(data[45 + idx * 4 : 49 + idx * 4], False)
+            for idx in range(BMS._CELLS)
+            if BMS._conv_int(data[45 + idx * 4 : 49 + idx * 4], False)
         }
 
-    def _conv_int(self, data: bytearray, sign: bool) -> int:
+    @staticmethod
+    def _conv_int(data: bytearray, sign: bool) -> int:
         return int.from_bytes(
             int(data, 16).to_bytes(len(data) >> 1, byteorder="little", signed=False),
             byteorder="big",
@@ -163,6 +164,6 @@ class BMS(BaseBMS):
 
         await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
         return {
-            key: func(self._conv_int(self._data_final[idx : idx + size], sign))
-            for key, idx, size, sign, func in self._FIELDS
-        } | self._cell_voltages(self._data_final)
+            key: func(BMS._conv_int(self._data_final[idx : idx + size], sign))
+            for key, idx, size, sign, func in BMS._FIELDS
+        } | BMS._cell_voltages(self._data_final)

@@ -141,7 +141,7 @@ class BMS(BaseBMS):
                 await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
             except TimeoutError:
                 LOGGER.debug(
-                    "Reading %s timed out", self._REGISTERS[key][self.IDX_NAME]
+                    "Reading %s timed out", self._REGISTERS[key][BMS.IDX_NAME]
                 )
             if key > 48 and f"{KEY_CELL_VOLTAGE}{64-key}" not in self._values:
                 break
@@ -195,7 +195,7 @@ class BMS(BaseBMS):
         """Put together an scambled query to the BMS."""
 
         cmd = (
-            f"{self._HEADER}{command:0>2X}{self._REGISTERS[command][self.IDX_LEN]:0>2X}"
+            f"{self._HEADER}{command:0>2X}{self._REGISTERS[command][BMS.IDX_LEN]:0>2X}"
         )
         LOGGER.debug("command: %s", cmd)
 

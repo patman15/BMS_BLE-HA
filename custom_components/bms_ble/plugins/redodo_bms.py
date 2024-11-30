@@ -23,7 +23,7 @@ from custom_components.bms_ble.const import (
     KEY_TEMP_VALUE,
 )
 
-from .basebms import BaseBMS, BMSsample
+from .basebms import BaseBMS, BMSsample, crc_sum
 
 LOGGER = logging.getLogger(__name__)
 BAT_TIMEOUT = 10
@@ -36,6 +36,13 @@ class BMS(BaseBMS):
     HEAD_LEN: Final = 3
     MAX_CELLS: Final = 16
     MAX_TEMP: Final = 5
+    _FIELDS: Final[list[tuple[str, int, int, bool, Callable[[int], int | float]]]] = [
+        (ATTR_VOLTAGE, 12, 2, False, lambda x: float(x / 1000)),
+        (ATTR_CURRENT, 48, 4, True, lambda x: float(x / 1000)),
+        (ATTR_BATTERY_LEVEL, 90, 2, False, lambda x: x),
+        (ATTR_CYCLE_CHRG, 62, 2, False, lambda x: float(x / 100)),
+        (ATTR_CYCLES, 96, 4, False, lambda x: x),
+    ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -43,15 +50,6 @@ class BMS(BaseBMS):
         super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
 
         self._data: bytearray = bytearray()
-        self._FIELDS: Final[
-            list[tuple[str, int, int, bool, Callable[[int], int | float]]]
-        ] = [
-            (ATTR_VOLTAGE, 12, 2, False, lambda x: float(x / 1000)),
-            (ATTR_CURRENT, 48, 4, True, lambda x: float(x / 1000)),
-            (ATTR_BATTERY_LEVEL, 90, 2, False, lambda x: x),
-            (ATTR_CYCLE_CHRG, 62, 2, False, lambda x: float(x / 100)),
-            (ATTR_CYCLES, 96, 4, False, lambda x: x),
-        ]
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -103,16 +101,16 @@ class BMS(BaseBMS):
             LOGGER.debug("%s: incorrect SOF.")
             return
 
-        if len(data) != data[2] + self.HEAD_LEN + 1:  # add header length and CRC
+        if len(data) != data[2] + BMS.HEAD_LEN + 1:  # add header length and CRC
             LOGGER.debug("%s: incorrect frame length (%i)", self.name, len(data))
             return
 
-        crc = self._crc(data[: self.CRC_POS])
-        if crc != data[self.CRC_POS]:
+        crc = crc_sum(data[: BMS.CRC_POS])
+        if crc != data[BMS.CRC_POS]:
             LOGGER.debug(
                 "%s: RX data CRC is invalid: 0x%X != 0x%X",
                 self.name,
-                data[len(data) + self.CRC_POS],
+                data[len(data) + BMS.CRC_POS],
                 crc,
             )
             return
@@ -120,11 +118,8 @@ class BMS(BaseBMS):
         self._data = data
         self._data_event.set()
 
-    def _crc(self, frame: bytes) -> int:
-        """Calculate frame CRC."""
-        return sum(frame) & 0xFF
-
-    def _cell_voltages(self, data: bytearray, cells: int) -> dict[str, float]:
+    @staticmethod
+    def _cell_voltages(data: bytearray, cells: int) -> dict[str, float]:
         """Return cell voltages from status message."""
         return {
             f"{KEY_CELL_VOLTAGE}{idx}": int.from_bytes(
@@ -137,7 +132,8 @@ class BMS(BaseBMS):
             if int.from_bytes(data[16 + 2 * idx : 16 + 2 * idx + 2], byteorder="little")
         }
 
-    def _temp_sensors(self, data: bytearray, sensors: int) -> dict[str, int]:
+    @staticmethod
+    def _temp_sensors( data: bytearray, sensors: int) -> dict[str, int]:
         return {
             f"{KEY_TEMP_VALUE}{idx}": int.from_bytes(
                 data[52 + idx * 2 : 54 + idx * 2],
@@ -166,8 +162,8 @@ class BMS(BaseBMS):
                         self._data[idx : idx + size], byteorder="little", signed=sign
                     )
                 )
-                for key, idx, size, sign, func in self._FIELDS
+                for key, idx, size, sign, func in BMS._FIELDS
             }
-            | self._cell_voltages(self._data, self.MAX_CELLS)
-            | self._temp_sensors(self._data, self.MAX_TEMP)
+            | BMS._cell_voltages(self._data, BMS.MAX_CELLS)
+            | BMS._temp_sensors(self._data, BMS.MAX_TEMP)
         )

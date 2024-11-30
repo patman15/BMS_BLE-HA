@@ -6,11 +6,8 @@ from time import monotonic
 
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
-
-from homeassistant.components.bluetooth import (
-    DOMAIN as BLUETOOTH_DOMAIN,
-    async_last_service_info,
-)
+from homeassistant.components.bluetooth import async_last_service_info
+from homeassistant.components.bluetooth.const import DOMAIN as BLUETOOTH_DOMAIN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH, DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed

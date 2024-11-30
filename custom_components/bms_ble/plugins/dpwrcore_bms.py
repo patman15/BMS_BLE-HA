@@ -47,8 +47,23 @@ class Cmd(Enum):
 class BMS(BaseBMS):
     """D-powercore Smart BMS class implementation."""
 
-    PAGE_LEN: Final = 20
-    MAX_CELLS: Final = 32
+    PAGE_LEN: Final[int] = 20
+    MAX_CELLS: Final[int] = 32
+    _FIELDS: Final[list[tuple[str, Cmd, int, int, Callable[[int], int | float]]]] = [
+        (ATTR_VOLTAGE, Cmd.LEGINFO1, 6, 2, lambda x: float(x) / 10),
+        (ATTR_CURRENT, Cmd.LEGINFO1, 8, 2, lambda x: x),
+        (ATTR_BATTERY_LEVEL, Cmd.LEGINFO1, 14, 1, lambda x: x),
+        (ATTR_CYCLE_CHRG, Cmd.LEGINFO1, 12, 2, lambda x: float(x) / 1000),
+        (
+            ATTR_TEMPERATURE,
+            Cmd.LEGINFO2,
+            12,
+            2,
+            lambda x: round(float(x) * 0.1 - 273.15, 1),
+        ),
+        (KEY_CELL_COUNT, Cmd.CELLVOLT, 6, 1, lambda x: min(x, BMS.MAX_CELLS)),
+        (ATTR_CYCLES, Cmd.LEGINFO2, 8, 2, lambda x: x),
+    ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
@@ -56,23 +71,6 @@ class BMS(BaseBMS):
         assert self._ble_device.name is not None  # required for unlock
         self._data: bytearray = bytearray()
         self._data_final: bytearray | None = None
-        self._FIELDS: Final[
-            list[tuple[str, Cmd, int, int, Callable[[int], int | float]]]
-        ] = [
-            (ATTR_VOLTAGE, Cmd.LEGINFO1, 6, 2, lambda x: float(x) / 10),
-            (ATTR_CURRENT, Cmd.LEGINFO1, 8, 2, lambda x: x),
-            (ATTR_BATTERY_LEVEL, Cmd.LEGINFO1, 14, 1, lambda x: x),
-            (ATTR_CYCLE_CHRG, Cmd.LEGINFO1, 12, 2, lambda x: float(x) / 1000),
-            (
-                ATTR_TEMPERATURE,
-                Cmd.LEGINFO2,
-                12,
-                2,
-                lambda x: round(float(x) * 0.1 - 273.15, 1),
-            ),
-            (KEY_CELL_COUNT, Cmd.CELLVOLT, 6, 1, lambda x: min(x, self.MAX_CELLS)),
-            (ATTR_CYCLES, Cmd.LEGINFO2, 8, 2, lambda x: x),
-        ]
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -123,13 +121,13 @@ class BMS(BaseBMS):
     async def _notification_handler(self, _sender, data: bytearray) -> None:
         LOGGER.debug("%s: Received BLE data: %s", self.name, data)
 
-        if len(data) != self.PAGE_LEN:
-            LOGGER.debug("%s: Invalid page length (%i)", self.name, len(data))
+        if len(data) != BMS.PAGE_LEN:
+            LOGGER.debug("%s: invalid page length (%i)", self.name, len(data))
             return
 
         # ignore ACK responses
         if data[0] & 0x80:
-            LOGGER.debug("%s: Ignore acknowledge message", self.name)
+            LOGGER.debug("%s: ignore acknowledge message", self.name)
             return
 
         await self._client.write_gatt_char(  # acknowledge received frame
@@ -148,12 +146,7 @@ class BMS(BaseBMS):
         LOGGER.debug("%s: %s %s", self.name, "start" if page == 1 else "cnt.", data)
 
         if page == maxpg:
-            LOGGER.debug(
-                "%s: checksum 0x%X",
-                self.name,
-                int.from_bytes(self._data[-4:-2], byteorder="big"),
-            )
-            if int.from_bytes(self._data[-4:-2], byteorder="big") != self._crc(
+            if int.from_bytes(self._data[-4:-2], byteorder="big") != BMS._crc(
                 self._data[3:-4]
             ):
                 LOGGER.debug(
@@ -169,22 +162,22 @@ class BMS(BaseBMS):
             self._data_final = self._data
             self._data_event.set()
 
-    def _crc(self, data: bytes) -> int:
+    @staticmethod
+    def _crc(data: bytes) -> int:
         return sum(data) + 8
 
-    def _cmd_frame(self, cmd: Cmd, data: bytes) -> bytes:
-
+    @staticmethod
+    def _cmd_frame(cmd: Cmd, data: bytes) -> bytes:
         frame = bytes([cmd.value, 0x00, 0x00]) + data
-        checksum = self._crc(frame)
+        checksum = BMS._crc(frame)
         frame = (
             bytes([0x3A, 0x03, 0x05])
             + frame
             + bytes([(checksum >> 8) & 0xFF, checksum & 0xFF, 0x0D, 0x0A])
         )
         frame = bytes([len(frame) + 2, 0x11]) + frame
-        frame += bytes(self.PAGE_LEN - len(frame))
+        frame += bytes(BMS.PAGE_LEN - len(frame))
 
-        LOGGER.debug("%s: sending cmd: %s", self.name, frame)
         return frame
 
     async def _init_characteristics(self) -> None:
@@ -196,10 +189,11 @@ class BMS(BaseBMS):
             pwd = int(self.name[-4:], 16)
             await self._client.write_gatt_char(
                 BMS.uuid_tx(),
-                self._cmd_frame(Cmd.UNLOCK, bytes([(pwd >> 8) & 0xFF, pwd & 0xFF])),
+                BMS._cmd_frame(Cmd.UNLOCK, bytes([(pwd >> 8) & 0xFF, pwd & 0xFF])),
             )
 
-    def _cell_voltages(self, data: bytearray, cells: int) -> dict[str, float]:
+    @staticmethod
+    def _cell_voltages(data: bytearray, cells: int) -> dict[str, float]:
         """Return cell voltages from status message."""
         return {
             f"{KEY_CELL_VOLTAGE}{idx}": int.from_bytes(
@@ -227,12 +221,12 @@ class BMS(BaseBMS):
                         self._data[idx : idx + size], byteorder="big", signed=True
                     )
                 )
-                for key, cmd, idx, size, func in self._FIELDS
+                for key, cmd, idx, size, func in BMS._FIELDS
                 if cmd == request
             }
             if request == Cmd.CELLVOLT and data.get(KEY_CELL_COUNT):
                 data.update(
-                    self._cell_voltages(self._data_final, int(data[KEY_CELL_COUNT]))
+                    BMS._cell_voltages(self._data_final, int(data[KEY_CELL_COUNT]))
                 )
 
         return data
