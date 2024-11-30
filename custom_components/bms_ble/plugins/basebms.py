@@ -1,9 +1,9 @@
 """Base class defintion for battery management systems (BMS)."""
 
-from abc import ABCMeta, abstractmethod
 import asyncio.events
-from collections.abc import Awaitable, Callable
 import logging
+from abc import ABCMeta, abstractmethod
+from collections.abc import Awaitable, Callable
 from statistics import fmean
 from typing import Any, Final
 
@@ -12,6 +12,10 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from bleak_retry_connector import establish_connection
+from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
+from homeassistant.components.bluetooth.match import ble_device_matches
+from homeassistant.loader import BluetoothMatcherOptional
+from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
@@ -26,12 +30,6 @@ from custom_components.bms_ble.const import (
     KEY_CELL_VOLTAGE,
     KEY_TEMP_VALUE,
 )
-from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
-from homeassistant.components.bluetooth.match import (
-    BluetoothMatcherOptional,
-    ble_device_matches,
-)
-from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 type BMSsample = dict[str, int | float | bool]
 
@@ -118,8 +116,8 @@ class BaseBMS(metaclass=ABCMeta):
         """
         return set()
 
-    @classmethod
-    def _add_missing_values(cls, data: BMSsample, values: set[str]):
+    @staticmethod
+    def _add_missing_values(data: BMSsample, values: set[str]):
         """Calculate missing BMS values from existing ones.
 
         data: data dictionary from BMS
@@ -214,7 +212,7 @@ class BaseBMS(metaclass=ABCMeta):
 
     @abstractmethod
     async def _async_update(self) -> BMSsample:
-        """Return a dictionary of BMS values, where the keys need to match the keys in the SENSOR_TYPES list."""
+        """Return a dictionary of BMS values (keys need to come from the SENSOR_TYPES list)."""
 
     async def async_update(self) -> BMSsample:
         """Retrieve updated values from the BMS using method of the subclass."""
@@ -239,3 +237,8 @@ def crc_xmodem(data: bytearray) -> int:
         for _ in range(8):
             crc = (crc >> 1) ^ 0xA001 if crc % 2 else (crc >> 1)
     return ((0xFF00 & crc) >> 8) | ((crc & 0xFF) << 8)
+
+
+def crc_sum(frame: bytes) -> int:
+    """Calculate frame CRC."""
+    return sum(frame) & 0xFF

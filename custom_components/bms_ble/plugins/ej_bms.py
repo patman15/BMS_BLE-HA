@@ -38,34 +38,20 @@ class Cmd(Enum):
 class BMS(BaseBMS):
     """Dummy battery class implementation."""
 
-    _CELLS = 16
+    _MAX_CELLS: Final[int] = 16
+    _FIELDS: Final[list[tuple[str, Cmd, int, int, Callable[[int], int | float]]]] = [
+        (ATTR_CURRENT, Cmd.RT, 89, 8, lambda x: float((x >> 16) - (x & 0xFFFF)) / 100),
+        (ATTR_BATTERY_LEVEL, Cmd.RT, 123, 2, lambda x: x),
+        (ATTR_CYCLE_CHRG, Cmd.CAP, 15, 4, lambda x: float(x) / 10),
+        (ATTR_TEMPERATURE, Cmd.RT, 97, 2, lambda x: x - 40),  # only 1st sensor relevant
+        (ATTR_CYCLES, Cmd.RT, 119, 4, lambda x: x),
+    ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
         LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
         super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
         self._data = bytearray()
-        self._FIELDS: Final[
-            list[tuple[str, Cmd, int, int, Callable[[int], int | float]]]
-        ] = [
-            (
-                ATTR_CURRENT,
-                Cmd.RT,
-                89,
-                8,
-                lambda x: float((x >> 16) - (x & 0xFFFF)) / 100,
-            ),
-            (ATTR_BATTERY_LEVEL, Cmd.RT, 123, 2, lambda x: x),
-            (ATTR_CYCLE_CHRG, Cmd.CAP, 15, 4, lambda x: float(x) / 10),
-            (
-                ATTR_TEMPERATURE,
-                Cmd.RT,
-                97,
-                2,
-                lambda x: x - 40,
-            ),  # only first sensor relevant
-            (ATTR_CYCLES, Cmd.RT, 119, 4, lambda x: x),
-        ]
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -126,7 +112,7 @@ class BMS(BaseBMS):
             )
             return
 
-        crc: Final = self._crc(data[1:-3])
+        crc: Final = BMS._crc(data[1:-3])
         if crc != int(data[-3:-1], 16):
             LOGGER.debug(
                 "%s: incorrect checksum 0x%X != 0x%X",
@@ -146,15 +132,17 @@ class BMS(BaseBMS):
         self._data = data
         self._data_event.set()
 
-    def _crc(self, data: bytes) -> int:
+    @staticmethod
+    def _crc(data: bytes) -> int:
         return (sum(data) ^ 0xFF) & 0xFF
 
-    def _cell_voltages(self, data: bytearray) -> dict[str, float]:
+    @staticmethod
+    def _cell_voltages(data: bytearray) -> dict[str, float]:
         """Return cell voltages from status message."""
         return {
             f"{KEY_CELL_VOLTAGE}{idx}": int(data[25 + 4 * idx : 25 + 4 * idx + 4], 16)
             / 1000
-            for idx in range(self._CELLS)
+            for idx in range(BMS._MAX_CELLS)
             if int(data[25 + 4 * idx : 25 + 4 * idx + 4], 16)
         }
 
@@ -170,5 +158,5 @@ class BMS(BaseBMS):
 
         return {
             key: func(int(raw_data[cmd.value][idx : idx + size], 16))
-            for key, cmd, idx, size, func in self._FIELDS
+            for key, cmd, idx, size, func in BMS._FIELDS
         } | self._cell_voltages(raw_data[Cmd.RT.value])

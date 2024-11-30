@@ -3,9 +3,11 @@
 from typing import Final
 
 from homeassistant.components.sensor import (
-    SensorDeviceClass,
     SensorEntity,
     SensorEntityDescription,
+)
+from homeassistant.components.sensor.const import (
+    SensorDeviceClass,
     SensorStateClass,
 )
 from homeassistant.const import (
