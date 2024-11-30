@@ -1,12 +1,13 @@
 """Module to support CBT Power Smart BMS."""
 
 import asyncio
-from collections.abc import Callable
 import logging
+from collections.abc import Callable
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
+from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
@@ -23,9 +24,8 @@ from custom_components.bms_ble.const import (
     KEY_CELL_VOLTAGE,
     KEY_DESIGN_CAP,
 )
-from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
-from .basebms import BaseBMS, BMSsample
+from .basebms import BaseBMS, BMSsample, crc_sum
 
 BAT_TIMEOUT: Final = 1
 LOGGER: Final = logging.getLogger(__name__)
@@ -42,23 +42,23 @@ class BMS(BaseBMS):
     LEN_POS: Final[int] = 3
     CMD_POS: Final[int] = 2
     CELL_VOLTAGE_CMDS: Final[list[int]] = [0x5, 0x6, 0x7, 0x8]
+    _FIELDS: Final[
+        list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
+    ] = [
+        (ATTR_VOLTAGE, 0x0B, 4, 4, False, lambda x: float(x / 1000)),
+        (ATTR_CURRENT, 0x0B, 8, 4, True, lambda x: float(x / 1000)),
+        (ATTR_TEMPERATURE, 0x09, 4, 2, False, lambda x: x),
+        (ATTR_BATTERY_LEVEL, 0x0A, 4, 1, False, lambda x: x),
+        (KEY_DESIGN_CAP, 0x15, 4, 2, False, lambda x: x),
+        (ATTR_CYCLES, 0x15, 6, 2, False, lambda x: x),
+        (ATTR_RUNTIME, 0x0C, 14, 2, False, lambda x: float(x * _HRS_TO_SECS / 100)),
+    ]
+    _CMDS: Final[list[int]] = list({field[1] for field in _FIELDS})
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
         super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
-        self._FIELDS: Final[
-            list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
-        ] = [
-            (ATTR_VOLTAGE, 0x0B, 4, 4, False, lambda x: float(x / 1000)),
-            (ATTR_CURRENT, 0x0B, 8, 4, True, lambda x: float(x / 1000)),
-            (ATTR_TEMPERATURE, 0x09, 4, 2, False, lambda x: x),
-            (ATTR_BATTERY_LEVEL, 0x0A, 4, 1, False, lambda x: x),
-            (KEY_DESIGN_CAP, 0x15, 4, 2, False, lambda x: x),
-            (ATTR_CYCLES, 0x15, 6, 2, False, lambda x: x),
-            (ATTR_RUNTIME, 0x0C, 14, 2, False, lambda x: float(x * _HRS_TO_SECS / 100)),
-        ]
-        self._CMDS: Final[list[int]] = list({field[1] for field in self._FIELDS})
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -102,29 +102,25 @@ class BMS(BaseBMS):
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Retrieve BMS data update."""
-
-        LOGGER.debug("(%s) Rx BLE data: %s", self._ble_device.name, data)
+        LOGGER.debug("%s: Received BLE data: %s", self.name, data)
 
         # verify that data long enough
-        if (
-            len(data) < self.MIN_FRAME
-            or len(data) != self.MIN_FRAME + data[self.LEN_POS]
-        ):
+        if len(data) < BMS.MIN_FRAME or len(data) != BMS.MIN_FRAME + data[BMS.LEN_POS]:
             LOGGER.debug(
-                "(%s) incorrect frame length (%i): %s", self.name, len(data), data
+                "%s: incorrect frame length (%i): %s", self.name, len(data), data
             )
             return
 
-        if not data.startswith(self.HEAD) or not data.endswith(self.TAIL_RX):
-            LOGGER.debug("(%s) Incorrect frame start/end: %s", self.name, data)
+        if not data.startswith(BMS.HEAD) or not data.endswith(BMS.TAIL_RX):
+            LOGGER.debug("%s: incorrect frame start/end: %s", self.name, data)
             return
 
-        crc = self._crc(data[len(self.HEAD) : len(data) + self.CRC_POS])
-        if data[self.CRC_POS] != crc:
+        crc = crc_sum(data[len(BMS.HEAD) : len(data) + BMS.CRC_POS])
+        if data[BMS.CRC_POS] != crc:
             LOGGER.debug(
-                "(%s) Rx data CRC is invalid: 0x%x != 0x%x",
+                "%s: RX data CRC is invalid: 0x%X != 0x%X",
                 self.name,
-                data[len(data) + self.CRC_POS],
+                data[len(data) + BMS.CRC_POS],
                 crc,
             )
             return
@@ -132,24 +128,22 @@ class BMS(BaseBMS):
         self._data = data
         self._data_event.set()
 
-    def _crc(self, frame: bytes) -> int:
-        """Calculate CBT Power frame CRC."""
-        return sum(frame) & 0xFF
-
-    def _gen_frame(self, cmd: bytes, value: list[int] | None = None) -> bytes:
+    @staticmethod
+    def _gen_frame(cmd: bytes, value: list[int] | None = None) -> bytes:
         """Assemble a CBT Power BMS command."""
         value = [] if value is None else value
         assert len(value) <= 255
-        frame = bytes([*self.HEAD, cmd[0]])
+        frame = bytes([*BMS.HEAD, cmd[0]])
         frame += bytes([len(value), *value])
-        frame += bytes([self._crc(frame[len(self.HEAD) :])])
-        frame += bytes([*self.TAIL_TX])
+        frame += bytes([crc_sum(frame[len(BMS.HEAD) :])])
+        frame += bytes([*BMS.TAIL_TX])
         return frame
 
-    def _cell_voltages(self, data: bytearray) -> dict[str, float]:
+    @staticmethod
+    def _cell_voltages(data: bytearray) -> dict[str, float]:
         """Return cell voltages from status message."""
         return {
-            f"{KEY_CELL_VOLTAGE}{idx+(data[self.CMD_POS]-5)*5}": int.from_bytes(
+            f"{KEY_CELL_VOLTAGE}{idx+(data[BMS.CMD_POS]-5)*5}": int.from_bytes(
                 data[4 + 2 * idx : 6 + 2 * idx],
                 byteorder="little",
                 signed=True,
@@ -162,25 +156,25 @@ class BMS(BaseBMS):
         """Update battery status information."""
         data = {}
         resp_cache = {}  # variable to avoid multiple queries with same command
-        for cmd in self._CMDS:
-            LOGGER.debug("(%s) request command 0x%X.", self.name, cmd)
+        for cmd in BMS._CMDS:
+            LOGGER.debug("%s: request command 0x%X.", self.name, cmd)
             await self._client.write_gatt_char(
-                BMS.uuid_tx(), data=self._gen_frame(cmd.to_bytes(1))
+                BMS.uuid_tx(), data=BMS._gen_frame(cmd.to_bytes(1))
             )
             try:
                 await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
             except TimeoutError:
                 continue
-            if cmd != self._data[self.CMD_POS]:
+            if cmd != self._data[BMS.CMD_POS]:
                 LOGGER.debug(
-                    "(%s): incorrect response 0x%x to command 0x%x",
+                    "%s:: incorrect response 0x%X to command 0x%X",
                     self.name,
-                    self._data[self.CMD_POS],
+                    self._data[BMS.CMD_POS],
                     cmd,
                 )
-            resp_cache[self._data[self.CMD_POS]] = self._data.copy()
+            resp_cache[self._data[BMS.CMD_POS]] = self._data.copy()
 
-        for field, cmd, pos, size, sign, fct in self._FIELDS:
+        for field, cmd, pos, size, sign, fct in BMS._FIELDS:
             if resp_cache.get(cmd):
                 data |= {
                     field: fct(
@@ -191,15 +185,15 @@ class BMS(BaseBMS):
                 }
 
         voltages = {}
-        for cmd in self.CELL_VOLTAGE_CMDS:
+        for cmd in BMS.CELL_VOLTAGE_CMDS:
             await self._client.write_gatt_char(
-                BMS.uuid_tx(), data=self._gen_frame(cmd.to_bytes(1))
+                BMS.uuid_tx(), data=BMS._gen_frame(cmd.to_bytes(1))
             )
             try:
                 await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
             except TimeoutError:
                 break
-            voltages |= self._cell_voltages(self._data)
+            voltages |= BMS._cell_voltages(self._data)
             if invalid := [k for k, v in voltages.items() if v == 0]:
                 for k in invalid:
                     voltages.pop(k)

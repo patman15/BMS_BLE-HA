@@ -6,11 +6,8 @@ from time import monotonic
 
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
-
-from homeassistant.components.bluetooth import (
-    DOMAIN as BLUETOOTH_DOMAIN,
-    async_last_service_info,
-)
+from homeassistant.components.bluetooth import async_last_service_info
+from homeassistant.components.bluetooth.const import DOMAIN as BLUETOOTH_DOMAIN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH, DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -49,7 +46,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
         if service_info := async_last_service_info(
             self.hass, address=self._mac, connectable=True
         ):
-            LOGGER.debug("device data: %s", service_info.as_dict())
+            LOGGER.debug("%s: advertisement: %s", self.name, service_info.as_dict())
 
         # retrieve BMS class and initialize it
         self._device: BaseBMS = bms_device
@@ -84,7 +81,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
 
     async def async_shutdown(self) -> None:
         """Shutdown coordinator and any connection."""
-        LOGGER.debug("%s: shuting down BMS device", self.name)
+        LOGGER.debug("Shutting down BMS device (%s)", self.name)
         await super().async_shutdown()
         await self._device.disconnect()
 
@@ -118,5 +115,5 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             )
 
         self._link_q[-1] = True  # set success
-        LOGGER.debug("BMS data sample %s", battery_info)
+        LOGGER.debug("%s: BMS data sample %s", self.name, battery_info)
         return battery_info

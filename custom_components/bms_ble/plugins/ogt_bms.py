@@ -47,7 +47,7 @@ class BMS(BaseBMS):
             CRYPT_SEQ[int(c, 16)] for c in (f"{int(self.name[10:]):0>4X}")
         ) + (5 if (self._type == "A") else 8)
         LOGGER.info(
-            "%s type: %c, ID: %s, key: 0x%x",
+            "%s type: %c, ID: %s, key: 0x%X",
             self.device_id(),
             self._type,
             self.name[10:],
@@ -141,7 +141,7 @@ class BMS(BaseBMS):
                 await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
             except TimeoutError:
                 LOGGER.debug(
-                    "Reading %s timed out", self._REGISTERS[key][self.IDX_NAME]
+                    "Reading %s timed out", self._REGISTERS[key][BMS.IDX_NAME]
                 )
             if key > 48 and f"{KEY_CELL_VOLTAGE}{64-key}" not in self._values:
                 break
@@ -153,7 +153,7 @@ class BMS(BaseBMS):
         return self._values
 
     def _notification_handler(self, sender, data: bytearray) -> None:
-        LOGGER.debug("Received BLE data: %s", data)
+        LOGGER.debug("%s: Received BLE data: %s", self.name, data)
 
         valid, reg, nat_value = self._ogt_response(data)
 
@@ -195,7 +195,7 @@ class BMS(BaseBMS):
         """Put together an scambled query to the BMS."""
 
         cmd = (
-            f"{self._HEADER}{command:0>2X}{self._REGISTERS[command][self.IDX_LEN]:0>2X}"
+            f"{self._HEADER}{command:0>2X}{self._REGISTERS[command][BMS.IDX_LEN]:0>2X}"
         )
         LOGGER.debug("command: %s", cmd)
 
