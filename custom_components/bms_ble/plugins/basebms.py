@@ -214,7 +214,7 @@ class BaseBMS(metaclass=ABCMeta):
 
     @abstractmethod
     async def _async_update(self) -> BMSsample:
-        """Return a dictionary of BMS values, where the keys need to match the keys in the SENSOR_TYPES list."""
+        """Return a dictionary of BMS values (keys need to come from the SENSOR_TYPES list)."""
 
     async def async_update(self) -> BMSsample:
         """Retrieve updated values from the BMS using method of the subclass."""

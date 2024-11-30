@@ -47,7 +47,7 @@ class BMS(BaseBMS):
             CRYPT_SEQ[int(c, 16)] for c in (f"{int(self.name[10:]):0>4X}")
         ) + (5 if (self._type == "A") else 8)
         LOGGER.info(
-            "%s type: %c, ID: %s, key: 0x%x",
+            "%s type: %c, ID: %s, key: 0x%X",
             self.device_id(),
             self._type,
             self.name[10:],
@@ -153,7 +153,7 @@ class BMS(BaseBMS):
         return self._values
 
     def _notification_handler(self, sender, data: bytearray) -> None:
-        LOGGER.debug("Received BLE data: %s", data)
+        LOGGER.debug("%s: Received BLE data: %s", self.name, data)
 
         valid, reg, nat_value = self._ogt_response(data)
 

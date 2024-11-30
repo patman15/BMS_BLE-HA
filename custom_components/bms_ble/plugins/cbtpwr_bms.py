@@ -102,8 +102,7 @@ class BMS(BaseBMS):
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Retrieve BMS data update."""
-
-        LOGGER.debug("(%s) Rx BLE data: %s", self._ble_device.name, data)
+        LOGGER.debug("%s: Received BLE data: %s", self.name, data)
 
         # verify that data long enough
         if (
@@ -111,18 +110,18 @@ class BMS(BaseBMS):
             or len(data) != self.MIN_FRAME + data[self.LEN_POS]
         ):
             LOGGER.debug(
-                "(%s) incorrect frame length (%i): %s", self.name, len(data), data
+                "%s: incorrect frame length (%i): %s", self.name, len(data), data
             )
             return
 
         if not data.startswith(self.HEAD) or not data.endswith(self.TAIL_RX):
-            LOGGER.debug("(%s) Incorrect frame start/end: %s", self.name, data)
+            LOGGER.debug("%s: incorrect frame start/end: %s", self.name, data)
             return
 
         crc = self._crc(data[len(self.HEAD) : len(data) + self.CRC_POS])
         if data[self.CRC_POS] != crc:
             LOGGER.debug(
-                "(%s) Rx data CRC is invalid: 0x%x != 0x%x",
+                "%s: RX data CRC is invalid: 0x%X != 0x%X",
                 self.name,
                 data[len(data) + self.CRC_POS],
                 crc,
@@ -163,7 +162,7 @@ class BMS(BaseBMS):
         data = {}
         resp_cache = {}  # variable to avoid multiple queries with same command
         for cmd in self._CMDS:
-            LOGGER.debug("(%s) request command 0x%X.", self.name, cmd)
+            LOGGER.debug("%s: request command 0x%X.", self.name, cmd)
             await self._client.write_gatt_char(
                 BMS.uuid_tx(), data=self._gen_frame(cmd.to_bytes(1))
             )
@@ -173,7 +172,7 @@ class BMS(BaseBMS):
                 continue
             if cmd != self._data[self.CMD_POS]:
                 LOGGER.debug(
-                    "(%s): incorrect response 0x%x to command 0x%x",
+                    "%s:: incorrect response 0x%X to command 0x%X",
                     self.name,
                     self._data[self.CMD_POS],
                     cmd,

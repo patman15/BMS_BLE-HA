@@ -109,7 +109,7 @@ class BMS(BaseBMS):
 
         self._data += data
         LOGGER.debug(
-            "(%s) Rx BLE data (%s): %s",
+            "%s: RX BLE data (%s): %s",
             self._ble_device.name,
             "start" if data == self._data else "cnt.",
             data,
@@ -123,7 +123,7 @@ class BMS(BaseBMS):
         frame_end: Final[int] = self.INFO_LEN + self._data[3] - 1
         if self._data[frame_end] != 0x77:
             LOGGER.debug(
-                "(%s) incorrect frame end (length: %i).", self.name, len(self._data)
+                "%s: incorrect frame end (length: %i).", self.name, len(self._data)
             )
             self._data_event.set()
             return
@@ -131,7 +131,7 @@ class BMS(BaseBMS):
         crc: Final[int] = self._crc(self._data[2 : frame_end - 2])
         if int.from_bytes(self._data[frame_end - 2 : frame_end], "big") != crc:
             LOGGER.debug(
-                "(%s) Rx data CRC is invalid: %i != %i",
+                "%s: RX data CRC is invalid: 0x%X != 0x%X",
                 self._ble_device.name,
                 int.from_bytes(self._data[frame_end - 2 : frame_end], "big"),
                 crc,
@@ -199,7 +199,7 @@ class BMS(BaseBMS):
                 or len(self._data_final) < self.INFO_LEN + exp_len
             ):
                 LOGGER.debug(
-                    "(%s) Wrong data length (%i): %s",
+                    "%s: wrong data length (%i): %s",
                     self._ble_device.name,
                     len(self._data_final),
                     self._data_final,

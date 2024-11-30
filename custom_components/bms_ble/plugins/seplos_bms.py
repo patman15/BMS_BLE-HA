@@ -149,13 +149,13 @@ class BMS(BaseBMS):
             and data[0] <= self._pack_count
             and data[1] & 0x80
         ):
-            LOGGER.debug("%s: Rx BLE error: %x", self._ble_device.name, int(data[2]))
+            LOGGER.debug("%s: RX BLE error: %X", self._ble_device.name, int(data[2]))
             self._data = bytearray()
             self._exp_len = self.HEAD_LEN + self.CRC_LEN
 
         self._data += data
         LOGGER.debug(
-            "%s: Rx BLE data (%s): %s",
+            "%s: RX BLE data (%s): %s",
             self._ble_device.name,
             "start" if data == self._data else "cnt.",
             data,
@@ -168,7 +168,7 @@ class BMS(BaseBMS):
         crc = crc_xmodem(self._data[: self._exp_len - 2])
         if int.from_bytes(self._data[self._exp_len - 2 : self._exp_len]) != crc:
             LOGGER.debug(
-                "%s: Rx data CRC is invalid: 0x%X != 0x%X",
+                "%s: RX data CRC is invalid: 0x%X != 0x%X",
                 self._ble_device.name,
                 int.from_bytes(self._data[self._exp_len - 2 : self._exp_len]),
                 crc,

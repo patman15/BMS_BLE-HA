@@ -107,7 +107,7 @@ class BMS(BaseBMS):
         """Retrieve BMS data update."""
 
         if data.startswith(self.BT_MODULE_MSG):
-            LOGGER.debug("(%s) filtering AT cmd", self.name)
+            LOGGER.debug("%s: filtering AT cmd", self.name)
             if len(data) == len(self.BT_MODULE_MSG):
                 return
             data = data[len(self.BT_MODULE_MSG) :]
@@ -121,7 +121,7 @@ class BMS(BaseBMS):
         self._data += data
 
         LOGGER.debug(
-            "(%s) Rx BLE data (%s): %s",
+            "%s: RX BLE data (%s): %s",
             self.name,
             "start" if data == self._data else "cnt.",
             data,
@@ -136,7 +136,7 @@ class BMS(BaseBMS):
         # check that message type is expected
         if self._data[self.TYPE_POS] not in self._valid_replies:
             LOGGER.debug(
-                "(%s) unexpected message type 0x%x (length %i): %s",
+                "%s: unexpected message type 0x%X (length %i): %s",
                 self.name,
                 self._data[self.TYPE_POS],
                 len(self._data),
@@ -147,7 +147,7 @@ class BMS(BaseBMS):
         # trim message in case oversized
         if len(self._data) > self.INFO_LEN:
             LOGGER.debug(
-                "(%s) Wrong data length (%i): %s",
+                "%s: wrong data length (%i): %s",
                 self.name,
                 len(self._data),
                 self._data,
@@ -157,7 +157,7 @@ class BMS(BaseBMS):
         crc = self._crc(self._data[:-1])
         if self._data[-1] != crc:
             LOGGER.debug(
-                "(%s) Rx data CRC is invalid: %i != %i",
+                "%s: RX data CRC is invalid: 0x%X != 0x%X",
                 self.name,
                 self._data[-1],
                 self._crc(self._data[:-1]),
@@ -175,7 +175,7 @@ class BMS(BaseBMS):
         for service in self._client.services:
             for char in service.characteristics:
                 LOGGER.debug(
-                    "(%s) Discovered %s (#%i): %s",
+                    "%s: discovered %s (#%i): %s",
                     self.name,
                     char.uuid,
                     char.handle,
@@ -192,13 +192,13 @@ class BMS(BaseBMS):
                     ):
                         self._char_write_handle = char.handle
         if char_notify_handle is None or self._char_write_handle is None:
-            LOGGER.debug("(%s) Failed to detect characteristics", self.name)
+            LOGGER.debug("%s: Failed to detect characteristics.", self.name)
             await self._client.disconnect()
             raise ConnectionError(
                 f"Failed to detect characteristics from {self.name}."
             )
         LOGGER.debug(
-            "(%s) Using characteristics handle #%i (notify), #%i (write)",
+            "%s: Using characteristics handle #%i (notify), #%i (write).",
             self.name,
             char_notify_handle,
             self._char_write_handle,
@@ -254,7 +254,7 @@ class BMS(BaseBMS):
         """Update battery status information."""
         if not self._data_event.is_set():
             # request cell info (only if data is not constantly published)
-            LOGGER.debug("(%s) request cell info", self.name)
+            LOGGER.debug("%s: request cell info", self.name)
             await self._client.write_gatt_char(
                 self._char_write_handle or 0, data=self._cmd(b"\x96")
             )

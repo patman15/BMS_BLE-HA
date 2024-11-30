@@ -106,7 +106,7 @@ class BMS(BaseBMS):
 
         self._data += data
         LOGGER.debug(
-            "(%s) Rx BLE data (%s): %s",
+            "%s: RX BLE data (%s): %s",
             self._ble_device.name,
             "start" if data == self._data else "cnt.",
             data,
@@ -119,14 +119,14 @@ class BMS(BaseBMS):
             self._data.startswith(self._HEAD_RSP)
             and set(self._data.decode()[3:]).issubset(self._HEX_CHARS)
         ):
-            LOGGER.debug("(%s) incorrect frame coding: %s", self.name, self._data)
+            LOGGER.debug("%s: incorrect frame coding: %s", self.name, self._data)
             self._data.clear()
             return
 
         crc: Final[int] = self._crc(self._data[1 : -self._CRC_LEN])
         if crc != int(self._data[-self._CRC_LEN :], 16):
             LOGGER.debug(
-                "(%s) incorrect checksum 0x%X != 0x%X",
+                "%s: incorrect checksum 0x%X != 0x%X",
                 self.name,
                 int(self._data[-self._CRC_LEN :], 16),
                 crc,

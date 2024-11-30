@@ -102,7 +102,7 @@ class BMS(BaseBMS):
         }
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
-        LOGGER.debug("Received BLE data: %s", data)
+        LOGGER.debug("%s: Received BLE data: %s", self.name, data)
 
         if (
             len(data) < self.HEAD_LEN
@@ -111,9 +111,9 @@ class BMS(BaseBMS):
             or int.from_bytes(data[-2:], byteorder="big") != crc_xmodem(data[:-2])
         ):
             LOGGER.debug(
-                "Response data is invalid, CRC: %s/%s",
-                data[-2:],
-                bytearray(crc_xmodem(data[:-2]).to_bytes(2)),
+                "Response data is invalid, CRC: 0x%X != 0x%X",
+                int.from_bytes(data[-2:], byteorder="big"),
+                crc_xmodem(data[:-2]),
             )
             self._data = None
         else:
@@ -129,7 +129,7 @@ class BMS(BaseBMS):
             await self._client.write_gatt_char(
                 BMS.uuid_tx(), data=self.HEAD_READ + self.MOS_INFO
             )
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT/5)
+            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT / 5)
 
             if self._data is not None and sum(self._data[self.MOS_TEMP_POS :][:2]):
                 LOGGER.debug("%s: MOS info: %s", self._ble_device.name, self._data)

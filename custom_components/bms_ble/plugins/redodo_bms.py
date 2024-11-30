@@ -97,20 +97,20 @@ class BMS(BaseBMS):
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
-        LOGGER.debug("%s: Received BLE data: %s", self.name, data.hex(" "))
+        LOGGER.debug("%s: Received BLE data: %s", self.name, data)
 
         if len(data) < 3 or not data.startswith(b"\x00\x00"):
             LOGGER.debug("%s: incorrect SOF.")
             return
 
         if len(data) != data[2] + self.HEAD_LEN + 1:  # add header length and CRC
-            LOGGER.debug("(%s) incorrect frame length (%i)", self.name, len(data))
+            LOGGER.debug("%s: incorrect frame length (%i)", self.name, len(data))
             return
 
         crc = self._crc(data[: self.CRC_POS])
         if crc != data[self.CRC_POS]:
             LOGGER.debug(
-                "(%s) Rx data CRC is invalid: 0x%x != 0x%x",
+                "%s: RX data CRC is invalid: 0x%X != 0x%X",
                 self.name,
                 data[len(data) + self.CRC_POS],
                 crc,
