@@ -23,7 +23,6 @@ body:
   attributes:
     label: "Please describe the enhancement you would like to have."
     description: "A clear and concise description of what you want to add or how a behaviour should be modified."
-    render: text
   validations:
     required: true
 
