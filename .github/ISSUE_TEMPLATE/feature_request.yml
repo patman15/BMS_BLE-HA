@@ -23,14 +23,13 @@ body:
   attributes:
     label: "Please describe the enhancement you would like to have."
     description: "A clear and concise description of what you want to add or how a behaviour should be modified."
-    render: text
   validations:
     required: true
 
 - type: textarea
   attributes:
     label: "Additional context"
-    description: "Add any other context (documentation) or screenshots about the feature request here."
+    description: "Add any other context (documentation) or screenshots about the feature request here. For new BMS types, please provide the output of `bluetoothctl info <MAC>` and the [service explorer script](https://github.com/hbldh/bleak/blob/develop/examples/service_explorer.py)."
     placeholder: "For new BMS, please provide any links to documentation, the BT protocol, link to an Android app, other open source implementations, or the like."
   validations:
     required: false

@@ -21,6 +21,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - D-powercore BMS (show up as `DXB-`&#x2026;), Fliteboard batteries (show up as `TBA-`&#x2026;)
 - Daly BMS (show up as `DL-`&#x2026;)
 - E&J Technology BMS, Supervolt v1 batteries
+- Ective batteries
 - JBD BMS, Jiabaida
   - accurat batteries
   - Supervolt v3 batteries
@@ -32,7 +33,12 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 New device types can be easily added via the plugin architecture of this integration. See the [contribution guidelines](CONTRIBUTING.md) for details.
 
 ### Provided Information
-The integration provides the following information about the battery
+> [!CAUTION]
+> This integration (including Home Assistant) **shall not be used for safety relevant operations**! The correctness or availability of data cannot be guaranteed (see [warranty section of the license](LICENSE)),
+> since the implementation is mostly based on openly available information or non-validated vendor specifications.
+> Further, issues with the Bluetooth connection, e.g. disturbances, can lead to unavailable or incorrect values.
+> 
+> **Do not rely** on the values to control actions that prevent battery damage, overheating (fire), or similar.
 
 Platform | Description | Unit | Details
 -- | -- | -- | --
@@ -41,7 +47,7 @@ Platform | Description | Unit | Details
 `sensor` | current | `A` | positive for charging, negative for discharging
 `sensor` | delta voltage | `V` | maximum difference between any two cells; individual cell voltage are available as attribute to this sensor
 `sensor` | power | `W` | positive for charging, negative for discharging
-`sensor` | runtime | `s` | remaining discharge time till SoC 0%
+`sensor` | runtime | `s` | remaining discharge time till SoC 0%, `unavailable` during idle/charging
 `sensor` | SoC | `%` | state of charge, range 100% (full) to 0% (battery empty)
 `sensor` | stored energy | `Wh` | currently stored energy
 `sensor` | temperature | `°C` | individual temperature values are available as attribute to this sensor, if the BMS supports multiple sensors
@@ -145,7 +151,7 @@ In case you have severe troubles,
 - Add further battery types on [request](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.yml)
 
 ## Thanks to
-> [@gkathan](https://github.com/patman15/BMS_BLE-HA/issues/2), [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22), [@Goaheadz](https://github.com/patman15/BMS_BLE-HA/issues/24), [@alros100, @majonessyltetoy](https://github.com/patman15/BMS_BLE-HA/issues/52), [@snipah, @Gruni22](https://github.com/patman15/BMS_BLE-HA/issues/59), [@azisto](https://github.com/patman15/BMS_BLE-HA/issues/78), [@BikeAtor, @Karatzie](https://github.com/patman15/BMS_BLE-HA/issues/57)
+> [@gkathan](https://github.com/patman15/BMS_BLE-HA/issues/2), [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22), [@Goaheadz](https://github.com/patman15/BMS_BLE-HA/issues/24), [@alros100, @majonessyltetoy](https://github.com/patman15/BMS_BLE-HA/issues/52), [@snipah, @Gruni22](https://github.com/patman15/BMS_BLE-HA/issues/59), [@azisto](https://github.com/patman15/BMS_BLE-HA/issues/78), [@BikeAtor, @Karatzie](https://github.com/patman15/BMS_BLE-HA/issues/57), [@SkeLLLa,@romanshypovskyi](https://github.com/patman15/BMS_BLE-HA/issues/90)
 
 for helping with making the integration better.
 
