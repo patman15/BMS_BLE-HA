@@ -49,7 +49,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
         if service_info := async_last_service_info(
             self.hass, address=self._mac, connectable=True
         ):
-            LOGGER.debug("%s: device data: %s", self.name, service_info.as_dict())
+            LOGGER.debug("%s: advertisement: %s", self.name, service_info.as_dict())
 
         # retrieve BMS class and initialize it
         self._device: BaseBMS = bms_device
