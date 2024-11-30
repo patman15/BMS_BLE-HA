@@ -47,7 +47,7 @@ Platform | Description | Unit | Details
 `sensor` | current | `A` | positive for charging, negative for discharging
 `sensor` | delta voltage | `V` | maximum difference between any two cells; individual cell voltage are available as attribute to this sensor
 `sensor` | power | `W` | positive for charging, negative for discharging
-`sensor` | runtime | `s` | remaining discharge time till SoC 0%
+`sensor` | runtime | `s` | remaining discharge time till SoC 0%, `unavailable` during idle/charging
 `sensor` | SoC | `%` | state of charge, range 100% (full) to 0% (battery empty)
 `sensor` | stored energy | `Wh` | currently stored energy
 `sensor` | temperature | `°C` | individual temperature values are available as attribute to this sensor, if the BMS supports multiple sensors
