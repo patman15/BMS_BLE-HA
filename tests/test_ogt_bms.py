@@ -7,6 +7,7 @@ from uuid import UUID
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
+
 from custom_components.bms_ble.plugins.ogt_bms import BMS
 
 from .bluetooth import generate_ble_device
@@ -39,7 +40,9 @@ class MockOGTBleakClient(MockBleakClient):
     async def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) == normalize_uuid_str("fff6"):
+        if isinstance(char_specifier, str) and normalize_uuid_str(
+            char_specifier
+        ) == normalize_uuid_str("fff6"):
             assert self._ble_device.name is not None
             if self._ble_device.name[9] == "A":
                 assert bytearray(data)[0:4] == bytearray(
@@ -88,7 +91,9 @@ class MockInvalidBleakClient(MockOGTBleakClient):
     async def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) == normalize_uuid_str("fff6"):
+        if isinstance(char_specifier, str) and normalize_uuid_str(
+            char_specifier
+        ) == normalize_uuid_str("fff6"):
             return bytearray(b"invalid_value")
 
         return bytearray()
@@ -128,7 +133,7 @@ async def test_update(monkeypatch, ogt_bms_fixture, reconnect_fixture) -> None:
 
     result = await bms.async_update()
 
-    if str(ogt_bms_fixture)[10] == 'A':
+    if str(ogt_bms_fixture)[10] == "A":
         assert len(result) == 10  # verify number of entries
         assert result == {
             "voltage": 45.681,
@@ -142,7 +147,7 @@ async def test_update(monkeypatch, ogt_bms_fixture, reconnect_fixture) -> None:
             "battery_charging": False,
             "runtime": 7200,
         }  # verify all sensors are reported
-    elif str(ogt_bms_fixture)[10] == 'B':
+    elif str(ogt_bms_fixture)[10] == "B":
         assert len(result) == 9  # verify number of entries
         assert result == {
             "voltage": 45.681,
@@ -193,4 +198,3 @@ async def test_invalid_bms_type(monkeypatch) -> None:
     assert result == {}
     assert bms._client.is_connected
     await bms.disconnect()
-

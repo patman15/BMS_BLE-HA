@@ -9,8 +9,9 @@ from bleak.backends.descriptor import BleakGATTDescriptor
 from bleak.backends.service import BleakGATTService, BleakGATTServiceCollection
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str, uuidstr_to_str
-from custom_components.bms_ble.plugins.jikong_bms import BMS
 import pytest
+
+from custom_components.bms_ble.plugins.jikong_bms import BMS
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient

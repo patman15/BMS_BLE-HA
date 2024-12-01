@@ -6,6 +6,7 @@ from uuid import UUID
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
+
 from custom_components.bms_ble.plugins.jbd_bms import BMS
 
 from .bluetooth import generate_ble_device
@@ -46,7 +47,7 @@ class MockJBDBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # type: ignore[implicit-optional] # same as upstream
+        response: bool | None = None,
     ) -> None:
         """Issue write command to GATT."""
 

@@ -7,7 +7,6 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
 )
 from custom_components.bms_ble.coordinator import BTBmsCoordinator
-
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 

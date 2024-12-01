@@ -2,6 +2,7 @@
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
+
 from .bluetooth import inject_bluetooth_service_info_bleak
 from .conftest import mock_config, mock_update_exc, mock_update_min
 

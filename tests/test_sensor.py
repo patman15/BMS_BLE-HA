@@ -2,6 +2,8 @@
 
 from datetime import timedelta
 
+from pytest_homeassistant_custom_component.common import async_fire_time_changed
+
 from custom_components.bms_ble.const import (
     ATTR_CELL_VOLTAGES,
     ATTR_CURRENT,
@@ -15,7 +17,6 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
     UPDATE_INTERVAL,
 )
-from pytest_homeassistant_custom_component.common import async_fire_time_changed
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util

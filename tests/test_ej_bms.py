@@ -1,11 +1,12 @@
 """Test the E&J technology BMS implementation."""
 
-import pytest
 from collections.abc import Buffer
 from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.uuids import normalize_uuid_str
+import pytest
+
 from custom_components.bms_ble.plugins.ej_bms import BMS
 
 from .bluetooth import generate_ble_device

@@ -1,13 +1,12 @@
 """Module to support CBT Power Smart BMS."""
 
 import asyncio
-import logging
 from collections.abc import Callable
+import logging
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
-from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
@@ -24,6 +23,7 @@ from custom_components.bms_ble.const import (
     KEY_CELL_VOLTAGE,
     KEY_DESIGN_CAP,
 )
+from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 from .basebms import BaseBMS, BMSsample, crc_sum
 
@@ -152,9 +152,18 @@ class BMS(BaseBMS):
             for idx in range(5)
         }
 
+    @staticmethod
+    def _decode_data(cache: dict[int, bytearray]) -> BMSsample:
+        data = {}
+        for field, cmd, pos, size, sign, fct in BMS._FIELDS:
+            if cmd in cache:
+                data[field] = fct(
+                    int.from_bytes(cache[cmd][pos : pos + size], "little", signed=sign)
+                )
+        return data
+
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        data = {}
         resp_cache = {}  # variable to avoid multiple queries with same command
         for cmd in BMS._CMDS:
             LOGGER.debug("%s: request command 0x%X.", self.name, cmd)
@@ -167,22 +176,12 @@ class BMS(BaseBMS):
                 continue
             if cmd != self._data[BMS.CMD_POS]:
                 LOGGER.debug(
-                    "%s:: incorrect response 0x%X to command 0x%X",
+                    "%s: incorrect response 0x%X to command 0x%X",
                     self.name,
                     self._data[BMS.CMD_POS],
                     cmd,
                 )
             resp_cache[self._data[BMS.CMD_POS]] = self._data.copy()
-
-        for field, cmd, pos, size, sign, fct in BMS._FIELDS:
-            if resp_cache.get(cmd):
-                data |= {
-                    field: fct(
-                        int.from_bytes(
-                            resp_cache[cmd][pos : pos + size], "little", signed=sign
-                        )
-                    )
-                }
 
         voltages = {}
         for cmd in BMS.CELL_VOLTAGE_CMDS:
@@ -198,7 +197,8 @@ class BMS(BaseBMS):
                 for k in invalid:
                     voltages.pop(k)
                 break
-        data |= voltages
+
+        data = BMS._decode_data(resp_cache)
 
         # get cycle charge from design capacity and SoC
         if data.get(KEY_DESIGN_CAP) and data.get(ATTR_BATTERY_LEVEL):
@@ -209,4 +209,4 @@ class BMS(BaseBMS):
         if data.get(ATTR_CURRENT, 0) >= 0:
             data.pop(ATTR_RUNTIME, None)
 
-        return data
+        return data | voltages
