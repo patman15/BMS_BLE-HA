@@ -140,7 +140,7 @@ Once pairing is done, the integration should automatically detect the BMS.
 In case you have severe troubles,
 
 - please [enable the debug protocol](https://www.home-assistant.io/docs/configuration/troubleshooting/#debug-logs-and-diagnostics) for the [BLE Battery Management integration](https://my.home-assistant.io/redirect/integration/?domain=bms_ble),
-- reproduce the issue,
+- restart Home Assistant and reproduce the issue,
 - disable the log (Home Assistant will prompt you to download the log), and finally
 - [open an issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=Bug&projects=&template=bug.yml) with a good description of what happened and attach the log.
 
