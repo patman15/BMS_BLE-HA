@@ -1,6 +1,6 @@
 """Test the BLE Battery Management System integration constants definition."""
 
-from custom_components.bms_ble.const import UPDATE_INTERVAL, BMS_TYPES
+from custom_components.bms_ble.const import BMS_TYPES, UPDATE_INTERVAL
 
 
 async def test_critical_constants() -> None:

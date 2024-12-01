@@ -114,7 +114,7 @@ class BMS(BaseBMS):
 
         if (
             len(self._data) >= self.INFO_LEN
-            and (data.startswith(BMS.HEAD_RSP) or data.startswith(self.HEAD_CMD))
+            and (data.startswith((BMS.HEAD_RSP, self.HEAD_CMD)))
         ) or not self._data.startswith(BMS.HEAD_RSP):
             self._data = bytearray()
 

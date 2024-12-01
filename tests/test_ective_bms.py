@@ -1,10 +1,11 @@
 """Test the Ective BMS implementation."""
 
-import pytest
-from collections.abc import Callable, Awaitable
+from collections.abc import Awaitable, Callable
 from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
+import pytest
+
 from custom_components.bms_ble.plugins.ective_bms import BMS
 
 from .bluetooth import generate_ble_device
@@ -51,6 +52,7 @@ class MockEctiveBleakClient(MockBleakClient):
         ],
         **kwargs,
     ) -> None:
+        """Mock start_notify."""
         await super().start_notify(char_specifier, callback)
         self._send_info()
 

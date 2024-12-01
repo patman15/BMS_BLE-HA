@@ -2,9 +2,9 @@
 
 from datetime import timedelta
 
-from custom_components.bms_ble.const import UPDATE_INTERVAL
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
+from custom_components.bms_ble.const import UPDATE_INTERVAL
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant

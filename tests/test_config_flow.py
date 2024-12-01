@@ -1,9 +1,9 @@
 """Test the BLE Battery Management System integration config flow."""
 
-from custom_components.bms_ble.const import DOMAIN
-from custom_components.bms_ble.plugins.basebms import BaseBMS
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.bms_ble.const import DOMAIN
+from custom_components.bms_ble.plugins.basebms import BaseBMS
 from homeassistant.config_entries import SOURCE_BLUETOOTH, SOURCE_USER, ConfigEntryState
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant

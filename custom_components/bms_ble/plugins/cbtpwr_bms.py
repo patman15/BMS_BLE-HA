@@ -1,13 +1,12 @@
 """Module to support CBT Power Smart BMS."""
 
 import asyncio
-import logging
 from collections.abc import Callable
+import logging
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
-from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
@@ -24,6 +23,7 @@ from custom_components.bms_ble.const import (
     KEY_CELL_VOLTAGE,
     KEY_DESIGN_CAP,
 )
+from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 from .basebms import BaseBMS, BMSsample, crc_sum
 
