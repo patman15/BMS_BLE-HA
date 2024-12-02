@@ -44,7 +44,7 @@ class BMS(BaseBMS):
         (ATTR_BATTERY_LEVEL, Cmd.RT, 123, 2, lambda x: x),
         (ATTR_CYCLE_CHRG, Cmd.CAP, 15, 4, lambda x: float(x) / 10),
         (ATTR_TEMPERATURE, Cmd.RT, 97, 2, lambda x: x - 40),  # only 1st sensor relevant
-        (ATTR_CYCLES, Cmd.RT, 119, 4, lambda x: x),
+        (ATTR_CYCLES, Cmd.RT, 115, 4, lambda x: x),
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
