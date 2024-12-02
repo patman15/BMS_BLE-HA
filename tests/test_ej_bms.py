@@ -12,6 +12,7 @@ from custom_components.bms_ble.plugins.ej_bms import BMS
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
+BT_FRAME_SIZE = 20
 
 class MockEJBleakClient(MockBleakClient):
     """Emulate a E&J technology BMS BleakClient."""
@@ -26,7 +27,9 @@ class MockEJBleakClient(MockBleakClient):
         cmd: int = int(bytearray(data)[3:5], 16)
         if cmd == 0x02:
             return bytearray(
-                b":0082310080000101C00000880F540F3C0F510FD70F310F2C0F340F3A0FED0FED0000000000000000000000000000000248424242F0000000000000000001AB~"
+                #b":0082310080000101C00000880F540F3C0F510FD70F310F2C0F340F3A0FED0FED0000000000000000000000000000000248424242F0000000000000000001AB~"
+                #b":008231008C000000000000000CBF0CC00CEA0CD5000000000000000000000000000000000000000000000000008C000041282828F000000000000100004B044C05DC05DCB2~"
+                b":008231008C000000000000000CE80CE80CE60CE2000000000000000000000000000000000000000000000000000000002F2F2F2FF000003D6B002900002E022604C403E892~"
             )  # TODO: put numbers
         if cmd == 0x10:
             return bytearray(b":009031001E00000002000A000AD8~")  # TODO: put numbers
@@ -41,9 +44,15 @@ class MockEJBleakClient(MockBleakClient):
         """Issue write command to GATT."""
         await super().write_gatt_char(char_specifier, data, response)
         assert self._notify_callback is not None
-        self._notify_callback(
-            "MockPwrcoreBleakClient", self._response(char_specifier, data)
-        )
+        for notify_data in [
+            self._response(char_specifier, data)[i : i + BT_FRAME_SIZE]
+            for i in range(0, len(self._response(char_specifier, data)), BT_FRAME_SIZE)
+        ]:
+            self._notify_callback("MockEctiveBleakClient", notify_data)
+
+        # self._notify_callback(
+        #     "MockPwrcoreBleakClient", self._response(char_specifier, data)
+        # )
 
 
 async def test_update(monkeypatch, reconnect_fixture) -> None:
