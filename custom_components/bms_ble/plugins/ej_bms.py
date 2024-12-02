@@ -116,13 +116,13 @@ class BMS(BaseBMS):
             return
 
         if self._data[-1] != BMS._TAIL:
-            LOGGER.debug("%s: Incorrect EOF: %s", self.name, data)
+            LOGGER.debug("%s: incorrect EOF: %s", self.name, data)
             self._data.clear()
             return
 
         if len(self._data) != int(self._data[7:11], 16):
             LOGGER.debug(
-                "%s: Incorrect frame length %i != %i",
+                "%s: incorrect frame length %i != %i",
                 self.name,
                 len(self._data),
                 int(self._data[7:11], 16),
@@ -138,14 +138,16 @@ class BMS(BaseBMS):
                 int(self._data[-3:-1], 16),
                 crc,
             )
+            self._data.clear()
             return
 
         LOGGER.debug(
-            "%s: address: 0x%X, commnad 0x%X, version: 0x%X",
+            "%s: address: 0x%X, commnad 0x%X, version: 0x%X, length: 0x%X",
             self.name,
             int(self._data[1:3], 16),
             int(self._data[3:5], 16) & 0x7F,
             int(self._data[5:7], 16),
+            len(self._data)
         )
         self._data_final = self._data.copy()
         self._data_event.set()
@@ -175,6 +177,7 @@ class BMS(BaseBMS):
             rsp: int = int(self._data_final[3:5], 16) & 0x7F
             raw_data[rsp] = self._data_final
             if rsp == Cmd.RT and len(self._data_final) == 0x8C: # handle metrisun version
+                LOGGER.debug("%s: single frame protocol detected")
                 raw_data[Cmd.CAP] = bytearray(15) + self._data_final[125:]
                 break
 
