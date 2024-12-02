@@ -22,7 +22,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Daly BMS (show up as `DL-`&#x2026;)
 - E&J Technology BMS
     - Supervolt v1 batteries
-    - Elektronix batteries (show up as `LT-`&#x2026;)
+    - Elektronicx batteries (show up as `LT-`&#x2026;)
 - Ective batteries
 - JBD BMS, Jiabaida
     - accurat batteries
