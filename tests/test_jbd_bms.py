@@ -6,6 +6,7 @@ from uuid import UUID
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
+import pytest
 
 from custom_components.bms_ble.plugins.jbd_bms import BMS
 
@@ -62,32 +63,32 @@ class MockJBDBleakClient(MockBleakClient):
             self._notify_callback("MockJBDBleakClient", notify_data)
 
 
-class MockInvalidBleakClient(MockJBDBleakClient):
-    """Emulate a JBD BMS BleakClient returning wrong data."""
+# class MockInvalidBleakClient(MockJBDBleakClient):
+#     """Emulate a JBD BMS BleakClient returning wrong data."""
 
-    def _response(
-        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
-    ) -> bytearray:
-        if (
-            isinstance(char_specifier, str)
-            and normalize_uuid_str(char_specifier) == normalize_uuid_str("ff02")
-            and bytearray(data)[0] == self.HEAD_CMD
-        ):
-            if bytearray(data)[1:3] == self.CMD_INFO:
-                return bytearray(  # wrong end
-                    b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
-                    b"\x00\x00\x00\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x84\xdd"
-                )
+#     def _response(
+#         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
+#     ) -> bytearray:
+#         if (
+#             isinstance(char_specifier, str)
+#             and normalize_uuid_str(char_specifier) == normalize_uuid_str("ff02")
+#             and bytearray(data)[0] == self.HEAD_CMD
+#         ):
+#             if bytearray(data)[1:3] == self.CMD_INFO:
+#                 return bytearray(  # wrong end
+#                     b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
+#                     b"\x00\x00\x00\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x84\xdd"
+#                 )
 
-            return (  # wrong CRC
-                bytearray(b"\xdd\x03\x00\x1d") + bytearray(31) + bytearray(b"\x77")
-            )
+#             return (  # wrong CRC
+#                 bytearray(b"\xdd\x04\x00\x1d") + bytearray(31) + bytearray(b"\x77")
+#             )
 
-        return bytearray()
+#         return bytearray()
 
-    async def disconnect(self) -> bool:
-        """Mock disconnect to raise BleakError."""
-        raise BleakError
+#     async def disconnect(self) -> bool:
+#         """Mock disconnect to raise BleakError."""
+#         raise BleakError
 
 
 class MockOversizedBleakClient(MockJBDBleakClient):
@@ -166,19 +167,45 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
     await bms.disconnect()
 
 
-async def test_invalid_response(monkeypatch) -> None:
+@pytest.fixture(
+    name="wrong_response",
+    params=[
+        bytearray(  # wrong end
+            b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
+            b"\x00\x00\x00\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x84\xdd"
+        ),
+        bytearray(b"\xdd\x04\x00\x1d")
+        + bytearray(31)
+        + bytearray(b"\x77"),  # wrong CRC
+    ],
+)
+def response(request) -> bytearray:
+    """Return all possible BMS variants."""
+    return request.param
+
+
+async def test_invalid_response(monkeypatch, wrong_response) -> None:
     """Test data update with BMS returning invalid data (wrong CRC)."""
 
     monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.jbd_bms.BAT_TIMEOUT",
+        0.1,
+    )
+
+    monkeypatch.setattr(
+        "tests.test_jbd_bms.MockJBDBleakClient._response",
+        lambda _s, _c_, d: wrong_response,
+    )
+
+    monkeypatch.setattr(
         "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockInvalidBleakClient,
+        MockJBDBleakClient,
     )
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
-    result = await bms.async_update()
-
-    assert result == {}
+    with pytest.raises(TimeoutError):
+        _result = await bms.async_update()
 
     await bms.disconnect()
 
