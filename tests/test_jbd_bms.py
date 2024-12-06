@@ -63,34 +63,6 @@ class MockJBDBleakClient(MockBleakClient):
             self._notify_callback("MockJBDBleakClient", notify_data)
 
 
-# class MockInvalidBleakClient(MockJBDBleakClient):
-#     """Emulate a JBD BMS BleakClient returning wrong data."""
-
-#     def _response(
-#         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
-#     ) -> bytearray:
-#         if (
-#             isinstance(char_specifier, str)
-#             and normalize_uuid_str(char_specifier) == normalize_uuid_str("ff02")
-#             and bytearray(data)[0] == self.HEAD_CMD
-#         ):
-#             if bytearray(data)[1:3] == self.CMD_INFO:
-#                 return bytearray(  # wrong end
-#                     b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
-#                     b"\x00\x00\x00\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x84\xdd"
-#                 )
-
-#             return (  # wrong CRC
-#                 bytearray(b"\xdd\x04\x00\x1d") + bytearray(31) + bytearray(b"\x77")
-#             )
-
-#         return bytearray()
-
-#     async def disconnect(self) -> bool:
-#         """Mock disconnect to raise BleakError."""
-#         raise BleakError
-
-
 class MockOversizedBleakClient(MockJBDBleakClient):
     """Emulate a JBD BMS BleakClient returning wrong data length."""
 

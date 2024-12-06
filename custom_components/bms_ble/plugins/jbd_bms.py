@@ -50,7 +50,6 @@ class BMS(BaseBMS):
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
         super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
-        self.name: str = str(self._ble_device.name) + self._ble_device.address[-4:]
         self._data: bytearray = bytearray()
         self._data_final: bytearray = bytearray()
 
