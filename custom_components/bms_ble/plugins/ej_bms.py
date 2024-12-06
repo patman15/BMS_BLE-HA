@@ -38,6 +38,7 @@ class Cmd(IntEnum):
 class BMS(BaseBMS):
     """Dummy battery class implementation."""
 
+    _BT_MODULE_MSG: Final[bytes] = bytes([0x41, 0x54, 0x0D, 0x0A])  # AT\r\n from BLE module
     _HEAD: Final[int] = 0x3A
     _TAIL: Final[int] = 0x7E
     _MAX_CELLS: Final[int] = 16
@@ -97,6 +98,12 @@ class BMS(BaseBMS):
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
+
+        if data.startswith(BMS._BT_MODULE_MSG):
+            LOGGER.debug("%s: filtering AT cmd", self.name)
+            if len(data) == len(BMS._BT_MODULE_MSG):
+                return
+            data = data[len(BMS._BT_MODULE_MSG) :]
 
         if data[0] == BMS._HEAD:  # check for beginning of frame
             self._data.clear()
@@ -177,7 +184,7 @@ class BMS(BaseBMS):
             rsp: int = int(self._data_final[3:5], 16) & 0x7F
             raw_data[rsp] = self._data_final
             if rsp == Cmd.RT and len(self._data_final) == 0x8C: # handle metrisun version
-                LOGGER.debug("%s: single frame protocol detected")
+                LOGGER.debug("%s: single frame protocol detected", self.name)
                 raw_data[Cmd.CAP] = bytearray(15) + self._data_final[125:]
                 break
 
