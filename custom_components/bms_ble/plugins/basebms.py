@@ -229,8 +229,8 @@ class BaseBMS(metaclass=ABCMeta):
         return data
 
 
-def crc_xmodem(data: bytearray) -> int:
-    """Calculate CRC-16-CCITT XMODEM (ModBus)."""
+def crc_modbus(data: bytearray) -> int:
+    """Calculate CRC-16-CCITT MODBUS."""
     crc: int = 0xFFFF
     for i in data:
         crc ^= i & 0xFF
@@ -238,6 +238,14 @@ def crc_xmodem(data: bytearray) -> int:
             crc = (crc >> 1) ^ 0xA001 if crc % 2 else (crc >> 1)
     return ((0xFF00 & crc) >> 8) | ((crc & 0xFF) << 8)
 
+def crc_xmodem(data: bytearray) -> int:
+    """Calculate CRC-16-CCITT XMODEM."""
+    crc: int = 0x0000
+    for byte in data:
+        crc ^= byte << 8
+        for _ in range(8):
+            crc = (crc << 1) ^ 0x1021 if (crc & 0x8000) else (crc << 1)
+    return crc & 0xFFFF
 
 def crc_sum(frame: bytes) -> int:
     """Calculate frame CRC."""

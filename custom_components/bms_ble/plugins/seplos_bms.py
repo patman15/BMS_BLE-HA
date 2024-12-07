@@ -25,7 +25,7 @@ from custom_components.bms_ble.const import (
     KEY_TEMP_VALUE,
 )
 
-from .basebms import BaseBMS, BMSsample, crc_xmodem
+from .basebms import BaseBMS, BMSsample, crc_modbus
 
 BAT_TIMEOUT: Final = 5
 LOGGER = logging.getLogger(__name__)
@@ -151,7 +151,7 @@ class BMS(BaseBMS):
         if len(self._data) < self._exp_len:
             return
 
-        crc = crc_xmodem(self._data[: self._exp_len - 2])
+        crc = crc_modbus(self._data[: self._exp_len - 2])
         if int.from_bytes(self._data[self._exp_len - 2 : self._exp_len]) != crc:
             LOGGER.debug(
                 "%s: RX data CRC is invalid: 0x%X != 0x%X",
@@ -203,7 +203,7 @@ class BMS(BaseBMS):
         frame = bytearray([device, cmd])
         frame += bytearray(int.to_bytes(start, 2, byteorder="big"))
         frame += bytearray(int.to_bytes(count, 2, byteorder="big"))
-        frame += bytearray(int.to_bytes(crc_xmodem(frame), 2, byteorder="big"))
+        frame += bytearray(int.to_bytes(crc_modbus(frame), 2, byteorder="big"))
         return frame
 
     async def _async_update(self) -> BMSsample:
