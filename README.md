@@ -11,7 +11,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 ## Features
 - Zero configuration
 - Autodetects compatible batteries
-- Supports [ESPHome Bluetooth proxy][btproxy-url]  ([BT proxy limit][btproxy-url]: 3 devices/proxy)
+- Supports [ESPHome Bluetooth proxy][btproxy-url]  (limit: 3 devices/proxy)
 - Any number of batteries in parallel
 - Native Home Assistant integration (works with all [HA installation methods](https://www.home-assistant.io/installation/#advanced-installation-methods))
 - Readout of individual cell voltages to be able to judge battery health
@@ -139,7 +139,15 @@ Then you need to pair your device first. This is procedure is only required once
 Once pairing is done, the integration should automatically detect the BMS.
 
 ## Troubleshooting
-In case you have severe troubles,
+### If your device is not recognized
+
+1. Check that your BMS type is listed as [supported device](#supported-devices)
+1. Make sure that no other device is connected to the BMS, e.g. app on your phone
+1. Check that your are running the [latest release](https://github.com//patman15/BMS_BLE-HA/releases)  of the integration
+1. Open a [terminal to Home Assistant](https://www.home-assistant.io/common-tasks/supervised/#installing-and-using-the-ssh-add-on) and verify that your BMS is listed in the ouput of the command `bluetoothctl devices`. Try to connect to the BMS using `bluetoothctl connect <MAC>`.
+1. If you use a BT proxy, make sure you have set `active: true` and that you do not exced the [BT proxy limit][btproxy-url] of 3 devices/proxy; check the logs of the proxy if the device is recognized.
+
+### In case you have severe troubles
 
 - please [enable the debug protocol](https://www.home-assistant.io/docs/configuration/troubleshooting/#debug-logs-and-diagnostics) for the [BLE Battery Management integration](https://my.home-assistant.io/redirect/integration/?domain=bms_ble),
 - restart Home Assistant and reproduce the issue,
