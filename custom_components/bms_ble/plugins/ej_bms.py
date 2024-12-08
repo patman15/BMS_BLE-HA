@@ -1,7 +1,7 @@
 """Module to support Dummy BMS."""
 
 import asyncio
-from enum import Enum
+from enum import IntEnum
 import logging
 from typing import Any, Callable, Final
 
@@ -28,7 +28,7 @@ LOGGER = logging.getLogger(__name__)
 BAT_TIMEOUT = 10
 
 
-class Cmd(Enum):
+class Cmd(IntEnum):
     """BMS operation codes."""
 
     RT = 0x2
@@ -38,30 +38,31 @@ class Cmd(Enum):
 class BMS(BaseBMS):
     """Dummy battery class implementation."""
 
+    _BT_MODULE_MSG: Final[bytes] = bytes([0x41, 0x54, 0x0D, 0x0A])  # AT\r\n from BLE module
+    _HEAD: Final[int] = 0x3A
+    _TAIL: Final[int] = 0x7E
     _MAX_CELLS: Final[int] = 16
     _FIELDS: Final[list[tuple[str, Cmd, int, int, Callable[[int], int | float]]]] = [
         (ATTR_CURRENT, Cmd.RT, 89, 8, lambda x: float((x >> 16) - (x & 0xFFFF)) / 100),
         (ATTR_BATTERY_LEVEL, Cmd.RT, 123, 2, lambda x: x),
         (ATTR_CYCLE_CHRG, Cmd.CAP, 15, 4, lambda x: float(x) / 10),
         (ATTR_TEMPERATURE, Cmd.RT, 97, 2, lambda x: x - 40),  # only 1st sensor relevant
-        (ATTR_CYCLES, Cmd.RT, 119, 4, lambda x: x),
+        (ATTR_CYCLES, Cmd.RT, 115, 4, lambda x: x),
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
         LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
         super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
-        self._data = bytearray()
+        self._data: bytearray = bytearray()
+        self._data_final: bytearray = bytearray()
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
         """Provide BluetoothMatcher definition."""
-        return [
-            {
-                "local_name": "libatt*",
-                "manufacturer_id": 21320,
-                "connectable": True,
-            }
+        return [  # Fliteboard, Electronix battery
+            {"local_name": "libatt*", "manufacturer_id": 21320, "connectable": True},
+            {"local_name": "LT-*", "manufacturer_id": 33384, "connectable": True},
         ]
 
     @staticmethod
@@ -97,39 +98,65 @@ class BMS(BaseBMS):
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
-        LOGGER.debug("%s: Received BLE data: %s", self.name, data)
 
-        if data[0] != 0x3A or data[-1] != 0x7E:
-            LOGGER.debug("%s: Incorrect SOI or EOI: %s", self.name, data)
+        if data.startswith(BMS._BT_MODULE_MSG):
+            LOGGER.debug("%s: filtering AT cmd", self.name)
+            if len(data) == len(BMS._BT_MODULE_MSG):
+                return
+            data = data[len(BMS._BT_MODULE_MSG) :]
+
+        if data[0] == BMS._HEAD:  # check for beginning of frame
+            self._data.clear()
+
+        self._data += data
+
+        LOGGER.debug(
+            "%s: RX BLE data (%s): %s",
+            self._ble_device.name,
+            "start" if data == self._data else "cnt.",
+            data,
+        )
+
+        if self._data[0] != BMS._HEAD or (
+            self._data[-1] != BMS._TAIL and len(self._data) < int(self._data[7:11], 16)
+        ):
             return
 
-        if len(data) != int(data[7:11], 16):
+        if self._data[-1] != BMS._TAIL:
+            LOGGER.debug("%s: incorrect EOF: %s", self.name, data)
+            self._data.clear()
+            return
+
+        if len(self._data) != int(self._data[7:11], 16):
             LOGGER.debug(
-                "%s: Incorrect frame length %i != %i",
+                "%s: incorrect frame length %i != %i",
                 self.name,
-                len(data),
-                int(data[7:11], 16),
+                len(self._data),
+                int(self._data[7:11], 16),
             )
+            self._data.clear()
             return
 
-        crc: Final = BMS._crc(data[1:-3])
-        if crc != int(data[-3:-1], 16):
+        crc: Final = BMS._crc(self._data[1:-3])
+        if crc != int(self._data[-3:-1], 16):
             LOGGER.debug(
                 "%s: incorrect checksum 0x%X != 0x%X",
                 self.name,
-                int(data[-3:-1], 16),
+                int(self._data[-3:-1], 16),
                 crc,
             )
+            self._data.clear()
             return
 
         LOGGER.debug(
-            "%s: address: 0x%X, commnad 0x%X, version: 0x%X",
+            "%s: address: 0x%X, commnad 0x%X, version: 0x%X, length: 0x%X",
             self.name,
-            int(data[1:3], 16),
-            int(data[3:5], 16) & 0x7F,
-            int(data[5:7], 16),
+            int(self._data[1:3], 16),
+            int(self._data[3:5], 16) & 0x7F,
+            int(self._data[5:7], 16),
+            len(self._data)
         )
-        self._data = data
+        self._data_final = self._data.copy()
         self._data_event.set()
 
     @staticmethod
@@ -154,9 +181,15 @@ class BMS(BaseBMS):
         for cmd in [b":000250000E03~", b":001031000E05~"]:
             await self._client.write_gatt_char(BMS.uuid_tx(), data=cmd)
             await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-            raw_data[int(cmd[3:5], 16) & 0x7F] = self._data.copy()
+            rsp: int = int(self._data_final[3:5], 16) & 0x7F
+            raw_data[rsp] = self._data_final
+            if rsp == Cmd.RT and len(self._data_final) == 0x8C: # handle metrisun version
+                LOGGER.debug("%s: single frame protocol detected", self.name)
+                raw_data[Cmd.CAP] = bytearray(15) + self._data_final[125:]
+                break
+
 
         return {
             key: func(int(raw_data[cmd.value][idx : idx + size], 16))
             for key, cmd, idx, size, func in BMS._FIELDS
-        } | self._cell_voltages(raw_data[Cmd.RT.value])
+        } | self._cell_voltages(raw_data[Cmd.RT])
