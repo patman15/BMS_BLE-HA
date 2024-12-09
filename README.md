@@ -29,7 +29,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Supervolt v3 batteries
 - JK BMS, Jikong, (HW version >=11 required)
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
-- LiTime, Redodo batteries
+- LiTime, Power Queen, and Redodo batteries
 - Seplos v3 (show up as `SP0`&#x2026; or `SP1`&#x2026;)
 
 New device types can be easily added via the plugin architecture of this integration. See the [contribution guidelines](CONTRIBUTING.md) for details.
