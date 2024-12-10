@@ -21,6 +21,7 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
+    KEY_PACK_COUNT,
     KEY_TEMP_SENS,
 )
 
@@ -39,25 +40,21 @@ class BMS(BaseBMS):
     _RSP_VER: Final[int] = 0x14
     _INFO_LEN: Final[int] = 10  # minimal frame length
     _CELLS_POS: Final[int] = 9
+    _MAX_SUBS: Final[int] = 15
     _FIELDS: Final[
-        list[tuple[str, int, int, bool, Callable[[int], int | float]]]
-        # ] = [
-        #     (ATTR_VOLTAGE, 0x61, 2, 2, False, lambda x: float(x / 100)),
-        #     (ATTR_CURRENT, 0x61, 0, 2, True, lambda x: float(x / 100)),
-        #     (ATTR_CYCLE_CHRG, 0x61, 4, 2, False, lambda x: float(x / 100)),
-        #     (ATTR_CYCLES, 0x61, 13, 2, False, lambda x: x),
-        #     (ATTR_BATTERY_LEVEL, 0x61, 9, 2, False, lambda x: float(x / 10)),
-        # ]  # Protocol Seplos V2 (single machine data 0x61)
+        list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
     ] = [
-        (ATTR_VOLTAGE, 25, 2, False, lambda x: float(x / 100)),
-        (ATTR_CURRENT, 23, 2, True, lambda x: float(x / 100)),
-        (ATTR_CYCLE_CHRG, 27, 2, False, lambda x: float(x / 100)),
-        (ATTR_CYCLES, 36, 2, False, lambda x: x),
-        (ATTR_BATTERY_LEVEL, 32, 2, False, lambda x: float(x / 10)),
-        (ATTR_TEMPERATURE, 21, 2, True, lambda x: (x-2731.5)/10),
-        (KEY_CELL_COUNT, 9, 1, False, lambda x: x),
-        (KEY_TEMP_SENS, 14, 1, False, lambda x: x),
+        (ATTR_VOLTAGE, 0x62, 25, 2, False, lambda x: float(x / 100)),
+        (ATTR_CURRENT, 0x62, 23, 2, True, lambda x: float(x / 100)),
+        (ATTR_CYCLE_CHRG, 0x62, 27, 2, False, lambda x: float(x / 100)),
+        (ATTR_CYCLES, 0x62, 36, 2, False, lambda x: x),
+        (ATTR_BATTERY_LEVEL, 0x62, 32, 2, False, lambda x: float(x / 10)),
+        (ATTR_TEMPERATURE, 0x62, 21, 2, True, lambda x: (x - 2731.5) / 10),
+        (KEY_CELL_COUNT, 0x62, 9, 1, False, lambda x: x),
+        (KEY_PACK_COUNT, 0x51, 42, 1, False, lambda x: min(x, BMS._MAX_SUBS)),
+        (KEY_TEMP_SENS, 0x62, 14, 1, False, lambda x: x),
     ]  # Protocol Seplos V2 (parallel data 0x62)
+    _CMDS: Final[list[int]] = list({field[1] for field in _FIELDS})
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -65,7 +62,7 @@ class BMS(BaseBMS):
         super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
         self._exp_len: int = 0
-        self._data_final: bytearray = bytearray()
+        self._data_final: dict[int, bytearray] = {}
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -86,7 +83,7 @@ class BMS(BaseBMS):
     @staticmethod
     def uuid_services() -> list[str]:
         """Return list of 128-bit UUIDs of services required by BMS."""
-        return [normalize_uuid_str("ff00")]  # change service UUID here!
+        return [normalize_uuid_str("ff00")]
 
     @staticmethod
     def uuid_rx() -> str:
@@ -163,7 +160,7 @@ class BMS(BaseBMS):
             self._data[4],
         )
 
-        self._data_final = self._data
+        self._data_final[self._data[3]] = self._data
         self._data_event.set()
 
     @staticmethod
@@ -177,46 +174,15 @@ class BMS(BaseBMS):
         LOGGER.debug("TX cmd: %s", frame.hex(" "))
         return frame
 
-    # @staticmethod
-    # def _decode_data(data: bytearray) -> dict[str, int | float]:
-    #     result = {
-    #         KEY_CELL_COUNT: data[BMS._CELLS_POS],
-    #         KEY_TEMP_SENS: data[BMS._CELLS_POS + 1 + data[BMS._CELLS_POS] * 2],
-    #     }
-
-    #     shift: int = result[KEY_CELL_COUNT] * 2 + BMS._CELLS_POS + 2
-    #     # cell temperatures
-    #     result |= {
-    #         f"{KEY_TEMP_VALUE}{idx>>1}": (
-    #             (
-    #                 int.from_bytes(data[idx + shift : idx + shift + 2], byteorder="big")
-    #                 - 2731.5
-    #             )
-    #             / 10
-    #         )
-    #         for idx in range(0, int(result[KEY_TEMP_SENS]) * 2, 2)
-    #     }
-
-    #     shift += int(result[KEY_TEMP_SENS]) * 2
-
-    #     result |= {
-    #         key: func(
-    #             int.from_bytes(
-    #                 data[idx + shift : idx + shift + size], byteorder="big", signed=sign
-    #             )
-    #         )
-    #         for key, _, idx, size, sign, func in BMS._FIELDS
-    #     }
-
-    #     return result
-
     @staticmethod
-    def _decode_data(data: bytearray) -> dict[str, int | float]:
+    def _decode_data(data: dict[int, bytearray]) -> dict[str, int | float]:
         return {
             key: func(
-                int.from_bytes(data[idx : idx + size], byteorder="big", signed=sign)
+                int.from_bytes(
+                    data[cmd][idx : idx + size], byteorder="big", signed=sign
+                )
             )
-            for key, idx, size, sign, func in BMS._FIELDS
+            for key, cmd, idx, size, sign, func in BMS._FIELDS
         }
 
     @staticmethod
@@ -237,19 +203,24 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        await self._client.write_gatt_char(BMS.uuid_tx(), data=BMS._cmd(0x62))
-        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+
+        for cmd in BMS._CMDS:
+            await self._client.write_gatt_char(BMS.uuid_tx(), data=BMS._cmd(cmd))
+            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+            # check if a valid frame was received otherwise terminate immediately
+            if cmd not in self._data_final:
+                return {}
 
         result = BMS._decode_data(self._data_final)
 
         total_cells: int = 0
-        for pack in range(int(result.get(KEY_CELL_COUNT, 0)) // 16):
+        for pack in range(int(result.get(KEY_PACK_COUNT, 0) + 1)):
             await self._client.write_gatt_char(
                 BMS.uuid_tx(), data=BMS._cmd(0x61, data=bytearray([pack]))
             )
             await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
             pack_cells: dict[str, float] = BMS._cell_voltages(
-                self._data_final, total_cells
+                self._data_final[0x61], total_cells
             )
             result |= pack_cells
             result |= {
@@ -258,6 +229,8 @@ class BMS(BaseBMS):
                     round(max(pack_cells.values()) - min(pack_cells.values()), 3),
                 )
             }
-            total_cells += self._data_final[BMS._CELLS_POS]
+            total_cells += self._data_final[0x61][BMS._CELLS_POS]
+
+        self._data_final.clear()
 
         return result

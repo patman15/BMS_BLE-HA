@@ -26,6 +26,7 @@ class MockSeplosv2BleakClient(MockBleakClient):
     CMD_GPD = bytearray([HEAD_CMD]) + bytearray(
         b"\x10\x00\x46\x62\x00\x00"
     )  # get parallel data
+    CMD_GMI = bytearray([HEAD_CMD]) + bytearray(b"\x10\x00\x46\x51\x00\x00\x3A\x7F\x0D")
 
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
@@ -61,6 +62,12 @@ class MockSeplosv2BleakClient(MockBleakClient):
                     b"\x0b\xb6\x0b\x8d\x00\xd7\x14\xb4\x11\x14\x07\x20\xd0\x02\x08\x20\xd0\x00\x71"
                     b"\x03\xe8\x14\xb9\x07\x00\x02\x03\x08\x00\x00\x00\x00\x00\x00\x00\x00\x76\x31"
                     b"\x0d"
+                )
+            if bytearray(data).startswith(self.CMD_GMI):
+                return bytearray(
+                    b"\x7E\x14\x00\x51\x00\x00\x24\x43\x41\x4E\x3A\x50\x4E\x47\x5F\x44\x59\x45\x5F"
+                    b"\x4C\x75\x78\x70\x5F\x54\x42\x42\x45\x4D\x55\x31\x31\x30\x31\x31\x30\x45\x10"
+                    b"\x04\x01\x01\x46\x02\x14\xE2\x58\x0D"
                 )
 
         return bytearray()
@@ -186,6 +193,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "cell#14": 3.313,
         "cell#15": 3.313,
         "delta_voltage": 0.004,
+        "pack_count": 2,
     }
 
     # query again to check already connected state
