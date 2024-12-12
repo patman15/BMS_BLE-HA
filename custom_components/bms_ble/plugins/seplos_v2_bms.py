@@ -46,7 +46,7 @@ class BMS(BaseBMS):
     ] = [
         (ATTR_VOLTAGE, 0x62, 25, 2, False, lambda x: float(x / 100)),
         (ATTR_CURRENT, 0x62, 23, 2, True, lambda x: float(x / 10)),
-        (ATTR_CYCLE_CHRG, 0x62, 27, 2, False, lambda x: float(x / 100)),
+        (ATTR_CYCLE_CHRG, 0x62, 27, 2, False, lambda x: float(x / 10)),
         (ATTR_CYCLES, 0x62, 36, 2, False, lambda x: x),
         (ATTR_BATTERY_LEVEL, 0x62, 32, 2, False, lambda x: float(x / 10)),
         (ATTR_TEMPERATURE, 0x62, 21, 2, True, lambda x: (x - 2731.5) / 10),
