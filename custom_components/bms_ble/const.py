@@ -20,8 +20,9 @@ BMS_TYPES: Final = [
     "redodo_bms",
     "seplos_bms",
     "seplos_v2_bms",
+    "tdt_bms",
     "dpwrcore_bms",  # only name filter
-#    "jbd_bms",  # only UUID filter
+    "jbd_bms",  # only UUID filter
 ]  # available BMS types
 DOMAIN: Final = "bms_ble"
 LOGGER: Final = logging.getLogger(__package__)
