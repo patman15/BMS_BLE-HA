@@ -39,7 +39,6 @@ class BMS(BaseBMS):
     _CMD_VER: Final[int] = 0x10
     _RSP_VER: Final[int] = 0x14
     _INFO_LEN: Final[int] = 10  # minimal frame length
-    _CELLS_POS: Final[int] = 9
     _MAX_SUBS: Final[int] = 15
     _FIELDS: Final[
         list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
@@ -186,15 +185,13 @@ class BMS(BaseBMS):
         return {
             f"{KEY_CELL_VOLTAGE}{idx+offset}": float(
                 int.from_bytes(
-                    data[
-                        BMS._CELLS_POS + 1 + idx * 2 : BMS._CELLS_POS + 1 + idx * 2 + 2
-                    ],
+                    data[10 + idx * 2 : 10 + idx * 2 + 2],
                     byteorder="big",
                     signed=False,
                 )
             )
             / 1000
-            for idx in range(data[BMS._CELLS_POS])
+            for idx in range(data[9])
         }
 
     async def _async_update(self) -> BMSsample:
@@ -207,7 +204,7 @@ class BMS(BaseBMS):
             if cmd not in self._data_final:
                 return {}
 
-        result = BMS._decode_data(self._data_final)
+        result: BMSsample = BMS._decode_data(self._data_final)
 
         total_cells: int = 0
         for pack in range(int(result.get(KEY_PACK_COUNT, 0) + 1)):
@@ -225,7 +222,7 @@ class BMS(BaseBMS):
                     round(max(pack_cells.values()) - min(pack_cells.values()), 3),
                 )
             }
-            total_cells += self._data_final[0x61][BMS._CELLS_POS]
+            total_cells += self._data_final[0x61][9]
 
         self._data_final.clear()
 
