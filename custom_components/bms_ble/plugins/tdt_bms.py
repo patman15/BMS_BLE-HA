@@ -46,7 +46,7 @@ class BMS(BaseBMS):
             54,
             2,
             False,
-            lambda x: float((x & 0xFF) / 10 * (-1 if x & 0x8000 else 1)),
+            lambda x: float((x & 0x3FFF) / 10 * (-1 if x >> 15 else 1)),
         ),
         (ATTR_CYCLE_CAP, 0x8C, 58, 2, False, lambda x: float(x / 10)),
         (ATTR_BATTERY_LEVEL, 0x8C, 67, 1, False, lambda x: x),
