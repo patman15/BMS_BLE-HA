@@ -11,7 +11,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 ## Features
 - Zero configuration
 - Autodetects compatible batteries
-- Supports [ESPHome Bluetooth proxy][btproxy-url]  ([BT proxy limit][btproxy-url]: 3 devices/proxy)
+- Supports [ESPHome Bluetooth proxy][btproxy-url]  (limit: 3 devices/proxy)
 - Any number of batteries in parallel
 - Native Home Assistant integration (works with all [HA installation methods](https://www.home-assistant.io/installation/#advanced-installation-methods))
 - Readout of individual cell voltages to be able to judge battery health
@@ -20,11 +20,13 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - CBT Power BMS, Creabest batteries
 - D-powercore BMS (show up as `DXB-`&#x2026;), Fliteboard batteries (show up as `TBA-`&#x2026;)
 - Daly BMS (show up as `DL-`&#x2026;)
-- E&J Technology BMS, Supervolt v1 batteries
+- E&J Technology BMS
+    - Supervolt v1 batteries
+    - Elektronicx batteries (show up as `LT-`&#x2026;)
 - Ective batteries
-- JBD BMS, Jiabaida
-  - accurat batteries
-  - Supervolt v3 batteries
+- JBD BMS, Jiabaida (show up as `SP..S`&#x2026;)
+    - accurat batteries
+    - Supervolt v3 batteries
 - JK BMS, Jikong, (HW version >=11 required)
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
 - LiTime, Redodo batteries
@@ -138,7 +140,15 @@ Then you need to pair your device first. This is procedure is only required once
 Once pairing is done, the integration should automatically detect the BMS.
 
 ## Troubleshooting
-In case you have severe troubles,
+### If your device is not recognized
+
+1. Check that your BMS type is listed as [supported device](#supported-devices)
+1. Make sure that no other device is connected to the BMS, e.g. app on your phone
+1. Check that your are running the [latest release](https://github.com//patman15/BMS_BLE-HA/releases)  of the integration
+1. Open a [terminal to Home Assistant](https://www.home-assistant.io/common-tasks/supervised/#installing-and-using-the-ssh-add-on) and verify that your BMS is listed in the ouput of the command `bluetoothctl devices`. Try to connect to the BMS using `bluetoothctl connect <MAC>`.
+1. If you use a BT proxy, make sure you have set `active: true` and that you do not exced the [BT proxy limit][btproxy-url] of 3 devices/proxy; check the logs of the proxy if the device is recognized.
+
+### In case you have severe troubles
 
 - please [enable the debug protocol](https://www.home-assistant.io/docs/configuration/troubleshooting/#debug-logs-and-diagnostics) for the [BLE Battery Management integration](https://my.home-assistant.io/redirect/integration/?domain=bms_ble),
 - restart Home Assistant and reproduce the issue,
@@ -152,7 +162,7 @@ In case you have severe troubles,
 - Add further battery types on [request](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.yml)
 
 ## Thanks to
-> [@gkathan](https://github.com/patman15/BMS_BLE-HA/issues/2), [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22), [@Goaheadz](https://github.com/patman15/BMS_BLE-HA/issues/24), [@alros100, @majonessyltetoy](https://github.com/patman15/BMS_BLE-HA/issues/52), [@snipah, @Gruni22](https://github.com/patman15/BMS_BLE-HA/issues/59), [@azisto](https://github.com/patman15/BMS_BLE-HA/issues/78), [@BikeAtor, @Karatzie](https://github.com/patman15/BMS_BLE-HA/issues/57), [@SkeLLLa,@romanshypovskyi](https://github.com/patman15/BMS_BLE-HA/issues/90), [@riogrande75, @ebagnoli, @andreas-bulling](https://github.com/patman15/BMS_BLE-HA/issues/101)
+> [@gkathan](https://github.com/patman15/BMS_BLE-HA/issues/2), [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22), [@Goaheadz](https://github.com/patman15/BMS_BLE-HA/issues/24), [@alros100, @majonessyltetoy](https://github.com/patman15/BMS_BLE-HA/issues/52), [@snipah, @Gruni22](https://github.com/patman15/BMS_BLE-HA/issues/59), [@azisto](https://github.com/patman15/BMS_BLE-HA/issues/78), [@BikeAtor, @Karatzie](https://github.com/patman15/BMS_BLE-HA/issues/57), [@SkeLLLa,@romanshypovskyi](https://github.com/patman15/BMS_BLE-HA/issues/90), [@riogrande75, @ebagnoli, @andreas-bulling](https://github.com/patman15/BMS_BLE-HA/issues/101), [@hacsler](https://github.com/patman15/BMS_BLE-HA/issues/103)
 
 for helping with making the integration better.
 

@@ -97,15 +97,10 @@ class BMS(BaseBMS):
         """Return a list of Bluetooth matchers."""
         return [
             {
-                "local_name": "SmartBat-A*",
+                "local_name": "SmartBat-[AB]*",
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
-            },
-            {
-                "local_name": "SmartBat-B*",
-                "service_uuid": BMS.uuid_services()[0],
-                "connectable": True,
-            },
+            }
         ]
 
     @staticmethod
@@ -140,9 +135,7 @@ class BMS(BaseBMS):
             try:
                 await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
             except TimeoutError:
-                LOGGER.debug(
-                    "Reading %s timed out", self._REGISTERS[key][BMS.IDX_NAME]
-                )
+                LOGGER.debug("Reading %s timed out", self._REGISTERS[key][BMS.IDX_NAME])
             if key > 48 and f"{KEY_CELL_VOLTAGE}{64-key}" not in self._values:
                 break
 

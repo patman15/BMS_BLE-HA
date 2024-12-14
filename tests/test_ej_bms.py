@@ -12,6 +12,8 @@ from custom_components.bms_ble.plugins.ej_bms import BMS
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
+BT_FRAME_SIZE = 20
+
 
 class MockEJBleakClient(MockBleakClient):
     """Emulate a E&J technology BMS BleakClient."""
@@ -26,7 +28,8 @@ class MockEJBleakClient(MockBleakClient):
         cmd: int = int(bytearray(data)[3:5], 16)
         if cmd == 0x02:
             return bytearray(
-                b":0082310080000101C00000880F540F3C0F510FD70F310F2C0F340F3A0FED0FED0000000000000000000000000000000248424242F0000000000000000001AB~"
+                b":0082310080000101C00000880F540F3C0F510FD70F310F2C0F340F3A0FED0FED0000000000000000"
+                b"000000000000000248424242F0000000000000000001AB~"
             )  # TODO: put numbers
         if cmd == 0x10:
             return bytearray(b":009031001E00000002000A000AD8~")  # TODO: put numbers
@@ -41,9 +44,32 @@ class MockEJBleakClient(MockBleakClient):
         """Issue write command to GATT."""
         await super().write_gatt_char(char_specifier, data, response)
         assert self._notify_callback is not None
-        self._notify_callback(
-            "MockPwrcoreBleakClient", self._response(char_specifier, data)
-        )
+        self._notify_callback("MockEctiveBleakClient", bytearray(b'AT\r\n'))
+        self._notify_callback("MockEctiveBleakClient", bytearray(b'AT\r\nillegal'))
+        for notify_data in [
+            self._response(char_specifier, data)[i : i + BT_FRAME_SIZE]
+            for i in range(0, len(self._response(char_specifier, data)), BT_FRAME_SIZE)
+        ]:
+            self._notify_callback("MockEctiveBleakClient", notify_data)
+
+
+class MockEJsfBleakClient(MockEJBleakClient):
+    """Emulate a E&J technology BMS BleakClient with single frame protocol."""
+
+    def _response(
+        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
+    ) -> bytearray:
+        if isinstance(char_specifier, str) and normalize_uuid_str(
+            char_specifier
+        ) != normalize_uuid_str("6e400002-b5a3-f393-e0a9-e50e24dcca9e"):
+            return bytearray()
+        cmd: int = int(bytearray(data)[3:5], 16)
+        if cmd == 0x02:
+            return bytearray(
+                b":008231008C000000000000000CBF0CC00CEA0CD50000000000000000000000000000000000000000"
+                b"00000000008C000041282828F000000000000100004B044C05DC05DCB2~"
+            )  # TODO: put numbers
+        return bytearray()
 
 
 async def test_update(monkeypatch, reconnect_fixture) -> None:
@@ -83,6 +109,45 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "power": -0.79,
         "runtime": 36000,
         "battery_charging": False,
+    }
+
+    # query again to check already connected state
+    result = await bms.async_update()
+    assert bms._client.is_connected is not reconnect_fixture  # noqa: SLF001
+
+    await bms.disconnect()
+
+
+async def test_update_single_frame(monkeypatch, reconnect_fixture) -> None:
+    """Test E&J technology BMS data update."""
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
+        MockEJsfBleakClient,
+    )
+
+    bms = BMS(
+        generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73),
+        reconnect_fixture,
+    )
+
+    result = await bms.async_update()
+
+    assert result == {
+        "voltage": 13.118,
+        "current": 1.4,
+        "battery_level": 75,
+        "cycles": 1,
+        "cycle_charge": 110.0,
+        "cell#0": 3.263,
+        "cell#1": 3.264,
+        "cell#2": 3.306,
+        "cell#3": 3.285,
+        "delta_voltage": 0.043,
+        "temperature": 25,
+        "cycle_capacity": 1442.98,
+        "power": 18.365,
+        "battery_charging": True,
     }
 
     # query again to check already connected state

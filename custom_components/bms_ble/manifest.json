@@ -3,11 +3,7 @@
   "name": "BLE Battery Management",
   "bluetooth": [
     {
-      "local_name": "SmartBat-A*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "SmartBat-B*",
+      "local_name": "SmartBat-[AB]*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
@@ -19,6 +15,15 @@
       "manufacturer_id": 2917
     },
     {
+      "local_name": "SP0?S*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "SP1?S*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "SP2?S*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
@@ -45,6 +50,10 @@
     {
       "local_name": "libatt*",
       "manufacturer_id": 21320
+    },
+    {
+      "local_name": "LT-*",
+      "manufacturer_id": 33384
     },
     {
       "local_name": "$PFLAC*",

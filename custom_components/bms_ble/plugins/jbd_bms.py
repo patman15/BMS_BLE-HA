@@ -51,13 +51,24 @@ class BMS(BaseBMS):
         """Intialize private BMS members."""
         super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
-        self._data_final: bytearray | None = None
+        self._data_final: bytearray = bytearray()
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
         """Provide BluetoothMatcher definition."""
         return [
             {
+                "local_name": "SP0?S*",
+                "service_uuid": BMS.uuid_services()[0],
+                "connectable": True,
+            },
+            {
+                "local_name": "SP1?S*",
+                "service_uuid": BMS.uuid_services()[0],
+                "connectable": True,
+            },
+            {
+                "local_name": "SP2?S*",
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             },
@@ -123,7 +134,6 @@ class BMS(BaseBMS):
             LOGGER.debug(
                 "%s: incorrect frame end (length: %i).", self.name, len(self._data)
             )
-            self._data_event.set()
             return
 
         crc: Final[int] = BMS._crc(self._data[2 : frame_end - 2])
@@ -134,10 +144,9 @@ class BMS(BaseBMS):
                 int.from_bytes(self._data[frame_end - 2 : frame_end], "big"),
                 crc,
             )
-            self._data_final = None  # reset invalid data
-        else:
-            self._data_final = self._data
+            return
 
+        self._data_final = self._data
         self._data_event.set()
 
     @staticmethod
@@ -194,8 +203,6 @@ class BMS(BaseBMS):
             await self._client.write_gatt_char(BMS.uuid_tx(), data=cmd)
             await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 
-            if self._data_final is None:
-                continue
             if (
                 len(self._data_final) != BMS.INFO_LEN + self._data_final[3]
                 or len(self._data_final) < BMS.INFO_LEN + exp_len
