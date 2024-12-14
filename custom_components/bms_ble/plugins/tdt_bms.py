@@ -57,7 +57,7 @@ class BMS(BaseBMS):
         (KEY_CELL_COUNT, 0x8C, 8, 1, False, lambda x: x),
         (KEY_TEMP_SENS, 0x8C, 41, 1, False, lambda x: x),
     ]
-    _CMDS: Final[list[int]] = list({field[1] for field in _FIELDS})
+    _CMDS: Final[list[int]] = [*list({field[1] for field in _FIELDS}), 0x8D, 0x92]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -70,13 +70,7 @@ class BMS(BaseBMS):
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
         """Provide BluetoothMatcher definition."""
-        return [
-            {
-                "local_name": "XDZN*",
-                "service_uuid": BMS.uuid_services()[0],
-                "connectable": True,
-            }
-        ]
+        return [{"manufacturer_id": 54976, "connectable": True}]
 
     @staticmethod
     def device_info() -> dict[str, str]:
