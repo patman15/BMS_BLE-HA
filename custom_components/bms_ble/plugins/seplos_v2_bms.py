@@ -67,12 +67,9 @@ class BMS(BaseBMS):
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
         """Provide BluetoothMatcher definition."""
-        return [
-            {
-                "local_name": "BP00*",
-                "connectable": True,
-            }
-        ]
+        # advertisement has incorrect name length -> detection only for name
+        # '05 09 42 50 30 30 02 01 05 03 03 00 ff'
+        return [{"local_name": "BP00*", "connectable": True}]
 
     @staticmethod
     def device_info() -> dict[str, str]:
