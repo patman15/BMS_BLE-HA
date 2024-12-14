@@ -17,10 +17,12 @@ from custom_components.bms_ble.const import (
     ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     ATTR_RUNTIME,
+    ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
     KEY_TEMP_SENS,
+    KEY_TEMP_VALUE,
 )
 
 from .basebms import BaseBMS, BMSsample, crc_modbus
@@ -104,6 +106,7 @@ class BMS(BaseBMS):
             ATTR_DELTA_VOLTAGE,
             ATTR_POWER,
             ATTR_RUNTIME,
+            ATTR_TEMPERATURE,
         }  # calculate further values from BMS provided set ones
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
@@ -183,6 +186,26 @@ class BMS(BaseBMS):
             for idx in range(data[8])
         }
 
+    @staticmethod
+    def _temp_sensors(data: bytearray, sensors: int) -> dict[str, float]:
+        return {
+            f"{KEY_TEMP_VALUE}{idx}": (
+                int.from_bytes(
+                    data[42 + idx * 2 : 44 + idx * 2],
+                    byteorder="big",
+                    signed=False,
+                )
+                - 2731.5
+            )
+            / 10
+            for idx in range(sensors)
+            if int.from_bytes(
+                data[42 + idx * 2 : 44 + idx * 2],
+                byteorder="big",
+                signed=False,
+            )
+        }
+
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
@@ -193,8 +216,10 @@ class BMS(BaseBMS):
             if cmd not in self._data_final:
                 return {}
 
-        result = BMS._decode_data(self._data_final) | BMS._cell_voltages(
-            self._data_final[0x8C]
+        result = BMS._decode_data(self._data_final)
+        result |= BMS._cell_voltages(self._data_final[0x8C])
+        result |= BMS._temp_sensors(
+            self._data_final[0x8C], int(result.get(KEY_TEMP_SENS, 0))
         )
 
         self._data_final.clear()
