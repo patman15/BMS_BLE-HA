@@ -58,6 +58,7 @@ class BMS(BaseBMS):
         """Provide BluetoothMatcher definition."""
         return [
             {
+                "local_name": "[!B]*", # avoid confusion with Seplos v2
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             },
