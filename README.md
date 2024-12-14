@@ -25,8 +25,8 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Elektronicx batteries (show up as `LT-`&#x2026;)
 - Ective batteries
 - JBD BMS, Jiabaida (show up as `SP..S`&#x2026;)
-    - accurat batteries
-    - Supervolt v3 batteries
+    - accurat batteries (show up as `GJ-`&#x2026;)
+    - Supervolt v3 batteries (show up as `SX1*`&#x2026;)
 - JK BMS, Jikong, (HW version >=11 required)
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
 - LiTime, Redodo batteries
