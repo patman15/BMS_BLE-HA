@@ -4,9 +4,8 @@ from collections.abc import Buffer
 from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
-
-# from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
+import pytest
 
 from custom_components.bms_ble.plugins.seplos_v2_bms import BMS
 
@@ -46,16 +45,7 @@ class MockSeplosv2BleakClient(MockBleakClient):
                     b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
                     b"\x00\x00\x00\x02\x03\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xc1"
                     b"\xd7\x0d"
-                )
-                # return bytearray(
-                #     b"\x7E\x10\x00\x61\x00\x00\x6A\x00\x00\x10\x00\x17\x00\x30\x00\x4E\x00\x12\x00"
-                #     b"\x12\x00\x12\x00\x12\x00\x12\x00\x12\x00\x15\x00\x1D\x00\x32\x00\x70\x01\x3B"
-                #     b"\x04\x0D\x00\x0F\xD5\x06\x08\xB7\x08\xB7\x08\xB7\x08\xB7\x0B\xB8\x0B\xB5\x00"
-                #     b"\x00\x02\x4B\x24\xF5\x06\x27\x10\x03\xB2\x27\x10\x00\x00\x03\xE8\x13\x93\x01"
-                #     b"\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x02\x01\x01\x00\x01"
-                #     b"\x01\x00\x00\x00\x01\x20\x00\x08\x12\x8A\x08\x00\x00\x10\x00\x00\x00\x00\x00"
-                #     b"\x00\x44\xCF\x0D"
-                # )  # TODO: values
+                )  # TODO: values
             if bytearray(data).startswith(self.CMD_GPD):
                 return bytearray(
                     b"\x7e\x14\x00\x62\x00\x00\x30\x00\x00\x10\x0c\xf4\x0c\xee\x06\x0b\x93\x0b\x7f"
@@ -84,69 +74,11 @@ class MockSeplosv2BleakClient(MockBleakClient):
             self._notify_callback
         ), "write to characteristics but notification not enabled"
 
-        resp = self._response(char_specifier, data)
+        resp: bytearray = self._response(char_specifier, data)
         for notify_data in [
             resp[i : i + BT_FRAME_SIZE] for i in range(0, len(resp), BT_FRAME_SIZE)
         ]:
             self._notify_callback("MockSeplosv2BleakClient", notify_data)
-
-
-# class MockInvalidBleakClient(MockSeplosv2BleakClient):
-#     """Emulate a Seplos V2 BMS BleakClient returning wrong data."""
-
-#     def _response(
-#         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
-#     ) -> bytearray:
-#         if (
-#             isinstance(char_specifier, str)
-#             and normalize_uuid_str(char_specifier) == normalize_uuid_str("ff02")
-#             and bytearray(data)[0] == self.HEAD_CMD
-#         ):
-#             if bytearray(data)[1:3] == self.CMD_INFO:
-#                 return bytearray(  # wrong end
-#                     b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
-#                     b"\x00\x00\x00\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x84\xdd"
-#                 )
-
-#             return (  # wrong CRC
-#                 bytearray(b"\xdd\x03\x00\x1d") + bytearray(31) + bytearray(b"\x77")
-#             )
-
-#         return bytearray()
-
-#     async def disconnect(self) -> bool:
-#         """Mock disconnect to raise BleakError."""
-#         raise BleakError
-
-
-# class MockOversizedBleakClient(MockSeplosv2BleakClient):
-#     """Emulate a Seplos V2 BMS BleakClient returning wrong data length."""
-
-#     def _response(
-#         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
-#     ) -> bytearray:
-#         if (
-#             isinstance(char_specifier, str)
-#             and normalize_uuid_str(char_specifier) == normalize_uuid_str("ff02")
-#             and bytearray(data)[0] == self.HEAD_CMD
-#         ):
-#             if bytearray(data)[1:3] == self.CMD_INFO:
-#                 return bytearray(
-#                     b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
-#                     b"\x00\x00\x00\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x84\x77"
-#                     b"\00\00\00\00\00\00"  # oversized response
-#                 )  # {'voltage': 15.6, 'current': -2.87, 'battery_level': 100, 'cycle_charge': 4.98, 'cycles': 42, 'temperature': 22.133333333333347}
-#             if bytearray(data)[1:3] == self.CMD_CELL:
-#                 return bytearray(
-#                     b"\xdd\x04\x00\x08\x0d\x66\x0d\x61\x0d\x68\x0d\x59\xfe\x3c\x77"
-#                     b"\00\00\00\00\00\00\00\00\00\00\00\00"  # oversized response
-#                 )  # {'cell#0': 3.43, 'cell#1': 3.425, 'cell#2': 3.432, 'cell#3': 3.417}
-
-#         return bytearray()
-
-#     async def disconnect(self) -> bool:
-#         """Mock disconnect to raise BleakError."""
-#         raise BleakError
 
 
 async def test_update(monkeypatch, reconnect_fixture) -> None:
@@ -168,13 +100,13 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "cell_count": 16,
         "temp_sensors": 6,
         "voltage": 53.0,
-        "current": 2.15,
+        "current": 21.5,
         "battery_level": 52.0,
-        "cycle_charge": 43.72,
+        "cycle_charge": 437.2,
         "cycles": 113,
         "temperature": 22.55,
-        "cycle_capacity": 2317.16,
-        "power": 113.95,
+        "cycle_capacity": 23171.6,
+        "power": 1139.5,
         "battery_charging": True,
         "cell#0": 3.312,
         "cell#1": 3.313,
@@ -192,6 +124,38 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "cell#13": 3.312,
         "cell#14": 3.313,
         "cell#15": 3.313,
+        "cell#16": 3.312,
+        "cell#17": 3.313,
+        "cell#18": 3.313,
+        "cell#19": 3.313,
+        "cell#20": 3.313,
+        "cell#21": 3.312,
+        "cell#22": 3.313,
+        "cell#23": 3.315,
+        "cell#24": 3.311,
+        "cell#25": 3.312,
+        "cell#26": 3.313,
+        "cell#27": 3.313,
+        "cell#28": 3.313,
+        "cell#29": 3.312,
+        "cell#30": 3.313,
+        "cell#31": 3.313,
+        "cell#32": 3.312,
+        "cell#33": 3.313,
+        "cell#34": 3.313,
+        "cell#35": 3.313,
+        "cell#36": 3.313,
+        "cell#37": 3.312,
+        "cell#38": 3.313,
+        "cell#39": 3.315,
+        "cell#40": 3.311,
+        "cell#41": 3.312,
+        "cell#42": 3.313,
+        "cell#43": 3.313,
+        "cell#44": 3.313,
+        "cell#45": 3.312,
+        "cell#46": 3.313,
+        "cell#47": 3.313,
         "delta_voltage": 0.004,
         "pack_count": 2,
     }
@@ -205,55 +169,45 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
     await bms.disconnect()
 
 
-# async def test_invalid_response(monkeypatch) -> None:
-#     """Test data update with BMS returning invalid data (wrong CRC)."""
+@pytest.fixture(
+    name="wrong_response",
+    params=[
+        b"\x7E\x14\x00\x51\x00\x00\x01\x00\x7A\xEF\x00",  # invalid frame end
+        b"\x7E\x10\x00\x51\x00\x00\x01\x00\xBB\x29\x0D",  # invalid version
+        b"\x7E\x14\x00\x51\x80\x00\x01\x00\xA7\xD7\x0D",  # error response
+        b"\x7E\x14\x00\x51\x00\x00\x01\x00\x7A\xEE\x0D",  # invalid CRC
+        b"\x7E\x14\x00\x51\x00\x00\x01\x00\x7A\xEF\x0D\x00",  # oversized frame
+        b"\x7E\x14\x00\x51\x00\x00\x02\x00\x7A\xEF\x0D",  # undersized frame
+    ],
+)
+def response(request):
+    """Return all possible BMS variants."""
+    return request.param
 
-#     monkeypatch.setattr(
-#         "custom_components.bms_ble.plugins.basebms.BleakClient",
-#         MockInvalidBleakClient,
-#     )
 
-#     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
+async def test_invalid_response(monkeypatch, wrong_response) -> None:
+    """Test data up date with BMS returning invalid data."""
 
-#     result = await bms.async_update()
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.seplos_v2_bms.BAT_TIMEOUT",
+        0.1,
+    )
 
-#     assert result == {}
+    monkeypatch.setattr(
+        "tests.test_seplos_v2_bms.MockSeplosv2BleakClient._response",
+        lambda _s, _c_, d: wrong_response,
+    )
 
-#     await bms.disconnect()
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
+        MockSeplosv2BleakClient,
+    )
 
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
-# async def test_oversized_response(monkeypatch) -> None:
-#     """Test data update with BMS returning oversized data, result shall still be ok."""
+    result = {}
+    with pytest.raises(TimeoutError):
+        result = await bms.async_update()
 
-#     monkeypatch.setattr(
-#         "custom_components.bms_ble.plugins.basebms.BleakClient",
-#         MockOversizedBleakClient,
-#     )
-
-#     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
-
-#     result = await bms.async_update()
-
-#     assert result == {
-#         "temp_sensors": 3,
-#         "voltage": 15.6,
-#         "current": -2.87,
-#         "battery_level": 100,
-#         "cycle_charge": 4.98,
-#         "cycles": 42,
-#         "temperature": 22.133,
-#         "cycle_capacity": 77.688,
-#         "power": -44.772,
-#         "battery_charging": False,
-#         "runtime": 6246,
-#         "cell#0": 3.43,
-#         "cell#1": 3.425,
-#         "cell#2": 3.432,
-#         "cell#3": 3.417,
-#         "temp#0": 22.4,
-#         "temp#1": 22.3,
-#         "temp#2": 21.7,
-#         "delta_voltage": 0.015,
-#     }
-
-#     await bms.disconnect()
+    assert not result
+    await bms.disconnect()
