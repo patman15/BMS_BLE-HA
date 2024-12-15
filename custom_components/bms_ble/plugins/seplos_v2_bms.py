@@ -200,9 +200,6 @@ class BMS(BaseBMS):
         for cmd in BMS._CMDS:
             await self._client.write_gatt_char(BMS.uuid_tx(), data=BMS._cmd(cmd))
             await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-            # check if a valid frame was received otherwise terminate immediately
-            if cmd not in self._data_final:
-                return {}
 
         result: BMSsample = BMS._decode_data(self._data_final)
 
