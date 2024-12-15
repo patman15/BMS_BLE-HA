@@ -28,7 +28,7 @@ from custom_components.bms_ble.const import (
 from .basebms import BaseBMS, BMSsample, crc_xmodem
 
 LOGGER = logging.getLogger(__name__)
-BAT_TIMEOUT = 5
+BAT_TIMEOUT = 10
 
 
 class BMS(BaseBMS):
@@ -38,8 +38,8 @@ class BMS(BaseBMS):
     _TAIL: Final[int] = 0x0D
     _CMD_VER: Final[int] = 0x10
     _RSP_VER: Final[int] = 0x14
-    _INFO_LEN: Final[int] = 10  # minimal frame length
-    _MAX_SUBS: Final[int] = 15
+    _MIN_LEN: Final[int] = 10
+    _MAX_SUBS: Final[int] = 0xF
     _FIELDS: Final[
         list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
     ] = [
@@ -52,7 +52,7 @@ class BMS(BaseBMS):
         (KEY_CELL_COUNT, 0x62, 9, 1, False, lambda x: x),
         (KEY_PACK_COUNT, 0x51, 42, 1, False, lambda x: min(x, BMS._MAX_SUBS)),
         (KEY_TEMP_SENS, 0x62, 14, 1, False, lambda x: x),
-    ]  # Protocol Seplos V2 (parallel data 0x62)
+    ]  # Protocol Seplos V2 (parallel data 0x62, device manufacturer info 0x51)
     _CMDS: Final[list[int]] = list({field[1] for field in _FIELDS})
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -66,9 +66,13 @@ class BMS(BaseBMS):
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
         """Provide BluetoothMatcher definition."""
-        # advertisement has incorrect name length -> detection only for name
-        # '05 09 42 50 30 30 02 01 05 03 03 00 ff'
-        return [{"local_name": "BP00*", "connectable": True}]
+        return [
+            {
+                "local_name": "BP00",
+                "service_uuid": BMS.uuid_services()[0],
+                "connectable": True,
+            }
+        ]
 
     @staticmethod
     def device_info() -> dict[str, str]:
@@ -101,14 +105,12 @@ class BMS(BaseBMS):
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
-        LOGGER.debug("%s: Received BLE data: %s", self.name, data)
-
         if (
             data[0] == BMS._HEAD
-            and len(data) > BMS._INFO_LEN
+            and len(data) > BMS._MIN_LEN
             and len(self._data) >= self._exp_len
         ):
-            self._exp_len = BMS._INFO_LEN + int.from_bytes(data[5:7])
+            self._exp_len = BMS._MIN_LEN + int.from_bytes(data[5:7])
             self._data = bytearray()
 
         self._data += data
@@ -160,13 +162,12 @@ class BMS(BaseBMS):
 
     @staticmethod
     def _cmd(cmd: int, data: bytearray = bytearray()) -> bytearray:
-        """Assemble a Seplos BMS command."""
+        """Assemble a Seplos V2 BMS command."""
         assert cmd in (0x47, 0x51, 0x61, 0x62, 0x04)  # allow only read commands
         frame = bytearray([BMS._HEAD, BMS._CMD_VER, 0x0, 0x46, cmd])  # fixed version
         frame += len(data).to_bytes(2, "big", signed=False) + data
         frame += bytearray(int.to_bytes(crc_xmodem(frame[1:]), 2, byteorder="big"))
         frame += bytearray([BMS._TAIL])
-        LOGGER.debug("TX cmd: %s", frame.hex(" "))
         return frame
 
     @staticmethod

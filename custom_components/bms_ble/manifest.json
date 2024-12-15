@@ -69,7 +69,8 @@
       "manufacturer_id": 65535
     },
     {
-      "local_name": "BP00*"
+      "local_name": "BP00",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"      
     }    
   ],
   "codeowners": ["@patman15"],
@@ -81,5 +82,5 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bleak_retry_connector"],
   "requirements": [],
-  "version": "1.10.0"
+  "version": "1.11.0"
 }
