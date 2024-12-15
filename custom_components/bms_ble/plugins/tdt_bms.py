@@ -5,6 +5,7 @@ import logging
 from typing import Any, Callable, Final
 
 from bleak.backends.device import BLEDevice
+from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 
 from custom_components.bms_ble.const import (
@@ -34,6 +35,7 @@ BAT_TIMEOUT = 10
 class BMS(BaseBMS):
     """Dummy battery class implementation."""
 
+    _UUID_CFG: Final[str] = "fffa"
     _HEAD: Final[int] = 0x7E
     _TAIL: Final[int] = 0x0D
     _CMD_VER: Final[int] = 0x00
@@ -104,8 +106,14 @@ class BMS(BaseBMS):
         }  # calculate further values from BMS provided set ones
 
     async def _init_characteristics(self) -> None:
-        await self._client.write_gatt_char("fffa", data=b"HiLink")
-        await self._client.start_notify(self.uuid_rx(), self._notification_method)
+        try:
+            await self._client.write_gatt_char(BMS._UUID_CFG, data=b"HiLink")
+            if (ret := await self._client.read_gatt_char(BMS._UUID_CFG)) != 0x1:
+                LOGGER.debug("%s: error initializing BMS: %s", self.name, ret.hex())
+        except BleakError:
+            LOGGER.debug("%s: failed to intialize BMS.", self.name)
+
+        await super()._init_characteristics()
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
