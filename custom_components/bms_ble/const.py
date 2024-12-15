@@ -15,13 +15,13 @@ BMS_TYPES: Final[list[str]] = [
     "daly_bms",
     "ective_bms",
     "ej_bms",
+    "jbd_bms",
     "jikong_bms",
     "ogt_bms",
     "redodo_bms",
     "seplos_bms",
     "seplos_v2_bms",
     "dpwrcore_bms",  # only name filter
-    "jbd_bms",  # only UUID filter
 ]  # available BMS types
 DOMAIN: Final[str] = "bms_ble"
 LOGGER: Final = logging.getLogger(__package__)
