@@ -103,6 +103,10 @@ class BMS(BaseBMS):
             ATTR_TEMPERATURE,
         }  # calculate further values from BMS provided set ones
 
+    async def _init_characteristics(self) -> None:
+        await self._client.write_gatt_char("fffa", data=b"HiLink")
+        await self._client.start_notify(self.uuid_rx(), self._notification_method)
+
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
         LOGGER.debug("%s: Received BLE data: %s", self.name, data)
