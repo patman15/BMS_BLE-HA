@@ -27,7 +27,7 @@ from custom_components.bms_ble.const import (
 
 from .basebms import BaseBMS, BMSsample, crc_modbus
 
-BAT_TIMEOUT: Final = 5
+BAT_TIMEOUT: Final = 10
 LOGGER = logging.getLogger(__name__)
 
 
