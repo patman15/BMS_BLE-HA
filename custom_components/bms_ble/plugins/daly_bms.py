@@ -108,11 +108,11 @@ class BMS(BaseBMS):
             len(data) < BMS.HEAD_LEN
             or data[0:2] != BMS.HEAD_READ
             or int(data[2]) + 1 != len(data) - len(BMS.HEAD_READ) - BMS.CRC_LEN
-            or int.from_bytes(data[-2:], byteorder="big") != crc_modbus(data[:-2])
+            or int.from_bytes(data[-2:], byteorder="little") != crc_modbus(data[:-2])
         ):
             LOGGER.debug(
                 "Response data is invalid, CRC: 0x%X != 0x%X",
-                int.from_bytes(data[-2:], byteorder="big"),
+                int.from_bytes(data[-2:], byteorder="little"),
                 crc_modbus(data[:-2]),
             )
             self._data = None
