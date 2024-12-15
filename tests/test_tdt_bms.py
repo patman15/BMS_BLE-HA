@@ -5,16 +5,15 @@ from typing import Final
 from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
-
-# from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
+import pytest
 
 from custom_components.bms_ble.plugins.tdt_bms import BMS
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
-BT_FRAME_SIZE = 200
+BT_FRAME_SIZE = 27
 
 
 class MockTDTBleakClient(MockBleakClient):
@@ -82,64 +81,6 @@ class MockTDTBleakClient(MockBleakClient):
             self._notify_callback("MockTDTBleakClient", notify_data)
 
 
-# class MockInvalidBleakClient(MockTDTBleakClient):
-#     """Emulate a TDT BMS BleakClient returning wrong data."""
-
-#     def _response(
-#         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
-#     ) -> bytearray:
-#         if (
-#             isinstance(char_specifier, str)
-#             and normalize_uuid_str(char_specifier) == normalize_uuid_str("ff02")
-#             and bytearray(data)[0] == self.HEAD_CMD
-#         ):
-#             if bytearray(data)[1:3] == self.CMD_INFO:
-#                 return bytearray(  # wrong end
-#                     b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
-#                     b"\x00\x00\x00\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x84\xdd"
-#                 )
-
-#             return (  # wrong CRC
-#                 bytearray(b"\xdd\x03\x00\x1d") + bytearray(31) + bytearray(b"\x77")
-#             )
-
-#         return bytearray()
-
-#     async def disconnect(self) -> bool:
-#         """Mock disconnect to raise BleakError."""
-#         raise BleakError
-
-
-# class MockOversizedBleakClient(MockTDTBleakClient):
-#     """Emulate a TDT BMS BleakClient returning wrong data length."""
-
-#     def _response(
-#         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
-#     ) -> bytearray:
-#         if (
-#             isinstance(char_specifier, str)
-#             and normalize_uuid_str(char_specifier) == normalize_uuid_str("ff02")
-#             and bytearray(data)[0] == self.HEAD_CMD
-#         ):
-#             if bytearray(data)[1:3] == self.CMD_INFO:
-#                 return bytearray(
-#                     b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
-#                     b"\x00\x00\x00\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x84\x77"
-#                     b"\00\00\00\00\00\00"  # oversized response
-#                 )  # {'voltage': 15.6, 'current': -2.87, 'battery_level': 100, 'cycle_charge': 4.98, 'cycles': 42, 'temperature': 22.133333333333347}
-#             if bytearray(data)[1:3] == self.CMD_CELL:
-#                 return bytearray(
-#                     b"\xdd\x04\x00\x08\x0d\x66\x0d\x61\x0d\x68\x0d\x59\xfe\x3c\x77"
-#                     b"\00\00\00\00\00\00\00\00\00\00\00\00"  # oversized response
-#                 )  # {'cell#0': 3.43, 'cell#1': 3.425, 'cell#2': 3.432, 'cell#3': 3.417}
-
-#         return bytearray()
-
-#     async def disconnect(self) -> bool:
-#         """Mock disconnect to raise BleakError."""
-#         raise BleakError
-
-
 async def test_update(monkeypatch, reconnect_fixture) -> None:
     """Test TDT BMS data update."""
 
@@ -202,55 +143,44 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
     await bms.disconnect()
 
 
-# async def test_invalid_response(monkeypatch) -> None:
-#     """Test data update with BMS returning invalid data (wrong CRC)."""
-
-#     monkeypatch.setattr(
-#         "custom_components.bms_ble.plugins.basebms.BleakClient",
-#         MockInvalidBleakClient,
-#     )
-
-#     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
-
-#     result = await bms.async_update()
-
-#     assert result == {}
-
-#     await bms.disconnect()
+@pytest.fixture(
+    name="wrong_response",
+    params=[
+        b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xA1\x18\x00",  # invalid frame end
+        b"\x7e\x10\x01\x03\x00\x8c\x00\x01\x00\xAD\x19\x0D",  # invalid version
+        b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xA1\x00\x0D",  # invalid CRC
+        b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xA1\x18\x0D\x00",  # oversized frame
+        b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xA1\x0D",  # undersized frame
+    ],
+)
+def response(request):
+    """Return all possible BMS variants."""
+    return request.param
 
 
-# async def test_oversized_response(monkeypatch) -> None:
-#     """Test data update with BMS returning oversized data, result shall still be ok."""
+async def test_invalid_response(monkeypatch, wrong_response) -> None:
+    """Test data up date with BMS returning invalid data."""
 
-#     monkeypatch.setattr(
-#         "custom_components.bms_ble.plugins.basebms.BleakClient",
-#         MockOversizedBleakClient,
-#     )
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.tdt_bms.BAT_TIMEOUT",
+        0.1,
+    )
 
-#     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
+    monkeypatch.setattr(
+        "tests.test_tdt_bms.MockTDTBleakClient._response",
+        lambda _s, _c_, d: wrong_response,
+    )
 
-#     result = await bms.async_update()
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
+        MockTDTBleakClient,
+    )
 
-#     assert result == {
-#         "temp_sensors": 3,
-#         "voltage": 15.6,
-#         "current": -2.87,
-#         "battery_level": 100,
-#         "cycle_charge": 4.98,
-#         "cycles": 42,
-#         "temperature": 22.133,
-#         "cycle_capacity": 77.688,
-#         "power": -44.772,
-#         "battery_charging": False,
-#         "runtime": 6246,
-#         "cell#0": 3.43,
-#         "cell#1": 3.425,
-#         "cell#2": 3.432,
-#         "cell#3": 3.417,
-#         "temp#0": 22.4,
-#         "temp#1": 22.3,
-#         "temp#2": 21.7,
-#         "delta_voltage": 0.015,
-#     }
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
-#     await bms.disconnect()
+    result = {}
+    with pytest.raises(TimeoutError):
+        result = await bms.async_update()
+
+    assert not result
+    await bms.disconnect()

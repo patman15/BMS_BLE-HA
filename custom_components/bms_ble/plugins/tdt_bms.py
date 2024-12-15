@@ -36,8 +36,8 @@ class BMS(BaseBMS):
 
     _HEAD: Final[int] = 0x7E
     _TAIL: Final[int] = 0x0D
-    _CMD_VER: Final[int] = 0x10
-    _RSP_VER: Final[int] = 0x14
+    _CMD_VER: Final[int] = 0x00
+    _RSP_VER: Final[int] = 0x00
     _INFO_LEN: Final[int] = 10  # minimal frame length
     _FIELDS: Final[
         list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
@@ -131,6 +131,12 @@ class BMS(BaseBMS):
             LOGGER.debug("%s: frame end incorrect: %s", self.name, self._data)
             return
 
+        if self._data[1] != BMS._RSP_VER:
+            LOGGER.debug(
+                "%s: unknown frame version: V%.1f", self.name, self._data[1] / 10
+            )
+            return
+
         if self._data[4]:
             LOGGER.debug("%s: BMS reported error code: 0x%X", self.name, self._data[4])
             return
@@ -151,10 +157,13 @@ class BMS(BaseBMS):
     def _cmd(cmd: int, data: bytearray = bytearray()) -> bytearray:
         """Assemble a TDT BMS command."""
         assert cmd in (0x8C, 0x8D, 0x92)  # allow only read commands
-        frame = bytearray([BMS._HEAD, 0x0, 0x1, 0x3, 0x0, cmd])  # fixed version
+        frame = bytearray(
+            [BMS._HEAD, BMS._CMD_VER, 0x1, 0x3, 0x0, cmd]
+        )  # fixed version
         frame += len(data).to_bytes(2, "big", signed=False) + data
         frame += bytearray(int.to_bytes(crc_modbus(frame), 2, byteorder="little"))
         frame += bytearray([BMS._TAIL])
+        LOGGER.debug("TX cmd: %s", frame.hex(" "))  # TODO: remove
         return frame
 
     @staticmethod
