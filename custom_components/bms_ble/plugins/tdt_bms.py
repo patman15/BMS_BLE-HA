@@ -40,24 +40,23 @@ class BMS(BaseBMS):
     _TAIL: Final[int] = 0x0D
     _CMD_VER: Final[int] = 0x00
     _RSP_VER: Final[int] = 0x00
+    _CELL_POS: Final[int] = 0x8
     _INFO_LEN: Final[int] = 10  # minimal frame length
     _FIELDS: Final[
         list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
     ] = [
-        (ATTR_VOLTAGE, 0x8C, 56, 2, False, lambda x: float(x / 100)),
+        (ATTR_VOLTAGE, 0x8C, 2, 2, False, lambda x: float(x / 100)),
         (
             ATTR_CURRENT,
             0x8C,
-            54,
+            0,
             2,
             False,
             lambda x: float((x & 0x3FFF) / 10 * (-1 if x >> 15 else 1)),
         ),
-        (ATTR_CYCLE_CHRG, 0x8C, 58, 2, False, lambda x: float(x / 10)),
-        (ATTR_BATTERY_LEVEL, 0x8C, 67, 1, False, lambda x: x),
-        (ATTR_CYCLES, 0x8C, 62, 2, False, lambda x: x),
-        (KEY_CELL_COUNT, 0x8C, 8, 1, False, lambda x: x),
-        (KEY_TEMP_SENS, 0x8C, 41, 1, False, lambda x: x),
+        (ATTR_CYCLE_CHRG, 0x8C, 4, 2, False, lambda x: float(x / 10)),
+        (ATTR_BATTERY_LEVEL, 0x8C, 13, 1, False, lambda x: x),
+        (ATTR_CYCLES, 0x8C, 8, 2, False, lambda x: x),
     ]
     _CMDS: Final[list[int]] = [*list({field[1] for field in _FIELDS}), 0x8D, 0x92]
 
@@ -108,10 +107,12 @@ class BMS(BaseBMS):
     async def _init_characteristics(self) -> None:
         try:
             await self._client.write_gatt_char(BMS._UUID_CFG, data=b"HiLink")
-            if (ret := await self._client.read_gatt_char(BMS._UUID_CFG)) != 0x1:
-                LOGGER.debug("%s: error initializing BMS: %s", self.name, ret.hex())
-        except BleakError:
-            LOGGER.debug("%s: failed to intialize BMS.", self.name)
+            if (
+                ret := int.from_bytes(await self._client.read_gatt_char(BMS._UUID_CFG))
+            ) != 0x1:
+                LOGGER.debug("%s: error initializing BMS: %X", self.name, ret)
+        except (BleakError, EOFError) as err:
+            LOGGER.debug("%s: failed to intialize BMS: %s", self.name, err)
 
         await super()._init_characteristics()
 
@@ -154,11 +155,11 @@ class BMS(BaseBMS):
             return
 
         crc = crc_modbus(self._data[:-3])
-        if int.from_bytes(self._data[-3:-1], "little") != crc:
+        if int.from_bytes(self._data[-3:-1], "big") != crc:
             LOGGER.debug(
                 "%s: RX data CRC is invalid: 0x%X != 0x%X",
                 self._ble_device.name,
-                int.from_bytes(self._data[-3:-1], "little"),
+                int.from_bytes(self._data[-3:-1], "big"),
                 crc,
             )
             return
@@ -173,17 +174,19 @@ class BMS(BaseBMS):
             [BMS._HEAD, BMS._CMD_VER, 0x1, 0x3, 0x0, cmd]
         )  # fixed version
         frame += len(data).to_bytes(2, "big", signed=False) + data
-        frame += bytearray(int.to_bytes(crc_modbus(frame), 2, byteorder="little"))
+        frame += bytearray(int.to_bytes(crc_modbus(frame), 2, byteorder="big"))
         frame += bytearray([BMS._TAIL])
         LOGGER.debug("TX cmd: %s", frame.hex(" "))  # TODO: remove
         return frame
 
     @staticmethod
-    def _decode_data(data: dict[int, bytearray]) -> dict[str, int | float]:
+    def _decode_data(data: dict[int, bytearray], offs: int) -> dict[str, int | float]:
         return {
             key: func(
                 int.from_bytes(
-                    data[cmd][idx : idx + size], byteorder="big", signed=sign
+                    data[cmd][idx + offs : idx + offs + size],
+                    byteorder="big",
+                    signed=sign,
                 )
             )
             for key, cmd, idx, size, sign, func in BMS._FIELDS
@@ -194,19 +197,21 @@ class BMS(BaseBMS):
         return {
             f"{KEY_CELL_VOLTAGE}{idx}": float(
                 int.from_bytes(
-                    data[9 + idx * 2 : 9 + idx * 2 + 2], byteorder="big", signed=False
+                    data[BMS._CELL_POS + 1 + idx * 2 : BMS._CELL_POS + 1 + idx * 2 + 2],
+                    byteorder="big",
+                    signed=False,
                 )
             )
             / 1000
-            for idx in range(data[8])
+            for idx in range(data[BMS._CELL_POS])
         }
 
     @staticmethod
-    def _temp_sensors(data: bytearray, sensors: int) -> dict[str, float]:
+    def _temp_sensors(data: bytearray, sensors: int, offs: int) -> dict[str, float]:
         return {
             f"{KEY_TEMP_VALUE}{idx}": (
                 int.from_bytes(
-                    data[42 + idx * 2 : 44 + idx * 2],
+                    data[offs + idx * 2 : offs + (idx + 1) * 2],
                     byteorder="big",
                     signed=False,
                 )
@@ -215,7 +220,7 @@ class BMS(BaseBMS):
             / 10
             for idx in range(sensors)
             if int.from_bytes(
-                data[42 + idx * 2 : 44 + idx * 2],
+                data[offs + idx * 2 : offs + (idx + 1) * 2],
                 byteorder="big",
                 signed=False,
             )
@@ -227,14 +232,21 @@ class BMS(BaseBMS):
         for cmd in BMS._CMDS:
             await self._client.write_gatt_char(BMS.uuid_tx(), data=BMS._cmd(cmd))
             await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-            # check if a valid frame was received otherwise terminate immediately
-            if cmd not in self._data_final:
-                return {}
 
-        result = BMS._decode_data(self._data_final)
+        result: BMSsample = {KEY_CELL_COUNT: int(self._data_final[0x8C][BMS._CELL_POS])}
+        result[KEY_TEMP_SENS] = int(
+            self._data_final[0x8C][BMS._CELL_POS + int(result[KEY_CELL_COUNT]) * 2 + 1]
+        )
+
         result |= BMS._cell_voltages(self._data_final[0x8C])
         result |= BMS._temp_sensors(
-            self._data_final[0x8C], int(result.get(KEY_TEMP_SENS, 0))
+            self._data_final[0x8C],
+            int(result[KEY_TEMP_SENS]),
+            BMS._CELL_POS + int(result[KEY_CELL_COUNT]) * 2 + 2,
+        )
+        result |= BMS._decode_data(
+            self._data_final,
+            BMS._CELL_POS + int(result[KEY_CELL_COUNT] + result[KEY_TEMP_SENS]) * 2 + 2,
         )
 
         self._data_final.clear()
