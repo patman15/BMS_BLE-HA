@@ -39,20 +39,17 @@ class BMS(BaseBMS):
     BT_MODULE_MSG: Final = bytes([0x41, 0x54, 0x0D, 0x0A])  # AT\r\n from BLE module
     TYPE_POS: Final[int] = 4  # frame type is right after the header
     INFO_LEN: Final[int] = 300
-    _FIELDS: Final[
-        list[tuple[str, int, int, bool, Callable[[int], int | float]]]
-    ] = [  # Protocol: JK02_32S; JK02_24S has offset -32
-        (KEY_CELL_COUNT, 70, 4, False, lambda x: x.bit_count()),
-        (ATTR_DELTA_VOLTAGE, 76, 2, False, lambda x: float(x / 1000)),
-        (ATTR_VOLTAGE, 150, 4, False, lambda x: float(x / 1000)),
-        (ATTR_CURRENT, 158, 4, True, lambda x: float(x / 1000)),
-        (ATTR_BATTERY_LEVEL, 173, 1, False, lambda x: x),
-        (ATTR_CYCLE_CHRG, 174, 4, False, lambda x: float(x / 1000)),
-        (ATTR_CYCLES, 182, 4, False, lambda x: x),
-    ] + [  # add temperature sensors
-        (f"{KEY_TEMP_VALUE}{i}", addr, 2, True, lambda x: float(x / 10))
-        for i, addr in [(0, 144), (1, 162), (2, 164), (3, 256), (4, 258)]
-    ]
+    _FIELDS: Final[list[tuple[str, int, int, bool, Callable[[int], int | float]]]] = (
+        [  # Protocol: JK02_32S; JK02_24S has offset -32
+            (KEY_CELL_COUNT, 70, 4, False, lambda x: x.bit_count()),
+            (ATTR_DELTA_VOLTAGE, 76, 2, False, lambda x: float(x / 1000)),
+            (ATTR_VOLTAGE, 150, 4, False, lambda x: float(x / 1000)),
+            (ATTR_CURRENT, 158, 4, True, lambda x: float(x / 1000)),
+            (ATTR_BATTERY_LEVEL, 173, 1, False, lambda x: x),
+            (ATTR_CYCLE_CHRG, 174, 4, False, lambda x: float(x / 1000)),
+            (ATTR_CYCLES, 182, 4, False, lambda x: x),
+        ]
+    )
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
@@ -238,6 +235,17 @@ class BMS(BaseBMS):
         }
 
     @staticmethod
+    def _temp_sensors(data: bytearray) -> dict[str, float]:
+        return {
+            f"{KEY_TEMP_VALUE}{idx}": int.from_bytes(
+                data[pos : pos + 2], byteorder="little", signed=False
+            )
+            / 10
+            for idx, pos in [(0, 144), (1, 162), (2, 164), (3, 256), (4, 258)]
+            if int.from_bytes(data[pos : pos + 2], byteorder="little", signed=False)
+        }
+
+    @staticmethod
     def _decode_data(data: bytearray) -> BMSsample:
         """Return BMS data from status message."""
         return {
@@ -261,6 +269,7 @@ class BMS(BaseBMS):
             return {}
 
         data = self._decode_data(self._data_final)
+        data.update(BMS._temp_sensors(self._data_final))
         data.update(BMS._cell_voltages(self._data_final, int(data[KEY_CELL_COUNT])))
 
         return data
