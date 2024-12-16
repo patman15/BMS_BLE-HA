@@ -85,6 +85,12 @@ Installation can be done using [HACS](https://hacs.xyz/) by [adding a custom rep
 1. Restart Home Assistant
 1. In the HA UI go to "Configuration" -> "Integrations" click "+" and [search](https://my.home-assistant.io/redirect/config_flow_start/?domain=bms_ble) for "BLE Battery Management"
 
+## Known Issues
+
+<details><summary>Elektronicx batteries</summary>
+Bluetooth is turned off, when there is no current. Thus device will get unavailble / cannot be added.
+</details>
+
 ## FAQ
 ### My sensors show unknown/unavailable at startup!
 The polling interval is 30 seconds. So at startup it takes a few minutes to detect the battery and query the sensors. Then data will be available.
