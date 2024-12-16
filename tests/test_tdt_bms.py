@@ -229,11 +229,10 @@ async def test_update_4s_4t(monkeypatch, reconnect_fixture) -> None:
     )
 
     result = await bms.async_update()
-    
     assert result == ref_value()["4S4T"]
 
     # query again to check already connected state
-    result = await bms.async_update()
+    _ = await bms.async_update()
     assert (
         bms._client and bms._client.is_connected is not reconnect_fixture
     )  # noqa: SLF001
