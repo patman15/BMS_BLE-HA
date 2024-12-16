@@ -58,7 +58,7 @@ class BMS(BaseBMS):
         (ATTR_BATTERY_LEVEL, 0x8C, 13, 1, False, lambda x: x),
         (ATTR_CYCLES, 0x8C, 8, 2, False, lambda x: x),
     ]
-    _CMDS: Final[list[int]] = [*list({field[1] for field in _FIELDS}), 0x8D, 0x92]
+    _CMDS: Final[list[int]] = [*list({field[1] for field in _FIELDS})]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
