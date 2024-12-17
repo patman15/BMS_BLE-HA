@@ -53,7 +53,10 @@ class BMS(BaseBMS):
         (KEY_PACK_COUNT, 0x51, 42, 1, False, lambda x: min(x, BMS._MAX_SUBS)),
         (KEY_TEMP_SENS, 0x62, 14, 1, False, lambda x: x),
     ]  # Protocol Seplos V2 (parallel data 0x62, device manufacturer info 0x51)
-    _CMDS: Final[list[int]] = list({field[1] for field in _FIELDS})
+    _CMDS: Final[list[tuple[int, bytes]]] = [
+        *list({(field[1], b"") for field in _FIELDS}),
+        (0x61, b"\x00"),
+    ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -68,7 +71,7 @@ class BMS(BaseBMS):
         """Provide BluetoothMatcher definition."""
         return [
             {
-                "local_name": "BP00",
+                "local_name": "BP0?",
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             }
@@ -97,9 +100,10 @@ class BMS(BaseBMS):
     @staticmethod
     def _calc_values() -> set[str]:
         return {
-            ATTR_POWER,
             ATTR_BATTERY_CHARGING,
             ATTR_CYCLE_CAP,
+            ATTR_DELTA_VOLTAGE,
+            ATTR_POWER,
             ATTR_RUNTIME,
         }  # calculate further values from BMS provided set ones
 
@@ -184,13 +188,11 @@ class BMS(BaseBMS):
         }
 
     @staticmethod
-    def _cell_voltages(data: bytearray, offset: int = 0) -> dict[str, float]:
+    def _cell_voltages(data: bytearray) -> dict[str, float]:
         return {
-            f"{KEY_CELL_VOLTAGE}{idx+offset}": float(
+            f"{KEY_CELL_VOLTAGE}{idx}": float(
                 int.from_bytes(
-                    data[10 + idx * 2 : 10 + idx * 2 + 2],
-                    byteorder="big",
-                    signed=False,
+                    data[10 + idx * 2 : 10 + idx * 2 + 2], byteorder="big", signed=False
                 )
             )
             / 1000
@@ -200,29 +202,12 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
-        for cmd in BMS._CMDS:
-            await self._client.write_gatt_char(BMS.uuid_tx(), data=BMS._cmd(cmd))
+        for cmd, data in BMS._CMDS:
+            await self._client.write_gatt_char(BMS.uuid_tx(), data=BMS._cmd(cmd, data=bytearray(data)))
             await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 
         result: BMSsample = BMS._decode_data(self._data_final)
-
-        total_cells: int = 0
-        for pack in range(int(result.get(KEY_PACK_COUNT, 0) + 1)):
-            await self._client.write_gatt_char(
-                BMS.uuid_tx(), data=BMS._cmd(0x61, address=pack, data=bytearray(1))
-            )
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-            pack_cells: dict[str, float] = BMS._cell_voltages(
-                self._data_final[0x61], total_cells
-            )
-            result |= pack_cells
-            result |= {
-                ATTR_DELTA_VOLTAGE: max(
-                    float(result.get(ATTR_DELTA_VOLTAGE, 0)),
-                    round(max(pack_cells.values()) - min(pack_cells.values()), 3),
-                )
-            }
-            total_cells += self._data_final[0x61][9]
+        result |= BMS._cell_voltages(self._data_final[0x61])
 
         self._data_final.clear()
 
