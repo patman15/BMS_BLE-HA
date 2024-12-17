@@ -3,6 +3,7 @@
 import asyncio
 from collections.abc import Callable
 import logging
+from string import hexdigits
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
@@ -36,7 +37,6 @@ class BMS(BaseBMS):
     _MAX_CELLS: Final[int] = 16
     _INFO_LEN: Final[int] = 113
     _CRC_LEN: Final[int] = 4
-    _HEX_CHARS: Final[set] = set("0123456789ABCDEF")
     _FIELDS: Final[list[tuple[str, int, int, bool, Callable[[int], int | float]]]] = [
         (ATTR_VOLTAGE, 1, 8, False, lambda x: float(x / 1000)),
         (ATTR_CURRENT, 9, 8, True, lambda x: float(x / 1000)),
@@ -115,7 +115,7 @@ class BMS(BaseBMS):
 
         if not (
             self._data.startswith(BMS._HEAD_RSP)
-            and set(self._data.decode()[3:]).issubset(BMS._HEX_CHARS)
+            and set(self._data.decode()[3:]).issubset(hexdigits)
         ):
             LOGGER.debug("%s: incorrect frame coding: %s", self.name, self._data)
             self._data.clear()

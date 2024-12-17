@@ -41,6 +41,8 @@ class BMS(BaseBMS):
     INFO_LEN: Final[int] = 300
     _FIELDS: Final[list[tuple[str, int, int, bool, Callable[[int], int | float]]]] = (
         [  # Protocol: JK02_32S; JK02_24S has offset -32
+            (KEY_CELL_COUNT, 70, 4, False, lambda x: x.bit_count()),
+            (ATTR_DELTA_VOLTAGE, 76, 2, False, lambda x: float(x / 1000)),
             (ATTR_VOLTAGE, 150, 4, False, lambda x: float(x / 1000)),
             (ATTR_CURRENT, 158, 4, True, lambda x: float(x / 1000)),
             (ATTR_BATTERY_LEVEL, 173, 1, False, lambda x: x),
