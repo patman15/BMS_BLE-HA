@@ -57,7 +57,7 @@ class BMS(BaseBMS):
         self._char_write_handle: int | None = None
         self._bms_info: dict[str, str] = {}
         self._prot_offset: int = 0
-        self._valid_reply: int = 0x3
+        self._valid_reply: int = 0x02
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -202,6 +202,7 @@ class BMS(BaseBMS):
         )
 
         # query device info frame (0x03) and wait for BMS ready (0xC8)
+        self._valid_reply = 0x03
         await self._client.write_gatt_char(
             self._char_write_handle or 0, data=self._cmd(b"\x97")
         )
@@ -290,16 +291,13 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        if not self._data_event.is_set():
+        if not self._data_event.is_set() or self._data_final[4] != 0x02:
             # request cell info (only if data is not constantly published)
             LOGGER.debug("%s: request cell info", self.name)
             await self._client.write_gatt_char(
                 self._char_write_handle or 0, data=BMS._cmd(b"\x96")
             )
             await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-
-        if self._data_final is None:
-            return {}
 
         data: BMSsample = self._decode_data(self._data_final, self._prot_offset)
         data.update(BMS._temp_sensors(self._data_final, self._prot_offset))
