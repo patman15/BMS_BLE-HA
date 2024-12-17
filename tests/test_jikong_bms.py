@@ -2,6 +2,7 @@
 
 import asyncio
 from collections.abc import Buffer
+from copy import deepcopy
 from typing import Final
 from uuid import UUID
 
@@ -12,7 +13,7 @@ from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str, uuidstr_to_str
 import pytest
 
-from custom_components.bms_ble.plugins.jikong_bms import BMS, BMSsample
+from custom_components.bms_ble.plugins.jikong_bms import BMS, BMSsample, crc_sum
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -232,6 +233,11 @@ class MockJikongBleakClient(MockBleakClient):
         ):  # JK BMS confirms commands with a command in reply
             self._task = asyncio.create_task(self._send_confirm())
 
+    async def disconnect(self) -> bool:
+        await asyncio.wait_for(self._task, 0.1)
+        assert self._task.result, "send task still running!"
+        return await super().disconnect()
+
     class JKservice(BleakGATTService):
         """Mock the main battery info service from JiKong BMS."""
 
@@ -448,28 +454,21 @@ async def test_update(monkeypatch, protocol_type, reconnect_fixture) -> None:
     await bms.disconnect()
 
 
-async def test_hide_temp_sensors(monkeypatch) -> None:
+async def test_hide_temp_sensors(monkeypatch, protocol_type) -> None:
     """Test Jikong BMS data update with not connected temperature sensors."""
 
-    temp2_zero: Final = bytearray(
-        b"\x55\xaa\xeb\x90\x02\xc6\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c"
-        b"\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\x00\x00\x00\x00\x00\x00"
-        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-        b"\x00\x00\x00\x00\xff\xff\x00\x00\xc1\x0c\x02\x00\x00\x07\x3a\x00\x3c\x00\x46\x00\x48\x00"
-        b"\x54\x00\x5c\x00\x69\x00\x76\x00\x7d\x00\x76\x00\x6c\x00\x69\x00\x61\x00\x4b\x00\x47\x00"
-        b"\x3c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xb8\x00\x00\x00\x00\x00\x0a\xcc\x00\x00"
-        b"\xcd\x71\x08\x00\x9d\xd6\xff\xff\xb5\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x2a\x47\xcb"
-        b"\x01\x00\xc0\x45\x04\x00\x02\x00\x00\x00\x15\xb7\x08\x00\x64\x00\x00\x00\x6b\xc7\x06\x00"
-        b"\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\x00\x01\x00\x00\x00"
-        b"\xb2\x03\x00\x00\x1c\x00\x54\x29\x40\x40\x00\x00\x00\x00\x67\x14\x00\x00\x00\x01\x01\x01"
-        b"\x00\x06\x00\x00\xf3\x48\x2e\x00\x00\x00\x00\x00\xb8\x00\xb4\x00\xb7\x00\xb2\x03\xde\xe4"
-        b"\x5b\x08\x2c\x00\x00\x00\x80\x51\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-        b"\x00\xfe\xff\x7f\xdc\x2f\x01\x01\xb0\x07\x00\x00\x00\x1a"
-    )  # {"temperature": 18.4, "voltage": 52.234, "current": -10.595, "battery_level": 42, "cycle_charge": 117.575, "cycles": 2}
+    temp2_zero: dict[str, bytearray] = deepcopy(_PROTO_DEFS[protocol_type])
+
+    # clear temp sensor #2
+    if protocol_type == "JK02_24S":
+        temp2_zero["cell"][134:136] = bytearray(2)
+    else:
+        temp2_zero["cell"][164:166] = bytearray(2)
+    # recalculate CRC
+    temp2_zero["cell"][-1] = crc_sum(temp2_zero["cell"][:-1])
 
     monkeypatch.setattr(
-        "tests.test_jikong_bms.MockJikongBleakClient.CEL_FRAME", temp2_zero
+        "tests.test_jikong_bms.MockJikongBleakClient._FRAME", temp2_zero
     )
 
     monkeypatch.setattr(
@@ -478,42 +477,13 @@ async def test_hide_temp_sensors(monkeypatch) -> None:
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
-    result = await bms.async_update()
+    # modify result dict to match removed temp#2
+    ref_result = deepcopy(_RESULT_DEFS[protocol_type])
+    if protocol_type == "JK02_24S":
+        ref_result["temperature"] = 18.35
+    del ref_result["temp#2"]
 
-    assert result == {
-        "cell_count": 16,
-        "delta_voltage": 0.002,
-        "temperature": 18.2,
-        "voltage": 52.234,
-        "current": -10.595,
-        "battery_level": 42,
-        "cycle_charge": 117.575,
-        "cycles": 2,
-        "cell#0": 3.265,
-        "cell#1": 3.265,
-        "cell#2": 3.265,
-        "cell#3": 3.265,
-        "cell#4": 3.265,
-        "cell#5": 3.265,
-        "cell#6": 3.265,
-        "cell#7": 3.265,
-        "cell#8": 3.265,
-        "cell#9": 3.265,
-        "cell#10": 3.265,
-        "cell#11": 3.265,
-        "cell#12": 3.265,
-        "cell#13": 3.265,
-        "cell#14": 3.265,
-        "cell#15": 3.265,
-        "cycle_capacity": 6141.413,
-        "power": -553.419,
-        "battery_charging": False,
-        "runtime": 39949,
-        "temp#0": 18.4,
-        "temp#1": 18.1,
-        "temp#3": 18.0,
-        "temp#4": 18.3,
-    }
+    assert await bms.async_update() == ref_result
 
     await bms.disconnect()
 
