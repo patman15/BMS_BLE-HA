@@ -19,13 +19,12 @@ class MockSeplosv2BleakClient(MockBleakClient):
     """Emulate a Seplos v2 BMS BleakClient."""
 
     HEAD_CMD = 0x7E
-    CMD_GSMD = bytearray([HEAD_CMD]) + bytearray(
-        b"\x10\x00\x46\x61\x00\x01"
-    )  # get single machine data
-    CMD_GPD = bytearray([HEAD_CMD]) + bytearray(
-        b"\x10\x00\x46\x62\x00\x00"
+    PROTOCOL = 0x10
+    CMD_GSMD = bytearray(b"\x46\x61\x00\x01\x00")  # get single machine data
+    CMD_GPD = bytearray(
+        bytes([HEAD_CMD, PROTOCOL]) + b"\x00\x46\x62\x00\x00"
     )  # get parallel data
-    CMD_GMI = bytearray([HEAD_CMD]) + bytearray(b"\x10\x00\x46\x51\x00\x00\x3A\x7F\x0D")
+    CMD_GMI = bytearray(bytes([HEAD_CMD, PROTOCOL]) + b"\00\x46\x51\x00\x00\x3A\x7F\x0D")
 
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
@@ -36,8 +35,10 @@ class MockSeplosv2BleakClient(MockBleakClient):
             and normalize_uuid_str(char_specifier) == normalize_uuid_str("ff02")
             and bytearray(data)[0] == self.HEAD_CMD
         ):
-            if bytearray(data).startswith(self.CMD_GSMD):
-                return bytearray(
+            if bytearray(data)[1] == self.PROTOCOL and bytearray(data)[3:].startswith(
+                self.CMD_GSMD
+            ):
+                return bytearray( # TODO: respond with correct address
                     b"\x7e\x14\x02\x61\x00\x00\x6a\x00\x02\x10\x0c\xf0\x0c\xf1\x0c\xf1\x0c\xf1\x0c"
                     b"\xf1\x0c\xf0\x0c\xf1\x0c\xf3\x0c\xef\x0c\xf0\x0c\xf1\x0c\xf1\x0c\xf1\x0c\xf0"
                     b"\x0c\xf1\x0c\xf1\x06\x0b\x8f\x0b\x89\x0b\x8a\x0b\x93\x0b\xc0\x0b\x98\x02\xad"

@@ -161,10 +161,12 @@ class BMS(BaseBMS):
         self._data_event.set()
 
     @staticmethod
-    def _cmd(cmd: int, data: bytearray = bytearray()) -> bytearray:
+    def _cmd(cmd: int, address: int = 0, data: bytearray = bytearray()) -> bytearray:
         """Assemble a Seplos V2 BMS command."""
         assert cmd in (0x47, 0x51, 0x61, 0x62, 0x04)  # allow only read commands
-        frame = bytearray([BMS._HEAD, BMS._CMD_VER, 0x0, 0x46, cmd])  # fixed version
+        frame = bytearray(
+            [BMS._HEAD, BMS._CMD_VER, address, 0x46, cmd]
+        )  # fixed version
         frame += len(data).to_bytes(2, "big", signed=False) + data
         frame += bytearray(int.to_bytes(crc_xmodem(frame[1:]), 2, byteorder="big"))
         frame += bytearray([BMS._TAIL])
@@ -207,7 +209,7 @@ class BMS(BaseBMS):
         total_cells: int = 0
         for pack in range(int(result.get(KEY_PACK_COUNT, 0) + 1)):
             await self._client.write_gatt_char(
-                BMS.uuid_tx(), data=BMS._cmd(0x61, data=bytearray([pack]))
+                BMS.uuid_tx(), data=BMS._cmd(0x61, address=pack, data=bytearray(1))
             )
             await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
             pack_cells: dict[str, float] = BMS._cell_voltages(
