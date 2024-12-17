@@ -234,6 +234,7 @@ class MockJikongBleakClient(MockBleakClient):
             self._task = asyncio.create_task(self._send_confirm())
 
     async def disconnect(self) -> bool:
+        """Mock disconnect and wait for send task."""
         await asyncio.wait_for(self._task, 0.1)
         assert self._task.result, "send task still running!"
         return await super().disconnect()
