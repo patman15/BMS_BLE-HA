@@ -46,8 +46,8 @@ class BMS(BaseBMS):
         list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
     ] = [
         (ATTR_VOLTAGE, 0x61, 2, 2, False, lambda x: float(x / 100)),
-        (ATTR_CURRENT, 0x61, 0, 2, True, lambda x: float(x / 10)),
-        (ATTR_CYCLE_CHRG, 0x61, 4, 2, False, lambda x: float(x / 10)),
+        (ATTR_CURRENT, 0x61, 0, 2, True, lambda x: float(x / 100)),  # /10 for 0x62
+        (ATTR_CYCLE_CHRG, 0x61, 4, 2, False, lambda x: float(x / 100)),  # /10 for 0x62
         (ATTR_CYCLES, 0x61, 13, 2, False, lambda x: x),
         (ATTR_BATTERY_LEVEL, 0x61, 9, 2, False, lambda x: float(x / 10)),
     ]  # Protocol Seplos V2 (parallel data 0x62, device manufacturer info 0x51)
