@@ -19,13 +19,14 @@ class MockSeplosv2BleakClient(MockBleakClient):
     """Emulate a Seplos v2 BMS BleakClient."""
 
     HEAD_CMD = 0x7E
-    CMD_GSMD = bytearray([HEAD_CMD]) + bytearray(
-        b"\x10\x00\x46\x61\x00\x01"
-    )  # get single machine data
-    CMD_GPD = bytearray([HEAD_CMD]) + bytearray(
-        b"\x10\x00\x46\x62\x00\x00"
+    PROTOCOL = 0x10
+    CMD_GSMD = bytearray(b"\x46\x61\x00\x01\x00")  # get single machine data
+    CMD_GPD = bytearray(
+        bytes([HEAD_CMD, PROTOCOL]) + b"\x00\x46\x62\x00\x00"
     )  # get parallel data
-    CMD_GMI = bytearray([HEAD_CMD]) + bytearray(b"\x10\x00\x46\x51\x00\x00\x3A\x7F\x0D")
+    CMD_GMI = bytearray(
+        bytes([HEAD_CMD, PROTOCOL]) + b"\00\x46\x51\x00\x00\x3A\x7F\x0D"
+    )
 
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
@@ -36,8 +37,10 @@ class MockSeplosv2BleakClient(MockBleakClient):
             and normalize_uuid_str(char_specifier) == normalize_uuid_str("ff02")
             and bytearray(data)[0] == self.HEAD_CMD
         ):
-            if bytearray(data).startswith(self.CMD_GSMD):
-                return bytearray(
+            if bytearray(data)[1] == self.PROTOCOL and bytearray(data)[3:].startswith(
+                self.CMD_GSMD
+            ):
+                return bytearray(  # TODO: respond with correct address
                     b"\x7e\x14\x02\x61\x00\x00\x6a\x00\x02\x10\x0c\xf0\x0c\xf1\x0c\xf1\x0c\xf1\x0c"
                     b"\xf1\x0c\xf0\x0c\xf1\x0c\xf3\x0c\xef\x0c\xf0\x0c\xf1\x0c\xf1\x0c\xf1\x0c\xf0"
                     b"\x0c\xf1\x0c\xf1\x06\x0b\x8f\x0b\x89\x0b\x8a\x0b\x93\x0b\xc0\x0b\x98\x02\xad"
@@ -100,13 +103,13 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "cell_count": 16,
         "temp_sensors": 6,
         "voltage": 53.0,
-        "current": 21.5,
-        "battery_level": 52.0,
-        "cycle_charge": 437.2,
-        "cycles": 113,
-        "temperature": 22.55,
-        "cycle_capacity": 23171.6,
-        "power": 1139.5,
+        "current": 68.5,
+        "battery_level": 51.4,
+        "cycle_charge": 1439.4,
+        "cycles": 128,
+        "temperature": 23.6,
+        "cycle_capacity": 76288.2,
+        "power": 3630.5,
         "battery_charging": True,
         "cell#0": 3.312,
         "cell#1": 3.313,
@@ -124,38 +127,12 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "cell#13": 3.312,
         "cell#14": 3.313,
         "cell#15": 3.313,
-        "cell#16": 3.312,
-        "cell#17": 3.313,
-        "cell#18": 3.313,
-        "cell#19": 3.313,
-        "cell#20": 3.313,
-        "cell#21": 3.312,
-        "cell#22": 3.313,
-        "cell#23": 3.315,
-        "cell#24": 3.311,
-        "cell#25": 3.312,
-        "cell#26": 3.313,
-        "cell#27": 3.313,
-        "cell#28": 3.313,
-        "cell#29": 3.312,
-        "cell#30": 3.313,
-        "cell#31": 3.313,
-        "cell#32": 3.312,
-        "cell#33": 3.313,
-        "cell#34": 3.313,
-        "cell#35": 3.313,
-        "cell#36": 3.313,
-        "cell#37": 3.312,
-        "cell#38": 3.313,
-        "cell#39": 3.315,
-        "cell#40": 3.311,
-        "cell#41": 3.312,
-        "cell#42": 3.313,
-        "cell#43": 3.313,
-        "cell#44": 3.313,
-        "cell#45": 3.312,
-        "cell#46": 3.313,
-        "cell#47": 3.313,
+        "temp#0": 22.75,
+        "temp#1": 22.15,
+        "temp#2": 22.25,
+        "temp#3": 23.15,
+        "temp#4": 27.65,
+        "temp#5": 23.65,
         "delta_voltage": 0.004,
         "pack_count": 2,
     }

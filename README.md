@@ -27,10 +27,10 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - JBD BMS, Jiabaida (show up as `SP..S`&#x2026;)
     - accurat batteries (show up as `GJ-`&#x2026;)
     - Supervolt v3 batteries (show up as `SX1*`&#x2026;)
-- JK BMS, Jikong, (HW version >=11 required)
+- JK BMS, Jikong, (HW version >=6 required)
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
 - LiTime, Power Queen, and Redodo batteries
-- Seplos v2 (show up as `BP00`&#x2026;)
+- Seplos v2 (show up as `BP0`?)
 - Seplos v3 (show up as `SP0`&#x2026; or `SP1`&#x2026;)
 - TDT BMS (show up as e.g., `XDZN`&#x2026;)
 
@@ -72,7 +72,9 @@ bad | 0 to 60  | -90 to low
 
 ## Installation
 ### Automatic
-Installation can be done using [HACS](https://hacs.xyz/) by [adding a custom repository](https://hacs.xyz/docs/faq/custom_repositories/).
+Installation can be done using [HACS](https://hacs.xyz/docs/use/) by [adding a custom repository](https://hacs.xyz/docs/faq/custom_repositories/):<br>
+`Repository`: https://github.com/patman15/BMS_BLE-HA/<br>
+`Type`: integration
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=patman15&repository=BMS_BLE-HA&category=Integration)
 
