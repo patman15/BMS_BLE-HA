@@ -154,7 +154,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
     ids=lambda param: param[1],
 )
 def response(request) -> bytearray:
-    """Return all possible BMS variants."""
+    """Return faulty response frame."""
     return request.param[0]
 
 

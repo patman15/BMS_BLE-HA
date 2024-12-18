@@ -149,17 +149,18 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
 @pytest.fixture(
     name="wrong_response",
     params=[
-        b"\x7E\x14\x00\x51\x00\x00\x01\x00\x7A\xEF\x00",  # invalid frame end
-        b"\x7E\x10\x00\x51\x00\x00\x01\x00\xBB\x29\x0D",  # invalid version
-        b"\x7E\x14\x00\x51\x80\x00\x01\x00\xA7\xD7\x0D",  # error response
-        b"\x7E\x14\x00\x51\x00\x00\x01\x00\x7A\xEE\x0D",  # invalid CRC
-        b"\x7E\x14\x00\x51\x00\x00\x01\x00\x7A\xEF\x0D\x00",  # oversized frame
-        b"\x7E\x14\x00\x51\x00\x00\x02\x00\x7A\xEF\x0D",  # undersized frame
+        (b"\x7E\x14\x00\x51\x00\x00\x01\x00\x7A\xEF\x00", "invalid frame end"),
+        (b"\x7E\x10\x00\x51\x00\x00\x01\x00\xBB\x29\x0D", "invalid version"),
+        (b"\x7E\x14\x00\x51\x80\x00\x01\x00\xA7\xD7\x0D", "error response"),
+        (b"\x7E\x14\x00\x51\x00\x00\x01\x00\x7A\xEE\x0D", "invalid CRC"),
+        (b"\x7E\x14\x00\x51\x00\x00\x01\x00\x7A\xEF\x0D\x00", "oversized frame"),
+        (b"\x7E\x14\x00\x51\x00\x00\x02\x00\x7A\xEF\x0D", "undersized frame"),
     ],
+    ids=lambda param: param[1],
 )
 def response(request):
-    """Return all possible BMS variants."""
-    return request.param
+    """Return faulty response frame."""
+    return request.param[0]
 
 
 async def test_invalid_response(monkeypatch, wrong_response) -> None:

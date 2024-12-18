@@ -152,7 +152,7 @@ async def test_tx_notimplemented(monkeypatch) -> None:
     ids=lambda param: param[1],
 )
 def response(request) -> bytearray:
-    """Return all possible BMS variants."""
+    """Return faulty response frame."""
     return request.param[0]
 
 
