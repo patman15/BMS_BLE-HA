@@ -309,9 +309,19 @@ class MockBleakClient(BleakClient):
     ) -> None:
         """Mock write GATT characteristics."""
         LOGGER.debug(
-            "MockBleakClient write_gatt_char for %s, data: %s", char_specifier, data
+            "MockBleakClient write_gatt_char %s, data: %s", char_specifier, data
         )
         assert self._connected, "write_gatt_char called, but client not connected."
+
+    async def read_gatt_char(
+        self,
+        char_specifier: BleakGATTCharacteristic | int | str | UUID,
+        **kwargs,
+    ) -> bytearray:
+        """Mock write GATT characteristics."""
+        LOGGER.debug("MockBleakClient read_gatt_char %s", char_specifier)
+        assert self._connected, "read_gatt_char called, but client not connected."
+        return bytearray()
 
     async def disconnect(self) -> bool:
         """Mock disconnect."""

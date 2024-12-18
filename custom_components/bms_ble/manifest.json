@@ -69,6 +69,9 @@
       "manufacturer_id": 65535
     },
     {
+      "manufacturer_id": 54976
+    },
+    {
       "local_name": "BP0?",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"      
     }    

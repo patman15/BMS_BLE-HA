@@ -21,6 +21,7 @@ BMS_TYPES: Final[list[str]] = [
     "redodo_bms",
     "seplos_bms",
     "seplos_v2_bms",
+    "tdt_bms",
     "dpwrcore_bms",  # only name filter
 ]  # available BMS types
 DOMAIN: Final[str] = "bms_ble"
