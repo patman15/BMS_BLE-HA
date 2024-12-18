@@ -26,7 +26,7 @@ from custom_components.bms_ble.const import (
     KEY_TEMP_VALUE,
 )
 
-from .basebms import BaseBMS, BMSsample, crc_xmodem
+from .basebms import BaseBMS, BMSsample, crc_modbus
 
 BAT_TIMEOUT: Final = 10
 LOGGER: Final = logging.getLogger(__name__)
@@ -108,12 +108,12 @@ class BMS(BaseBMS):
             len(data) < BMS.HEAD_LEN
             or data[0:2] != BMS.HEAD_READ
             or int(data[2]) + 1 != len(data) - len(BMS.HEAD_READ) - BMS.CRC_LEN
-            or int.from_bytes(data[-2:], byteorder="big") != crc_xmodem(data[:-2])
+            or int.from_bytes(data[-2:], byteorder="little") != crc_modbus(data[:-2])
         ):
             LOGGER.debug(
                 "Response data is invalid, CRC: 0x%X != 0x%X",
-                int.from_bytes(data[-2:], byteorder="big"),
-                crc_xmodem(data[:-2]),
+                int.from_bytes(data[-2:], byteorder="little"),
+                crc_modbus(data[:-2]),
             )
             self._data = None
         else:
