@@ -44,8 +44,8 @@ class MockEJBleakClient(MockBleakClient):
         """Issue write command to GATT."""
         await super().write_gatt_char(char_specifier, data, response)
         assert self._notify_callback is not None
-        self._notify_callback("MockEctiveBleakClient", bytearray(b'AT\r\n'))
-        self._notify_callback("MockEctiveBleakClient", bytearray(b'AT\r\nillegal'))
+        self._notify_callback("MockEctiveBleakClient", bytearray(b"AT\r\n"))
+        self._notify_callback("MockEctiveBleakClient", bytearray(b"AT\r\nillegal"))
         for notify_data in [
             self._response(char_specifier, data)[i : i + BT_FRAME_SIZE]
             for i in range(0, len(self._response(char_specifier, data)), BT_FRAME_SIZE)
@@ -160,15 +160,16 @@ async def test_update_single_frame(monkeypatch, reconnect_fixture) -> None:
 @pytest.fixture(
     name="wrong_response",
     params=[
-        b"x009031001E0000001400080016F4~",  # wrong SOI
-        b":009031001E0000001400080016F4x",  # wrong EOI
-        b":009031001D0000001400080016F4~",  # wrong length
-        b":009031001E00000002000A000AD9~",  # wrong CRC
+        (b"x009031001E0000001400080016F4~", "wrong SOI"),
+        (b":009031001E0000001400080016F4x", "wrong EOI"),
+        (b":009031001D0000001400080016F4~", "wrong length"),
+        (b":009031001E00000002000A000AD9~", "wrong CRC"),
     ],
+    ids=lambda param: param[1],
 )
 def response(request):
-    """Return all possible BMS variants."""
-    return request.param
+    """Return faulty response frame."""
+    return request.param[0]
 
 
 async def test_invalid_response(monkeypatch, wrong_response) -> None:

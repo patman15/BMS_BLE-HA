@@ -142,18 +142,20 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
 @pytest.fixture(
     name="wrong_response",
     params=[
-        bytearray(  # wrong end
-            b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
-            b"\x00\x00\x00\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x84\xdd"
+        (
+            bytearray(
+                b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
+                b"\x00\x00\x00\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x84\xdd"
+            ),
+            "wrong end",
         ),
-        bytearray(b"\xdd\x04\x00\x1d")
-        + bytearray(31)
-        + bytearray(b"\x77"),  # wrong CRC
+        (bytearray(b"\xdd\x04\x00\x1d" + b"\x00" * 31 + b"\x77"), "wrong CRC"),
     ],
+    ids=lambda param: param[1],
 )
 def response(request) -> bytearray:
-    """Return all possible BMS variants."""
-    return request.param
+    """Return faulty response frame."""
+    return request.param[0]
 
 
 async def test_invalid_response(monkeypatch, wrong_response) -> None:
