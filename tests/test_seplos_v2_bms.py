@@ -24,7 +24,9 @@ class MockSeplosv2BleakClient(MockBleakClient):
     CMD_GPD = bytearray(
         bytes([HEAD_CMD, PROTOCOL]) + b"\x00\x46\x62\x00\x00"
     )  # get parallel data
-    CMD_GMI = bytearray(bytes([HEAD_CMD, PROTOCOL]) + b"\00\x46\x51\x00\x00\x3A\x7F\x0D")
+    CMD_GMI = bytearray(
+        bytes([HEAD_CMD, PROTOCOL]) + b"\00\x46\x51\x00\x00\x3A\x7F\x0D"
+    )
 
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
@@ -38,19 +40,14 @@ class MockSeplosv2BleakClient(MockBleakClient):
             if bytearray(data)[1] == self.PROTOCOL and bytearray(data)[3:].startswith(
                 self.CMD_GSMD
             ):
-                return bytearray( # TODO: respond with correct address
-                    # b"\x7e\x14\x02\x61\x00\x00\x6a\x00\x02\x10\x0c\xf0\x0c\xf1\x0c\xf1\x0c\xf1\x0c"
-                    # b"\xf1\x0c\xf0\x0c\xf1\x0c\xf3\x0c\xef\x0c\xf0\x0c\xf1\x0c\xf1\x0c\xf1\x0c\xf0"
-                    # b"\x0c\xf1\x0c\xf1\x06\x0b\x8f\x0b\x89\x0b\x8a\x0b\x93\x0b\xc0\x0b\x98\x02\xad"
-                    # b"\x14\xb4\x38\x3a\x06\x6d\x60\x02\x02\x6d\x60\x00\x80\x03\xe8\x14\xbb\x00\x00"
-                    # b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-                    # b"\x00\x00\x00\x02\x03\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xc1"
-                    # b"\xd7\x0d"
-b'~\x14\x00a\x00\x00j\x00\x00\x10\x0b\xda\x0c\x0b\x0b\xec\x0b\xf0\x0b\xf3\x0c&\x0c\x1b\x0c \x0c\x1d\x0c\n\x0b\xf1\x0c'
-b'\x0e\x0b\xd1\x0b\xf9\x0b\xc7\x0b\xe4\x06\x0b\x86\x0b\x7f\x0b\x81\x0b\x84\x0b\xae\x0b\x89\x00\x00\x13+\x15z\x06m`'
-b'\x00\xc4m`\x00J\x03\xe8\x13,\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x10\x03\x08\x00\x00\x00'
-b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01^\r'
-
+                return bytearray(  # TODO: respond with correct address
+                    b"\x7e\x14\x02\x61\x00\x00\x6a\x00\x02\x10\x0c\xf0\x0c\xf1\x0c\xf1\x0c\xf1\x0c"
+                    b"\xf1\x0c\xf0\x0c\xf1\x0c\xf3\x0c\xef\x0c\xf0\x0c\xf1\x0c\xf1\x0c\xf1\x0c\xf0"
+                    b"\x0c\xf1\x0c\xf1\x06\x0b\x8f\x0b\x89\x0b\x8a\x0b\x93\x0b\xc0\x0b\x98\x02\xad"
+                    b"\x14\xb4\x38\x3a\x06\x6d\x60\x02\x02\x6d\x60\x00\x80\x03\xe8\x14\xbb\x00\x00"
+                    b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                    b"\x00\x00\x00\x02\x03\x08\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xc1"
+                    b"\xd7\x0d"
                 )  # TODO: values
             if bytearray(data).startswith(self.CMD_GPD):
                 return bytearray(
@@ -106,13 +103,13 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "cell_count": 16,
         "temp_sensors": 6,
         "voltage": 53.0,
-        "current": 21.5,
-        "battery_level": 52.0,
-        "cycle_charge": 437.2,
-        "cycles": 113,
-        "temperature": 22.55,
-        "cycle_capacity": 23171.6,
-        "power": 1139.5,
+        "current": 68.5,
+        "battery_level": 51.4,
+        "cycle_charge": 1439.4,
+        "cycles": 128,
+        "temperature": 23.6,
+        "cycle_capacity": 76288.2,
+        "power": 3630.5,
         "battery_charging": True,
         "cell#0": 3.312,
         "cell#1": 3.313,
@@ -130,6 +127,12 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "cell#13": 3.312,
         "cell#14": 3.313,
         "cell#15": 3.313,
+        "temp#0": 22.75,
+        "temp#1": 22.15,
+        "temp#2": 22.25,
+        "temp#3": 23.15,
+        "temp#4": 27.65,
+        "temp#5": 23.65,
         "delta_voltage": 0.004,
         "pack_count": 2,
     }
