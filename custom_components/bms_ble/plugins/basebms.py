@@ -192,11 +192,11 @@ class BaseBMS(metaclass=ABCMeta):
         """Connect to the BMS and setup notification if not connected."""
 
         if self._client.is_connected:
-            self._log.debug("BMS (%s) already connected", self._client.address)
+            self._log.debug("BMS (%s) already connected", self._ble_device.address)
             return
 
-        self._log.debug("connecting BMS (%s)", self._client.address)
-        self._client = await establish_connection(
+        self._log.debug("connecting BMS (%s)", self._ble_device.address)
+        self._client: BleakClient = await establish_connection(
             client_class=BleakClient,
             device=self._ble_device,
             name=self._ble_device.address,
