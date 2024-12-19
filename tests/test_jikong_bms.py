@@ -523,7 +523,7 @@ async def test_stream_update(monkeypatch, protocol_type, reconnect_fixture) -> N
 async def test_invalid_response(monkeypatch) -> None:
     """Test data update with BMS returning invalid data."""
 
-    monkeypatch.setattr("custom_components.bms_ble.plugins.jikong_bms.BAT_TIMEOUT", 0.1)
+    monkeypatch.setattr("custom_components.bms_ble.plugins.jikong_bms.BMS.BAT_TIMEOUT", 0.1)
 
     # return type 0x03 (first requested message) with incorrect CRC
     monkeypatch.setattr(
@@ -549,7 +549,7 @@ async def test_invalid_frame_type(monkeypatch) -> None:
     """Test data update with BMS returning invalid data."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.jikong_bms.BAT_TIMEOUT",
+        "custom_components.bms_ble.plugins.jikong_bms.BMS.BAT_TIMEOUT",
         0.1,
     )
 

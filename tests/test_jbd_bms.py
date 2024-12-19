@@ -162,7 +162,7 @@ async def test_invalid_response(monkeypatch, wrong_response) -> None:
     """Test data update with BMS returning invalid data (wrong CRC)."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.jbd_bms.BAT_TIMEOUT",
+        "custom_components.bms_ble.plugins.jbd_bms.BMS.BAT_TIMEOUT",
         0.1,
     )
 

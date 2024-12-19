@@ -1,8 +1,6 @@
 """Module to support Daly Smart BMS."""
 
-import asyncio
 from collections.abc import Callable
-import logging
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
@@ -28,16 +26,13 @@ from custom_components.bms_ble.const import (
 
 from .basebms import BaseBMS, BMSsample, crc_modbus
 
-BAT_TIMEOUT: Final = 10
-LOGGER: Final = logging.getLogger(__name__)
-
 
 class BMS(BaseBMS):
     """Daly Smart BMS class implementation."""
 
-    HEAD_READ: Final = bytearray(b"\xD2\x03")
-    CMD_INFO: Final = bytearray(b"\x00\x00\x00\x3E\xD7\xB9")
-    MOS_INFO: Final = bytearray(b"\x00\x3E\x00\x09\xF7\xA3")
+    HEAD_READ: Final[bytes] = b"\xD2\x03"
+    CMD_INFO: Final[bytes] = b"\x00\x00\x00\x3E\xD7\xB9"
+    MOS_INFO: Final[bytes] = b"\x00\x3E\x00\x09\xF7\xA3"
     HEAD_LEN: Final[int] = 3
     CRC_LEN: Final[int] = 2
     MAX_CELLS: Final[int] = 32
@@ -57,7 +52,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         self._data: bytearray | None = None
 
     @staticmethod
@@ -102,7 +97,7 @@ class BMS(BaseBMS):
         }
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
-        LOGGER.debug("%s: Received BLE data: %s", self.name, data)
+        self._log.debug("%s: RX BLE data: %s", self.name, data)
 
         if (
             len(data) < BMS.HEAD_LEN
@@ -110,7 +105,7 @@ class BMS(BaseBMS):
             or int(data[2]) + 1 != len(data) - len(BMS.HEAD_READ) - BMS.CRC_LEN
             or int.from_bytes(data[-2:], byteorder="little") != crc_modbus(data[:-2])
         ):
-            LOGGER.debug(
+            self._log.debug(
                 "Response data is invalid, CRC: 0x%X != 0x%X",
                 int.from_bytes(data[-2:], byteorder="little"),
                 crc_modbus(data[:-2]),
@@ -126,13 +121,10 @@ class BMS(BaseBMS):
         data = {}
         try:
             # request MOS temperature (possible outcome: response, empty response, no response)
-            await self._client.write_gatt_char(
-                BMS.uuid_tx(), data=BMS.HEAD_READ + BMS.MOS_INFO
-            )
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT / 5)
+            await self._await_reply(BMS.HEAD_READ + BMS.MOS_INFO)
 
             if self._data is not None and sum(self._data[BMS.MOS_TEMP_POS :][:2]):
-                LOGGER.debug("%s: MOS info: %s", self._ble_device.name, self._data)
+                self._log.debug("%s: MOS info: %s", self._ble_device.name, self._data)
                 data |= {
                     f"{KEY_TEMP_VALUE}0": float(
                         int.from_bytes(
@@ -144,13 +136,9 @@ class BMS(BaseBMS):
                     )
                 }
         except TimeoutError:
-            LOGGER.debug("%s: no MOS temperature available.", self.name)
+            self._log.debug("%s: no MOS temperature available.", self.name)
 
-        await self._client.write_gatt_char(
-            BMS.uuid_tx(), data=BMS.HEAD_READ + BMS.CMD_INFO
-        )
-
-        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+        await self._await_reply(BMS.HEAD_READ + BMS.CMD_INFO)
 
         if self._data is None or len(self._data) != BMS.INFO_LEN:
             return {}

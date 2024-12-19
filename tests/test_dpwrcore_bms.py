@@ -180,7 +180,7 @@ async def test_invalid_response(monkeypatch, dev_name) -> None:
     """Test data update with BMS returning invalid data."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.dpwrcore_bms.BAT_TIMEOUT",
+        "custom_components.bms_ble.plugins.dpwrcore_bms.BMS.BAT_TIMEOUT",
         0.1,
     )
 
@@ -201,7 +201,7 @@ async def test_wrong_crc(monkeypatch, dev_name) -> None:
     """Test data update with BMS returning invalid data."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.dpwrcore_bms.BAT_TIMEOUT",
+        "custom_components.bms_ble.plugins.dpwrcore_bms.BMS.BAT_TIMEOUT",
         0.1,
     )
 
