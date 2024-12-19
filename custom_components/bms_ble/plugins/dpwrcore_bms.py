@@ -114,19 +114,21 @@ class BMS(BaseBMS):
         }
 
     async def _notification_handler(self, _sender, data: bytearray) -> None:
-        self._log.debug("%s: RX BLE data: %s", self.name, data)
+        self._log.debug("RX BLE data: %s", data)
 
         if len(data) != BMS._PAGE_LEN:
-            self._log.debug("%s: invalid page length (%i)", self.name, len(data))
+            self._log.debug("invalid page length (%i)", len(data))
             return
 
         # ignore ACK responses
         if data[0] & 0x80:
-            self._log.debug("%s: ignore acknowledge message", self.name)
+            self._log.debug("ignore acknowledge message")
             return
 
         # acknowledge received frame
-        await self._await_reply(bytearray([data[0] | 0x80]) + data[1:], wait_for_notify=False)
+        await self._await_reply(
+            bytearray([data[0] | 0x80]) + data[1:], wait_for_notify=False
+        )
 
         size: Final[int] = int(data[0])
         page: Final[int] = int(data[1] >> 4)
@@ -137,15 +139,14 @@ class BMS(BaseBMS):
 
         self._data += data[2 : size + 2]
 
-        self._log.debug("%s: %s %s", self.name, "start" if page == 1 else "cnt.", data)
+        self._log.debug("(%s): %s", "start" if page == 1 else "cnt.", data)
 
         if page == maxpg:
             if int.from_bytes(self._data[-4:-2], byteorder="big") != BMS._crc(
                 self._data[3:-4]
             ):
                 self._log.debug(
-                    "%s: incorrect checksum 0x%X != 0x%X",
-                    self.name,
+                    "incorrect checksum: 0x%X != 0x%X",
                     int.from_bytes(self._data[-4:-2], byteorder="big"),
                     self._crc(self._data[3:-4]),
                 )

@@ -109,10 +109,7 @@ class BMS(BaseBMS):
 
         self._data += data
         self._log.debug(
-            "%s: RX BLE data (%s): %s",
-            self._ble_device.name,
-            "start" if data == self._data else "cnt.",
-            data,
+            "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
         # verify that data long enough
@@ -120,34 +117,28 @@ class BMS(BaseBMS):
             return
 
         if self._data[-1] != BMS._TAIL:
-            self._log.debug("%s: frame end incorrect: %s", self.name, self._data)
+            self._log.debug("frame end incorrect: %s", self._data)
             return
 
         if self._data[1] != BMS._RSP_VER:
-            self._log.debug(
-                "%s: unknown frame version: V%.1f", self.name, self._data[1] / 10
-            )
+            self._log.debug("unknown frame version: V%.1f", self._data[1] / 10)
             return
 
         if self._data[4]:
-            self._log.debug(
-                "%s: BMS reported error code: 0x%X", self.name, self._data[4]
-            )
+            self._log.debug("BMS reported error code: 0x%X", self._data[4])
             return
 
         crc = crc_xmodem(self._data[1:-3])
         if int.from_bytes(self._data[-3:-1]) != crc:
             self._log.debug(
-                "%s: RX BLE data CRC is invalid: 0x%X != 0x%X",
-                self._ble_device.name,
+                "invalid checksum 0x%X != 0x%X",
                 int.from_bytes(self._data[-3:-1]),
                 crc,
             )
             return
 
         self._log.debug(
-            "%s: address: 0x%X, function: 0x%X, return: 0x%X",
-            self.name,
+            "address: 0x%X, function: 0x%X, return: 0x%X",
             self._data[2],
             self._data[3],
             self._data[4],

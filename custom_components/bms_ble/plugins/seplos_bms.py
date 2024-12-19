@@ -130,16 +130,13 @@ class BMS(BaseBMS):
             and data[0] <= self._pack_count
             and data[1] & 0x80
         ):
-            self._log.debug("%s: Rx error: %X", self._ble_device.name, int(data[2]))
+            self._log.debug("Rx error: %X", int(data[2]))
             self._data = bytearray()
             self._pkglen = BMS.HEAD_LEN + BMS.CRC_LEN
 
         self._data += data
         self._log.debug(
-            "%s: RX BLE data (%s): %s",
-            self._ble_device.name,
-            "start" if data == self._data else "cnt.",
-            data,
+            "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
         # verify that data long enough
@@ -149,8 +146,7 @@ class BMS(BaseBMS):
         crc = crc_modbus(self._data[: self._pkglen - 2])
         if int.from_bytes(self._data[self._pkglen - 2 : self._pkglen], "little") != crc:
             self._log.debug(
-                "%s: RX BLE data CRC is invalid: 0x%X != 0x%X",
-                self._ble_device.name,
+                "invalid checksum 0x%X != 0x%X",
                 int.from_bytes(self._data[self._pkglen - 2 : self._pkglen], "little"),
                 crc,
             )
@@ -160,10 +156,7 @@ class BMS(BaseBMS):
             and not self._data[1] & 0x80
         ):
             self._log.debug(
-                "%s: unknown message: %s, length: %s",
-                self._ble_device.name,
-                self._data[0:2],
-                self._data[2],
+                "unknown message: %s, length: %s", self._data[0:2], self._data[2]
             )
             self._data = bytearray()
             return
@@ -171,8 +164,7 @@ class BMS(BaseBMS):
             self._data_final[int(self._data[0]) << 8 | int(self._data[2])] = self._data
             if len(self._data) != self._pkglen:
                 self._log.debug(
-                    "%s: Wrong data length (%i!=%s): %s",
-                    self._ble_device.name,
+                    "wrong data length (%i!=%s): %s",
                     len(self._data),
                     self._pkglen,
                     self._data,

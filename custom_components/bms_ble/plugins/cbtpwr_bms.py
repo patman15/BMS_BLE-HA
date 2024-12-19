@@ -98,24 +98,21 @@ class BMS(BaseBMS):
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Retrieve BMS data update."""
-        self._log.debug("%s: RX BLE data: %s", self.name, data)
+        self._log.debug("RX BLE data: %s", data)
 
         # verify that data long enough
         if len(data) < BMS.MIN_FRAME or len(data) != BMS.MIN_FRAME + data[BMS.LEN_POS]:
-            self._log.debug(
-                "%s: incorrect frame length (%i): %s", self.name, len(data), data
-            )
+            self._log.debug("incorrect frame length (%i): %s", len(data), data)
             return
 
         if not data.startswith(BMS.HEAD) or not data.endswith(BMS.TAIL_RX):
-            self._log.debug("%s: incorrect frame start/end: %s", self.name, data)
+            self._log.debug("incorrect frame start/end: %s", data)
             return
 
         crc = crc_sum(data[len(BMS.HEAD) : len(data) + BMS.CRC_POS])
         if data[BMS.CRC_POS] != crc:
             self._log.debug(
-                "%s: RX BLE data CRC is invalid: 0x%X != 0x%X",
-                self.name,
+                "invalid checksum 0x%X != 0x%X",
                 data[len(data) + BMS.CRC_POS],
                 crc,
             )
@@ -162,15 +159,14 @@ class BMS(BaseBMS):
         """Update battery status information."""
         resp_cache = {}  # variable to avoid multiple queries with same command
         for cmd in BMS._CMDS:
-            self._log.debug("%s: request command 0x%X.", self.name, cmd)
+            self._log.debug("request command 0x%X.", cmd)
             try:
                 await self._await_reply(BMS._gen_frame(cmd.to_bytes(1)))
             except TimeoutError:
                 continue
             if cmd != self._data[BMS.CMD_POS]:
                 self._log.debug(
-                    "%s: incorrect response 0x%X to command 0x%X",
-                    self.name,
+                    "incorrect response 0x%X to command 0x%X",
                     self._data[BMS.CMD_POS],
                     cmd,
                 )

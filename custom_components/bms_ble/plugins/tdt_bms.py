@@ -100,19 +100,21 @@ class BMS(BaseBMS):
 
     async def _init_characteristics(self) -> None:
         try:
-            await self._await_reply(data=b"HiLink", char=BMS._UUID_CFG, wait_for_notify=False)
+            await self._await_reply(
+                data=b"HiLink", char=BMS._UUID_CFG, wait_for_notify=False
+            )
             if (
                 ret := int.from_bytes(await self._client.read_gatt_char(BMS._UUID_CFG))
             ) != 0x1:
-                self._log.debug("%s: error initializing BMS: %X", self.name, ret)
+                self._log.debug("error initializing BMS: %X", ret)
         except (BleakError, EOFError) as err:
-            self._log.debug("%s: failed to intialize BMS: %s", self.name, err)
+            self._log.debug("failed to intialize BMS: %s", err)
 
         await super()._init_characteristics()
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
-        self._log.debug("%s: RX BLE data: %s", self.name, data)
+        self._log.debug("RX BLE data: %s", data)
 
         if (
             data[0] == BMS._HEAD
@@ -124,10 +126,7 @@ class BMS(BaseBMS):
 
         self._data += data
         self._log.debug(
-            "%s: RX BLE data (%s): %s",
-            self._ble_device.name,
-            "start" if data == self._data else "cnt.",
-            data,
+            "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
         # verify that data long enough
@@ -135,26 +134,21 @@ class BMS(BaseBMS):
             return
 
         if self._data[-1] != BMS._TAIL:
-            self._log.debug("%s: frame end incorrect: %s", self.name, self._data)
+            self._log.debug("frame end incorrect: %s", self._data)
             return
 
         if self._data[1] != BMS._RSP_VER:
-            self._log.debug(
-                "%s: unknown frame version: V%.1f", self.name, self._data[1] / 10
-            )
+            self._log.debug("unknown frame version: V%.1f", self._data[1] / 10)
             return
 
         if self._data[4]:
-            self._log.debug(
-                "%s: BMS reported error code: 0x%X", self.name, self._data[4]
-            )
+            self._log.debug("BMS reported error code: 0x%X", self._data[4])
             return
 
         crc = crc_modbus(self._data[:-3])
         if int.from_bytes(self._data[-3:-1], "big") != crc:
             self._log.debug(
-                "%s: RX BLE data CRC is invalid: 0x%X != 0x%X",
-                self._ble_device.name,
+                "invalid checksum 0x%X != 0x%X",
                 int.from_bytes(self._data[-3:-1], "big"),
                 crc,
             )

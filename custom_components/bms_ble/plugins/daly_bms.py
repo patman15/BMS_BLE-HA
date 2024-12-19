@@ -97,7 +97,7 @@ class BMS(BaseBMS):
         }
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
-        self._log.debug("%s: RX BLE data: %s", self.name, data)
+        self._log.debug("RX BLE data: %s", data)
 
         if (
             len(data) < BMS.HEAD_LEN
@@ -106,7 +106,7 @@ class BMS(BaseBMS):
             or int.from_bytes(data[-2:], byteorder="little") != crc_modbus(data[:-2])
         ):
             self._log.debug(
-                "Response data is invalid, CRC: 0x%X != 0x%X",
+                "response data is invalid, CRC: 0x%X != 0x%X",
                 int.from_bytes(data[-2:], byteorder="little"),
                 crc_modbus(data[:-2]),
             )
@@ -124,7 +124,7 @@ class BMS(BaseBMS):
             await self._await_reply(BMS.HEAD_READ + BMS.MOS_INFO)
 
             if self._data is not None and sum(self._data[BMS.MOS_TEMP_POS :][:2]):
-                self._log.debug("%s: MOS info: %s", self._ble_device.name, self._data)
+                self._log.debug("MOS info: %s", self._data)
                 data |= {
                     f"{KEY_TEMP_VALUE}0": float(
                         int.from_bytes(
@@ -136,7 +136,7 @@ class BMS(BaseBMS):
                     )
                 }
         except TimeoutError:
-            self._log.debug("%s: no MOS temperature available.", self.name)
+            self._log.debug("no MOS temperature available.")
 
         await self._await_reply(BMS.HEAD_READ + BMS.CMD_INFO)
 

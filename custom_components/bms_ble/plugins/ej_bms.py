@@ -94,7 +94,7 @@ class BMS(BaseBMS):
         """Handle the RX characteristics notify event (new data arrives)."""
 
         if data.startswith(BMS._BT_MODULE_MSG):
-            self._log.debug("%s: filtering AT cmd", self.name)
+            self._log.debug("filtering AT cmd")
             if len(data) == len(BMS._BT_MODULE_MSG):
                 return
             data = data[len(BMS._BT_MODULE_MSG) :]
@@ -117,14 +117,13 @@ class BMS(BaseBMS):
             return
 
         if self._data[-1] != BMS._TAIL:
-            self._log.debug("%s: incorrect EOF: %s", self.name, data)
+            self._log.debug("incorrect EOF: %s", data)
             self._data.clear()
             return
 
         if len(self._data) != int(self._data[7:11], 16):
             self._log.debug(
-                "%s: incorrect frame length %i != %i",
-                self.name,
+                "incorrect frame length %i != %i",
                 len(self._data),
                 int(self._data[7:11], 16),
             )
@@ -134,17 +133,13 @@ class BMS(BaseBMS):
         crc: Final = BMS._crc(self._data[1:-3])
         if crc != int(self._data[-3:-1], 16):
             self._log.debug(
-                "%s: incorrect checksum 0x%X != 0x%X",
-                self.name,
-                int(self._data[-3:-1], 16),
-                crc,
+                "invalid checksum 0x%X != 0x%X", int(self._data[-3:-1], 16), crc
             )
             self._data.clear()
             return
 
         self._log.debug(
-            "%s: address: 0x%X, commnad 0x%X, version: 0x%X, length: 0x%X",
-            self.name,
+            "address: 0x%X, commnad 0x%X, version: 0x%X, length: 0x%X",
             int(self._data[1:3], 16),
             int(self._data[3:5], 16) & 0x7F,
             int(self._data[5:7], 16),
@@ -178,7 +173,7 @@ class BMS(BaseBMS):
             raw_data[rsp] = self._data_final
             if rsp == Cmd.RT and len(self._data_final) == 0x8C:
                 # handle metrisun version
-                self._log.debug("%s: single frame protocol detected", self.name)
+                self._log.debug("single frame protocol detected")
                 raw_data[Cmd.CAP] = bytearray(15) + self._data_final[125:]
                 break
 

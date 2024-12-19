@@ -100,7 +100,7 @@ class BMS(BaseBMS):
         """Retrieve BMS data update."""
 
         if data.startswith(BMS.BT_MODULE_MSG):
-            self._log.debug("%s: filtering AT cmd", self.name)
+            self._log.debug("filtering AT cmd")
             if len(data) == len(BMS.BT_MODULE_MSG):
                 return
             data = data[len(BMS.BT_MODULE_MSG) :]
@@ -114,10 +114,7 @@ class BMS(BaseBMS):
         self._data += data
 
         self._log.debug(
-            "%s: RX BLE data (%s): %s",
-            self.name,
-            "start" if data == self._data else "cnt.",
-            data,
+            "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
         # verify that data long enough
@@ -129,8 +126,7 @@ class BMS(BaseBMS):
         # check that message type is expected
         if self._data[BMS.TYPE_POS] != self._valid_reply:
             self._log.debug(
-                "%s: unexpected message type 0x%X (length %i): %s",
-                self.name,
+                "unexpected message type 0x%X (length %i): %s",
                 self._data[BMS.TYPE_POS],
                 len(self._data),
                 self._data,
@@ -139,22 +135,12 @@ class BMS(BaseBMS):
 
         # trim message in case oversized
         if len(self._data) > BMS.INFO_LEN:
-            self._log.debug(
-                "%s: wrong data length (%i): %s",
-                self.name,
-                len(self._data),
-                self._data,
-            )
+            self._log.debug("wrong data length (%i): %s", len(self._data), self._data)
             self._data = self._data[: BMS.INFO_LEN]
 
         crc = crc_sum(self._data[:-1])
         if self._data[-1] != crc:
-            self._log.debug(
-                "%s: RX BLE data CRC is invalid: 0x%X != 0x%X",
-                self.name,
-                self._data[-1],
-                crc,
-            )
+            self._log.debug("invalid checksum 0x%X != 0x%X", self._data[-1], crc)
             return
 
         self._data_final = self._data
@@ -168,11 +154,7 @@ class BMS(BaseBMS):
         for service in self._client.services:
             for char in service.characteristics:
                 self._log.debug(
-                    "%s: discovered %s (#%i): %s",
-                    self.name,
-                    char.uuid,
-                    char.handle,
-                    char.properties,
+                    "discovered %s (#%i): %s", char.uuid, char.handle, char.properties
                 )
                 if char.uuid == normalize_uuid_str(
                     BMS.uuid_rx()
@@ -185,12 +167,11 @@ class BMS(BaseBMS):
                     ):
                         self._char_write_handle = char.handle
         if char_notify_handle == -1 or self._char_write_handle == -1:
-            self._log.debug("%s: Failed to detect characteristics.", self.name)
+            self._log.debug("failed to detect characteristics.")
             await self._client.disconnect()
             raise ConnectionError(f"Failed to detect characteristics from {self.name}.")
         self._log.debug(
-            "%s: Using characteristics handle #%i (notify), #%i (write).",
-            self.name,
+            "using characteristics handle #%i (notify), #%i (write).",
             char_notify_handle,
             self._char_write_handle,
         )
@@ -200,7 +181,7 @@ class BMS(BaseBMS):
         self._valid_reply = 0x03
         await self._await_reply(self._cmd(b"\x97"), char=self._char_write_handle)
         self._bms_info = BMS._dec_devinfo(self._data_final or bytearray())
-        self._log.debug("%s: device information: %s", self.name, self._bms_info)
+        self._log.debug("device information: %s", self._bms_info)
         self._prot_offset = (
             -32 if int(self._bms_info.get("sw_version", "")[:2]) < 11 else 0
         )
@@ -285,8 +266,10 @@ class BMS(BaseBMS):
         """Update battery status information."""
         if not self._data_event.is_set() or self._data_final[4] != 0x02:
             # request cell info (only if data is not constantly published)
-            self._log.debug("%s: request cell info", self.name)
-            await self._await_reply(data=BMS._cmd(b"\x96"), char=self._char_write_handle)
+            self._log.debug("requesting cell info")
+            await self._await_reply(
+                data=BMS._cmd(b"\x96"), char=self._char_write_handle
+            )
 
         data: BMSsample = self._decode_data(self._data_final, self._prot_offset)
         data.update(BMS._temp_sensors(self._data_final, self._prot_offset))

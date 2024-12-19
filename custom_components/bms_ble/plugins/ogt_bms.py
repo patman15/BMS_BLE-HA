@@ -86,7 +86,7 @@ class BMS(BaseBMS):
             self._HEADER = "+R16"
         else:
             self._REGISTERS = {}
-            self._log.exception("Unkown device type '%c'", self._type)
+            self._log.exception("unkown device type '%c'", self._type)
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -130,7 +130,7 @@ class BMS(BaseBMS):
             try:
                 await self._await_reply(data=self._ogt_command(reg))
             except TimeoutError:
-                self._log.debug("Reading %s timed out", self._REGISTERS[reg][BMS.IDX_NAME])
+                self._log.debug("reading %s timed out", self._REGISTERS[reg][BMS.IDX_NAME])
             if reg > 48 and f"{KEY_CELL_VOLTAGE}{64-reg}" not in self._values:
                 break
 
@@ -141,7 +141,7 @@ class BMS(BaseBMS):
         return self._values
 
     def _notification_handler(self, sender, data: bytearray) -> None:
-        self._log.debug("%s: RX BLE data: %s", self.name, data)
+        self._log.debug("RX BLE data: %s", data)
 
         valid, reg, nat_value = self._ogt_response(data)
 
@@ -150,7 +150,7 @@ class BMS(BaseBMS):
             name, _length, func = self._REGISTERS[reg]
             value = func(nat_value) if func else nat_value
             self._log.debug(
-                "Decoded data: reg: %s (#%i), raw: %i, value: %f",
+                "decoded data: reg: %s (#%i), raw: %i, value: %f",
                 name,
                 reg,
                 nat_value,
@@ -158,7 +158,7 @@ class BMS(BaseBMS):
             )
             self._values[name] = value
         else:
-            self._log.debug("Response data is invalid")
+            self._log.debug("response data is invalid")
         self._data_event.set()
 
     def _ogt_response(self, resp: bytearray) -> tuple[bool, int, int]:

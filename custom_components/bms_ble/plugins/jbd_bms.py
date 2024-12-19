@@ -104,10 +104,7 @@ class BMS(BaseBMS):
 
         self._data += data
         self._log.debug(
-            "%s: RX BLE data (%s): %s",
-            self._ble_device.name,
-            "start" if data == self._data else "cnt.",
-            data,
+            "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
         # verify that data long enough
@@ -117,16 +114,13 @@ class BMS(BaseBMS):
         # check correct frame ending (0x77)
         frame_end: Final[int] = BMS.INFO_LEN + self._data[3] - 1
         if self._data[frame_end] != 0x77:
-            self._log.debug(
-                "%s: incorrect frame end (length: %i).", self.name, len(self._data)
-            )
+            self._log.debug("incorrect frame end (length: %i).", len(self._data))
             return
 
         crc: Final[int] = BMS._crc(self._data[2 : frame_end - 2])
         if int.from_bytes(self._data[frame_end - 2 : frame_end], "big") != crc:
             self._log.debug(
-                "%s: RX BLE data CRC is invalid: 0x%X != 0x%X",
-                self._ble_device.name,
+                "invalid checksum 0x%X != 0x%X",
                 int.from_bytes(self._data[frame_end - 2 : frame_end], "big"),
                 crc,
             )
@@ -192,8 +186,7 @@ class BMS(BaseBMS):
                 or len(self._data_final) < BMS.INFO_LEN + exp_len
             ):
                 self._log.debug(
-                    "%s: wrong data length (%i): %s",
-                    self._ble_device.name,
+                    "wrong data length (%i): %s",
                     len(self._data_final),
                     self._data_final,
                 )
