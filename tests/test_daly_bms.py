@@ -6,6 +6,7 @@ from uuid import UUID
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
+import pytest
 
 from custom_components.bms_ble.plugins.daly_bms import BMS
 
@@ -24,19 +25,31 @@ class MockDalyBleakClient(MockBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) == normalize_uuid_str("fff2") and data == (
-            self.HEAD_READ + self.CMD_INFO
+        if (
+            isinstance(char_specifier, str)
+            and normalize_uuid_str(char_specifier) == normalize_uuid_str("fff2")
+            and data == (self.HEAD_READ + self.CMD_INFO)
         ):
             return bytearray(
-                b"\xd2\x03|\x10\x1f\x10)\x103\x10=\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00<\x00=\x00>\x00?\x00\x00\x00\x00\x00\x00\x00\x00\x00\x8cuN\x03\x84\x10=\x10\x1f\x00\x00\x00\x00\x00\x00\r\x80\x00\x04\x00\x04\x009\x00\x01\x00\x00\x00\x01\x10.\x01\x41\x00*\x00\x00\x00\x00\x00\x00\x00\x00\xa0\xdf"
-            ) # {'voltage': 14.0, 'current': 3.0, 'battery_level': 90.0, 'cycles': 57, 'cycle_charge': 345.6, 'numTemp': 4, 'temperature': 21.5, 'cycle_capacity': 4838.400000000001, 'power': 42.0, 'battery_charging': True, 'runtime': none!, 'delta_voltage': 0.321}
+                b"\xd2\x03\x7c\x10\x1f\x10\x29\x10\x33\x10\x3d\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x3c\x00\x3d\x00\x3e\x00\x3f\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x8c\x75\x4e\x03\x84\x10\x3d\x10\x1f\x00\x00\x00\x00\x00\x00\x0d"
+                b"\x80\x00\x04\x00\x04\x00\x39\x00\x01\x00\x00\x00\x01\x10\x2e\x01\x41\x00\x2a\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\xa0\xdf"
+            )  # {'voltage': 14.0, 'current': 3.0, 'battery_level': 90.0, 'cycles': 57, 'cycle_charge': 345.6, 'numTemp': 4, 'temperature': 21.5, 'cycle_capacity': 4838.400000000001, 'power': 42.0, 'battery_charging': True, 'runtime': none!, 'delta_voltage': 0.321}
 
-        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) == normalize_uuid_str("fff2") and data == (
-            self.HEAD_READ + self.MOS_INFO
+        if (
+            isinstance(char_specifier, str)
+            and normalize_uuid_str(char_specifier) == normalize_uuid_str("fff2")
+            and data == (self.HEAD_READ + self.MOS_INFO)
         ):
             if not self.MOS_AVAIL:
                 raise TimeoutError
-            return bytearray(b"\xd2\x03\x12\x00\x00\x00\x00\x75\x30\x00\x00\x00\x4e\xff\xff\xff\xff\xff\xff\xff\xff\x0b\x4e")
+            return bytearray(
+                b"\xd2\x03\x12\x00\x00\x00\x00\x75\x30\x00\x00\x00\x4e\xff\xff\xff\xff\xff\xff\xff\xff\x0b\x4e"
+            )
 
         return bytearray()
 
@@ -60,8 +73,13 @@ class MockInvalidBleakClient(MockDalyBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) == normalize_uuid_str("fff2"):
-            return bytearray(b"invalid_value")
+        if isinstance(char_specifier, str) and normalize_uuid_str(
+            char_specifier
+        ) == normalize_uuid_str("fff2"):
+            return bytearray(
+                b"\xd2\x03\x11\x10\x1f\x10\x29\x10\x33\x10\x3d\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x5d\x0f"
+            )
 
         return bytearray()
 
@@ -134,8 +152,8 @@ async def test_update(monkeypatch, bool_fixture, reconnect_fixture) -> None:
     await bms.disconnect()
 
 
-async def test_invalid_response(monkeypatch) -> None:
-    """Test data update with BMS returning invalid data."""
+async def test_too_short_frame(monkeypatch) -> None:
+    """Test data update with BMS returning valid but too short data."""
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.basebms.BleakClient",
@@ -144,8 +162,60 @@ async def test_invalid_response(monkeypatch) -> None:
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
-    result = await bms.async_update()
+    assert not await bms.async_update()
 
-    assert result == {}
+    await bms.disconnect()
+
+
+@pytest.fixture(
+    name="wrong_response",
+    params=[
+        (bytearray(b"invalid_value"), "invalid value"),
+        (
+            bytearray(
+                b"\xd2\x03\x7c\x10\x1f\x10\x29\x10\x33\x10\x3d\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x3c\x00\x3d\x00\x3e\x00\x3f\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x8c\x75\x4e\x03\x84\x10\x3d\x10\x1f\x00\x00\x00\x00\x00\x00\x0d"
+                b"\x80\x00\x04\x00\x04\x00\x39\x00\x01\x00\x00\x00\x01\x10\x2e\x01\x41\x00\x2a\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\xde\xad"
+            ),
+            "wrong CRC",
+        ),
+        (bytearray(b"\x00"), "too short"),
+    ],
+    ids=lambda param: param[1],
+)
+def response(request):
+    """Return faulty response frame."""
+    return request.param[0]
+
+
+async def test_invalid_response(monkeypatch, wrong_response) -> None:
+    """Test data update with BMS returning invalid data."""
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.daly_bms.BMS.BAT_TIMEOUT",
+        0.1,
+    )
+
+    monkeypatch.setattr(
+        "tests.test_daly_bms.MockDalyBleakClient._response",
+        lambda _s, _c_, d: wrong_response,
+    )
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
+        MockDalyBleakClient,
+    )
+
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
+
+    result = {}
+    with pytest.raises(TimeoutError):
+        result = await bms.async_update()
+
+    assert not result
 
     await bms.disconnect()

@@ -53,7 +53,7 @@ class BMS(BaseBMS):
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
         super().__init__(__name__, self._notification_handler, ble_device, reconnect)
-        self._data: bytearray | None = None
+        self._data: bytearray = bytearray()
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -103,17 +103,21 @@ class BMS(BaseBMS):
             len(data) < BMS.HEAD_LEN
             or data[0:2] != BMS.HEAD_READ
             or int(data[2]) + 1 != len(data) - len(BMS.HEAD_READ) - BMS.CRC_LEN
-            or int.from_bytes(data[-2:], byteorder="little") != crc_modbus(data[:-2])
         ):
-            self._log.debug(
-                "response data is invalid, CRC: 0x%X != 0x%X",
-                int.from_bytes(data[-2:], byteorder="little"),
-                crc_modbus(data[:-2]),
-            )
-            self._data = None
-        else:
-            self._data = data
+            self._log.debug("response data is invalid")
+            return
 
+        crc: Final = crc_modbus(data[:-2])
+        if crc != int.from_bytes(data[-2:], byteorder="little"):
+            self._log.debug(
+                "invalid checksum 0x%X != 0x%X",
+                int.from_bytes(data[-2:], byteorder="little"),
+                crc,
+            )
+            self._data.clear()
+            return
+
+        self._data = data
         self._data_event.set()
 
     async def _async_update(self) -> BMSsample:
@@ -123,7 +127,7 @@ class BMS(BaseBMS):
             # request MOS temperature (possible outcome: response, empty response, no response)
             await self._await_reply(BMS.HEAD_READ + BMS.MOS_INFO)
 
-            if self._data is not None and sum(self._data[BMS.MOS_TEMP_POS :][:2]):
+            if sum(self._data[BMS.MOS_TEMP_POS :][:2]):
                 self._log.debug("MOS info: %s", self._data)
                 data |= {
                     f"{KEY_TEMP_VALUE}0": float(
@@ -140,7 +144,8 @@ class BMS(BaseBMS):
 
         await self._await_reply(BMS.HEAD_READ + BMS.CMD_INFO)
 
-        if self._data is None or len(self._data) != BMS.INFO_LEN:
+        if len(self._data) != BMS.INFO_LEN:
+            self._log.debug("incorrect frame length: %i", len(self._data))
             return {}
 
         data |= {
