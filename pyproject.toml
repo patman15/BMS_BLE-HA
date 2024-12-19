@@ -15,7 +15,7 @@ readme      = "README.md"
 
 [tool.pytest.ini_options]
 minversion = "8.0"
-addopts="--cov=custom_components.bms_ble --cov-branch --cov-report=term-missing --cov-fail-under=100"
+addopts="-n auto --cov=custom_components.bms_ble --cov-branch --cov-report=term-missing --cov-fail-under=100"
 pythonpath = [
     "custom_components.bms_ble",
 ]
