@@ -1,8 +1,6 @@
 """Module to support Dummy BMS."""
 
-import asyncio
 from enum import IntEnum
-import logging
 from typing import Any, Callable, Final
 
 from bleak.backends.device import BLEDevice
@@ -24,9 +22,6 @@ from custom_components.bms_ble.const import (
 
 from .basebms import BaseBMS, BMSsample
 
-LOGGER = logging.getLogger(__name__)
-BAT_TIMEOUT = 10
-
 
 class Cmd(IntEnum):
     """BMS operation codes."""
@@ -38,7 +33,7 @@ class Cmd(IntEnum):
 class BMS(BaseBMS):
     """Dummy battery class implementation."""
 
-    _BT_MODULE_MSG: Final[bytes] = bytes([0x41, 0x54, 0x0D, 0x0A])  # AT\r\n from BLE module
+    _BT_MODULE_MSG: Final[bytes] = bytes([0x41, 0x54, 0x0D, 0x0A])  # BLE module message
     _HEAD: Final[int] = 0x3A
     _TAIL: Final[int] = 0x7E
     _MAX_CELLS: Final[int] = 16
@@ -52,8 +47,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
         self._data_final: bytearray = bytearray()
 
@@ -100,7 +94,7 @@ class BMS(BaseBMS):
         """Handle the RX characteristics notify event (new data arrives)."""
 
         if data.startswith(BMS._BT_MODULE_MSG):
-            LOGGER.debug("%s: filtering AT cmd", self.name)
+            self._log.debug("filtering AT cmd")
             if len(data) == len(BMS._BT_MODULE_MSG):
                 return
             data = data[len(BMS._BT_MODULE_MSG) :]
@@ -110,7 +104,7 @@ class BMS(BaseBMS):
 
         self._data += data
 
-        LOGGER.debug(
+        self._log.debug(
             "%s: RX BLE data (%s): %s",
             self._ble_device.name,
             "start" if data == self._data else "cnt.",
@@ -123,14 +117,13 @@ class BMS(BaseBMS):
             return
 
         if self._data[-1] != BMS._TAIL:
-            LOGGER.debug("%s: incorrect EOF: %s", self.name, data)
+            self._log.debug("incorrect EOF: %s", data)
             self._data.clear()
             return
 
         if len(self._data) != int(self._data[7:11], 16):
-            LOGGER.debug(
-                "%s: incorrect frame length %i != %i",
-                self.name,
+            self._log.debug(
+                "incorrect frame length %i != %i",
                 len(self._data),
                 int(self._data[7:11], 16),
             )
@@ -139,22 +132,18 @@ class BMS(BaseBMS):
 
         crc: Final = BMS._crc(self._data[1:-3])
         if crc != int(self._data[-3:-1], 16):
-            LOGGER.debug(
-                "%s: incorrect checksum 0x%X != 0x%X",
-                self.name,
-                int(self._data[-3:-1], 16),
-                crc,
+            self._log.debug(
+                "invalid checksum 0x%X != 0x%X", int(self._data[-3:-1], 16), crc
             )
             self._data.clear()
             return
 
-        LOGGER.debug(
-            "%s: address: 0x%X, commnad 0x%X, version: 0x%X, length: 0x%X",
-            self.name,
+        self._log.debug(
+            "address: 0x%X, commnad 0x%X, version: 0x%X, length: 0x%X",
             int(self._data[1:3], 16),
             int(self._data[3:5], 16) & 0x7F,
             int(self._data[5:7], 16),
-            len(self._data)
+            len(self._data),
         )
         self._data_final = self._data.copy()
         self._data_event.set()
@@ -179,15 +168,14 @@ class BMS(BaseBMS):
 
         # query real-time information and capacity
         for cmd in [b":000250000E03~", b":001031000E05~"]:
-            await self._client.write_gatt_char(BMS.uuid_tx(), data=cmd)
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+            await self._await_reply(cmd)
             rsp: int = int(self._data_final[3:5], 16) & 0x7F
             raw_data[rsp] = self._data_final
-            if rsp == Cmd.RT and len(self._data_final) == 0x8C: # handle metrisun version
-                LOGGER.debug("%s: single frame protocol detected", self.name)
+            if rsp == Cmd.RT and len(self._data_final) == 0x8C:
+                # handle metrisun version
+                self._log.debug("single frame protocol detected")
                 raw_data[Cmd.CAP] = bytearray(15) + self._data_final[125:]
                 break
-
 
         return {
             key: func(int(raw_data[cmd.value][idx : idx + size], 16))

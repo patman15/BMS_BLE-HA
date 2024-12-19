@@ -1,9 +1,7 @@
 """Module to support D-powercore Smart BMS."""
 
-import asyncio
 from collections.abc import Callable
 from enum import Enum
-import logging
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
@@ -26,9 +24,6 @@ from custom_components.bms_ble.const import (
 )
 
 from .basebms import BaseBMS, BMSsample
-
-BAT_TIMEOUT: Final = 10
-LOGGER: Final = logging.getLogger(__name__)
 
 
 class Cmd(Enum):
@@ -67,10 +62,10 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         assert self._ble_device.name is not None  # required for unlock
         self._data: bytearray = bytearray()
-        self._data_final: bytearray | None = None
+        self._data_final: bytearray = bytearray()
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -119,19 +114,20 @@ class BMS(BaseBMS):
         }
 
     async def _notification_handler(self, _sender, data: bytearray) -> None:
-        LOGGER.debug("%s: Received BLE data: %s", self.name, data)
+        self._log.debug("RX BLE data: %s", data)
 
         if len(data) != BMS._PAGE_LEN:
-            LOGGER.debug("%s: invalid page length (%i)", self.name, len(data))
+            self._log.debug("invalid page length (%i)", len(data))
             return
 
         # ignore ACK responses
         if data[0] & 0x80:
-            LOGGER.debug("%s: ignore acknowledge message", self.name)
+            self._log.debug("ignore acknowledge message")
             return
 
-        await self._client.write_gatt_char(  # acknowledge received frame
-            BMS.uuid_tx(), bytearray([data[0] | 0x80]) + data[1:]
+        # acknowledge received frame
+        await self._await_reply(
+            bytearray([data[0] | 0x80]) + data[1:], wait_for_notify=False
         )
 
         size: Final[int] = int(data[0])
@@ -143,22 +139,21 @@ class BMS(BaseBMS):
 
         self._data += data[2 : size + 2]
 
-        LOGGER.debug("%s: %s %s", self.name, "start" if page == 1 else "cnt.", data)
+        self._log.debug("(%s): %s", "start" if page == 1 else "cnt.", data)
 
         if page == maxpg:
             if int.from_bytes(self._data[-4:-2], byteorder="big") != BMS._crc(
                 self._data[3:-4]
             ):
-                LOGGER.debug(
-                    "%s: incorrect checksum 0x%X != 0x%X",
-                    self.name,
+                self._log.debug(
+                    "incorrect checksum: 0x%X != 0x%X",
                     int.from_bytes(self._data[-4:-2], byteorder="big"),
                     self._crc(self._data[3:-4]),
                 )
                 self._data = bytearray()
-                self._data_final = None  # reset invalid data
-                self._data_event.set()
+                self._data_final = bytearray()  # reset invalid data
                 return
+
             self._data_final = self._data
             self._data_event.set()
 
@@ -187,9 +182,12 @@ class BMS(BaseBMS):
         # unlock BMS if not TBA version
         if not self.name.startswith("TBA-"):
             pwd = int(self.name[-4:], 16)
-            await self._client.write_gatt_char(
-                BMS.uuid_tx(),
-                BMS._cmd_frame(Cmd.UNLOCK, bytes([(pwd >> 8) & 0xFF, pwd & 0xFF])),
+            await self._await_reply(
+                BMS._cmd_frame(
+                    Cmd.UNLOCK,
+                    bytes([(pwd >> 8) & 0xFF, pwd & 0xFF]),
+                ),
+                wait_for_notify=False,
             )
 
     @staticmethod
@@ -207,13 +205,7 @@ class BMS(BaseBMS):
         """Update battery status information."""
         data = {}
         for request in [Cmd.LEGINFO1, Cmd.LEGINFO2, Cmd.CELLVOLT]:
-            await self._client.write_gatt_char(
-                BMS.uuid_tx(), self._cmd_frame(request, b"")
-            )
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-
-            if self._data_final is None:
-                continue
+            await self._await_reply(self._cmd_frame(request, b""))
 
             data |= {
                 key: func(

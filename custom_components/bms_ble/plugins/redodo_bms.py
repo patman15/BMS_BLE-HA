@@ -1,7 +1,5 @@
 """Module to support Dummy BMS."""
 
-import asyncio
-import logging
 from typing import Any, Callable, Final
 
 from bleak.backends.device import BLEDevice
@@ -25,9 +23,6 @@ from custom_components.bms_ble.const import (
 
 from .basebms import BaseBMS, BMSsample, crc_sum
 
-LOGGER = logging.getLogger(__name__)
-BAT_TIMEOUT = 10
-
 
 class BMS(BaseBMS):
     """Dummy battery class implementation."""
@@ -46,9 +41,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
-
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
 
     @staticmethod
@@ -95,23 +88,20 @@ class BMS(BaseBMS):
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
-        LOGGER.debug("%s: Received BLE data: %s", self.name, data)
+        self._log.debug("RX BLE data: %s", data)
 
         if len(data) < 3 or not data.startswith(b"\x00\x00"):
-            LOGGER.debug("%s: incorrect SOF.")
+            self._log.debug("incorrect SOF.")
             return
 
         if len(data) != data[2] + BMS.HEAD_LEN + 1:  # add header length and CRC
-            LOGGER.debug("%s: incorrect frame length (%i)", self.name, len(data))
+            self._log.debug("incorrect frame length (%i)", len(data))
             return
 
         crc = crc_sum(data[: BMS.CRC_POS])
         if crc != data[BMS.CRC_POS]:
-            LOGGER.debug(
-                "%s: RX data CRC is invalid: 0x%X != 0x%X",
-                self.name,
-                data[len(data) + BMS.CRC_POS],
-                crc,
+            self._log.debug(
+                "invalid checksum 0x%X != 0x%X", data[len(data) + BMS.CRC_POS], crc
             )
             return
 
@@ -133,7 +123,7 @@ class BMS(BaseBMS):
         }
 
     @staticmethod
-    def _temp_sensors( data: bytearray, sensors: int) -> dict[str, int]:
+    def _temp_sensors(data: bytearray, sensors: int) -> dict[str, int]:
         return {
             f"{KEY_TEMP_VALUE}{idx}": int.from_bytes(
                 data[52 + idx * 2 : 54 + idx * 2],
@@ -150,10 +140,7 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        await self._client.write_gatt_char(
-            BMS.uuid_tx(), data=b"\x00\x00\x04\x01\x13\x55\xaa\x17"
-        )
-        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+        await self._await_reply(b"\x00\x00\x04\x01\x13\x55\xaa\x17")
 
         return (
             {

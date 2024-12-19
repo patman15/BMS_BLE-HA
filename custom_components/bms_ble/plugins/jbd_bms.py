@@ -1,8 +1,6 @@
 """Module to support JBD Smart BMS."""
 
-import asyncio
 from collections.abc import Callable
-import logging
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
@@ -27,9 +25,6 @@ from custom_components.bms_ble.const import (
 
 from .basebms import BaseBMS, BMSsample
 
-BAT_TIMEOUT: Final = 10
-LOGGER: Final = logging.getLogger(__name__)
-
 
 class BMS(BaseBMS):
     """JBD Smart BMS class implementation."""
@@ -49,7 +44,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
         self._data_final: bytearray = bytearray()
 
@@ -108,11 +103,8 @@ class BMS(BaseBMS):
             self._data = bytearray()
 
         self._data += data
-        LOGGER.debug(
-            "%s: RX BLE data (%s): %s",
-            self._ble_device.name,
-            "start" if data == self._data else "cnt.",
-            data,
+        self._log.debug(
+            "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
         # verify that data long enough
@@ -122,16 +114,13 @@ class BMS(BaseBMS):
         # check correct frame ending (0x77)
         frame_end: Final[int] = BMS.INFO_LEN + self._data[3] - 1
         if self._data[frame_end] != 0x77:
-            LOGGER.debug(
-                "%s: incorrect frame end (length: %i).", self.name, len(self._data)
-            )
+            self._log.debug("incorrect frame end (length: %i).", len(self._data))
             return
 
         crc: Final[int] = BMS._crc(self._data[2 : frame_end - 2])
         if int.from_bytes(self._data[frame_end - 2 : frame_end], "big") != crc:
-            LOGGER.debug(
-                "%s: RX data CRC is invalid: 0x%X != 0x%X",
-                self._ble_device.name,
+            self._log.debug(
+                "invalid checksum 0x%X != 0x%X",
                 int.from_bytes(self._data[frame_end - 2 : frame_end], "big"),
                 crc,
             )
@@ -191,16 +180,13 @@ class BMS(BaseBMS):
             (BMS._cmd(b"\x03"), BMS.BASIC_INFO, BMS._decode_data),
             (BMS._cmd(b"\x04"), 0, BMS._cell_voltages),
         ]:
-            await self._client.write_gatt_char(BMS.uuid_tx(), data=cmd)
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-
+            await self._await_reply(cmd)
             if (
                 len(self._data_final) != BMS.INFO_LEN + self._data_final[3]
                 or len(self._data_final) < BMS.INFO_LEN + exp_len
             ):
-                LOGGER.debug(
-                    "%s: wrong data length (%i): %s",
-                    self._ble_device.name,
+                self._log.debug(
+                    "wrong data length (%i): %s",
                     len(self._data_final),
                     self._data_final,
                 )

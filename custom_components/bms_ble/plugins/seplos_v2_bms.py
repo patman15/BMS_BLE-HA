@@ -1,7 +1,5 @@
 """Module to support Seplos V2 BMS."""
 
-import asyncio
-import logging
 from typing import Any, Callable, Final
 
 from bleak.backends.device import BLEDevice
@@ -28,9 +26,6 @@ from custom_components.bms_ble.const import (
 
 from .basebms import BaseBMS, BMSsample, crc_xmodem
 
-LOGGER = logging.getLogger(__name__)
-BAT_TIMEOUT = 10
-
 
 class BMS(BaseBMS):
     """Dummy battery class implementation."""
@@ -55,8 +50,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
         self._exp_len: int = 0
         self._data_final: dict[int, bytearray] = {}
@@ -114,11 +108,8 @@ class BMS(BaseBMS):
             self._data = bytearray()
 
         self._data += data
-        LOGGER.debug(
-            "%s: RX BLE data (%s): %s",
-            self._ble_device.name,
-            "start" if data == self._data else "cnt.",
-            data,
+        self._log.debug(
+            "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
         # verify that data long enough
@@ -126,32 +117,28 @@ class BMS(BaseBMS):
             return
 
         if self._data[-1] != BMS._TAIL:
-            LOGGER.debug("%s: frame end incorrect: %s", self.name, self._data)
+            self._log.debug("frame end incorrect: %s", self._data)
             return
 
         if self._data[1] != BMS._RSP_VER:
-            LOGGER.debug(
-                "%s: unknown frame version: V%.1f", self.name, self._data[1] / 10
-            )
+            self._log.debug("unknown frame version: V%.1f", self._data[1] / 10)
             return
 
         if self._data[4]:
-            LOGGER.debug("%s: BMS reported error code: 0x%X", self.name, self._data[4])
+            self._log.debug("BMS reported error code: 0x%X", self._data[4])
             return
 
         crc = crc_xmodem(self._data[1:-3])
         if int.from_bytes(self._data[-3:-1]) != crc:
-            LOGGER.debug(
-                "%s: RX data CRC is invalid: 0x%X != 0x%X",
-                self._ble_device.name,
+            self._log.debug(
+                "invalid checksum 0x%X != 0x%X",
                 int.from_bytes(self._data[-3:-1]),
                 crc,
             )
             return
 
-        LOGGER.debug(
-            "%s: address: 0x%X, function: 0x%X, return: 0x%X",
-            self.name,
+        self._log.debug(
+            "address: 0x%X, function: 0x%X, return: 0x%X",
             self._data[2],
             self._data[3],
             self._data[4],
@@ -221,10 +208,7 @@ class BMS(BaseBMS):
         """Update battery status information."""
 
         for cmd, data in BMS._CMDS:
-            await self._client.write_gatt_char(
-                BMS.uuid_tx(), data=BMS._cmd(cmd, data=bytearray(data))
-            )
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+            await self._await_reply(BMS._cmd(cmd, data=bytearray(data)))
 
         result: BMSsample = {KEY_CELL_COUNT: int(self._data_final[0x61][BMS._CELL_POS])}
         result[KEY_TEMP_SENS] = int(

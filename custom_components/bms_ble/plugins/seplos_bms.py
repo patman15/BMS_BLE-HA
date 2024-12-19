@@ -1,8 +1,6 @@
 """Module to support Seplos V3 Smart BMS."""
 
-import asyncio
 from collections.abc import Callable
-import logging
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
@@ -26,9 +24,6 @@ from custom_components.bms_ble.const import (
 )
 
 from .basebms import BaseBMS, BMSsample, crc_modbus
-
-BAT_TIMEOUT: Final = 10
-LOGGER = logging.getLogger(__name__)
 
 
 class BMS(BaseBMS):
@@ -68,7 +63,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
         self._pkglen: int = 0  # expected packet length
         self._data_final: dict[int, bytearray] = {}
@@ -135,16 +130,13 @@ class BMS(BaseBMS):
             and data[0] <= self._pack_count
             and data[1] & 0x80
         ):
-            LOGGER.debug("%s: RX BLE error: %X", self._ble_device.name, int(data[2]))
+            self._log.debug("Rx error: %X", int(data[2]))
             self._data = bytearray()
             self._pkglen = BMS.HEAD_LEN + BMS.CRC_LEN
 
         self._data += data
-        LOGGER.debug(
-            "%s: RX BLE data (%s): %s",
-            self._ble_device.name,
-            "start" if data == self._data else "cnt.",
-            data,
+        self._log.debug(
+            "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
         # verify that data long enough
@@ -153,9 +145,8 @@ class BMS(BaseBMS):
 
         crc = crc_modbus(self._data[: self._pkglen - 2])
         if int.from_bytes(self._data[self._pkglen - 2 : self._pkglen], "little") != crc:
-            LOGGER.debug(
-                "%s: RX data CRC is invalid: 0x%X != 0x%X",
-                self._ble_device.name,
+            self._log.debug(
+                "invalid checksum 0x%X != 0x%X",
                 int.from_bytes(self._data[self._pkglen - 2 : self._pkglen], "little"),
                 crc,
             )
@@ -164,20 +155,16 @@ class BMS(BaseBMS):
             not (self._data[2] == BMS.EIA_LEN * 2 or self._data[2] == BMS.EIB_LEN * 2)
             and not self._data[1] & 0x80
         ):
-            LOGGER.debug(
-                "%s: unknown message: %s, length: %s",
-                self._ble_device.name,
-                self._data[0:2],
-                self._data[2],
+            self._log.debug(
+                "unknown message: %s, length: %s", self._data[0:2], self._data[2]
             )
             self._data = bytearray()
             return
         else:
             self._data_final[int(self._data[0]) << 8 | int(self._data[2])] = self._data
             if len(self._data) != self._pkglen:
-                LOGGER.debug(
-                    "%s: Wrong data length (%i!=%s): %s",
-                    self._ble_device.name,
+                self._log.debug(
+                    "wrong data length (%i!=%s): %s",
                     len(self._data),
                     self._pkglen,
                     self._data,
@@ -209,10 +196,7 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         for block in ["EIA", "EIB"]:
-            await self._client.write_gatt_char(
-                BMS.uuid_tx(), data=BMS._cmd(0x0, *BMS.QUERY[block])
-            )
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+            await self._await_reply(BMS._cmd(0x0, *BMS.QUERY[block]))
             # check if a valid frame was received otherwise terminate immediately
             if BMS.QUERY[block][2] * 2 not in self._data_final:
                 return {}
@@ -232,10 +216,7 @@ class BMS(BaseBMS):
         self._pack_count = min(int(data.get(KEY_PACK_COUNT, 0)), 0x10)
 
         for pack in range(1, 1 + self._pack_count):
-            await self._client.write_gatt_char(
-                BMS.uuid_tx(), data=self._cmd(pack, *BMS.QUERY["PIB"])
-            )
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+            await self._await_reply(self._cmd(pack, *BMS.QUERY["PIB"]))
             # get cell voltages
             if pack << 8 | BMS.PIB_LEN * 2 in self._data_final:
                 pack_cells = [

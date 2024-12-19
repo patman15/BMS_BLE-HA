@@ -2,7 +2,6 @@
 
 import asyncio
 from collections.abc import Callable
-import logging
 from string import hexdigits
 from typing import Any, Final
 
@@ -26,9 +25,6 @@ from custom_components.bms_ble.const import (
 
 from .basebms import BaseBMS, BMSsample
 
-LOGGER = logging.getLogger(__name__)
-BAT_TIMEOUT: Final[int] = 10
-
 
 class BMS(BaseBMS):
     """Ective battery class implementation."""
@@ -48,8 +44,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
         self._data_final: bytearray = bytearray()
 
@@ -103,11 +98,8 @@ class BMS(BaseBMS):
             self._data.clear()
 
         self._data += data
-        LOGGER.debug(
-            "%s: RX BLE data (%s): %s",
-            self._ble_device.name,
-            "start" if data == self._data else "cnt.",
-            data,
+        self._log.debug(
+            "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
         if len(self._data) < BMS._INFO_LEN:
@@ -117,15 +109,14 @@ class BMS(BaseBMS):
             self._data.startswith(BMS._HEAD_RSP)
             and set(self._data.decode()[3:]).issubset(hexdigits)
         ):
-            LOGGER.debug("%s: incorrect frame coding: %s", self.name, self._data)
+            self._log.debug("incorrect frame coding: %s", self._data)
             self._data.clear()
             return
 
         crc: Final[int] = BMS._crc(self._data[1 : -BMS._CRC_LEN])
         if crc != int(self._data[-BMS._CRC_LEN :], 16):
-            LOGGER.debug(
-                "%s: incorrect checksum 0x%X != 0x%X",
-                self.name,
+            self._log.debug(
+                "invalid checksum 0x%X != 0x%X",
                 int(self._data[-BMS._CRC_LEN :], 16),
                 crc,
             )
@@ -162,7 +153,7 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
-        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+        await asyncio.wait_for(self._wait_event(), timeout=self.BAT_TIMEOUT)
         return {
             key: func(BMS._conv_int(self._data_final[idx : idx + size], sign))
             for key, idx, size, sign, func in BMS._FIELDS

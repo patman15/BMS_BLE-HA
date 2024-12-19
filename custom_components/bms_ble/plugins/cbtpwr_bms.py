@@ -1,8 +1,6 @@
 """Module to support CBT Power Smart BMS."""
 
-import asyncio
 from collections.abc import Callable
-import logging
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
@@ -27,13 +25,11 @@ from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 from .basebms import BaseBMS, BMSsample, crc_sum
 
-BAT_TIMEOUT: Final = 1
-LOGGER: Final = logging.getLogger(__name__)
-
 
 class BMS(BaseBMS):
     """CBT Power Smart BMS class implementation."""
 
+    BAT_TIMEOUT: Final = 1
     HEAD: Final[bytes] = bytes([0xAA, 0x55])
     TAIL_RX: Final[bytes] = bytes([0x0D, 0x0A])
     TAIL_TX: Final[bytes] = bytes([0x0A, 0x0D])
@@ -57,7 +53,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
 
     @staticmethod
@@ -102,24 +98,21 @@ class BMS(BaseBMS):
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Retrieve BMS data update."""
-        LOGGER.debug("%s: Received BLE data: %s", self.name, data)
+        self._log.debug("RX BLE data: %s", data)
 
         # verify that data long enough
         if len(data) < BMS.MIN_FRAME or len(data) != BMS.MIN_FRAME + data[BMS.LEN_POS]:
-            LOGGER.debug(
-                "%s: incorrect frame length (%i): %s", self.name, len(data), data
-            )
+            self._log.debug("incorrect frame length (%i): %s", len(data), data)
             return
 
         if not data.startswith(BMS.HEAD) or not data.endswith(BMS.TAIL_RX):
-            LOGGER.debug("%s: incorrect frame start/end: %s", self.name, data)
+            self._log.debug("incorrect frame start/end: %s", data)
             return
 
         crc = crc_sum(data[len(BMS.HEAD) : len(data) + BMS.CRC_POS])
         if data[BMS.CRC_POS] != crc:
-            LOGGER.debug(
-                "%s: RX data CRC is invalid: 0x%X != 0x%X",
-                self.name,
+            self._log.debug(
+                "invalid checksum 0x%X != 0x%X",
                 data[len(data) + BMS.CRC_POS],
                 crc,
             )
@@ -166,18 +159,14 @@ class BMS(BaseBMS):
         """Update battery status information."""
         resp_cache = {}  # variable to avoid multiple queries with same command
         for cmd in BMS._CMDS:
-            LOGGER.debug("%s: request command 0x%X.", self.name, cmd)
-            await self._client.write_gatt_char(
-                BMS.uuid_tx(), data=BMS._gen_frame(cmd.to_bytes(1))
-            )
+            self._log.debug("request command 0x%X.", cmd)
             try:
-                await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+                await self._await_reply(BMS._gen_frame(cmd.to_bytes(1)))
             except TimeoutError:
                 continue
             if cmd != self._data[BMS.CMD_POS]:
-                LOGGER.debug(
-                    "%s: incorrect response 0x%X to command 0x%X",
-                    self.name,
+                self._log.debug(
+                    "incorrect response 0x%X to command 0x%X",
                     self._data[BMS.CMD_POS],
                     cmd,
                 )
@@ -185,11 +174,8 @@ class BMS(BaseBMS):
 
         voltages = {}
         for cmd in BMS.CELL_VOLTAGE_CMDS:
-            await self._client.write_gatt_char(
-                BMS.uuid_tx(), data=BMS._gen_frame(cmd.to_bytes(1))
-            )
             try:
-                await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+                await self._await_reply(BMS._gen_frame(cmd.to_bytes(1)))
             except TimeoutError:
                 break
             voltages |= BMS._cell_voltages(self._data)
@@ -198,7 +184,7 @@ class BMS(BaseBMS):
                     voltages.pop(k)
                 break
 
-        data = BMS._decode_data(resp_cache)
+        data: BMSsample = BMS._decode_data(resp_cache)
 
         # get cycle charge from design capacity and SoC
         if data.get(KEY_DESIGN_CAP) and data.get(ATTR_BATTERY_LEVEL):

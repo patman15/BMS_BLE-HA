@@ -197,7 +197,7 @@ class Mock_BMS(BaseBMS):
     ) -> None:  # , ble_device, reconnect: bool = False
         """Initialize BMS."""
         super().__init__(
-            LOGGER, lambda char, data: None, generate_ble_device(address=""), False
+            LOGGER.name, lambda char, data: None, generate_ble_device(address=""), False
         )
         LOGGER.debug("%s init(), Test except: %s", self.device_id(), str(exc))
         self._exception = exc
