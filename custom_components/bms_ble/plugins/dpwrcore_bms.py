@@ -65,7 +65,7 @@ class BMS(BaseBMS):
         super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         assert self._ble_device.name is not None  # required for unlock
         self._data: bytearray = bytearray()
-        self._data_final: bytearray | None = None
+        self._data_final: bytearray = bytearray()
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -151,9 +151,9 @@ class BMS(BaseBMS):
                     self._crc(self._data[3:-4]),
                 )
                 self._data = bytearray()
-                self._data_final = None  # reset invalid data
-                self._data_event.set()
+                self._data_final = bytearray()  # reset invalid data
                 return
+
             self._data_final = self._data
             self._data_event.set()
 
@@ -206,9 +206,6 @@ class BMS(BaseBMS):
         data = {}
         for request in [Cmd.LEGINFO1, Cmd.LEGINFO2, Cmd.CELLVOLT]:
             await self._await_reply(self._cmd_frame(request, b""))
-
-            if self._data_final is None:
-                continue
 
             data |= {
                 key: func(

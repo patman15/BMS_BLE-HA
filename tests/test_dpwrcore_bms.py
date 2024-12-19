@@ -191,8 +191,11 @@ async def test_invalid_response(monkeypatch, dev_name) -> None:
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", dev_name, None, -73))
 
+    result = {}
     with pytest.raises(TimeoutError):
-        _result = await bms.async_update()
+        result = await bms.async_update()
+
+    assert not result
 
     await bms.disconnect()
 
@@ -212,6 +215,10 @@ async def test_wrong_crc(monkeypatch, dev_name) -> None:
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", dev_name, None, -73))
 
-    assert await bms.async_update() == {}
+    result = {}
+    with pytest.raises(TimeoutError):
+        result = await bms.async_update()
+
+    assert not result
 
     await bms.disconnect()
