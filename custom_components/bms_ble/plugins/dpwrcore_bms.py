@@ -126,7 +126,7 @@ class BMS(BaseBMS):
             return
 
         # acknowledge received frame
-        await self._send(bytearray([data[0] | 0x80]) + data[1:], wait_for_notify=False)
+        await self._await_reply(bytearray([data[0] | 0x80]) + data[1:], wait_for_notify=False)
 
         size: Final[int] = int(data[0])
         page: Final[int] = int(data[1] >> 4)
@@ -181,7 +181,7 @@ class BMS(BaseBMS):
         # unlock BMS if not TBA version
         if not self.name.startswith("TBA-"):
             pwd = int(self.name[-4:], 16)
-            await self._send(
+            await self._await_reply(
                 BMS._cmd_frame(
                     Cmd.UNLOCK,
                     bytes([(pwd >> 8) & 0xFF, pwd & 0xFF]),
@@ -204,7 +204,7 @@ class BMS(BaseBMS):
         """Update battery status information."""
         data = {}
         for request in [Cmd.LEGINFO1, Cmd.LEGINFO2, Cmd.CELLVOLT]:
-            await self._send(self._cmd_frame(request, b""))
+            await self._await_reply(self._cmd_frame(request, b""))
 
             if self._data_final is None:
                 continue

@@ -164,7 +164,7 @@ class BMS(BaseBMS):
         for cmd in BMS._CMDS:
             self._log.debug("%s: request command 0x%X.", self.name, cmd)
             try:
-                await self._send(BMS._gen_frame(cmd.to_bytes(1)))
+                await self._await_reply(BMS._gen_frame(cmd.to_bytes(1)))
             except TimeoutError:
                 continue
             if cmd != self._data[BMS.CMD_POS]:
@@ -179,7 +179,7 @@ class BMS(BaseBMS):
         voltages = {}
         for cmd in BMS.CELL_VOLTAGE_CMDS:
             try:
-                await self._send(BMS._gen_frame(cmd.to_bytes(1)))
+                await self._await_reply(BMS._gen_frame(cmd.to_bytes(1)))
             except TimeoutError:
                 break
             voltages |= BMS._cell_voltages(self._data)

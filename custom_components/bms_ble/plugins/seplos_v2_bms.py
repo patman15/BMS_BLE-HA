@@ -217,7 +217,7 @@ class BMS(BaseBMS):
         """Update battery status information."""
 
         for cmd, data in BMS._CMDS:
-            await self._send(BMS._cmd(cmd, data=bytearray(data)))
+            await self._await_reply(BMS._cmd(cmd, data=bytearray(data)))
 
         result: BMSsample = {KEY_CELL_COUNT: int(self._data_final[0x61][BMS._CELL_POS])}
         result[KEY_TEMP_SENS] = int(

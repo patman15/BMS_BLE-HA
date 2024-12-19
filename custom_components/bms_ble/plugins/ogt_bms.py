@@ -128,7 +128,7 @@ class BMS(BaseBMS):
         self._values = {}
         for reg in list(self._REGISTERS):
             try:
-                await self._send(data=self._ogt_command(reg))
+                await self._await_reply(data=self._ogt_command(reg))
             except TimeoutError:
                 self._log.debug("Reading %s timed out", self._REGISTERS[reg][BMS.IDX_NAME])
             if reg > 48 and f"{KEY_CELL_VOLTAGE}{64-reg}" not in self._values:

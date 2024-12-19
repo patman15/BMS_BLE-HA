@@ -186,7 +186,7 @@ class BMS(BaseBMS):
             (BMS._cmd(b"\x03"), BMS.BASIC_INFO, BMS._decode_data),
             (BMS._cmd(b"\x04"), 0, BMS._cell_voltages),
         ]:
-            await self._send(cmd)
+            await self._await_reply(cmd)
             if (
                 len(self._data_final) != BMS.INFO_LEN + self._data_final[3]
                 or len(self._data_final) < BMS.INFO_LEN + exp_len

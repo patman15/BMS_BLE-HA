@@ -204,7 +204,7 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         for block in ["EIA", "EIB"]:
-            await self._send(BMS._cmd(0x0, *BMS.QUERY[block]))
+            await self._await_reply(BMS._cmd(0x0, *BMS.QUERY[block]))
             # check if a valid frame was received otherwise terminate immediately
             if BMS.QUERY[block][2] * 2 not in self._data_final:
                 return {}
@@ -224,7 +224,7 @@ class BMS(BaseBMS):
         self._pack_count = min(int(data.get(KEY_PACK_COUNT, 0)), 0x10)
 
         for pack in range(1, 1 + self._pack_count):
-            await self._send(self._cmd(pack, *BMS.QUERY["PIB"]))
+            await self._await_reply(self._cmd(pack, *BMS.QUERY["PIB"]))
             # get cell voltages
             if pack << 8 | BMS.PIB_LEN * 2 in self._data_final:
                 pack_cells = [

@@ -203,13 +203,13 @@ class BaseBMS(metaclass=ABCMeta):
         )
         await self._init_characteristics()
 
-    async def _send(
+    async def _await_reply(
         self,
         data: bytes,
         char: BleakGATTCharacteristic | int | str | None = None,
         wait_for_notify: bool = True,
     ) -> None:
-        """Send data to the BMS and wait for notification."""
+        """Send data to the BMS and wait for valid reply notification."""
 
         self._log.debug("%s: TX BLE data: %s", self.name, data.hex(" "))
         await self._client.write_gatt_char(char or self.uuid_tx(), data)

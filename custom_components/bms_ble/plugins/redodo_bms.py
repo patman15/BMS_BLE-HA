@@ -143,7 +143,7 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        await self._send(b"\x00\x00\x04\x01\x13\x55\xaa\x17")
+        await self._await_reply(b"\x00\x00\x04\x01\x13\x55\xaa\x17")
 
         return (
             {

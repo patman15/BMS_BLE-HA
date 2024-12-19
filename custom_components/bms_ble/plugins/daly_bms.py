@@ -121,7 +121,7 @@ class BMS(BaseBMS):
         data = {}
         try:
             # request MOS temperature (possible outcome: response, empty response, no response)
-            await self._send(BMS.HEAD_READ + BMS.MOS_INFO)
+            await self._await_reply(BMS.HEAD_READ + BMS.MOS_INFO)
 
             if self._data is not None and sum(self._data[BMS.MOS_TEMP_POS :][:2]):
                 self._log.debug("%s: MOS info: %s", self._ble_device.name, self._data)
@@ -138,7 +138,7 @@ class BMS(BaseBMS):
         except TimeoutError:
             self._log.debug("%s: no MOS temperature available.", self.name)
 
-        await self._send(BMS.HEAD_READ + BMS.CMD_INFO)
+        await self._await_reply(BMS.HEAD_READ + BMS.CMD_INFO)
 
         if self._data is None or len(self._data) != BMS.INFO_LEN:
             return {}

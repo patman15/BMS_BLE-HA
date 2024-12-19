@@ -198,7 +198,7 @@ class BMS(BaseBMS):
 
         # query device info frame (0x03) and wait for BMS ready (0xC8)
         self._valid_reply = 0x03
-        await self._send(self._cmd(b"\x97"), char=self._char_write_handle)
+        await self._await_reply(self._cmd(b"\x97"), char=self._char_write_handle)
         self._bms_info = BMS._dec_devinfo(self._data_final or bytearray())
         self._log.debug("%s: device information: %s", self.name, self._bms_info)
         self._prot_offset = (
@@ -286,7 +286,7 @@ class BMS(BaseBMS):
         if not self._data_event.is_set() or self._data_final[4] != 0x02:
             # request cell info (only if data is not constantly published)
             self._log.debug("%s: request cell info", self.name)
-            await self._send(data=BMS._cmd(b"\x96"), char=self._char_write_handle)
+            await self._await_reply(data=BMS._cmd(b"\x96"), char=self._char_write_handle)
 
         data: BMSsample = self._decode_data(self._data_final, self._prot_offset)
         data.update(BMS._temp_sensors(self._data_final, self._prot_offset))
