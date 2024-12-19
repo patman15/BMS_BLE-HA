@@ -1,7 +1,6 @@
 """Module to support Seplos V3 Smart BMS."""
 
 from collections.abc import Callable
-import logging
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
@@ -25,8 +24,6 @@ from custom_components.bms_ble.const import (
 )
 
 from .basebms import BaseBMS, BMSsample, crc_modbus
-
-LOGGER: Final = logging.getLogger(__name__)
 
 
 class BMS(BaseBMS):
@@ -66,7 +63,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
         self._pkglen: int = 0  # expected packet length
         self._data_final: dict[int, bytearray] = {}
@@ -133,12 +130,12 @@ class BMS(BaseBMS):
             and data[0] <= self._pack_count
             and data[1] & 0x80
         ):
-            LOGGER.debug("%s: RX BLE error: %X", self._ble_device.name, int(data[2]))
+            self._log.debug("%s: Rx error: %X", self._ble_device.name, int(data[2]))
             self._data = bytearray()
             self._pkglen = BMS.HEAD_LEN + BMS.CRC_LEN
 
         self._data += data
-        LOGGER.debug(
+        self._log.debug(
             "%s: RX BLE data (%s): %s",
             self._ble_device.name,
             "start" if data == self._data else "cnt.",
@@ -151,8 +148,8 @@ class BMS(BaseBMS):
 
         crc = crc_modbus(self._data[: self._pkglen - 2])
         if int.from_bytes(self._data[self._pkglen - 2 : self._pkglen], "little") != crc:
-            LOGGER.debug(
-                "%s: RX data CRC is invalid: 0x%X != 0x%X",
+            self._log.debug(
+                "%s: RX BLE data CRC is invalid: 0x%X != 0x%X",
                 self._ble_device.name,
                 int.from_bytes(self._data[self._pkglen - 2 : self._pkglen], "little"),
                 crc,
@@ -162,7 +159,7 @@ class BMS(BaseBMS):
             not (self._data[2] == BMS.EIA_LEN * 2 or self._data[2] == BMS.EIB_LEN * 2)
             and not self._data[1] & 0x80
         ):
-            LOGGER.debug(
+            self._log.debug(
                 "%s: unknown message: %s, length: %s",
                 self._ble_device.name,
                 self._data[0:2],
@@ -173,7 +170,7 @@ class BMS(BaseBMS):
         else:
             self._data_final[int(self._data[0]) << 8 | int(self._data[2])] = self._data
             if len(self._data) != self._pkglen:
-                LOGGER.debug(
+                self._log.debug(
                     "%s: Wrong data length (%i!=%s): %s",
                     self._ble_device.name,
                     len(self._data),

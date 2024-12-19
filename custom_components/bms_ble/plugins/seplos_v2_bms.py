@@ -1,6 +1,5 @@
 """Module to support Seplos V2 BMS."""
 
-import logging
 from typing import Any, Callable, Final
 
 from bleak.backends.device import BLEDevice
@@ -27,8 +26,6 @@ from custom_components.bms_ble.const import (
 
 from .basebms import BaseBMS, BMSsample, crc_xmodem
 
-LOGGER: Final = logging.getLogger(__name__)
-
 
 class BMS(BaseBMS):
     """Dummy battery class implementation."""
@@ -53,8 +50,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
         self._exp_len: int = 0
         self._data_final: dict[int, bytearray] = {}
@@ -112,7 +108,7 @@ class BMS(BaseBMS):
             self._data = bytearray()
 
         self._data += data
-        LOGGER.debug(
+        self._log.debug(
             "%s: RX BLE data (%s): %s",
             self._ble_device.name,
             "start" if data == self._data else "cnt.",
@@ -124,30 +120,32 @@ class BMS(BaseBMS):
             return
 
         if self._data[-1] != BMS._TAIL:
-            LOGGER.debug("%s: frame end incorrect: %s", self.name, self._data)
+            self._log.debug("%s: frame end incorrect: %s", self.name, self._data)
             return
 
         if self._data[1] != BMS._RSP_VER:
-            LOGGER.debug(
+            self._log.debug(
                 "%s: unknown frame version: V%.1f", self.name, self._data[1] / 10
             )
             return
 
         if self._data[4]:
-            LOGGER.debug("%s: BMS reported error code: 0x%X", self.name, self._data[4])
+            self._log.debug(
+                "%s: BMS reported error code: 0x%X", self.name, self._data[4]
+            )
             return
 
         crc = crc_xmodem(self._data[1:-3])
         if int.from_bytes(self._data[-3:-1]) != crc:
-            LOGGER.debug(
-                "%s: RX data CRC is invalid: 0x%X != 0x%X",
+            self._log.debug(
+                "%s: RX BLE data CRC is invalid: 0x%X != 0x%X",
                 self._ble_device.name,
                 int.from_bytes(self._data[-3:-1]),
                 crc,
             )
             return
 
-        LOGGER.debug(
+        self._log.debug(
             "%s: address: 0x%X, function: 0x%X, return: 0x%X",
             self.name,
             self._data[2],

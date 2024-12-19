@@ -41,7 +41,7 @@ class BaseBMS(metaclass=ABCMeta):
 
     def __init__(
         self,
-        logger: logging.Logger,
+        logger_name: str,
         notification_handler: Callable[
             [BleakGATTCharacteristic, bytearray], None | Awaitable[None]
         ],
@@ -50,21 +50,28 @@ class BaseBMS(metaclass=ABCMeta):
     ) -> None:
         """Intialize the BMS.
 
-        logger: logger for the BMS instance
+        logger_name: name of the logger for the BMS instance (usually file name)
         notification_handler: the callback used for notifications from 'uuid_rx()' characteristics
         ble_device: the Bleak device to connect to
         reconnect: if true, the connection will be closed after each update
         """
-        self.logger: Final = logger
+        self._log: Final[logging.Logger] = logging.getLogger(logger_name or __name__)
         self._notification_method: Final = notification_handler
         self._ble_device: Final = ble_device
-        self._reconnect: Final = reconnect
+        self._reconnect: Final[bool] = reconnect
+        self.name: Final[str] = self._ble_device.name or "undefined"
+
+        self._log.debug(
+            "%s: (%s) init(), BT address: %s",
+            self.name,
+            self.device_id(),
+            ble_device.address,
+        )
         self._client = BleakClient(
             self._ble_device,
             disconnected_callback=self._on_disconnect,
             services=[*self.uuid_services()],
         )
-        self.name: Final[str] = self._ble_device.name or "undefined"
         self._data_event: Final[asyncio.Event] = asyncio.Event()
 
     @staticmethod
@@ -174,7 +181,7 @@ class BaseBMS(metaclass=ABCMeta):
     def _on_disconnect(self, _client: BleakClient) -> None:
         """Disconnect callback function."""
 
-        self.logger.debug("Disconnected from BMS (%s)", self.name)
+        self._log.debug("Disconnected from BMS (%s)", self.name)
 
     async def _init_characteristics(self) -> None:
         await self._client.start_notify(self.uuid_rx(), self._notification_method)
@@ -183,10 +190,10 @@ class BaseBMS(metaclass=ABCMeta):
         """Connect to the BMS and setup notification if not connected."""
 
         if self._client.is_connected:
-            self.logger.debug("BMS %s already connected", self.name)
+            self._log.debug("BMS %s already connected", self.name)
             return
 
-        self.logger.debug("Connecting BMS (%s)", self._ble_device.name)
+        self._log.debug("Connecting BMS (%s)", self._ble_device.name)
         self._client = await establish_connection(
             client_class=BleakClient,
             device=self._ble_device,
@@ -204,6 +211,7 @@ class BaseBMS(metaclass=ABCMeta):
     ) -> None:
         """Send data to the BMS and wait for notification."""
 
+        self._log.debug("%s: TX BLE data: %s", self.name, data.hex(" "))
         await self._client.write_gatt_char(char or self.uuid_tx(), data)
         if wait_for_notify:
             await asyncio.wait_for(self._wait_event(), timeout=self.BAT_TIMEOUT)
@@ -212,12 +220,12 @@ class BaseBMS(metaclass=ABCMeta):
         """Disconnect the BMS, includes stoping notifications."""
 
         if self._client.is_connected:
-            self.logger.debug("Disconnecting BMS (%s)", self.name)
+            self._log.debug("Disconnecting BMS (%s)", self.name)
             try:
                 self._data_event.clear()
                 await self._client.disconnect()
             except BleakError:
-                self.logger.warning("Disconnect failed!")
+                self._log.warning("Disconnect failed!")
 
     async def _wait_event(self) -> None:
         """Wait for data event and clear it."""

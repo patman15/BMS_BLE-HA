@@ -1,6 +1,5 @@
 """Module to support Dummy BMS."""
 
-import logging
 from typing import Any, Callable, Final
 
 from bleak.backends.device import BLEDevice
@@ -24,8 +23,6 @@ from custom_components.bms_ble.const import (
 
 from .basebms import BaseBMS, BMSsample, crc_sum
 
-LOGGER: Final = logging.getLogger(__name__)
-
 
 class BMS(BaseBMS):
     """Dummy battery class implementation."""
@@ -44,9 +41,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
-
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
 
     @staticmethod
@@ -93,20 +88,20 @@ class BMS(BaseBMS):
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
-        LOGGER.debug("%s: RX BLE data: %s", self.name, data)
+        self._log.debug("%s: RX BLE data: %s", self.name, data)
 
         if len(data) < 3 or not data.startswith(b"\x00\x00"):
-            LOGGER.debug("%s: incorrect SOF.")
+            self._log.debug("%s: incorrect SOF.")
             return
 
         if len(data) != data[2] + BMS.HEAD_LEN + 1:  # add header length and CRC
-            LOGGER.debug("%s: incorrect frame length (%i)", self.name, len(data))
+            self._log.debug("%s: incorrect frame length (%i)", self.name, len(data))
             return
 
         crc = crc_sum(data[: BMS.CRC_POS])
         if crc != data[BMS.CRC_POS]:
-            LOGGER.debug(
-                "%s: RX data CRC is invalid: 0x%X != 0x%X",
+            self._log.debug(
+                "%s: RX BLE data CRC is invalid: 0x%X != 0x%X",
                 self.name,
                 data[len(data) + BMS.CRC_POS],
                 crc,

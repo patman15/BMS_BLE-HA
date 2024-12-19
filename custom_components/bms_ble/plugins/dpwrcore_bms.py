@@ -2,7 +2,6 @@
 
 from collections.abc import Callable
 from enum import Enum
-import logging
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
@@ -25,8 +24,6 @@ from custom_components.bms_ble.const import (
 )
 
 from .basebms import BaseBMS, BMSsample
-
-LOGGER: Final = logging.getLogger(__name__)
 
 
 class Cmd(Enum):
@@ -65,7 +62,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         assert self._ble_device.name is not None  # required for unlock
         self._data: bytearray = bytearray()
         self._data_final: bytearray | None = None
@@ -117,15 +114,15 @@ class BMS(BaseBMS):
         }
 
     async def _notification_handler(self, _sender, data: bytearray) -> None:
-        LOGGER.debug("%s: RX BLE data: %s", self.name, data)
+        self._log.debug("%s: RX BLE data: %s", self.name, data)
 
         if len(data) != BMS._PAGE_LEN:
-            LOGGER.debug("%s: invalid page length (%i)", self.name, len(data))
+            self._log.debug("%s: invalid page length (%i)", self.name, len(data))
             return
 
         # ignore ACK responses
         if data[0] & 0x80:
-            LOGGER.debug("%s: ignore acknowledge message", self.name)
+            self._log.debug("%s: ignore acknowledge message", self.name)
             return
 
         # acknowledge received frame
@@ -140,13 +137,13 @@ class BMS(BaseBMS):
 
         self._data += data[2 : size + 2]
 
-        LOGGER.debug("%s: %s %s", self.name, "start" if page == 1 else "cnt.", data)
+        self._log.debug("%s: %s %s", self.name, "start" if page == 1 else "cnt.", data)
 
         if page == maxpg:
             if int.from_bytes(self._data[-4:-2], byteorder="big") != BMS._crc(
                 self._data[3:-4]
             ):
-                LOGGER.debug(
+                self._log.debug(
                     "%s: incorrect checksum 0x%X != 0x%X",
                     self.name,
                     int.from_bytes(self._data[-4:-2], byteorder="big"),

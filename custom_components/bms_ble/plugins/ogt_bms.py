@@ -1,7 +1,6 @@
 """Module to support Offgridtec Smart Pro BMS."""
 
 from collections.abc import Callable
-import logging
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
@@ -24,8 +23,6 @@ from custom_components.bms_ble.const import (
 
 from .basebms import BaseBMS, BMSsample
 
-LOGGER: Final = logging.getLogger(__name__)
-
 # magic crypt sequence of length 16
 CRYPT_SEQ: Final = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
 
@@ -40,12 +37,12 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         self._type = self.name[9] if len(self.name) >= 9 else "?"
         self._key = sum(
             CRYPT_SEQ[int(c, 16)] for c in (f"{int(self.name[10:]):0>4X}")
         ) + (5 if (self._type == "A") else 8)
-        LOGGER.info(
+        self._log.info(
             "%s type: %c, ID: %s, key: 0x%X",
             self.device_id(),
             self._type,
@@ -89,7 +86,7 @@ class BMS(BaseBMS):
             self._HEADER = "+R16"
         else:
             self._REGISTERS = {}
-            LOGGER.exception("Unkown device type '%c'", self._type)
+            self._log.exception("Unkown device type '%c'", self._type)
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -133,7 +130,7 @@ class BMS(BaseBMS):
             try:
                 await self._send(data=self._ogt_command(reg))
             except TimeoutError:
-                LOGGER.debug("Reading %s timed out", self._REGISTERS[reg][BMS.IDX_NAME])
+                self._log.debug("Reading %s timed out", self._REGISTERS[reg][BMS.IDX_NAME])
             if reg > 48 and f"{KEY_CELL_VOLTAGE}{64-reg}" not in self._values:
                 break
 
@@ -144,7 +141,7 @@ class BMS(BaseBMS):
         return self._values
 
     def _notification_handler(self, sender, data: bytearray) -> None:
-        LOGGER.debug("%s: RX BLE data: %s", self.name, data)
+        self._log.debug("%s: RX BLE data: %s", self.name, data)
 
         valid, reg, nat_value = self._ogt_response(data)
 
@@ -152,7 +149,7 @@ class BMS(BaseBMS):
         if valid and sender.uuid == normalize_uuid_str(BMS.uuid_rx()):
             name, _length, func = self._REGISTERS[reg]
             value = func(nat_value) if func else nat_value
-            LOGGER.debug(
+            self._log.debug(
                 "Decoded data: reg: %s (#%i), raw: %i, value: %f",
                 name,
                 reg,
@@ -161,7 +158,7 @@ class BMS(BaseBMS):
             )
             self._values[name] = value
         else:
-            LOGGER.debug("Response data is invalid")
+            self._log.debug("Response data is invalid")
         self._data_event.set()
 
     def _ogt_response(self, resp: bytearray) -> tuple[bool, int, int]:
@@ -170,7 +167,7 @@ class BMS(BaseBMS):
         msg = bytearray((resp[x] ^ self._key) for x in range(len(resp))).decode(
             encoding="ascii"
         )
-        LOGGER.debug("response: %s", msg[:-2])
+        self._log.debug("response: %s", msg[:-2])
         # verify correct response
         if msg[4:7] == "Err" or msg[:4] != "+RD," or msg[-2:] != "\r\n":
             return False, 0, 0
@@ -188,6 +185,6 @@ class BMS(BaseBMS):
         cmd = (
             f"{self._HEADER}{command:0>2X}{self._REGISTERS[command][BMS.IDX_LEN]:0>2X}"
         )
-        LOGGER.debug("command: %s", cmd)
+        self._log.debug("command: %s", cmd)
 
         return bytearray(ord(cmd[i]) ^ self._key for i in range(len(cmd)))

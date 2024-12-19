@@ -1,6 +1,5 @@
 """Module to support TDT BMS."""
 
-import logging
 from typing import Any, Callable, Final
 
 from bleak.backends.device import BLEDevice
@@ -26,8 +25,6 @@ from custom_components.bms_ble.const import (
 )
 
 from .basebms import BaseBMS, BMSsample, crc_modbus
-
-LOGGER: Final = logging.getLogger(__name__)
 
 
 class BMS(BaseBMS):
@@ -60,8 +57,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
         self._exp_len: int = 0
         self._data_final: dict[int, bytearray] = {}
@@ -108,15 +104,15 @@ class BMS(BaseBMS):
             if (
                 ret := int.from_bytes(await self._client.read_gatt_char(BMS._UUID_CFG))
             ) != 0x1:
-                LOGGER.debug("%s: error initializing BMS: %X", self.name, ret)
+                self._log.debug("%s: error initializing BMS: %X", self.name, ret)
         except (BleakError, EOFError) as err:
-            LOGGER.debug("%s: failed to intialize BMS: %s", self.name, err)
+            self._log.debug("%s: failed to intialize BMS: %s", self.name, err)
 
         await super()._init_characteristics()
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
-        LOGGER.debug("%s: RX BLE data: %s", self.name, data)
+        self._log.debug("%s: RX BLE data: %s", self.name, data)
 
         if (
             data[0] == BMS._HEAD
@@ -127,7 +123,7 @@ class BMS(BaseBMS):
             self._data = bytearray()
 
         self._data += data
-        LOGGER.debug(
+        self._log.debug(
             "%s: RX BLE data (%s): %s",
             self._ble_device.name,
             "start" if data == self._data else "cnt.",
@@ -139,23 +135,25 @@ class BMS(BaseBMS):
             return
 
         if self._data[-1] != BMS._TAIL:
-            LOGGER.debug("%s: frame end incorrect: %s", self.name, self._data)
+            self._log.debug("%s: frame end incorrect: %s", self.name, self._data)
             return
 
         if self._data[1] != BMS._RSP_VER:
-            LOGGER.debug(
+            self._log.debug(
                 "%s: unknown frame version: V%.1f", self.name, self._data[1] / 10
             )
             return
 
         if self._data[4]:
-            LOGGER.debug("%s: BMS reported error code: 0x%X", self.name, self._data[4])
+            self._log.debug(
+                "%s: BMS reported error code: 0x%X", self.name, self._data[4]
+            )
             return
 
         crc = crc_modbus(self._data[:-3])
         if int.from_bytes(self._data[-3:-1], "big") != crc:
-            LOGGER.debug(
-                "%s: RX data CRC is invalid: 0x%X != 0x%X",
+            self._log.debug(
+                "%s: RX BLE data CRC is invalid: 0x%X != 0x%X",
                 self._ble_device.name,
                 int.from_bytes(self._data[-3:-1], "big"),
                 crc,
@@ -174,7 +172,6 @@ class BMS(BaseBMS):
         frame += len(data).to_bytes(2, "big", signed=False) + data
         frame += bytearray(int.to_bytes(crc_modbus(frame), 2, byteorder="big"))
         frame += bytearray([BMS._TAIL])
-        LOGGER.debug("TX cmd: %s", frame.hex(" "))  # TODO: remove
         return frame
 
     @staticmethod

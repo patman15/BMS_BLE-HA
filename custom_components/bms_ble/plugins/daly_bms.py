@@ -1,7 +1,6 @@
 """Module to support Daly Smart BMS."""
 
 from collections.abc import Callable
-import logging
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
@@ -26,8 +25,6 @@ from custom_components.bms_ble.const import (
 )
 
 from .basebms import BaseBMS, BMSsample, crc_modbus
-
-LOGGER: Final = logging.getLogger(__name__)
 
 
 class BMS(BaseBMS):
@@ -55,7 +52,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         self._data: bytearray | None = None
 
     @staticmethod
@@ -100,7 +97,7 @@ class BMS(BaseBMS):
         }
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
-        LOGGER.debug("%s: RX BLE data: %s", self.name, data)
+        self._log.debug("%s: RX BLE data: %s", self.name, data)
 
         if (
             len(data) < BMS.HEAD_LEN
@@ -108,7 +105,7 @@ class BMS(BaseBMS):
             or int(data[2]) + 1 != len(data) - len(BMS.HEAD_READ) - BMS.CRC_LEN
             or int.from_bytes(data[-2:], byteorder="little") != crc_modbus(data[:-2])
         ):
-            LOGGER.debug(
+            self._log.debug(
                 "Response data is invalid, CRC: 0x%X != 0x%X",
                 int.from_bytes(data[-2:], byteorder="little"),
                 crc_modbus(data[:-2]),
@@ -127,7 +124,7 @@ class BMS(BaseBMS):
             await self._send(BMS.HEAD_READ + BMS.MOS_INFO)
 
             if self._data is not None and sum(self._data[BMS.MOS_TEMP_POS :][:2]):
-                LOGGER.debug("%s: MOS info: %s", self._ble_device.name, self._data)
+                self._log.debug("%s: MOS info: %s", self._ble_device.name, self._data)
                 data |= {
                     f"{KEY_TEMP_VALUE}0": float(
                         int.from_bytes(
@@ -139,7 +136,7 @@ class BMS(BaseBMS):
                     )
                 }
         except TimeoutError:
-            LOGGER.debug("%s: no MOS temperature available.", self.name)
+            self._log.debug("%s: no MOS temperature available.", self.name)
 
         await self._send(BMS.HEAD_READ + BMS.CMD_INFO)
 

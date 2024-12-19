@@ -1,7 +1,6 @@
 """Module to support Dummy BMS."""
 
 from enum import IntEnum
-import logging
 from typing import Any, Callable, Final
 
 from bleak.backends.device import BLEDevice
@@ -22,8 +21,6 @@ from custom_components.bms_ble.const import (
 )
 
 from .basebms import BaseBMS, BMSsample
-
-LOGGER: Final = logging.getLogger(__name__)
 
 
 class Cmd(IntEnum):
@@ -50,8 +47,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
         self._data_final: bytearray = bytearray()
 
@@ -98,7 +94,7 @@ class BMS(BaseBMS):
         """Handle the RX characteristics notify event (new data arrives)."""
 
         if data.startswith(BMS._BT_MODULE_MSG):
-            LOGGER.debug("%s: filtering AT cmd", self.name)
+            self._log.debug("%s: filtering AT cmd", self.name)
             if len(data) == len(BMS._BT_MODULE_MSG):
                 return
             data = data[len(BMS._BT_MODULE_MSG) :]
@@ -108,7 +104,7 @@ class BMS(BaseBMS):
 
         self._data += data
 
-        LOGGER.debug(
+        self._log.debug(
             "%s: RX BLE data (%s): %s",
             self._ble_device.name,
             "start" if data == self._data else "cnt.",
@@ -121,12 +117,12 @@ class BMS(BaseBMS):
             return
 
         if self._data[-1] != BMS._TAIL:
-            LOGGER.debug("%s: incorrect EOF: %s", self.name, data)
+            self._log.debug("%s: incorrect EOF: %s", self.name, data)
             self._data.clear()
             return
 
         if len(self._data) != int(self._data[7:11], 16):
-            LOGGER.debug(
+            self._log.debug(
                 "%s: incorrect frame length %i != %i",
                 self.name,
                 len(self._data),
@@ -137,7 +133,7 @@ class BMS(BaseBMS):
 
         crc: Final = BMS._crc(self._data[1:-3])
         if crc != int(self._data[-3:-1], 16):
-            LOGGER.debug(
+            self._log.debug(
                 "%s: incorrect checksum 0x%X != 0x%X",
                 self.name,
                 int(self._data[-3:-1], 16),
@@ -146,7 +142,7 @@ class BMS(BaseBMS):
             self._data.clear()
             return
 
-        LOGGER.debug(
+        self._log.debug(
             "%s: address: 0x%X, commnad 0x%X, version: 0x%X, length: 0x%X",
             self.name,
             int(self._data[1:3], 16),
@@ -182,7 +178,7 @@ class BMS(BaseBMS):
             raw_data[rsp] = self._data_final
             if rsp == Cmd.RT and len(self._data_final) == 0x8C:
                 # handle metrisun version
-                LOGGER.debug("%s: single frame protocol detected", self.name)
+                self._log.debug("%s: single frame protocol detected", self.name)
                 raw_data[Cmd.CAP] = bytearray(15) + self._data_final[125:]
                 break
 

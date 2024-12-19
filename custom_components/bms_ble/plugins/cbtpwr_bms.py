@@ -1,7 +1,6 @@
 """Module to support CBT Power Smart BMS."""
 
 from collections.abc import Callable
-import logging
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
@@ -25,8 +24,6 @@ from custom_components.bms_ble.const import (
 from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 from .basebms import BaseBMS, BMSsample, crc_sum
-
-LOGGER: Final = logging.getLogger(__name__)
 
 
 class BMS(BaseBMS):
@@ -56,7 +53,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
 
     @staticmethod
@@ -101,23 +98,23 @@ class BMS(BaseBMS):
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Retrieve BMS data update."""
-        LOGGER.debug("%s: RX BLE data: %s", self.name, data)
+        self._log.debug("%s: RX BLE data: %s", self.name, data)
 
         # verify that data long enough
         if len(data) < BMS.MIN_FRAME or len(data) != BMS.MIN_FRAME + data[BMS.LEN_POS]:
-            LOGGER.debug(
+            self._log.debug(
                 "%s: incorrect frame length (%i): %s", self.name, len(data), data
             )
             return
 
         if not data.startswith(BMS.HEAD) or not data.endswith(BMS.TAIL_RX):
-            LOGGER.debug("%s: incorrect frame start/end: %s", self.name, data)
+            self._log.debug("%s: incorrect frame start/end: %s", self.name, data)
             return
 
         crc = crc_sum(data[len(BMS.HEAD) : len(data) + BMS.CRC_POS])
         if data[BMS.CRC_POS] != crc:
-            LOGGER.debug(
-                "%s: RX data CRC is invalid: 0x%X != 0x%X",
+            self._log.debug(
+                "%s: RX BLE data CRC is invalid: 0x%X != 0x%X",
                 self.name,
                 data[len(data) + BMS.CRC_POS],
                 crc,
@@ -165,13 +162,13 @@ class BMS(BaseBMS):
         """Update battery status information."""
         resp_cache = {}  # variable to avoid multiple queries with same command
         for cmd in BMS._CMDS:
-            LOGGER.debug("%s: request command 0x%X.", self.name, cmd)
+            self._log.debug("%s: request command 0x%X.", self.name, cmd)
             try:
                 await self._send(BMS._gen_frame(cmd.to_bytes(1)))
             except TimeoutError:
                 continue
             if cmd != self._data[BMS.CMD_POS]:
-                LOGGER.debug(
+                self._log.debug(
                     "%s: incorrect response 0x%X to command 0x%X",
                     self.name,
                     self._data[BMS.CMD_POS],

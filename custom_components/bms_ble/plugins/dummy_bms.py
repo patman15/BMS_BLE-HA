@@ -1,6 +1,5 @@
 """Module to support Dummy BMS."""
 
-import logging
 from typing import Any
 
 from bleak.backends.device import BLEDevice
@@ -22,16 +21,13 @@ from custom_components.bms_ble.const import (
 
 from .basebms import BaseBMS, BMSsample
 
-LOGGER: Final = logging.getLogger(__name__)
-
 
 class BMS(BaseBMS):
     """Dummy battery class implementation."""
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -67,7 +63,7 @@ class BMS(BaseBMS):
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
-        # LOGGER.debug("%s: RX BLE data: %s", self.name, data.hex(' '))
+        # self._log.debug("%s: RX BLE data: %s", self.name, data)
         #
         # # do things like checking correctness of frame here and
         # # store it into a instance variable, e.g. self._data
@@ -76,7 +72,7 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        LOGGER.debug("%s: replace with command to UUID %s", self.name, BMS.uuid_tx())
+        self._log.debug("%s: replace with command to UUID %s", self.name, BMS.uuid_tx())
         # await self._send(b"<some_command>")
         # #
         # # parse data from self._data here
