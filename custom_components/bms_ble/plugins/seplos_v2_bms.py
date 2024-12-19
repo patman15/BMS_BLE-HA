@@ -1,6 +1,5 @@
 """Module to support Seplos V2 BMS."""
 
-import asyncio
 import logging
 from typing import Any, Callable, Final
 
@@ -29,7 +28,6 @@ from custom_components.bms_ble.const import (
 from .basebms import BaseBMS, BMSsample, crc_xmodem
 
 LOGGER = logging.getLogger(__name__)
-BAT_TIMEOUT = 10
 
 
 class BMS(BaseBMS):
@@ -221,10 +219,7 @@ class BMS(BaseBMS):
         """Update battery status information."""
 
         for cmd, data in BMS._CMDS:
-            await self._client.write_gatt_char(
-                BMS.uuid_tx(), data=BMS._cmd(cmd, data=bytearray(data))
-            )
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+            await self._send(BMS._cmd(cmd, data=bytearray(data)))
 
         result: BMSsample = {KEY_CELL_COUNT: int(self._data_final[0x61][BMS._CELL_POS])}
         result[KEY_TEMP_SENS] = int(

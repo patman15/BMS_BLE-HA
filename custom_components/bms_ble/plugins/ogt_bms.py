@@ -1,6 +1,5 @@
 """Module to support Offgridtec Smart Pro BMS."""
 
-import asyncio
 from collections.abc import Callable
 import logging
 from typing import Any, Final
@@ -26,7 +25,6 @@ from custom_components.bms_ble.const import (
 from .basebms import BaseBMS, BMSsample
 
 LOGGER: Final = logging.getLogger(__name__)
-BAT_TIMEOUT: Final = 1
 
 # magic crypt sequence of length 16
 CRYPT_SEQ: Final = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
@@ -35,6 +33,7 @@ CRYPT_SEQ: Final = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
 class BMS(BaseBMS):
     """Offgridtec LiFePO4 Smart Pro type A and type B battery class implementation."""
 
+    BAT_TIMEOUT: Final = 1
     IDX_NAME: Final = 0
     IDX_LEN: Final = 1
     IDX_FCT: Final = 2
@@ -130,13 +129,12 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         self._values = {}
-        for key in list(self._REGISTERS):
-            await self._read(key)
+        for reg in list(self._REGISTERS):
             try:
-                await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+                await self._send(data=self._ogt_command(reg))
             except TimeoutError:
-                LOGGER.debug("Reading %s timed out", self._REGISTERS[key][BMS.IDX_NAME])
-            if key > 48 and f"{KEY_CELL_VOLTAGE}{64-key}" not in self._values:
+                LOGGER.debug("Reading %s timed out", self._REGISTERS[reg][BMS.IDX_NAME])
+            if reg > 48 and f"{KEY_CELL_VOLTAGE}{64-reg}" not in self._values:
                 break
 
         # remove remaining runtime if battery is charging
@@ -146,7 +144,7 @@ class BMS(BaseBMS):
         return self._values
 
     def _notification_handler(self, sender, data: bytearray) -> None:
-        LOGGER.debug("%s: Received BLE data: %s", self.name, data)
+        LOGGER.debug("%s: RX BLE data: %s", self.name, data)
 
         valid, reg, nat_value = self._ogt_response(data)
 
@@ -193,10 +191,3 @@ class BMS(BaseBMS):
         LOGGER.debug("command: %s", cmd)
 
         return bytearray(ord(cmd[i]) ^ self._key for i in range(len(cmd)))
-
-    async def _read(self, reg: int) -> None:
-        """Read a specific BMS register."""
-
-        msg = self._ogt_command(reg)
-        LOGGER.debug("BLE cmd frame %s", msg)
-        await self._client.write_gatt_char(BMS.uuid_tx(), data=msg)

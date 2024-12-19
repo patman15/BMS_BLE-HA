@@ -1,6 +1,5 @@
 """Module to support CBT Power Smart BMS."""
 
-import asyncio
 from collections.abc import Callable
 import logging
 from typing import Any, Final
@@ -27,13 +26,13 @@ from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 from .basebms import BaseBMS, BMSsample, crc_sum
 
-BAT_TIMEOUT: Final = 1
 LOGGER: Final = logging.getLogger(__name__)
 
 
 class BMS(BaseBMS):
     """CBT Power Smart BMS class implementation."""
 
+    BAT_TIMEOUT: Final = 1
     HEAD: Final[bytes] = bytes([0xAA, 0x55])
     TAIL_RX: Final[bytes] = bytes([0x0D, 0x0A])
     TAIL_TX: Final[bytes] = bytes([0x0A, 0x0D])
@@ -102,7 +101,7 @@ class BMS(BaseBMS):
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Retrieve BMS data update."""
-        LOGGER.debug("%s: Received BLE data: %s", self.name, data)
+        LOGGER.debug("%s: RX BLE data: %s", self.name, data)
 
         # verify that data long enough
         if len(data) < BMS.MIN_FRAME or len(data) != BMS.MIN_FRAME + data[BMS.LEN_POS]:
@@ -167,11 +166,8 @@ class BMS(BaseBMS):
         resp_cache = {}  # variable to avoid multiple queries with same command
         for cmd in BMS._CMDS:
             LOGGER.debug("%s: request command 0x%X.", self.name, cmd)
-            await self._client.write_gatt_char(
-                BMS.uuid_tx(), data=BMS._gen_frame(cmd.to_bytes(1))
-            )
             try:
-                await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+                await self._send(BMS._gen_frame(cmd.to_bytes(1)))
             except TimeoutError:
                 continue
             if cmd != self._data[BMS.CMD_POS]:
@@ -185,11 +181,8 @@ class BMS(BaseBMS):
 
         voltages = {}
         for cmd in BMS.CELL_VOLTAGE_CMDS:
-            await self._client.write_gatt_char(
-                BMS.uuid_tx(), data=BMS._gen_frame(cmd.to_bytes(1))
-            )
             try:
-                await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+                await self._send(BMS._gen_frame(cmd.to_bytes(1)))
             except TimeoutError:
                 break
             voltages |= BMS._cell_voltages(self._data)
@@ -198,7 +191,7 @@ class BMS(BaseBMS):
                     voltages.pop(k)
                 break
 
-        data = BMS._decode_data(resp_cache)
+        data: BMSsample = BMS._decode_data(resp_cache)
 
         # get cycle charge from design capacity and SoC
         if data.get(KEY_DESIGN_CAP) and data.get(ATTR_BATTERY_LEVEL):

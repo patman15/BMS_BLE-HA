@@ -37,6 +37,8 @@ type BMSsample = dict[str, int | float | bool]
 class BaseBMS(metaclass=ABCMeta):
     """Base class for battery management system."""
 
+    BAT_TIMEOUT = 10
+
     def __init__(
         self,
         logger: logging.Logger,
@@ -194,6 +196,18 @@ class BaseBMS(metaclass=ABCMeta):
         )
         await self._init_characteristics()
 
+    async def _send(
+        self,
+        data: bytes,
+        char: BleakGATTCharacteristic | int | str | None = None,
+        wait_for_notify: bool = True,
+    ) -> None:
+        """Send data to the BMS and wait for notification."""
+
+        await self._client.write_gatt_char(char or self.uuid_tx(), data)
+        if wait_for_notify:
+            await asyncio.wait_for(self._wait_event(), timeout=self.BAT_TIMEOUT)
+
     async def disconnect(self) -> None:
         """Disconnect the BMS, includes stoping notifications."""
 
@@ -238,6 +252,7 @@ def crc_modbus(data: bytearray) -> int:
             crc = (crc >> 1) ^ 0xA001 if crc % 2 else (crc >> 1)
     return crc & 0xFFFF
 
+
 def crc_xmodem(data: bytearray) -> int:
     """Calculate CRC-16-CCITT XMODEM."""
     crc: int = 0x0000
@@ -246,6 +261,7 @@ def crc_xmodem(data: bytearray) -> int:
         for _ in range(8):
             crc = (crc << 1) ^ 0x1021 if (crc & 0x8000) else (crc << 1)
     return crc & 0xFFFF
+
 
 def crc_sum(frame: bytes) -> int:
     """Calculate frame CRC."""

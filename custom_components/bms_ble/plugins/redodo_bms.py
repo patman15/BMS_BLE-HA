@@ -1,6 +1,5 @@
 """Module to support Dummy BMS."""
 
-import asyncio
 import logging
 from typing import Any, Callable, Final
 
@@ -26,7 +25,6 @@ from custom_components.bms_ble.const import (
 from .basebms import BaseBMS, BMSsample, crc_sum
 
 LOGGER = logging.getLogger(__name__)
-BAT_TIMEOUT = 10
 
 
 class BMS(BaseBMS):
@@ -95,7 +93,7 @@ class BMS(BaseBMS):
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
-        LOGGER.debug("%s: Received BLE data: %s", self.name, data)
+        LOGGER.debug("%s: RX BLE data: %s", self.name, data)
 
         if len(data) < 3 or not data.startswith(b"\x00\x00"):
             LOGGER.debug("%s: incorrect SOF.")
@@ -133,7 +131,7 @@ class BMS(BaseBMS):
         }
 
     @staticmethod
-    def _temp_sensors( data: bytearray, sensors: int) -> dict[str, int]:
+    def _temp_sensors(data: bytearray, sensors: int) -> dict[str, int]:
         return {
             f"{KEY_TEMP_VALUE}{idx}": int.from_bytes(
                 data[52 + idx * 2 : 54 + idx * 2],
@@ -150,10 +148,7 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        await self._client.write_gatt_char(
-            BMS.uuid_tx(), data=b"\x00\x00\x04\x01\x13\x55\xaa\x17"
-        )
-        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+        await self._send(b"\x00\x00\x04\x01\x13\x55\xaa\x17")
 
         return (
             {

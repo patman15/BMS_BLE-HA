@@ -1,6 +1,5 @@
 """Module to support TDT BMS."""
 
-import asyncio
 import logging
 from typing import Any, Callable, Final
 
@@ -29,7 +28,6 @@ from custom_components.bms_ble.const import (
 from .basebms import BaseBMS, BMSsample, crc_modbus
 
 LOGGER = logging.getLogger(__name__)
-BAT_TIMEOUT = 10
 
 
 class BMS(BaseBMS):
@@ -106,7 +104,7 @@ class BMS(BaseBMS):
 
     async def _init_characteristics(self) -> None:
         try:
-            await self._client.write_gatt_char(BMS._UUID_CFG, data=b"HiLink")
+            await self._send(data=b"HiLink", char=BMS._UUID_CFG, wait_for_notify=False)
             if (
                 ret := int.from_bytes(await self._client.read_gatt_char(BMS._UUID_CFG))
             ) != 0x1:
@@ -118,7 +116,7 @@ class BMS(BaseBMS):
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
-        LOGGER.debug("%s: Received BLE data: %s", self.name, data)
+        LOGGER.debug("%s: RX BLE data: %s", self.name, data)
 
         if (
             data[0] == BMS._HEAD
@@ -230,8 +228,7 @@ class BMS(BaseBMS):
         """Update battery status information."""
 
         for cmd in BMS._CMDS:
-            await self._client.write_gatt_char(BMS.uuid_tx(), data=BMS._cmd(cmd))
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+            await self._send(BMS._cmd(cmd))
 
         result: BMSsample = {KEY_CELL_COUNT: int(self._data_final[0x8C][BMS._CELL_POS])}
         result[KEY_TEMP_SENS] = int(

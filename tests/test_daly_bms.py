@@ -16,9 +16,9 @@ from .conftest import MockBleakClient
 class MockDalyBleakClient(MockBleakClient):
     """Emulate a Daly BMS BleakClient."""
 
-    HEAD_READ = bytearray(b"\xD2\x03")
-    CMD_INFO = bytearray(b"\x00\x00\x00\x3E\xD7\xB9")
-    MOS_INFO = bytearray(b"\x00\x3E\x00\x09\xF7\xA3")
+    HEAD_READ = b"\xD2\x03"
+    CMD_INFO = b"\x00\x00\x00\x3E\xD7\xB9"
+    MOS_INFO = b"\x00\x3E\x00\x09\xF7\xA3"
     MOS_AVAIL: bool = True
 
     def _response(

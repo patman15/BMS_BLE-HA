@@ -1,6 +1,5 @@
 """Module to support Dummy BMS."""
 
-import asyncio
 from enum import IntEnum
 import logging
 from typing import Any, Callable, Final
@@ -25,7 +24,6 @@ from custom_components.bms_ble.const import (
 from .basebms import BaseBMS, BMSsample
 
 LOGGER = logging.getLogger(__name__)
-BAT_TIMEOUT = 10
 
 
 class Cmd(IntEnum):
@@ -38,7 +36,7 @@ class Cmd(IntEnum):
 class BMS(BaseBMS):
     """Dummy battery class implementation."""
 
-    _BT_MODULE_MSG: Final[bytes] = bytes([0x41, 0x54, 0x0D, 0x0A])  # AT\r\n from BLE module
+    _BT_MODULE_MSG: Final[bytes] = bytes([0x41, 0x54, 0x0D, 0x0A])  # BLE module message
     _HEAD: Final[int] = 0x3A
     _TAIL: Final[int] = 0x7E
     _MAX_CELLS: Final[int] = 16
@@ -154,7 +152,7 @@ class BMS(BaseBMS):
             int(self._data[1:3], 16),
             int(self._data[3:5], 16) & 0x7F,
             int(self._data[5:7], 16),
-            len(self._data)
+            len(self._data),
         )
         self._data_final = self._data.copy()
         self._data_event.set()
@@ -179,15 +177,14 @@ class BMS(BaseBMS):
 
         # query real-time information and capacity
         for cmd in [b":000250000E03~", b":001031000E05~"]:
-            await self._client.write_gatt_char(BMS.uuid_tx(), data=cmd)
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+            await self._send(cmd)
             rsp: int = int(self._data_final[3:5], 16) & 0x7F
             raw_data[rsp] = self._data_final
-            if rsp == Cmd.RT and len(self._data_final) == 0x8C: # handle metrisun version
+            if rsp == Cmd.RT and len(self._data_final) == 0x8C:
+                # handle metrisun version
                 LOGGER.debug("%s: single frame protocol detected", self.name)
                 raw_data[Cmd.CAP] = bytearray(15) + self._data_final[125:]
                 break
-
 
         return {
             key: func(int(raw_data[cmd.value][idx : idx + size], 16))

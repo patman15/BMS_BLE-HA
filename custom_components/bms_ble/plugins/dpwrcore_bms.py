@@ -1,6 +1,5 @@
 """Module to support D-powercore Smart BMS."""
 
-import asyncio
 from collections.abc import Callable
 from enum import Enum
 import logging
@@ -27,7 +26,6 @@ from custom_components.bms_ble.const import (
 
 from .basebms import BaseBMS, BMSsample
 
-BAT_TIMEOUT: Final = 10
 LOGGER: Final = logging.getLogger(__name__)
 
 
@@ -119,7 +117,7 @@ class BMS(BaseBMS):
         }
 
     async def _notification_handler(self, _sender, data: bytearray) -> None:
-        LOGGER.debug("%s: Received BLE data: %s", self.name, data)
+        LOGGER.debug("%s: RX BLE data: %s", self.name, data)
 
         if len(data) != BMS._PAGE_LEN:
             LOGGER.debug("%s: invalid page length (%i)", self.name, len(data))
@@ -130,9 +128,8 @@ class BMS(BaseBMS):
             LOGGER.debug("%s: ignore acknowledge message", self.name)
             return
 
-        await self._client.write_gatt_char(  # acknowledge received frame
-            BMS.uuid_tx(), bytearray([data[0] | 0x80]) + data[1:]
-        )
+        # acknowledge received frame
+        await self._send(bytearray([data[0] | 0x80]) + data[1:], wait_for_notify=False)
 
         size: Final[int] = int(data[0])
         page: Final[int] = int(data[1] >> 4)
@@ -187,9 +184,12 @@ class BMS(BaseBMS):
         # unlock BMS if not TBA version
         if not self.name.startswith("TBA-"):
             pwd = int(self.name[-4:], 16)
-            await self._client.write_gatt_char(
-                BMS.uuid_tx(),
-                BMS._cmd_frame(Cmd.UNLOCK, bytes([(pwd >> 8) & 0xFF, pwd & 0xFF])),
+            await self._send(
+                BMS._cmd_frame(
+                    Cmd.UNLOCK,
+                    bytes([(pwd >> 8) & 0xFF, pwd & 0xFF]),
+                ),
+                wait_for_notify=False,
             )
 
     @staticmethod
@@ -207,10 +207,7 @@ class BMS(BaseBMS):
         """Update battery status information."""
         data = {}
         for request in [Cmd.LEGINFO1, Cmd.LEGINFO2, Cmd.CELLVOLT]:
-            await self._client.write_gatt_char(
-                BMS.uuid_tx(), self._cmd_frame(request, b"")
-            )
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+            await self._send(self._cmd_frame(request, b""))
 
             if self._data_final is None:
                 continue

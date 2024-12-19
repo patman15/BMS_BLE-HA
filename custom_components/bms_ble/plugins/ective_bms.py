@@ -27,7 +27,6 @@ from custom_components.bms_ble.const import (
 from .basebms import BaseBMS, BMSsample
 
 LOGGER = logging.getLogger(__name__)
-BAT_TIMEOUT: Final[int] = 10
 
 
 class BMS(BaseBMS):
@@ -162,7 +161,7 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
-        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+        await asyncio.wait_for(self._wait_event(), timeout=self.BAT_TIMEOUT)
         return {
             key: func(BMS._conv_int(self._data_final[idx : idx + size], sign))
             for key, idx, size, sign, func in BMS._FIELDS

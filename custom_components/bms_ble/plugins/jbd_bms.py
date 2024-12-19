@@ -1,6 +1,5 @@
 """Module to support JBD Smart BMS."""
 
-import asyncio
 from collections.abc import Callable
 import logging
 from typing import Any, Final
@@ -27,7 +26,6 @@ from custom_components.bms_ble.const import (
 
 from .basebms import BaseBMS, BMSsample
 
-BAT_TIMEOUT: Final = 10
 LOGGER: Final = logging.getLogger(__name__)
 
 
@@ -191,9 +189,7 @@ class BMS(BaseBMS):
             (BMS._cmd(b"\x03"), BMS.BASIC_INFO, BMS._decode_data),
             (BMS._cmd(b"\x04"), 0, BMS._cell_voltages),
         ]:
-            await self._client.write_gatt_char(BMS.uuid_tx(), data=cmd)
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-
+            await self._send(cmd)
             if (
                 len(self._data_final) != BMS.INFO_LEN + self._data_final[3]
                 or len(self._data_final) < BMS.INFO_LEN + exp_len

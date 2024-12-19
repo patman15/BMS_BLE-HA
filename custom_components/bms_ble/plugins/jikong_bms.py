@@ -27,7 +27,6 @@ from custom_components.bms_ble.const import (
 
 from .basebms import BaseBMS, BMSsample, crc_sum
 
-BAT_TIMEOUT: Final = 10
 LOGGER: Final = logging.getLogger(__name__)
 
 
@@ -54,7 +53,7 @@ class BMS(BaseBMS):
         super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
         self._data_final: bytearray = bytearray()
-        self._char_write_handle: int | None = None
+        self._char_write_handle: int = -1
         self._bms_info: dict[str, str] = {}
         self._prot_offset: int = 0
         self._valid_reply: int = 0x02
@@ -166,8 +165,9 @@ class BMS(BaseBMS):
 
     async def _init_characteristics(self) -> None:
         """Initialize RX/TX characteristics."""
-        char_notify_handle: int | None = None
-        self._char_write_handle = None
+        char_notify_handle: int = -1
+        self._char_write_handle = -1
+
         for service in self._client.services:
             for char in service.characteristics:
                 LOGGER.debug(
@@ -187,7 +187,7 @@ class BMS(BaseBMS):
                         or "write-without-response" in char.properties
                     ):
                         self._char_write_handle = char.handle
-        if char_notify_handle is None or self._char_write_handle is None:
+        if char_notify_handle == -1 or self._char_write_handle == -1:
             LOGGER.debug("%s: Failed to detect characteristics.", self.name)
             await self._client.disconnect()
             raise ConnectionError(f"Failed to detect characteristics from {self.name}.")
@@ -197,23 +197,18 @@ class BMS(BaseBMS):
             char_notify_handle,
             self._char_write_handle,
         )
-        await self._client.start_notify(
-            char_notify_handle or 0, self._notification_handler
-        )
+        await self._client.start_notify(char_notify_handle, self._notification_handler)
 
         # query device info frame (0x03) and wait for BMS ready (0xC8)
         self._valid_reply = 0x03
-        await self._client.write_gatt_char(
-            self._char_write_handle or 0, data=self._cmd(b"\x97")
-        )
-        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+        await self._send(self._cmd(b"\x97"), char=self._char_write_handle)
         self._bms_info = BMS._dec_devinfo(self._data_final or bytearray())
         LOGGER.debug("%s: device information: %s", self.name, self._bms_info)
         self._prot_offset = (
             -32 if int(self._bms_info.get("sw_version", "")[:2]) < 11 else 0
         )
         self._valid_reply = 0xC8  # BMS ready confirmation
-        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+        await asyncio.wait_for(self._wait_event(), timeout=self.BAT_TIMEOUT)
         self._valid_reply = 0x02  # cell information
 
     @staticmethod
@@ -294,10 +289,7 @@ class BMS(BaseBMS):
         if not self._data_event.is_set() or self._data_final[4] != 0x02:
             # request cell info (only if data is not constantly published)
             LOGGER.debug("%s: request cell info", self.name)
-            await self._client.write_gatt_char(
-                self._char_write_handle or 0, data=BMS._cmd(b"\x96")
-            )
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+            await self._send(data=BMS._cmd(b"\x96"), char=self._char_write_handle)
 
         data: BMSsample = self._decode_data(self._data_final, self._prot_offset)
         data.update(BMS._temp_sensors(self._data_final, self._prot_offset))
