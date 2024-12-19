@@ -23,7 +23,7 @@ from custom_components.bms_ble.const import (
 
 from .basebms import BaseBMS, BMSsample
 
-LOGGER = logging.getLogger(__name__)
+LOGGER: Final = logging.getLogger(__name__)
 
 
 class Cmd(IntEnum):
