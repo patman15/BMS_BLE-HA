@@ -59,13 +59,19 @@ class BaseBMS(metaclass=ABCMeta):
         self._ble_device: Final = ble_device
         self._reconnect: Final[bool] = reconnect
         self.name: Final[str] = self._ble_device.name or "undefined"
-        self._log: Final[logging.Logger] = logging.getLogger(logger_name or __name__)
-        self._log.addFilter(
-            lambda record: setattr(record, "msg", f"{self.name}: {record.msg}") or True
-        )
+        self._log: Final[logging.Logger] = logging.getLogger(logger_name)
+        if not self._log.filters:
+            self._log.addFilter(  # add BMS name and 2 bytes of MAC as prefix to all messages
+                lambda record: setattr(
+                    record,
+                    "msg",
+                    f"{self.name}[{self._ble_device.address[-5:]}]: {record.msg}",
+                )
+                or True
+            )
 
         self._log.debug(
-            "(%s) init(), BT address: %s",
+            "initializing %s, BT address: %s",
             self.device_id(),
             ble_device.address,
         )
@@ -183,7 +189,7 @@ class BaseBMS(metaclass=ABCMeta):
     def _on_disconnect(self, _client: BleakClient) -> None:
         """Disconnect callback function."""
 
-        self._log.debug("disconnected from BMS (%s)")
+        self._log.debug("disconnected from BMS")
 
     async def _init_characteristics(self) -> None:
         await self._client.start_notify(self.uuid_rx(), self._notification_method)
@@ -192,10 +198,10 @@ class BaseBMS(metaclass=ABCMeta):
         """Connect to the BMS and setup notification if not connected."""
 
         if self._client.is_connected:
-            self._log.debug("BMS (%s) already connected", self._ble_device.address)
+            self._log.debug("BMS already connected")
             return
 
-        self._log.debug("connecting BMS (%s)", self._ble_device.address)
+        self._log.debug("connecting BMS")
         self._client: BleakClient = await establish_connection(
             client_class=BleakClient,
             device=self._ble_device,
@@ -222,7 +228,7 @@ class BaseBMS(metaclass=ABCMeta):
         """Disconnect the BMS, includes stoping notifications."""
 
         if self._client.is_connected:
-            self._log.debug("disconnecting BMS (%s)", self._client.address)
+            self._log.debug("disconnecting BMS")
             try:
                 self._data_event.clear()
                 await self._client.disconnect()

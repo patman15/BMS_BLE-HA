@@ -6,6 +6,7 @@ from time import monotonic
 
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
+from habluetooth import BluetoothServiceInfoBleak
 
 from homeassistant.components.bluetooth import async_last_service_info
 from homeassistant.components.bluetooth.const import DOMAIN as BLUETOOTH_DOMAIN
@@ -69,7 +70,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
     def rssi(self) -> int | None:
         """Return RSSI value for target BMS."""
 
-        service_info = async_last_service_info(
+        service_info: BluetoothServiceInfoBleak | None = async_last_service_info(
             self.hass, address=self._mac, connectable=True
         )
         return service_info.rssi if service_info else None
