@@ -55,7 +55,7 @@ Platform | Description | Unit | Details
 `sensor` | runtime | `s` | remaining discharge time till SoC 0%, `unavailable` during idle/charging
 `sensor` | SoC | `%` | state of charge, range 100% (full) to 0% (battery empty)
 `sensor` | stored energy | `Wh` | currently stored energy
-`sensor` | temperature | `°C` | individual temperature values are available as attribute to this sensor, if the BMS supports multiple sensors
+`sensor` | temperature | `°C` | (average) battery temperature; if the BMS supports multiple sensors, individual temperature values are available as attribute to this sensor
 `sensor` | voltage | `V` | overall battery voltage
 `sensor`* | link quality  | `%` | successful BMS queries from the last hundred update periods
 `sensor`* | RSSI          | `dBm`| received signal strength indicator 
