@@ -1,6 +1,7 @@
 """Module to support Dummy BMS."""
 
-from typing import Any, Callable, Final
+from collections.abc import Callable
+from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str

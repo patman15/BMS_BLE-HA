@@ -1,7 +1,8 @@
 """Module to support Dummy BMS."""
 
+from collections.abc import Callable
 from enum import IntEnum
-from typing import Any, Callable, Final
+from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
 

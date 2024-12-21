@@ -8,6 +8,7 @@ classifiers = [
 ]
 description = "Integration that allows monitoring of Bluetooth Low Energy (BLE) battery management systems (BMS) from within Home Assistant."
 readme      = "README.md"
+requires-python = ">= 3.12"
 
 [project.urls]
 "Source Code" = "https://github.com/patman15/BMS_BLE-HA"

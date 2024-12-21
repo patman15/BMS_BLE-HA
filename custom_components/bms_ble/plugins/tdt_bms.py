@@ -1,6 +1,7 @@
 """Module to support TDT BMS."""
 
-from typing import Any, Callable, Final
+from collections.abc import Callable
+from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
