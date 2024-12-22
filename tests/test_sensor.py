@@ -64,7 +64,7 @@ async def test_update(monkeypatch, patch_bleakclient, BTdiscovery, hass: HomeAss
     assert data == {
         f"sensor.smartbat_b12345_{ATTR_VOLTAGE}": "12",
         "sensor.smartbat_b12345_battery": "unknown",
-        f"sensor.smartbat_b12345_{ATTR_TEMPERATURE}": "unknown",
+        f"sensor.smartbat_b12345_{ATTR_TEMPERATURE}": "27.182",
         f"sensor.smartbat_b12345_{ATTR_CURRENT}": "1.5",
         "sensor.smartbat_b12345_stored_energy": "unknown",
         f"sensor.smartbat_b12345_{ATTR_CYCLES}": "unknown",
@@ -74,6 +74,12 @@ async def test_update(monkeypatch, patch_bleakclient, BTdiscovery, hass: HomeAss
         "sensor.smartbat_b12345_signal_strength": "-127",
         f"sensor.smartbat_b12345_{ATTR_RUNTIME}": "unknown",
     }
+    # check temperature sensor has individual sensors as attribute array
+    temp_state = hass.states.get(f"sensor.smartbat_b12345_{ATTR_TEMPERATURE}")
+    assert temp_state is not None and temp_state.attributes[
+        ATTR_TEMP_SENSORS
+    ] == [27.182]
+
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.dummy_bms.BMS.async_update",

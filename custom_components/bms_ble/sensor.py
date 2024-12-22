@@ -185,13 +185,16 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
             }
         # add individual temperature values to temperature sensor
         if self.entity_description.key == ATTR_TEMPERATURE:
-            return {
-                ATTR_TEMP_SENSORS: [
-                    v
-                    for k, v in self.coordinator.data.items()
-                    if k.startswith(KEY_TEMP_VALUE)
-                ]
-            }
+            temp_sensors: Final = [
+                v
+                for k, v in self.coordinator.data.items()
+                if k.startswith(KEY_TEMP_VALUE)
+            ]
+            if temp_sensors:
+                return {ATTR_TEMP_SENSORS: temp_sensors}
+            if temp := self.coordinator.data.get(ATTR_TEMPERATURE):
+                return {ATTR_TEMP_SENSORS: [temp]}
+
         return None
 
     @property

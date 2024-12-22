@@ -15,7 +15,7 @@ from custom_components.bms_ble.const import (
     # ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     # ATTR_RUNTIME,
-    # ATTR_TEMPERATURE,
+    ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
 )
 
@@ -80,4 +80,5 @@ class BMS(BaseBMS):
         return {
             ATTR_VOLTAGE: 12,
             ATTR_CURRENT: 1.5,
+            ATTR_TEMPERATURE: 27.182,
         }  # fixed values, replace parsed data
