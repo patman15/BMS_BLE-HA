@@ -1,0 +1,64 @@
+[
+    {
+        "local_name": "SP05B2312190075       ",
+        "service_uuids": ["0000fff0-0000-1000-8000-00805f9b34fb"],
+        "tx_power": -127,
+        "rssi": -76,
+        "label": "seplos_bms"
+    },
+    {
+        "local_name": "LT-12V-1544",
+        "manufacturer_data": {"33384": "0102000781b54e"},
+        "tx_power": -127,
+        "rssi": -71,
+        "label": "ej_bms"
+    },
+    {
+        "local_name": "JK_B2A8S20P",
+        "manufacturer_data": {"2917": "88a0c847801488b7"},
+        "service_uuids": [
+            "00001800-0000-1000-8000-00805f9b34fb",
+            "00001801-0000-1000-8000-00805f9b34fb",
+            "0000180a-0000-1000-8000-00805f9b34fb",
+            "0000180f-0000-1000-8000-00805f9b34fb",
+            "0000fee7-0000-1000-8000-00805f9b34fb",
+            "0000ffe0-0000-1000-8000-00805f9b34fb",
+            "f000ffc0-0451-4000-b000-000000000000"
+        ],
+        "rssi": -67,
+        "label": "jikong_bms"
+    },
+    {
+        "local_name": "JK-BMS-B",
+        "manufacturer_data": {"2917": "88a0c8478cea6a2b"},
+        "service_uuids": [
+            "0000ffe0-0000-1000-8000-00805f9b34fb",
+            "0000fee7-0000-1000-8000-00805f9b34fb"
+        ],
+        "rssi": -32,
+        "label": "jikong_bms"
+    },
+    {
+        "local_name": "BatteryOben-00",
+        "manufacturer_data": {"2917": "88a0c847800fd5c5"},
+        "service_uuids": ["0000ffe0-0000-1000-8000-00805f9b34fb"],
+        "tx_power": -127,
+        "rssi": -83,
+        "label": "jikong_bms"
+    },
+    {
+        "local_name": "BatterieUnten-01",
+        "manufacturer_data": {"2917": "88a0c847800d086b"},
+        "service_uuids": ["0000ffe0-0000-1000-8000-00805f9b34fb"],
+        "tx_power": -127,
+        "rssi": -68,
+        "label": "jikong_bms"
+    },
+    {
+        "local_name": "BP01",
+        "service_uuids": ["0000ff00-0000-1000-8000-00805f9b34fb"],
+        "tx_power": -127,
+        "rssi": -73,
+        "label": "seplos_v2_bms"
+    }
+]
