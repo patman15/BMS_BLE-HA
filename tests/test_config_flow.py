@@ -1,7 +1,5 @@
 """Test the BLE Battery Management System integration config flow."""
 
-import json
-from pathlib import Path
 from typing import Final
 
 from bleak.backends.scanner import AdvertisementData
@@ -22,6 +20,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er
 
+from .advertisement_data import ADVERTISEMENTS
 from .bluetooth import (
     generate_advertisement_data,
     generate_ble_device,
@@ -30,30 +29,9 @@ from .bluetooth import (
 from .conftest import mock_config, mock_update_min
 
 
-def load_advertisement_data():
-    """Load advertisement data from file."""
-    with Path("tests/advertisement_data.json").open(encoding="utf-8") as file:
-        return json.load(file)
-
-
 @pytest.fixture(
     name="advertisement",
-    params=[
-        (
-            generate_advertisement_data(
-                local_name=item["local_name"],
-                service_uuids=item.get("service_uuids", []),
-                manufacturer_data={
-                    int(k): bytes.fromhex(v)
-                    for k, v in item.get("manufacturer_data", {}).items()
-                },
-                tx_power=item.get("tx_power"),
-                rssi=item["rssi"],
-            ),
-            item["label"],
-        )
-        for item in load_advertisement_data()
-    ],
+    params=ADVERTISEMENTS,
     ids=lambda param: param[1],
 )
 def bms_advertisement(request) -> BluetoothServiceInfoBleak:
