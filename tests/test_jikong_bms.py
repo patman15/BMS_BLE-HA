@@ -39,9 +39,8 @@ _PROTO_DEFS: Final[dict[str, dict[str, bytearray]]] = {
             b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x93"
         ),
         "ack": bytearray(
-            #b"\xaa\x55\x90\xeb\xc8\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x44"
             b"\xaa\x55\x90\xeb\xc8\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x44\x41\x54\x0d\x0a"
-        ),
+        ),  # ACKnowledge message with attached AT\r\n message (needs to be filtered)
         "cell": bytearray(  # JK02_24S (SW: 10.08)
             b"\x55\xaa\xeb\x90\x02\xc8\xee\x0c\xf2\x0c\xf1\x0c\xf0\x0c\xf0\x0c\xec\x0c\xf0\x0c\xed\x0c"
             b"\xed\x0c\xed\x0c\xed\x0c\xf0\x0c\xf1\x0c\xed\x0c\xee\x0c\xed\x0c\x00\x00\x00\x00\x00\x00"
@@ -77,9 +76,8 @@ _PROTO_DEFS: Final[dict[str, dict[str, bytearray]]] = {
             b"\x00\xfe\xbf\x21\x06\x00\x00\x00\x00\x00\x00\x00\x00\xd8"
         ),  # Vendor_ID: JK_B2A8S20P, SN: 404092C2262, HW: V11.XA, SW: V11.48, power-on: 7, Version: 4.28.0
         "ack": bytearray(
-            #b"\xaa\x55\x90\xeb\xc8\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x44"
             b"\xaa\x55\x90\xeb\xc8\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x44\x41\x54\x0d\x0a"
-        ),
+        ),  # ACKnowledge message with attached AT\r\n message (needs to be filtered)
         "cell": bytearray(
             b"\x55\xaa\xeb\x90\x02\xc6\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c"
             b"\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\x00\x00\x00\x00\x00\x00"
@@ -525,7 +523,9 @@ async def test_stream_update(monkeypatch, protocol_type, reconnect_fixture) -> N
 async def test_invalid_response(monkeypatch) -> None:
     """Test data update with BMS returning invalid data."""
 
-    monkeypatch.setattr("custom_components.bms_ble.plugins.jikong_bms.BMS.BAT_TIMEOUT", 0.1)
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.jikong_bms.BMS.BAT_TIMEOUT", 0.1
+    )
 
     # return type 0x03 (first requested message) with incorrect CRC
     monkeypatch.setattr(
