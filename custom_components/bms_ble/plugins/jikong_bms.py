@@ -135,6 +135,7 @@ class BMS(BaseBMS):
 
         # trim AT\r\n message from the end
         if self._data.endswith(BMS.BT_MODULE_MSG):
+            self._log.debug("trimming AT cmd")
             self._data = self._data[: -len(BMS.BT_MODULE_MSG)]
 
         # trim message in case oversized
