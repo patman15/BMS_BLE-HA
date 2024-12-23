@@ -107,7 +107,7 @@ class BMS(BaseBMS):
 
         if (
             len(self._data) >= self.INFO_LEN
-            and (data.startswith((BMS.HEAD_RSP, self.HEAD_CMD)))
+            and (data.startswith((BMS.HEAD_RSP, BMS.HEAD_CMD)))
         ) or not self._data.startswith(BMS.HEAD_RSP):
             self._data = bytearray()
 
@@ -133,12 +133,17 @@ class BMS(BaseBMS):
             )
             return
 
+        # trim AT\r\n message from the end
+        if self._data.endswith(BMS.BT_MODULE_MSG):
+            self._log.debug("trimming AT cmd")
+            self._data = self._data[: -len(BMS.BT_MODULE_MSG)]
+
         # trim message in case oversized
         if len(self._data) > BMS.INFO_LEN:
             self._log.debug("wrong data length (%i): %s", len(self._data), self._data)
             self._data = self._data[: BMS.INFO_LEN]
 
-        crc = crc_sum(self._data[:-1])
+        crc: int = crc_sum(self._data[:-1])
         if self._data[-1] != crc:
             self._log.debug("invalid checksum 0x%X != 0x%X", self._data[-1], crc)
             return
