@@ -57,7 +57,7 @@ def bms_advertisement(request) -> BluetoothServiceInfoBleak:
 
 
 async def test_device_discovery(
-    advertisement: BluetoothServiceInfoBleak, hass: HomeAssistant
+    patch_bleakclient, advertisement: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
     """Test discovery via bluetooth with a valid device."""
 
@@ -70,8 +70,6 @@ async def test_device_discovery(
     assert result.get("type") == FlowResultType.FORM
     assert result.get("step_id") == "bluetooth_confirm"
     assert result.get("description_placeholders") == {"name": advertisement.name}
-
-    inject_bluetooth_service_info_bleak(hass, advertisement)
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], user_input={"not": "empty"}
