@@ -37,7 +37,7 @@ type BMSsample = dict[str, int | float | bool]
 class BaseBMS(metaclass=ABCMeta):
     """Base class for battery management system."""
 
-    BAT_TIMEOUT = 10
+    BAT_TIMEOUT: float = 10
 
     def __init__(
         self,
@@ -134,7 +134,7 @@ class BaseBMS(metaclass=ABCMeta):
         return set()
 
     @staticmethod
-    def _add_missing_values(data: BMSsample, values: set[str]):
+    def _add_missing_values(data: BMSsample, values: set[str]) -> None:
         """Calculate missing BMS values from existing ones.
 
         data: data dictionary from BMS
@@ -202,7 +202,7 @@ class BaseBMS(metaclass=ABCMeta):
             return
 
         self._log.debug("connecting BMS")
-        self._client: BleakClient = await establish_connection(
+        self._client = await establish_connection(
             client_class=BleakClient,
             device=self._ble_device,
             name=self._ble_device.address,

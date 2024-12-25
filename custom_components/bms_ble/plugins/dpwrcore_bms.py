@@ -203,7 +203,7 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        data = {}
+        data: BMSsample = {}
         for request in [Cmd.LEGINFO1, Cmd.LEGINFO2, Cmd.CELLVOLT]:
             await self._await_reply(self._cmd_frame(request, b""))
 

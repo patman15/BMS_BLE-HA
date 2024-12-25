@@ -29,7 +29,7 @@ from .basebms import BaseBMS, BMSsample, crc_sum
 class BMS(BaseBMS):
     """CBT Power Smart BMS class implementation."""
 
-    BAT_TIMEOUT: Final = 1
+    BAT_TIMEOUT = 1
     HEAD: Final[bytes] = bytes([0xAA, 0x55])
     TAIL_RX: Final[bytes] = bytes([0x0D, 0x0A])
     TAIL_TX: Final[bytes] = bytes([0x0A, 0x0D])
@@ -172,7 +172,7 @@ class BMS(BaseBMS):
                 )
             resp_cache[self._data[BMS.CMD_POS]] = self._data.copy()
 
-        voltages = {}
+        voltages: dict[str, float] = {}
         for cmd in BMS.CELL_VOLTAGE_CMDS:
             try:
                 await self._await_reply(BMS._gen_frame(cmd.to_bytes(1)))
