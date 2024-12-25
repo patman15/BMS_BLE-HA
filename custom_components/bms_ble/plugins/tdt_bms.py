@@ -4,7 +4,6 @@ from collections.abc import Callable
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
-from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 
 from custom_components.bms_ble.const import (
