@@ -175,20 +175,22 @@ class BMS(BaseBMS):
 
         return frame
 
-    async def _init_characteristics(self) -> None:
+    async def _init_connection(self) -> None:
         """Connect to the BMS and setup notification if not connected."""
-        await super()._init_characteristics()
+        await super()._init_connection()
 
         # unlock BMS if not TBA version
-        if not self.name.startswith("TBA-"):
-            pwd = int(self.name[-4:], 16)
-            await self._await_reply(
-                BMS._cmd_frame(
-                    Cmd.UNLOCK,
-                    bytes([(pwd >> 8) & 0xFF, pwd & 0xFF]),
-                ),
-                wait_for_notify=False,
-            )
+        if self.name.startswith("TBA-"):
+            return
+
+        pwd = int(self.name[-4:], 16)
+        await self._await_reply(
+            BMS._cmd_frame(
+                Cmd.UNLOCK,
+                bytes([(pwd >> 8) & 0xFF, pwd & 0xFF]),
+            ),
+            wait_for_notify=False,
+        )
 
     @staticmethod
     def _cell_voltages(data: bytearray, cells: int) -> dict[str, float]:
