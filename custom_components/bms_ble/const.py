@@ -29,6 +29,7 @@ LOGGER: Final = logging.getLogger(__package__)
 UPDATE_INTERVAL: Final[int] = 30  # [s]
 
 # attributes (do not change)
+ATTR_BALANCE_CUR: Final[str] = "balance_current"  # [A]
 ATTR_CELL_VOLTAGES: Final[str] = "cell_voltages"  # [V]
 ATTR_CURRENT: Final[str] = "current"  # [A]
 ATTR_CYCLE_CAP: Final[str] = "cycle_capacity"  # [Wh]

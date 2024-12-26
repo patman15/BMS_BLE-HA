@@ -5,6 +5,7 @@ from datetime import timedelta
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
 from custom_components.bms_ble.const import (
+    ATTR_BALANCE_CUR,
     ATTR_CELL_VOLTAGES,
     ATTR_CURRENT,
     ATTR_CYCLES,
@@ -33,6 +34,7 @@ async def test_update(
     async def patch_async_update(_self):
         """Patch async_update to return a specific value."""
         return {
+            "balance_current": -1.234,
             "voltage": 17.0,
             "current": 0,
             "cell#0": 3,
@@ -118,12 +120,12 @@ async def test_update(
     temp_state = hass.states.get(f"sensor.smartbat_b12345_{ATTR_TEMPERATURE}")
     assert (
         temp_state is not None
-        and temp_state.attributes[ATTR_TEMP_SENSORS]
-        == [
-            73,
-            31.4,
-            27.18,
-        ]
+        and temp_state.attributes[ATTR_TEMP_SENSORS] == [73, 31.4, 27.18]
         if bool_fixture
         else [temp_state]
     )
+    # check balance current as attribute
+    current_state = hass.states.get(f"sensor.smartbat_b12345_{ATTR_CURRENT}")
+    assert current_state is not None and current_state.attributes[ATTR_BALANCE_CUR] == [
+        -1.234
+    ]

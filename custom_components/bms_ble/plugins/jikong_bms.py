@@ -8,6 +8,7 @@ from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
 from custom_components.bms_ble.const import (
+    ATTR_BALANCE_CUR,
     ATTR_BATTERY_CHARGING,
     ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
@@ -42,6 +43,7 @@ class BMS(BaseBMS):
             (ATTR_BATTERY_LEVEL, 173, 1, False, lambda x: x),
             (ATTR_CYCLE_CHRG, 174, 4, False, lambda x: float(x / 1000)),
             (ATTR_CYCLES, 182, 4, False, lambda x: x),
+            (ATTR_BALANCE_CUR, 170, 2, True, lambda x: float(x / 1000)),
         ]
     )
 
