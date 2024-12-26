@@ -25,6 +25,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import BTBmsConfigEntry
 from .const import (
+    ATTR_BALANCE_CUR,
     ATTR_CELL_VOLTAGES,
     ATTR_CURRENT,
     ATTR_CYCLE_CAP,
@@ -194,7 +195,12 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
                 return {ATTR_TEMP_SENSORS: temp_sensors}
             if temp := self.coordinator.data.get(ATTR_TEMPERATURE):
                 return {ATTR_TEMP_SENSORS: [temp]}
-
+        # add balance current as attribute to current sensor
+        if (
+            self.entity_description.key == ATTR_CURRENT
+            and ATTR_BALANCE_CUR in self.coordinator.data
+        ):
+            return {ATTR_BALANCE_CUR: [self.coordinator.data[ATTR_BALANCE_CUR]]}
         return None
 
     @property

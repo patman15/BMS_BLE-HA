@@ -8,6 +8,7 @@ from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
 from custom_components.bms_ble.const import (
+    ATTR_BALANCE_CUR,
     ATTR_BATTERY_CHARGING,
     ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
@@ -42,6 +43,7 @@ class BMS(BaseBMS):
             (ATTR_BATTERY_LEVEL, 173, 1, False, lambda x: x),
             (ATTR_CYCLE_CHRG, 174, 4, False, lambda x: float(x / 1000)),
             (ATTR_CYCLES, 182, 4, False, lambda x: x),
+            (ATTR_BALANCE_CUR, 170, 2, True, lambda x: float(x / 1000)),
         ]
     )
 
@@ -148,10 +150,10 @@ class BMS(BaseBMS):
             self._log.debug("invalid checksum 0x%X != 0x%X", self._data[-1], crc)
             return
 
-        self._data_final = self._data
+        self._data_final = self._data.copy()
         self._data_event.set()
 
-    async def _init_characteristics(self) -> None:
+    async def _init_connection(self) -> None:
         """Initialize RX/TX characteristics."""
         char_notify_handle: int = -1
         self._char_write_handle = -1
@@ -180,7 +182,8 @@ class BMS(BaseBMS):
             char_notify_handle,
             self._char_write_handle,
         )
-        await self._client.start_notify(char_notify_handle, self._notification_handler)
+
+        await super()._init_connection()
 
         # query device info frame (0x03) and wait for BMS ready (0xC8)
         self._valid_reply = 0x03

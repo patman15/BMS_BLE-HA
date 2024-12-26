@@ -4,7 +4,6 @@ from collections.abc import Callable
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
-from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 
 from custom_components.bms_ble.const import (
@@ -99,19 +98,16 @@ class BMS(BaseBMS):
             ATTR_TEMPERATURE,
         }  # calculate further values from BMS provided set ones
 
-    async def _init_characteristics(self) -> None:
-        try:
-            await self._await_reply(
-                data=b"HiLink", char=BMS._UUID_CFG, wait_for_notify=False
-            )
-            if (
-                ret := int.from_bytes(await self._client.read_gatt_char(BMS._UUID_CFG))
-            ) != 0x1:
-                self._log.debug("error initializing BMS: %X", ret)
-        except (BleakError, EOFError) as err:
-            self._log.debug("failed to intialize BMS: %s", err)
+    async def _init_connection(self) -> None:
+        await self._await_reply(
+            data=b"HiLink", char=BMS._UUID_CFG, wait_for_notify=False
+        )
+        if (
+            ret := int.from_bytes(await self._client.read_gatt_char(BMS._UUID_CFG))
+        ) != 0x1:
+            self._log.debug("error unlocking BMS: %X", ret)
 
-        await super()._init_characteristics()
+        await super()._init_connection()
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
