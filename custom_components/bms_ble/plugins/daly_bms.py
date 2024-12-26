@@ -122,7 +122,7 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        data = {}
+        data: BMSsample = {}
         try:
             # request MOS temperature (possible outcome: response, empty response, no response)
             await self._await_reply(BMS.HEAD_READ + BMS.MOS_INFO)

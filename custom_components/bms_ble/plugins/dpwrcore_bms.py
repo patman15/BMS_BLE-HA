@@ -1,7 +1,7 @@
 """Module to support D-powercore Smart BMS."""
 
 from collections.abc import Callable
-from enum import Enum
+from enum import IntEnum
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
@@ -26,7 +26,7 @@ from custom_components.bms_ble.const import (
 from .basebms import BaseBMS, BMSsample
 
 
-class Cmd(Enum):
+class Cmd(IntEnum):
     """BMS operation codes."""
 
     UNLOCKACC = 0x32

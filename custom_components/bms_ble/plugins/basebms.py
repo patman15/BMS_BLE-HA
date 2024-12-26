@@ -2,7 +2,7 @@
 
 from abc import ABCMeta, abstractmethod
 import asyncio
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
 import logging
 from statistics import fmean
 from typing import Any, Final
@@ -42,9 +42,7 @@ class BaseBMS(metaclass=ABCMeta):
     def __init__(
         self,
         logger_name: str,
-        notification_handler: Callable[
-            [BleakGATTCharacteristic, bytearray], None | Awaitable[None]
-        ],
+        notification_handler: Callable[[BleakGATTCharacteristic, bytearray], None],
         ble_device: BLEDevice,
         reconnect: bool = False,
     ) -> None:
@@ -55,7 +53,9 @@ class BaseBMS(metaclass=ABCMeta):
         ble_device: the Bleak device to connect to
         reconnect: if true, the connection will be closed after each update
         """
-        self._notification_method: Final = notification_handler
+        self._notification_method: Final[
+            Callable[[BleakGATTCharacteristic, bytearray], None]
+        ] = notification_handler
         self._ble_device: Final = ble_device
         self._reconnect: Final[bool] = reconnect
         self.name: Final[str] = self._ble_device.name or "undefined"
@@ -75,7 +75,7 @@ class BaseBMS(metaclass=ABCMeta):
             self.device_id(),
             ble_device.address,
         )
-        self._client = BleakClient(
+        self._client: BleakClient = BleakClient(
             self._ble_device,
             disconnected_callback=self._on_disconnect,
             services=[*self.uuid_services()],
@@ -148,16 +148,17 @@ class BaseBMS(metaclass=ABCMeta):
             return (value in values) and (value not in data) and using.issubset(data)
 
         # calculate total voltage (sum of all cell voltages)
+        cell_voltages: list[float]
         if can_calc(ATTR_VOLTAGE, frozenset({f"{KEY_CELL_VOLTAGE}0"})):
             cell_voltages = [
-                v for k, v in data.items() if k.startswith(KEY_CELL_VOLTAGE)
+                float(v) for k, v in data.items() if k.startswith(KEY_CELL_VOLTAGE)
             ]
             data[ATTR_VOLTAGE] = round(sum(cell_voltages), 3)
 
         # calculate delta voltage (maximum cell voltage difference)
         if can_calc(ATTR_DELTA_VOLTAGE, frozenset({f"{KEY_CELL_VOLTAGE}1"})):
             cell_voltages = [
-                v for k, v in data.items() if k.startswith(KEY_CELL_VOLTAGE)
+                float(v) for k, v in data.items() if k.startswith(KEY_CELL_VOLTAGE)
             ]
             data[ATTR_DELTA_VOLTAGE] = round(max(cell_voltages) - min(cell_voltages), 3)
 

@@ -144,7 +144,7 @@ class BMS(BaseBMS):
 
     @staticmethod
     def _decode_data(data: bytearray) -> dict[str, int | float]:
-        result = {
+        result: dict[str, int | float] = {
             key: func(
                 int.from_bytes(data[idx : idx + size], byteorder="big", signed=sign)
             )
@@ -175,7 +175,7 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        data = {}
+        data: BMSsample = {}
         for cmd, exp_len, dec_fct in [
             (BMS._cmd(b"\x03"), BMS.BASIC_INFO, BMS._decode_data),
             (BMS._cmd(b"\x04"), 0, BMS._cell_voltages),

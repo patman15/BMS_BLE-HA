@@ -147,7 +147,7 @@ class BMS(BaseBMS):
 
     @staticmethod
     def _decode_data(cache: dict[int, bytearray]) -> BMSsample:
-        data = {}
+        data: BMSsample = {}
         for field, cmd, pos, size, sign, fct in BMS._FIELDS:
             if cmd in cache:
                 data[field] = fct(
@@ -157,7 +157,7 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        resp_cache = {}  # variable to avoid multiple queries with same command
+        resp_cache: dict[int, bytearray] = {}  # avoid multiple queries
         for cmd in BMS._CMDS:
             self._log.debug("request command 0x%X.", cmd)
             try:

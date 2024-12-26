@@ -67,7 +67,7 @@ class BMS(BaseBMS):
         self._data: bytearray = bytearray()
         self._pkglen: int = 0  # expected packet length
         self._data_final: dict[int, bytearray] = {}
-        self._pack_count = 0
+        self._pack_count: int = 0
         self._char_write_handle: int | None = None
 
     @staticmethod
@@ -201,7 +201,7 @@ class BMS(BaseBMS):
             if BMS.QUERY[block][2] * 2 not in self._data_final:
                 return {}
 
-        data = {
+        data: BMSsample = {
             key: func(
                 int.from_bytes(
                     self._data_final[msg * 2][
@@ -219,7 +219,7 @@ class BMS(BaseBMS):
             await self._await_reply(self._cmd(pack, *BMS.QUERY["PIB"]))
             # get cell voltages
             if pack << 8 | BMS.PIB_LEN * 2 in self._data_final:
-                pack_cells = [
+                pack_cells: list[float] = [
                     float(
                         int.from_bytes(
                             self._data_final[pack << 8 | BMS.PIB_LEN * 2][
