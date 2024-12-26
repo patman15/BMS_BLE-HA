@@ -36,7 +36,7 @@ class MockCBTpwrBleakClient(MockBleakClient):
                 b"\xAA\x55\x06\x0A\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x10\x0D\x0A"
             ),  # cell voltage info (no additional cells)
             0x09: bytearray(
-                b"\xAA\x55\x09\x0C\x15\x00\x15\x00\x00\x00\x00\x00\x00\x00\x00\x00\x3F\x0D\x0A"
+                b"\xAA\x55\x09\x0C\xFE\xFF\xFE\xFF\x00\x00\x00\x00\x00\x00\x00\x00\x0F\x0D\x0A"
             ),  # temperature frame
             0x0B: bytearray(
                 b"\xAA\x55\x0B\x08\x58\x34\x00\x00\xBC\xF3\xFF\xFF\x4C\x0D\x0A"
@@ -189,7 +189,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "cell#3": 3.338,
         "cell#4": 2.317,
         "delta_voltage": 1.022,
-        "temperature": 21,
+        "temperature": -2,
         "cycle_capacity": 536.0,
         "design_capacity": 40,
         "power": -42.076,
