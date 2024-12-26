@@ -33,7 +33,7 @@ class BMS(BaseBMS):
     HEAD: Final[bytes] = bytes([0xAA, 0x55])
     TAIL_RX: Final[bytes] = bytes([0x0D, 0x0A])
     TAIL_TX: Final[bytes] = bytes([0x0A, 0x0D])
-    MIN_FRAME: Final[int] = len(HEAD) + len(TAIL_RX) + 3  # CMD, LEN, CRC each 1 Byte
+    MIN_FRAME: Final[int] = len(HEAD) + len(TAIL_RX) + 3  # CMD, LEN, CRC, 1 Byte each
     CRC_POS: Final[int] = -len(TAIL_RX) - 1
     LEN_POS: Final[int] = 3
     CMD_POS: Final[int] = 2
@@ -43,7 +43,7 @@ class BMS(BaseBMS):
     ] = [
         (ATTR_VOLTAGE, 0x0B, 4, 4, False, lambda x: float(x / 1000)),
         (ATTR_CURRENT, 0x0B, 8, 4, True, lambda x: float(x / 1000)),
-        (ATTR_TEMPERATURE, 0x09, 4, 2, False, lambda x: x),
+        (ATTR_TEMPERATURE, 0x09, 4, 2, True, lambda x: x),
         (ATTR_BATTERY_LEVEL, 0x0A, 4, 1, False, lambda x: x),
         (KEY_DESIGN_CAP, 0x15, 4, 2, False, lambda x: x),
         (ATTR_CYCLES, 0x15, 6, 2, False, lambda x: x),
