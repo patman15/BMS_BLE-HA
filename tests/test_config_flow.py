@@ -73,7 +73,9 @@ async def test_bluetooth_discovery(
     )
     await hass.async_block_till_done()
     assert result.get("type") == FlowResultType.CREATE_ENTRY
-    assert result.get("title") == advertisement.name
+    assert (
+        result.get("title") == advertisement.name or advertisement.address
+    )  # address is used as name by Bleak if name is not available
 
     # BluetoothServiceInfoBleak contains BMS type as trailer to the address, see bms_advertisement
     assert (
@@ -84,7 +86,7 @@ async def test_bluetooth_discovery(
 
 async def test_device_setup(
     monkeypatch,
-    patch_bleakclient,
+    patch_bleakclient: None,
     BTdiscovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
 ) -> None:
