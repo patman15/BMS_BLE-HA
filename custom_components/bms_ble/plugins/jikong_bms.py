@@ -148,10 +148,10 @@ class BMS(BaseBMS):
             self._log.debug("invalid checksum 0x%X != 0x%X", self._data[-1], crc)
             return
 
-        self._data_final = self._data
+        self._data_final = self._data.copy()
         self._data_event.set()
 
-    async def _init_characteristics(self) -> None:
+    async def _init_connection(self) -> None:
         """Initialize RX/TX characteristics."""
         char_notify_handle: int = -1
         self._char_write_handle = -1
@@ -180,7 +180,8 @@ class BMS(BaseBMS):
             char_notify_handle,
             self._char_write_handle,
         )
-        await self._client.start_notify(char_notify_handle, self._notification_handler)
+
+        await super()._init_connection()
 
         # query device info frame (0x03) and wait for BMS ready (0xC8)
         self._valid_reply = 0x03

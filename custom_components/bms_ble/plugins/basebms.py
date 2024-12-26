@@ -191,7 +191,7 @@ class BaseBMS(metaclass=ABCMeta):
 
         self._log.debug("disconnected from BMS")
 
-    async def _init_characteristics(self) -> None:
+    async def _init_connection(self) -> None:
         await self._client.start_notify(self.uuid_rx(), self._notification_method)
 
     async def _connect(self) -> None:
@@ -209,7 +209,15 @@ class BaseBMS(metaclass=ABCMeta):
             disconnected_callback=self._on_disconnect,
             services=[*self.uuid_services()],
         )
-        await self._init_characteristics()
+
+        try:
+            await self._init_connection()
+        except Exception as err:
+            self._log.info(
+                "failed to initialize BMS connection (%s)", type(err).__name__
+            )
+            await self.disconnect()
+            raise
 
     async def _await_reply(
         self,

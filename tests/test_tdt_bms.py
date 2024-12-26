@@ -302,8 +302,10 @@ async def test_init_fail(monkeypatch, bool_fixture) -> None:
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
-    result = await bms.async_update()
-
-    assert result == ref_value()["16S6T"]
+    if bool_fixture:
+        with pytest.raises(BleakDeviceNotFoundError):
+            assert not await bms.async_update()
+    else:
+        assert await bms.async_update() == ref_value()["16S6T"]
 
     await bms.disconnect()
