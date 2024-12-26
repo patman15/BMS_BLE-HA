@@ -1,20 +1,98 @@
 """Test the BLE Battery Management System integration config flow."""
 
-from custom_components.bms_ble.const import DOMAIN
-from custom_components.bms_ble.plugins.basebms import BaseBMS
+from typing import Final
+
+from bleak.backends.scanner import AdvertisementData
+from home_assistant_bluetooth import BluetoothServiceInfoBleak
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from homeassistant.config_entries import SOURCE_BLUETOOTH, SOURCE_USER, ConfigEntryState
+from custom_components.bms_ble.const import DOMAIN
+from custom_components.bms_ble.plugins.basebms import BaseBMS
+from homeassistant.config_entries import (
+    SOURCE_BLUETOOTH,
+    SOURCE_USER,
+    ConfigEntryState,
+    ConfigFlowResult,
+)
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er
 
-from .bluetooth import inject_bluetooth_service_info_bleak
+from .advertisement_data import ADVERTISEMENTS
+from .bluetooth import (
+    generate_advertisement_data,
+    generate_ble_device,
+    inject_bluetooth_service_info_bleak,
+)
 from .conftest import mock_config, mock_update_min
 
 
-async def test_device_discovery(monkeypatch, patch_bleakclient, BTdiscovery, hass: HomeAssistant) -> None:
+@pytest.fixture(
+    name="advertisement",
+    params=ADVERTISEMENTS,
+    ids=lambda param: param[1],
+)
+def bms_advertisement(request) -> BluetoothServiceInfoBleak:
+    """Return faulty response frame."""
+    dev: Final[AdvertisementData] = request.param[0]
+    address: Final[str] = "c0:ff:ee:c0:ff:ee"
+    return BluetoothServiceInfoBleak(
+        name=str(dev.local_name),
+        address=request.param[1],
+        device=generate_ble_device(address=address, name=dev.local_name),
+        rssi=dev.rssi,
+        service_uuids=dev.service_uuids,
+        manufacturer_data=dev.manufacturer_data,
+        service_data=dev.service_data,
+        advertisement=generate_advertisement_data(
+            local_name=dev.local_name, service_uuids=dev.service_uuids
+        ),
+        source=SOURCE_BLUETOOTH,
+        connectable=True,
+        time=0,
+        tx_power=dev.tx_power,
+    )
+
+
+async def test_device_discovery(
+    advertisement: BluetoothServiceInfoBleak, hass: HomeAssistant
+) -> None:
+    """Test discovery via bluetooth with a valid device."""
+
+    result: ConfigFlowResult = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_BLUETOOTH},
+        data=advertisement,
+    )
+
+    assert result.get("type") == FlowResultType.FORM
+    assert result.get("step_id") == "bluetooth_confirm"
+    assert result.get("description_placeholders") == {"name": advertisement.name}
+
+    inject_bluetooth_service_info_bleak(hass, advertisement)
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={"not": "empty"}
+    )
+    await hass.async_block_till_done()
+    assert result.get("type") == FlowResultType.CREATE_ENTRY
+    assert result.get("title") == advertisement.name
+
+    # BluetoothServiceInfoBleak contains BMS type in the address, see bms_advertisement
+    assert (
+        hass.config_entries.async_entries()[1].data["type"]
+        == f"custom_components.bms_ble.plugins.{advertisement.address}"
+    )
+
+
+async def test_device_setup(
+    monkeypatch,
+    patch_bleakclient,
+    BTdiscovery: BluetoothServiceInfoBleak,
+    hass: HomeAssistant,
+) -> None:
     """Test discovery via bluetooth with a valid device."""
 
     result = await hass.config_entries.flow.async_init(
@@ -43,10 +121,7 @@ async def test_device_discovery(monkeypatch, patch_bleakclient, BTdiscovery, has
 
     result_detail = result.get("result")
     assert result_detail is not None
-    assert (
-        result_detail.unique_id
-        == "cc:cc:cc:cc:cc:cc"  # pyright: ignore[reportOptionalMemberAccess]
-    )
+    assert result_detail.unique_id == "cc:cc:cc:cc:cc:cc"
     assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 10
 
     entities = er.async_get(hass).entities
@@ -144,7 +219,9 @@ async def test_setup_entry_missing_unique_id(bms_fixture, hass: HomeAssistant) -
     assert cfg.state is ConfigEntryState.SETUP_ERROR
 
 
-async def test_user_setup(monkeypatch, patch_bleakclient, BTdiscovery, hass: HomeAssistant) -> None:
+async def test_user_setup(
+    monkeypatch, patch_bleakclient, BTdiscovery, hass: HomeAssistant
+) -> None:
     """Check config flow for user adding previously discovered device."""
 
     monkeypatch.setattr(
@@ -153,7 +230,6 @@ async def test_user_setup(monkeypatch, patch_bleakclient, BTdiscovery, hass: Hom
     )
 
     inject_bluetooth_service_info_bleak(hass, BTdiscovery)
-
 
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_USER}
@@ -167,7 +243,12 @@ async def test_user_setup(monkeypatch, patch_bleakclient, BTdiscovery, hass: Hom
     assert data_schema.schema.get(CONF_ADDRESS).serialize() == {
         "selector": {
             "select": {
-                "options": [{"value": "cc:cc:cc:cc:cc:cc", "label": "SmartBat-B12345 (cc:cc:cc:cc:cc:cc)"}],
+                "options": [
+                    {
+                        "value": "cc:cc:cc:cc:cc:cc",
+                        "label": "SmartBat-B12345 (cc:cc:cc:cc:cc:cc)",
+                    }
+                ],
                 "multiple": False,
                 "custom_value": False,
                 "sort": False,

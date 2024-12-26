@@ -1,8 +1,6 @@
 """Module to support Offgridtec Smart Pro BMS."""
 
-import asyncio
 from collections.abc import Callable
-import logging
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
@@ -25,9 +23,6 @@ from custom_components.bms_ble.const import (
 
 from .basebms import BaseBMS, BMSsample
 
-LOGGER: Final = logging.getLogger(__name__)
-BAT_TIMEOUT: Final = 1
-
 # magic crypt sequence of length 16
 CRYPT_SEQ: Final = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
 
@@ -35,19 +30,20 @@ CRYPT_SEQ: Final = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
 class BMS(BaseBMS):
     """Offgridtec LiFePO4 Smart Pro type A and type B battery class implementation."""
 
+    BAT_TIMEOUT: Final = 1
     IDX_NAME: Final = 0
     IDX_LEN: Final = 1
     IDX_FCT: Final = 2
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         self._type = self.name[9] if len(self.name) >= 9 else "?"
         self._key = sum(
             CRYPT_SEQ[int(c, 16)] for c in (f"{int(self.name[10:]):0>4X}")
         ) + (5 if (self._type == "A") else 8)
-        LOGGER.info(
-            "%s type: %c, ID: %s, key: 0x%x",
+        self._log.info(
+            "%s type: %c, ID: %s, key: 0x%X",
             self.device_id(),
             self._type,
             self.name[10:],
@@ -90,22 +86,17 @@ class BMS(BaseBMS):
             self._HEADER = "+R16"
         else:
             self._REGISTERS = {}
-            LOGGER.exception("Unkown device type '%c'", self._type)
+            self._log.exception("unkown device type '%c'", self._type)
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
         """Return a list of Bluetooth matchers."""
         return [
             {
-                "local_name": "SmartBat-A*",
+                "local_name": "SmartBat-[AB]*",
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
-            },
-            {
-                "local_name": "SmartBat-B*",
-                "service_uuid": BMS.uuid_services()[0],
-                "connectable": True,
-            },
+            }
         ]
 
     @staticmethod
@@ -135,15 +126,12 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         self._values = {}
-        for key in list(self._REGISTERS):
-            await self._read(key)
+        for reg in list(self._REGISTERS):
             try:
-                await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+                await self._await_reply(data=self._ogt_command(reg))
             except TimeoutError:
-                LOGGER.debug(
-                    "Reading %s timed out", self._REGISTERS[key][self.IDX_NAME]
-                )
-            if key > 48 and f"{KEY_CELL_VOLTAGE}{64-key}" not in self._values:
+                self._log.debug("reading %s timed out", self._REGISTERS[reg][BMS.IDX_NAME])
+            if reg > 48 and f"{KEY_CELL_VOLTAGE}{64-reg}" not in self._values:
                 break
 
         # remove remaining runtime if battery is charging
@@ -153,7 +141,7 @@ class BMS(BaseBMS):
         return self._values
 
     def _notification_handler(self, sender, data: bytearray) -> None:
-        LOGGER.debug("Received BLE data: %s", data)
+        self._log.debug("RX BLE data: %s", data)
 
         valid, reg, nat_value = self._ogt_response(data)
 
@@ -161,8 +149,8 @@ class BMS(BaseBMS):
         if valid and sender.uuid == normalize_uuid_str(BMS.uuid_rx()):
             name, _length, func = self._REGISTERS[reg]
             value = func(nat_value) if func else nat_value
-            LOGGER.debug(
-                "Decoded data: reg: %s (#%i), raw: %i, value: %f",
+            self._log.debug(
+                "decoded data: reg: %s (#%i), raw: %i, value: %f",
                 name,
                 reg,
                 nat_value,
@@ -170,7 +158,7 @@ class BMS(BaseBMS):
             )
             self._values[name] = value
         else:
-            LOGGER.debug("Response data is invalid")
+            self._log.debug("response data is invalid")
         self._data_event.set()
 
     def _ogt_response(self, resp: bytearray) -> tuple[bool, int, int]:
@@ -179,7 +167,7 @@ class BMS(BaseBMS):
         msg = bytearray((resp[x] ^ self._key) for x in range(len(resp))).decode(
             encoding="ascii"
         )
-        LOGGER.debug("response: %s", msg[:-2])
+        self._log.debug("response: %s", msg[:-2])
         # verify correct response
         if msg[4:7] == "Err" or msg[:4] != "+RD," or msg[-2:] != "\r\n":
             return False, 0, 0
@@ -195,15 +183,8 @@ class BMS(BaseBMS):
         """Put together an scambled query to the BMS."""
 
         cmd = (
-            f"{self._HEADER}{command:0>2X}{self._REGISTERS[command][self.IDX_LEN]:0>2X}"
+            f"{self._HEADER}{command:0>2X}{self._REGISTERS[command][BMS.IDX_LEN]:0>2X}"
         )
-        LOGGER.debug("command: %s", cmd)
+        self._log.debug("command: %s", cmd)
 
         return bytearray(ord(cmd[i]) ^ self._key for i in range(len(cmd)))
-
-    async def _read(self, reg: int) -> None:
-        """Read a specific BMS register."""
-
-        msg = self._ogt_command(reg)
-        LOGGER.debug("BLE cmd frame %s", msg)
-        await self._client.write_gatt_char(BMS.uuid_tx(), data=msg)

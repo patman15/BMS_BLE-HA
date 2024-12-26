@@ -1,8 +1,6 @@
 """Module to support Daly Smart BMS."""
 
-import asyncio
 from collections.abc import Callable
-import logging
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
@@ -26,39 +24,36 @@ from custom_components.bms_ble.const import (
     KEY_TEMP_VALUE,
 )
 
-from .basebms import BaseBMS, BMSsample, crc_xmodem
-
-BAT_TIMEOUT: Final = 10
-LOGGER: Final = logging.getLogger(__name__)
+from .basebms import BaseBMS, BMSsample, crc_modbus
 
 
 class BMS(BaseBMS):
     """Daly Smart BMS class implementation."""
 
-    HEAD_READ: Final = bytearray(b"\xD2\x03")
-    CMD_INFO: Final = bytearray(b"\x00\x00\x00\x3E\xD7\xB9")
-    MOS_INFO: Final = bytearray(b"\x00\x3E\x00\x09\xF7\xA3")
-    HEAD_LEN: Final = 3
-    CRC_LEN: Final = 2
-    MAX_CELLS: Final = 32
-    MAX_TEMP: Final = 8
-    INFO_LEN: Final = 84 + HEAD_LEN + CRC_LEN + MAX_CELLS + MAX_TEMP
-    MOS_TEMP_POS: Final = HEAD_LEN + 8
+    HEAD_READ: Final[bytes] = b"\xD2\x03"
+    CMD_INFO: Final[bytes] = b"\x00\x00\x00\x3E\xD7\xB9"
+    MOS_INFO: Final[bytes] = b"\x00\x3E\x00\x09\xF7\xA3"
+    HEAD_LEN: Final[int] = 3
+    CRC_LEN: Final[int] = 2
+    MAX_CELLS: Final[int] = 32
+    MAX_TEMP: Final[int] = 8
+    INFO_LEN: Final[int] = 84 + HEAD_LEN + CRC_LEN + MAX_CELLS + MAX_TEMP
+    MOS_TEMP_POS: Final[int] = HEAD_LEN + 8
+    _FIELDS: Final[list[tuple[str, int, Callable[[int], int | float]]]] = [
+        (ATTR_VOLTAGE, 80 + HEAD_LEN, lambda x: float(x / 10)),
+        (ATTR_CURRENT, 82 + HEAD_LEN, lambda x: float((x - 30000) / 10)),
+        (ATTR_BATTERY_LEVEL, 84 + HEAD_LEN, lambda x: float(x / 10)),
+        (ATTR_CYCLE_CHRG, 96 + HEAD_LEN, lambda x: float(x / 10)),
+        (KEY_CELL_COUNT, 98 + HEAD_LEN, lambda x: min(x, BMS.MAX_CELLS)),
+        (KEY_TEMP_SENS, 100 + HEAD_LEN, lambda x: min(x, BMS.MAX_TEMP)),
+        (ATTR_CYCLES, 102 + HEAD_LEN, lambda x: x),
+        (ATTR_DELTA_VOLTAGE, 112 + HEAD_LEN, lambda x: float(x / 1000)),
+    ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
-        self._data: bytearray | None = None
-        self._FIELDS: Final[list[tuple[str, int, Callable[[int], int | float]]]] = [
-            (ATTR_VOLTAGE, 80 + self.HEAD_LEN, lambda x: float(x / 10)),
-            (ATTR_CURRENT, 82 + self.HEAD_LEN, lambda x: float((x - 30000) / 10)),
-            (ATTR_BATTERY_LEVEL, 84 + self.HEAD_LEN, lambda x: float(x / 10)),
-            (ATTR_CYCLE_CHRG, 96 + self.HEAD_LEN, lambda x: float(x / 10)),
-            (KEY_CELL_COUNT, 98 + self.HEAD_LEN, lambda x: min(x, self.MAX_CELLS)),
-            (KEY_TEMP_SENS, 100 + self.HEAD_LEN, lambda x: min(x, self.MAX_TEMP)),
-            (ATTR_CYCLES, 102 + self.HEAD_LEN, lambda x: x),
-            (ATTR_DELTA_VOLTAGE, 112 + self.HEAD_LEN, lambda x: float(x / 1000)),
-        ]
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
+        self._data: bytearray = bytearray()
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -102,23 +97,27 @@ class BMS(BaseBMS):
         }
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
-        LOGGER.debug("Received BLE data: %s", data)
+        self._log.debug("RX BLE data: %s", data)
 
         if (
-            len(data) < self.HEAD_LEN
-            or data[0:2] != self.HEAD_READ
-            or int(data[2]) + 1 != len(data) - len(self.HEAD_READ) - self.CRC_LEN
-            or int.from_bytes(data[-2:], byteorder="big") != crc_xmodem(data[:-2])
+            len(data) < BMS.HEAD_LEN
+            or data[0:2] != BMS.HEAD_READ
+            or int(data[2]) + 1 != len(data) - len(BMS.HEAD_READ) - BMS.CRC_LEN
         ):
-            LOGGER.debug(
-                "Response data is invalid, CRC: %s/%s",
-                data[-2:],
-                bytearray(crc_xmodem(data[:-2]).to_bytes(2)),
-            )
-            self._data = None
-        else:
-            self._data = data
+            self._log.debug("response data is invalid")
+            return
 
+        crc: Final = crc_modbus(data[:-2])
+        if crc != int.from_bytes(data[-2:], byteorder="little"):
+            self._log.debug(
+                "invalid checksum 0x%X != 0x%X",
+                int.from_bytes(data[-2:], byteorder="little"),
+                crc,
+            )
+            self._data.clear()
+            return
+
+        self._data = data
         self._data_event.set()
 
     async def _async_update(self) -> BMSsample:
@@ -126,17 +125,14 @@ class BMS(BaseBMS):
         data = {}
         try:
             # request MOS temperature (possible outcome: response, empty response, no response)
-            await self._client.write_gatt_char(
-                BMS.uuid_tx(), data=self.HEAD_READ + self.MOS_INFO
-            )
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT/5)
+            await self._await_reply(BMS.HEAD_READ + BMS.MOS_INFO)
 
-            if self._data is not None and sum(self._data[self.MOS_TEMP_POS :][:2]):
-                LOGGER.debug("%s: MOS info: %s", self._ble_device.name, self._data)
+            if sum(self._data[BMS.MOS_TEMP_POS :][:2]):
+                self._log.debug("MOS info: %s", self._data)
                 data |= {
                     f"{KEY_TEMP_VALUE}0": float(
                         int.from_bytes(
-                            self._data[self.MOS_TEMP_POS :][:2],
+                            self._data[BMS.MOS_TEMP_POS :][:2],
                             byteorder="big",
                             signed=True,
                         )
@@ -144,29 +140,26 @@ class BMS(BaseBMS):
                     )
                 }
         except TimeoutError:
-            LOGGER.debug("%s: no MOS temperature available.", self.name)
+            self._log.debug("no MOS temperature available.")
 
-        await self._client.write_gatt_char(
-            BMS.uuid_tx(), data=self.HEAD_READ + self.CMD_INFO
-        )
+        await self._await_reply(BMS.HEAD_READ + BMS.CMD_INFO)
 
-        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-
-        if self._data is None or len(self._data) != self.INFO_LEN:
+        if len(self._data) != BMS.INFO_LEN:
+            self._log.debug("incorrect frame length: %i", len(self._data))
             return {}
 
         data |= {
             key: func(
                 int.from_bytes(self._data[idx : idx + 2], byteorder="big", signed=True)
             )
-            for key, idx, func in self._FIELDS
+            for key, idx, func in BMS._FIELDS
         }
 
         # get temperatures
         # shift index if MOS temperature is available
         t_off: Final[int] = 1 if f"{KEY_TEMP_VALUE}0" in data else 0
         data |= {
-            f"{KEY_TEMP_VALUE}{((idx-64-self.HEAD_LEN)>>1) + t_off}": float(
+            f"{KEY_TEMP_VALUE}{((idx-64-BMS.HEAD_LEN)>>1) + t_off}": float(
                 int.from_bytes(self._data[idx : idx + 2], byteorder="big", signed=True)
                 - 40
             )
@@ -179,7 +172,7 @@ class BMS(BaseBMS):
         data |= {
             f"{KEY_CELL_VOLTAGE}{idx}": float(
                 int.from_bytes(
-                    self._data[self.HEAD_LEN + 2 * idx : self.HEAD_LEN + 2 * idx + 2],
+                    self._data[BMS.HEAD_LEN + 2 * idx : BMS.HEAD_LEN + 2 * idx + 2],
                     byteorder="big",
                     signed=True,
                 )

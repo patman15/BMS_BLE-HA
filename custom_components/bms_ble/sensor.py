@@ -2,12 +2,8 @@
 
 from typing import Final
 
-from homeassistant.components.sensor import (
-    SensorDeviceClass,
-    SensorEntity,
-    SensorEntityDescription,
-    SensorStateClass,
-)
+from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
+from homeassistant.components.sensor.const import SensorDeviceClass, SensorStateClass
 from homeassistant.const import (
     ATTR_BATTERY_LEVEL,
     ATTR_TEMPERATURE,
@@ -190,13 +186,16 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
             }
         # add individual temperature values to temperature sensor
         if self.entity_description.key == ATTR_TEMPERATURE:
-            return {
-                ATTR_TEMP_SENSORS: [
-                    v
-                    for k, v in self.coordinator.data.items()
-                    if k.startswith(KEY_TEMP_VALUE)
-                ]
-            }
+            temp_sensors: Final = [
+                v
+                for k, v in self.coordinator.data.items()
+                if k.startswith(KEY_TEMP_VALUE)
+            ]
+            if temp_sensors:
+                return {ATTR_TEMP_SENSORS: temp_sensors}
+            if temp := self.coordinator.data.get(ATTR_TEMPERATURE):
+                return {ATTR_TEMP_SENSORS: [temp]}
+        # add balance current as attribute to current sensor
         if (
             self.entity_description.key == ATTR_CURRENT
             and ATTR_BALANCE_CUR in self.coordinator.data

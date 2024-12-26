@@ -1,8 +1,7 @@
 """Module to support Dummy BMS."""
 
-import asyncio
-import logging
-from typing import Any, Callable, Final
+from collections.abc import Callable
+from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
@@ -23,35 +22,28 @@ from custom_components.bms_ble.const import (
     KEY_TEMP_VALUE,
 )
 
-from .basebms import BaseBMS, BMSsample
-
-LOGGER = logging.getLogger(__name__)
-BAT_TIMEOUT = 10
+from .basebms import BaseBMS, BMSsample, crc_sum
 
 
 class BMS(BaseBMS):
     """Dummy battery class implementation."""
 
-    CRC_POS: Final = -1  # last byte
-    HEAD_LEN: Final = 3
-    MAX_CELLS: Final = 16
-    MAX_TEMP: Final = 5
+    CRC_POS: Final[int] = -1  # last byte
+    HEAD_LEN: Final[int] = 3
+    MAX_CELLS: Final[int] = 16
+    MAX_TEMP: Final[int] = 5
+    _FIELDS: Final[list[tuple[str, int, int, bool, Callable[[int], int | float]]]] = [
+        (ATTR_VOLTAGE, 12, 2, False, lambda x: float(x / 1000)),
+        (ATTR_CURRENT, 48, 4, True, lambda x: float(x / 1000)),
+        (ATTR_BATTERY_LEVEL, 90, 2, False, lambda x: x),
+        (ATTR_CYCLE_CHRG, 62, 2, False, lambda x: float(x / 100)),
+        (ATTR_CYCLES, 96, 4, False, lambda x: x),
+    ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
-
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
-        self._FIELDS: Final[
-            list[tuple[str, int, int, bool, Callable[[int], int | float]]]
-        ] = [
-            (ATTR_VOLTAGE, 12, 2, False, lambda x: float(x / 1000)),
-            (ATTR_CURRENT, 48, 4, True, lambda x: float(x / 1000)),
-            (ATTR_BATTERY_LEVEL, 90, 2, False, lambda x: x),
-            (ATTR_CYCLE_CHRG, 62, 2, False, lambda x: float(x / 100)),
-            (ATTR_CYCLES, 96, 4, False, lambda x: x),
-        ]
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -97,34 +89,28 @@ class BMS(BaseBMS):
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
-        LOGGER.debug("%s: Received BLE data: %s", self.name, data.hex(" "))
+        self._log.debug("RX BLE data: %s", data)
 
         if len(data) < 3 or not data.startswith(b"\x00\x00"):
-            LOGGER.debug("%s: incorrect SOF.")
+            self._log.debug("incorrect SOF.")
             return
 
-        if len(data) != data[2] + self.HEAD_LEN + 1:  # add header length and CRC
-            LOGGER.debug("(%s) incorrect frame length (%i)", self.name, len(data))
+        if len(data) != data[2] + BMS.HEAD_LEN + 1:  # add header length and CRC
+            self._log.debug("incorrect frame length (%i)", len(data))
             return
 
-        crc = self._crc(data[: self.CRC_POS])
-        if crc != data[self.CRC_POS]:
-            LOGGER.debug(
-                "(%s) Rx data CRC is invalid: 0x%x != 0x%x",
-                self.name,
-                data[len(data) + self.CRC_POS],
-                crc,
+        crc = crc_sum(data[: BMS.CRC_POS])
+        if crc != data[BMS.CRC_POS]:
+            self._log.debug(
+                "invalid checksum 0x%X != 0x%X", data[len(data) + BMS.CRC_POS], crc
             )
             return
 
         self._data = data
         self._data_event.set()
 
-    def _crc(self, frame: bytes) -> int:
-        """Calculate frame CRC."""
-        return sum(frame) & 0xFF
-
-    def _cell_voltages(self, data: bytearray, cells: int) -> dict[str, float]:
+    @staticmethod
+    def _cell_voltages(data: bytearray, cells: int) -> dict[str, float]:
         """Return cell voltages from status message."""
         return {
             f"{KEY_CELL_VOLTAGE}{idx}": int.from_bytes(
@@ -137,7 +123,8 @@ class BMS(BaseBMS):
             if int.from_bytes(data[16 + 2 * idx : 16 + 2 * idx + 2], byteorder="little")
         }
 
-    def _temp_sensors(self, data: bytearray, sensors: int) -> dict[str, int]:
+    @staticmethod
+    def _temp_sensors(data: bytearray, sensors: int) -> dict[str, int]:
         return {
             f"{KEY_TEMP_VALUE}{idx}": int.from_bytes(
                 data[52 + idx * 2 : 54 + idx * 2],
@@ -154,10 +141,7 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        await self._client.write_gatt_char(
-            BMS.uuid_tx(), data=b"\x00\x00\x04\x01\x13\x55\xaa\x17"
-        )
-        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+        await self._await_reply(b"\x00\x00\x04\x01\x13\x55\xaa\x17")
 
         return (
             {
@@ -166,8 +150,8 @@ class BMS(BaseBMS):
                         self._data[idx : idx + size], byteorder="little", signed=sign
                     )
                 )
-                for key, idx, size, sign, func in self._FIELDS
+                for key, idx, size, sign, func in BMS._FIELDS
             }
-            | self._cell_voltages(self._data, self.MAX_CELLS)
-            | self._temp_sensors(self._data, self.MAX_TEMP)
+            | BMS._cell_voltages(self._data, BMS.MAX_CELLS)
+            | BMS._temp_sensors(self._data, BMS.MAX_TEMP)
         )

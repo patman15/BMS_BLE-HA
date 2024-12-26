@@ -5,7 +5,7 @@ import importlib
 import logging
 from typing import Any
 from uuid import UUID
-from homeassistant.config_entries import SOURCE_BLUETOOTH
+
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.descriptor import BleakGATTDescriptor
@@ -13,9 +13,9 @@ from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str, uuidstr_to_str
 from home_assistant_bluetooth import BluetoothServiceInfoBleak
-
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+
 from custom_components.bms_ble.const import (
     ATTR_CURRENT,
     ATTR_CYCLE_CHRG,
@@ -27,7 +27,7 @@ from custom_components.bms_ble.const import (
     KEY_TEMP_VALUE,
 )
 from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
-
+from homeassistant.config_entries import SOURCE_BLUETOOTH
 
 from .bluetooth import generate_advertisement_data, generate_ble_device
 
@@ -77,6 +77,7 @@ def bms_data_fixture(request) -> BMSsample:
 @pytest.fixture
 def patch_bleakclient(monkeypatch) -> None:
     """Patch BleakClient to a mock as BT is not available.
+
     required because BTdiscovery cannot be used to generate a BleakClient in async_setup()
     """
     monkeypatch.setattr(
@@ -196,7 +197,7 @@ class Mock_BMS(BaseBMS):
     ) -> None:  # , ble_device, reconnect: bool = False
         """Initialize BMS."""
         super().__init__(
-            LOGGER, lambda char, data: None, generate_ble_device(address=""), False
+            LOGGER.name, lambda char, data: None, generate_ble_device(address=""), False
         )
         LOGGER.debug("%s init(), Test except: %s", self.device_id(), str(exc))
         self._exception = exc
@@ -223,7 +224,7 @@ class Mock_BMS(BaseBMS):
 
     @staticmethod
     def uuid_services() -> list[str]:
-        """Return list of services required by BMS"""
+        """Return list of services required by BMS."""
         return [normalize_uuid_str("cafe")]
 
     @staticmethod
@@ -308,9 +309,19 @@ class MockBleakClient(BleakClient):
     ) -> None:
         """Mock write GATT characteristics."""
         LOGGER.debug(
-            "MockBleakClient write_gatt_char for %s, data: %s", char_specifier, data
+            "MockBleakClient write_gatt_char %s, data: %s", char_specifier, data
         )
         assert self._connected, "write_gatt_char called, but client not connected."
+
+    async def read_gatt_char(
+        self,
+        char_specifier: BleakGATTCharacteristic | int | str | UUID,
+        **kwargs,
+    ) -> bytearray:
+        """Mock write GATT characteristics."""
+        LOGGER.debug("MockBleakClient read_gatt_char %s", char_specifier)
+        assert self._connected, "read_gatt_char called, but client not connected."
+        return bytearray()
 
     async def disconnect(self) -> bool:
         """Mock disconnect."""

@@ -1,12 +1,13 @@
 """Test the D-powercore BMS implementation."""
 
-import pytest
 from collections.abc import Buffer
 from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
+import pytest
+
 from custom_components.bms_ble.plugins.dpwrcore_bms import BMS
 
 from .bluetooth import generate_ble_device
@@ -27,7 +28,9 @@ class MockDPwrcoreBleakClient(MockBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) != normalize_uuid_str("fff3"):
+        if isinstance(char_specifier, str) and normalize_uuid_str(
+            char_specifier
+        ) != normalize_uuid_str("fff3"):
             return bytearray()
         cmd: int = int(bytearray(data)[5])
         if cmd == 0x60:
@@ -76,11 +79,14 @@ class MockDPwrcoreBleakClient(MockBleakClient):
 
 
 class MockWrongCRCBleakClient(MockDPwrcoreBleakClient):
-    """Emulate a D-powercore BMS BleakClient that replies with wrong CRC"""    
+    """Emulate a D-powercore BMS BleakClient that replies with wrong CRC."""
+
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) != normalize_uuid_str("fff3"):
+        if isinstance(char_specifier, str) and normalize_uuid_str(
+            char_specifier
+        ) != normalize_uuid_str("fff3"):
             return bytearray()
         cmd: int = int(bytearray(data)[5])
         if cmd == 0x60:
@@ -108,7 +114,9 @@ class MockInvalidBleakClient(MockDPwrcoreBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if isinstance(char_specifier, str) and normalize_uuid_str(char_specifier) == normalize_uuid_str("fff3"):
+        if isinstance(char_specifier, str) and normalize_uuid_str(
+            char_specifier
+        ) == normalize_uuid_str("fff3"):
             return bytearray(b"invalid_value")
 
         return bytearray()
@@ -163,9 +171,7 @@ async def test_update(monkeypatch, dev_name, reconnect_fixture) -> None:
 
     # query again to check already connected state
     result = await bms.async_update()
-    assert (
-        bms._client.is_connected is not reconnect_fixture
-    )  # noqa: SLF001
+    assert bms._client.is_connected is not reconnect_fixture  # noqa: SLF001
 
     await bms.disconnect()
 
@@ -174,7 +180,7 @@ async def test_invalid_response(monkeypatch, dev_name) -> None:
     """Test data update with BMS returning invalid data."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.dpwrcore_bms.BAT_TIMEOUT",
+        "custom_components.bms_ble.plugins.dpwrcore_bms.BMS.BAT_TIMEOUT",
         0.1,
     )
 
@@ -185,8 +191,11 @@ async def test_invalid_response(monkeypatch, dev_name) -> None:
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", dev_name, None, -73))
 
+    result = {}
     with pytest.raises(TimeoutError):
-        _result = await bms.async_update()
+        result = await bms.async_update()
+
+    assert not result
 
     await bms.disconnect()
 
@@ -195,7 +204,7 @@ async def test_wrong_crc(monkeypatch, dev_name) -> None:
     """Test data update with BMS returning invalid data."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.dpwrcore_bms.BAT_TIMEOUT",
+        "custom_components.bms_ble.plugins.dpwrcore_bms.BMS.BAT_TIMEOUT",
         0.1,
     )
 
@@ -206,6 +215,10 @@ async def test_wrong_crc(monkeypatch, dev_name) -> None:
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", dev_name, None, -73))
 
-    assert await bms.async_update() == {}
+    result = {}
+    with pytest.raises(TimeoutError):
+        result = await bms.async_update()
+
+    assert not result
 
     await bms.disconnect()

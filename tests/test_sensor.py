@@ -2,6 +2,8 @@
 
 from datetime import timedelta
 
+from pytest_homeassistant_custom_component.common import async_fire_time_changed
+
 from custom_components.bms_ble.const import (
     ATTR_BALANCE_CUR,
     ATTR_CELL_VOLTAGES,
@@ -16,7 +18,6 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
     UPDATE_INTERVAL,
 )
-from pytest_homeassistant_custom_component.common import async_fire_time_changed
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 import homeassistant.util.dt as dt_util
@@ -25,7 +26,9 @@ from .bluetooth import inject_bluetooth_service_info_bleak
 from .conftest import mock_config
 
 
-async def test_update(monkeypatch, patch_bleakclient, BTdiscovery, hass: HomeAssistant) -> None:
+async def test_update(
+    monkeypatch, patch_bleakclient, BTdiscovery, bool_fixture, hass: HomeAssistant
+) -> None:
     """Test sensor value updates through coordinator."""
 
     async def patch_async_update(_self):
@@ -38,10 +41,15 @@ async def test_update(monkeypatch, patch_bleakclient, BTdiscovery, hass: HomeAss
             "cell#1": 3.123,
             "delta_voltage": 0.123,
             "temperature": 43.86,
-            "temp#0": 73,
-            "temp#1": 31.4,
-            "temp#2": 27.18,
-        }
+        } | (
+            {
+                "temp#0": 73,
+                "temp#1": 31.4,
+                "temp#2": 27.18,
+            }
+            if bool_fixture
+            else {}
+        )
 
     monkeypatch.setattr(
         "homeassistant.helpers.entity.Entity.entity_registry_enabled_default",
@@ -65,7 +73,7 @@ async def test_update(monkeypatch, patch_bleakclient, BTdiscovery, hass: HomeAss
     assert data == {
         f"sensor.smartbat_b12345_{ATTR_VOLTAGE}": "12",
         "sensor.smartbat_b12345_battery": "unknown",
-        f"sensor.smartbat_b12345_{ATTR_TEMPERATURE}": "unknown",
+        f"sensor.smartbat_b12345_{ATTR_TEMPERATURE}": "27.182",
         f"sensor.smartbat_b12345_{ATTR_CURRENT}": "1.5",
         "sensor.smartbat_b12345_stored_energy": "unknown",
         f"sensor.smartbat_b12345_{ATTR_CYCLES}": "unknown",
@@ -103,18 +111,21 @@ async def test_update(monkeypatch, patch_bleakclient, BTdiscovery, hass: HomeAss
     }
     # check delta voltage sensor has cell voltage as attribute array
     delta_state = hass.states.get(f"sensor.smartbat_b12345_{ATTR_DELTA_VOLTAGE}")
-    assert delta_state is not None and delta_state.attributes[
-        ATTR_CELL_VOLTAGES
-    ] == [3, 3.123]
+    assert delta_state is not None and delta_state.attributes[ATTR_CELL_VOLTAGES] == [
+        3,
+        3.123,
+    ]
 
     # check temperature sensor has individual sensors as attribute array
     temp_state = hass.states.get(f"sensor.smartbat_b12345_{ATTR_TEMPERATURE}")
-    assert temp_state is not None and temp_state.attributes[
-        ATTR_TEMP_SENSORS
-    ] == [73, 31.4, 27.18]
-
+    assert (
+        temp_state is not None
+        and temp_state.attributes[ATTR_TEMP_SENSORS] == [73, 31.4, 27.18]
+        if bool_fixture
+        else [temp_state]
+    )
     # check balance current as attribute
     current_state = hass.states.get(f"sensor.smartbat_b12345_{ATTR_CURRENT}")
-    assert current_state is not None and current_state.attributes[
-        ATTR_BALANCE_CUR
-    ] == [-1.234]
+    assert current_state is not None and current_state.attributes[ATTR_BALANCE_CUR] == [
+        -1.234
+    ]

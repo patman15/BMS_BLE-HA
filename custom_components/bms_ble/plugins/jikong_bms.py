@@ -2,7 +2,6 @@
 
 import asyncio
 from collections.abc import Callable
-import logging
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
@@ -26,10 +25,7 @@ from custom_components.bms_ble.const import (
     KEY_TEMP_VALUE,
 )
 
-from .basebms import BaseBMS, BMSsample
-
-BAT_TIMEOUT: Final = 10
-LOGGER: Final = logging.getLogger(__name__)
+from .basebms import BaseBMS, BMSsample, crc_sum
 
 
 class BMS(BaseBMS):
@@ -40,29 +36,26 @@ class BMS(BaseBMS):
     BT_MODULE_MSG: Final = bytes([0x41, 0x54, 0x0D, 0x0A])  # AT\r\n from BLE module
     TYPE_POS: Final[int] = 4  # frame type is right after the header
     INFO_LEN: Final[int] = 300
-
-    def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
-        """Intialize private BMS members."""
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
-        self._data: bytearray = bytearray()
-        self._data_final: bytearray | None = None
-        self._char_write_handle: int | None = None
-        self._valid_replies: list[int] = [0x2]  # BMS ready confirmation
-        self._FIELDS: Final[
-            list[tuple[str, int, int, bool, Callable[[int], int | float]]]
-        ] = [  # Protocol: JK02_32S; JK02_24S has offset -32
-            (KEY_CELL_COUNT, 70, 4, False, lambda x: x.bit_count()),
-            (ATTR_DELTA_VOLTAGE, 76, 2, False, lambda x: float(x / 1000)),
+    _FIELDS: Final[list[tuple[str, int, int, bool, Callable[[int], int | float]]]] = (
+        [  # Protocol: JK02_32S; JK02_24S has offset -32
             (ATTR_VOLTAGE, 150, 4, False, lambda x: float(x / 1000)),
             (ATTR_CURRENT, 158, 4, True, lambda x: float(x / 1000)),
             (ATTR_BATTERY_LEVEL, 173, 1, False, lambda x: x),
             (ATTR_CYCLE_CHRG, 174, 4, False, lambda x: float(x / 1000)),
             (ATTR_CYCLES, 182, 4, False, lambda x: x),
             (ATTR_BALANCE_CUR, 170, 2, True, lambda x: float(x / 1000)),
-        ] + [  # add temperature sensors
-            (f"{KEY_TEMP_VALUE}{i}", addr, 2, True, lambda x: float(x / 10))
-            for i, addr in [(0, 144), (1, 162), (2, 164), (3, 256), (4, 258)]
         ]
+    )
+
+    def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
+        """Intialize private BMS members."""
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
+        self._data: bytearray = bytearray()
+        self._data_final: bytearray = bytearray()
+        self._char_write_handle: int = -1
+        self._bms_info: dict[str, str] = {}
+        self._prot_offset: int = 0
+        self._valid_reply: int = 0x02
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -108,80 +101,67 @@ class BMS(BaseBMS):
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Retrieve BMS data update."""
 
-        if data.startswith(self.BT_MODULE_MSG):
-            LOGGER.debug("(%s) filtering AT cmd", self.name)
-            if len(data) == len(self.BT_MODULE_MSG):
+        if data.startswith(BMS.BT_MODULE_MSG):
+            self._log.debug("filtering AT cmd")
+            if len(data) == len(BMS.BT_MODULE_MSG):
                 return
-            data = data[len(self.BT_MODULE_MSG) :]
+            data = data[len(BMS.BT_MODULE_MSG) :]
 
         if (
             len(self._data) >= self.INFO_LEN
-            and (data.startswith(self.HEAD_RSP) or data.startswith(self.HEAD_CMD))
-        ) or not self._data.startswith(self.HEAD_RSP):
+            and (data.startswith((BMS.HEAD_RSP, BMS.HEAD_CMD)))
+        ) or not self._data.startswith(BMS.HEAD_RSP):
             self._data = bytearray()
 
         self._data += data
 
-        LOGGER.debug(
-            "(%s) Rx BLE data (%s): %s",
-            self.name,
-            "start" if data == self._data else "cnt.",
-            data,
+        self._log.debug(
+            "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
         # verify that data long enough
         if (
-            len(self._data) < self.INFO_LEN and self._data.startswith(self.HEAD_RSP)
-        ) or len(self._data) < self.TYPE_POS:
+            len(self._data) < BMS.INFO_LEN and self._data.startswith(BMS.HEAD_RSP)
+        ) or len(self._data) < BMS.TYPE_POS:
             return
 
         # check that message type is expected
-        if self._data[self.TYPE_POS] not in self._valid_replies:
-            LOGGER.debug(
-                "(%s) unexpected message type 0x%x (length %i): %s",
-                self.name,
-                self._data[self.TYPE_POS],
+        if self._data[BMS.TYPE_POS] != self._valid_reply:
+            self._log.debug(
+                "unexpected message type 0x%X (length %i): %s",
+                self._data[BMS.TYPE_POS],
                 len(self._data),
                 self._data,
             )
             return
 
+        # trim AT\r\n message from the end
+        if self._data.endswith(BMS.BT_MODULE_MSG):
+            self._log.debug("trimming AT cmd")
+            self._data = self._data[: -len(BMS.BT_MODULE_MSG)]
+
         # trim message in case oversized
-        if len(self._data) > self.INFO_LEN:
-            LOGGER.debug(
-                "(%s) Wrong data length (%i): %s",
-                self.name,
-                len(self._data),
-                self._data,
-            )
-            self._data = self._data[: self.INFO_LEN]
+        if len(self._data) > BMS.INFO_LEN:
+            self._log.debug("wrong data length (%i): %s", len(self._data), self._data)
+            self._data = self._data[: BMS.INFO_LEN]
 
-        crc = self._crc(self._data[:-1])
+        crc: int = crc_sum(self._data[:-1])
         if self._data[-1] != crc:
-            LOGGER.debug(
-                "(%s) Rx data CRC is invalid: %i != %i",
-                self.name,
-                self._data[-1],
-                self._crc(self._data[:-1]),
-            )
-            self._data_final = None  # reset invalid data
-        else:
-            self._data_final = self._data
+            self._log.debug("invalid checksum 0x%X != 0x%X", self._data[-1], crc)
+            return
 
+        self._data_final = self._data.copy()
         self._data_event.set()
 
-    async def _init_characteristics(self) -> None:
+    async def _init_connection(self) -> None:
         """Initialize RX/TX characteristics."""
-        char_notify_handle: int | None = None
-        self._char_write_handle = None
+        char_notify_handle: int = -1
+        self._char_write_handle = -1
+
         for service in self._client.services:
             for char in service.characteristics:
-                LOGGER.debug(
-                    "(%s) Discovered %s (#%i): %s",
-                    self.name,
-                    char.uuid,
-                    char.handle,
-                    char.properties,
+                self._log.debug(
+                    "discovered %s (#%i): %s", char.uuid, char.handle, char.properties
                 )
                 if char.uuid == normalize_uuid_str(
                     BMS.uuid_rx()
@@ -193,45 +173,47 @@ class BMS(BaseBMS):
                         or "write-without-response" in char.properties
                     ):
                         self._char_write_handle = char.handle
-        if char_notify_handle is None or self._char_write_handle is None:
-            LOGGER.debug("(%s) Failed to detect characteristics", self.name)
+        if char_notify_handle == -1 or self._char_write_handle == -1:
+            self._log.debug("failed to detect characteristics.")
             await self._client.disconnect()
-            raise ConnectionError(
-                f"Failed to detect characteristics from {self.name}."
-            )
-        LOGGER.debug(
-            "(%s) Using characteristics handle #%i (notify), #%i (write)",
-            self.name,
+            raise ConnectionError(f"Failed to detect characteristics from {self.name}.")
+        self._log.debug(
+            "using characteristics handle #%i (notify), #%i (write).",
             char_notify_handle,
             self._char_write_handle,
         )
-        await self._client.start_notify(
-            char_notify_handle or 0, self._notification_handler
+
+        await super()._init_connection()
+
+        # query device info frame (0x03) and wait for BMS ready (0xC8)
+        self._valid_reply = 0x03
+        await self._await_reply(self._cmd(b"\x97"), char=self._char_write_handle)
+        self._bms_info = BMS._dec_devinfo(self._data_final or bytearray())
+        self._log.debug("device information: %s", self._bms_info)
+        self._prot_offset = (
+            -32 if int(self._bms_info.get("sw_version", "")[:2]) < 11 else 0
         )
+        self._valid_reply = 0xC8  # BMS ready confirmation
+        await asyncio.wait_for(self._wait_event(), timeout=self.BAT_TIMEOUT)
+        self._valid_reply = 0x02  # cell information
 
-        # query device info frame and wait for BMS ready (0xC8)
-        self._valid_replies.append(0xC8)
-        await self._client.write_gatt_char(
-            self._char_write_handle or 0, data=self._cmd(b"\x97")
-        )
-        await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-        self._valid_replies.remove(0xC8)
-
-    def _crc(self, frame: bytes) -> int:
-        """Calculate Jikong frame CRC."""
-        return sum(frame) & 0xFF
-
-    def _cmd(self, cmd: bytes, value: list[int] | None = None) -> bytes:
+    @staticmethod
+    def _cmd(cmd: bytes, value: list[int] | None = None) -> bytes:
         """Assemble a Jikong BMS command."""
         value = [] if value is None else value
         assert len(value) <= 13
-        frame = bytes([*self.HEAD_CMD, cmd[0]])
+        frame = bytes([*BMS.HEAD_CMD, cmd[0]])
         frame += bytes([len(value), *value])
         frame += bytes([0] * (13 - len(value)))
-        frame += bytes([self._crc(frame)])
+        frame += bytes([crc_sum(frame)])
         return frame
 
-    def _cell_voltages(self, data: bytearray, cells: int) -> dict[str, float]:
+    @staticmethod
+    def _dec_devinfo(data: bytearray) -> dict[str, str]:
+        return {"hw_version": data[22:27].decode(), "sw_version": data[30:35].decode()}
+
+    @staticmethod
+    def _cell_voltages(data: bytearray, cells: int) -> dict[str, float]:
         """Return cell voltages from status message."""
         return {
             f"{KEY_CELL_VOLTAGE}{idx}": int.from_bytes(
@@ -243,29 +225,62 @@ class BMS(BaseBMS):
             for idx in range(cells)
         }
 
-    def _decode_data(self, data: bytearray) -> BMSsample:
-        """Return BMS data from status message."""
+    @staticmethod
+    def _temp_sensors(data: bytearray, offs: int) -> dict[str, float]:
+        temp_pos: Final[list[tuple[int, int]]] = (
+            [(0, 130), (1, 132), (2, 134)]
+            if offs
+            else [(0, 144), (1, 162), (2, 164), (3, 256), (4, 258)]
+        )
         return {
-            key: func(
-                int.from_bytes(data[idx : idx + size], byteorder="little", signed=sign)
+            f"{KEY_TEMP_VALUE}{idx}": int.from_bytes(
+                data[pos : pos + 2], byteorder="little", signed=False
             )
-            for key, idx, size, sign, func in self._FIELDS
+            / 10
+            for idx, pos in temp_pos
+            if int.from_bytes(data[pos : pos + 2], byteorder="little", signed=False)
         }
+
+    @staticmethod
+    def _decode_data(data: bytearray, offs: int) -> BMSsample:
+        """Return BMS data from status message."""
+        return (
+            {
+                KEY_CELL_COUNT: int.from_bytes(
+                    data[70 + (offs >> 1) : 74 + (offs >> 1)],
+                    byteorder="little",
+                ).bit_count()
+            }
+            | {
+                ATTR_DELTA_VOLTAGE: int.from_bytes(
+                    data[76 + (offs >> 1) : 78 + (offs >> 1)],
+                    byteorder="little",
+                )
+                / 1000
+            }
+            | {
+                key: func(
+                    int.from_bytes(
+                        data[idx + offs : idx + offs + size],
+                        byteorder="little",
+                        signed=sign,
+                    )
+                )
+                for key, idx, size, sign, func in BMS._FIELDS
+            }
+        )
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        if not self._data_event.is_set():
+        if not self._data_event.is_set() or self._data_final[4] != 0x02:
             # request cell info (only if data is not constantly published)
-            LOGGER.debug("(%s) request cell info", self.name)
-            await self._client.write_gatt_char(
-                self._char_write_handle or 0, data=self._cmd(b"\x96")
+            self._log.debug("requesting cell info")
+            await self._await_reply(
+                data=BMS._cmd(b"\x96"), char=self._char_write_handle
             )
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
 
-        if self._data_final is None:
-            return {}
-
-        data = self._decode_data(self._data_final)
-        data.update(self._cell_voltages(self._data_final, int(data[KEY_CELL_COUNT])))
+        data: BMSsample = self._decode_data(self._data_final, self._prot_offset)
+        data.update(BMS._temp_sensors(self._data_final, self._prot_offset))
+        data.update(BMS._cell_voltages(self._data_final, int(data[KEY_CELL_COUNT])))
 
         return data

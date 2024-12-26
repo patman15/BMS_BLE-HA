@@ -9,7 +9,7 @@ from custom_components.bms_ble.const import (
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
-    KEY_CELL_VOLTAGE
+    KEY_CELL_VOLTAGE,
 )
 from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 

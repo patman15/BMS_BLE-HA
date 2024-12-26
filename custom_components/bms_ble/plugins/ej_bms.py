@@ -1,9 +1,8 @@
 """Module to support Dummy BMS."""
 
-import asyncio
-from enum import Enum
-import logging
-from typing import Any, Callable, Final
+from collections.abc import Callable
+from enum import IntEnum
+from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
 
@@ -24,11 +23,8 @@ from custom_components.bms_ble.const import (
 
 from .basebms import BaseBMS, BMSsample
 
-LOGGER = logging.getLogger(__name__)
-BAT_TIMEOUT = 10
 
-
-class Cmd(Enum):
+class Cmd(IntEnum):
     """BMS operation codes."""
 
     RT = 0x2
@@ -38,44 +34,30 @@ class Cmd(Enum):
 class BMS(BaseBMS):
     """Dummy battery class implementation."""
 
-    _CELLS = 16
+    _BT_MODULE_MSG: Final[bytes] = bytes([0x41, 0x54, 0x0D, 0x0A])  # BLE module message
+    _HEAD: Final[int] = 0x3A
+    _TAIL: Final[int] = 0x7E
+    _MAX_CELLS: Final[int] = 16
+    _FIELDS: Final[list[tuple[str, Cmd, int, int, Callable[[int], int | float]]]] = [
+        (ATTR_CURRENT, Cmd.RT, 89, 8, lambda x: float((x >> 16) - (x & 0xFFFF)) / 100),
+        (ATTR_BATTERY_LEVEL, Cmd.RT, 123, 2, lambda x: x),
+        (ATTR_CYCLE_CHRG, Cmd.CAP, 15, 4, lambda x: float(x) / 10),
+        (ATTR_TEMPERATURE, Cmd.RT, 97, 2, lambda x: x - 40),  # only 1st sensor relevant
+        (ATTR_CYCLES, Cmd.RT, 115, 4, lambda x: x),
+    ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
-        self._data = bytearray()
-        self._FIELDS: Final[
-            list[tuple[str, Cmd, int, int, Callable[[int], int | float]]]
-        ] = [
-            (
-                ATTR_CURRENT,
-                Cmd.RT,
-                89,
-                8,
-                lambda x: float((x >> 16) - (x & 0xFFFF)) / 100,
-            ),
-            (ATTR_BATTERY_LEVEL, Cmd.RT, 123, 2, lambda x: x),
-            (ATTR_CYCLE_CHRG, Cmd.CAP, 15, 4, lambda x: float(x) / 10),
-            (
-                ATTR_TEMPERATURE,
-                Cmd.RT,
-                97,
-                2,
-                lambda x: x - 40,
-            ),  # only first sensor relevant
-            (ATTR_CYCLES, Cmd.RT, 119, 4, lambda x: x),
-        ]
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
+        self._data: bytearray = bytearray()
+        self._data_final: bytearray = bytearray()
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
         """Provide BluetoothMatcher definition."""
-        return [
-            {
-                "local_name": "libatt*",
-                "manufacturer_id": 21320,
-                "connectable": True,
-            }
+        return [  # Fliteboard, Electronix battery
+            {"local_name": "libatt*", "manufacturer_id": 21320, "connectable": True},
+            {"local_name": "LT-*", "manufacturer_id": 33384, "connectable": True},
         ]
 
     @staticmethod
@@ -111,50 +93,73 @@ class BMS(BaseBMS):
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
-        LOGGER.debug("%s: Received BLE data: %s", self.name, data)
 
-        if data[0] != 0x3A or data[-1] != 0x7E:
-            LOGGER.debug("%s: Incorrect SOI or EOI: %s", self.name, data)
-            return
+        if data.startswith(BMS._BT_MODULE_MSG):
+            self._log.debug("filtering AT cmd")
+            if len(data) == len(BMS._BT_MODULE_MSG):
+                return
+            data = data[len(BMS._BT_MODULE_MSG) :]
 
-        if len(data) != int(data[7:11], 16):
-            LOGGER.debug(
-                "%s: Incorrect frame length %i != %i",
-                self.name,
-                len(data),
-                int(data[7:11], 16),
-            )
-            return
+        if data[0] == BMS._HEAD:  # check for beginning of frame
+            self._data.clear()
 
-        crc: Final = self._crc(data[1:-3])
-        if crc != int(data[-3:-1], 16):
-            LOGGER.debug(
-                "%s: incorrect checksum 0x%X != 0x%X",
-                self.name,
-                int(data[-3:-1], 16),
-                crc,
-            )
-            return
+        self._data += data
 
-        LOGGER.debug(
-            "%s: address: 0x%X, commnad 0x%X, version: 0x%X",
-            self.name,
-            int(data[1:3], 16),
-            int(data[3:5], 16) & 0x7F,
-            int(data[5:7], 16),
+        self._log.debug(
+            "%s: RX BLE data (%s): %s",
+            self._ble_device.name,
+            "start" if data == self._data else "cnt.",
+            data,
         )
-        self._data = data
+
+        if self._data[0] != BMS._HEAD or (
+            self._data[-1] != BMS._TAIL and len(self._data) < int(self._data[7:11], 16)
+        ):
+            return
+
+        if self._data[-1] != BMS._TAIL:
+            self._log.debug("incorrect EOF: %s", data)
+            self._data.clear()
+            return
+
+        if len(self._data) != int(self._data[7:11], 16):
+            self._log.debug(
+                "incorrect frame length %i != %i",
+                len(self._data),
+                int(self._data[7:11], 16),
+            )
+            self._data.clear()
+            return
+
+        crc: Final = BMS._crc(self._data[1:-3])
+        if crc != int(self._data[-3:-1], 16):
+            self._log.debug(
+                "invalid checksum 0x%X != 0x%X", int(self._data[-3:-1], 16), crc
+            )
+            self._data.clear()
+            return
+
+        self._log.debug(
+            "address: 0x%X, commnad 0x%X, version: 0x%X, length: 0x%X",
+            int(self._data[1:3], 16),
+            int(self._data[3:5], 16) & 0x7F,
+            int(self._data[5:7], 16),
+            len(self._data),
+        )
+        self._data_final = self._data.copy()
         self._data_event.set()
 
-    def _crc(self, data: bytes) -> int:
+    @staticmethod
+    def _crc(data: bytes) -> int:
         return (sum(data) ^ 0xFF) & 0xFF
 
-    def _cell_voltages(self, data: bytearray) -> dict[str, float]:
+    @staticmethod
+    def _cell_voltages(data: bytearray) -> dict[str, float]:
         """Return cell voltages from status message."""
         return {
             f"{KEY_CELL_VOLTAGE}{idx}": int(data[25 + 4 * idx : 25 + 4 * idx + 4], 16)
             / 1000
-            for idx in range(self._CELLS)
+            for idx in range(BMS._MAX_CELLS)
             if int(data[25 + 4 * idx : 25 + 4 * idx + 4], 16)
         }
 
@@ -164,11 +169,16 @@ class BMS(BaseBMS):
 
         # query real-time information and capacity
         for cmd in [b":000250000E03~", b":001031000E05~"]:
-            await self._client.write_gatt_char(BMS.uuid_tx(), data=cmd)
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
-            raw_data[int(cmd[3:5], 16) & 0x7F] = self._data.copy()
+            await self._await_reply(cmd)
+            rsp: int = int(self._data_final[3:5], 16) & 0x7F
+            raw_data[rsp] = self._data_final
+            if rsp == Cmd.RT and len(self._data_final) == 0x8C:
+                # handle metrisun version
+                self._log.debug("single frame protocol detected")
+                raw_data[Cmd.CAP] = bytearray(15) + self._data_final[125:]
+                break
 
         return {
             key: func(int(raw_data[cmd.value][idx : idx + size], 16))
-            for key, cmd, idx, size, func in self._FIELDS
-        } | self._cell_voltages(raw_data[Cmd.RT.value])
+            for key, cmd, idx, size, func in BMS._FIELDS
+        } | self._cell_voltages(raw_data[Cmd.RT])

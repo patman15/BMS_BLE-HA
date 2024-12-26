@@ -3,11 +3,7 @@
   "name": "BLE Battery Management",
   "bluetooth": [
     {
-      "local_name": "SmartBat-A*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "SmartBat-B*",
+      "local_name": "SmartBat-[AB]*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
@@ -19,8 +15,25 @@
       "manufacturer_id": 2917
     },
     {
+      "local_name": "SP0?S*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
+    {
+      "local_name": "SP1?S*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "SP2?S*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "GJ-*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "SX1*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },        
     {
       "local_name": "SP0*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
@@ -45,7 +58,28 @@
     {
       "local_name": "libatt*",
       "manufacturer_id": 21320
-    }
+    },
+    {
+      "local_name": "LT-*",
+      "manufacturer_id": 33384
+    },
+    {
+      "local_name": "$PFLAC*",
+      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
+      "manufacturer_id": 65535
+    },
+    {
+      "local_name": "NWJ20*",
+      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
+      "manufacturer_id": 65535
+    },
+    {
+      "manufacturer_id": 54976
+    },
+    {
+      "local_name": "BP0?",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"      
+    }    
   ],
   "codeowners": ["@patman15"],
   "config_flow": true,
@@ -56,5 +90,5 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bleak_retry_connector"],
   "requirements": [],
-  "version": "1.9.2"
+  "version": "1.11.2"
 }

@@ -1,8 +1,6 @@
 """Module to support Seplos V3 Smart BMS."""
 
-import asyncio
 from collections.abc import Callable
-import logging
 from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
@@ -25,69 +23,52 @@ from custom_components.bms_ble.const import (
     KEY_TEMP_VALUE,
 )
 
-from .basebms import BaseBMS, BMSsample, crc_xmodem
-
-BAT_TIMEOUT: Final = 5
-LOGGER = logging.getLogger(__name__)
+from .basebms import BaseBMS, BMSsample, crc_modbus
 
 
 class BMS(BaseBMS):
     """Seplos V3 Smart BMS class implementation."""
 
-    CMD_READ: Final = 0x04
-    HEAD_LEN: Final = 3
-    CRC_LEN: Final = 2
-    PIB_LEN: Final = 0x1A
-    EIA_LEN: Final = PIB_LEN
-    EIB_LEN: Final = 0x16
-    TEMP_START: Final = HEAD_LEN + 32
+    CMD_READ: Final[int] = 0x04
+    HEAD_LEN: Final[int] = 3
+    CRC_LEN: Final[int] = 2
+    PIB_LEN: Final[int] = 0x1A
+    EIA_LEN: Final[int] = PIB_LEN
+    EIB_LEN: Final[int] = 0x16
+    TEMP_START: Final[int] = HEAD_LEN + 32
     QUERY: Final[dict[str, tuple[int, int, int]]] = {
         # name: cmd, reg start, length
         "EIA": (0x4, 0x2000, EIA_LEN),
         "EIB": (0x4, 0x2100, EIB_LEN),
         "PIB": (0x4, 0x1100, PIB_LEN),
     }
+    _FIELDS: Final[
+        list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
+    ] = [
+        (ATTR_TEMPERATURE, EIB_LEN, 20, 2, False, lambda x: float(x / 10)),
+        (ATTR_VOLTAGE, EIA_LEN, 0, 4, False, lambda x: float(BMS._swap32(x) / 100)),
+        (
+            ATTR_CURRENT,
+            EIA_LEN,
+            4,
+            4,
+            True,
+            lambda x: float((BMS._swap32(x, True)) / 10),
+        ),
+        (ATTR_CYCLE_CHRG, EIA_LEN, 8, 4, False, lambda x: float(BMS._swap32(x) / 100)),
+        (KEY_PACK_COUNT, EIA_LEN, 44, 2, False, lambda x: x),
+        (ATTR_CYCLES, EIA_LEN, 46, 2, False, lambda x: x),
+        (ATTR_BATTERY_LEVEL, EIA_LEN, 48, 2, False, lambda x: float(x / 10)),
+    ]  # Protocol Seplos V3
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         self._data: bytearray = bytearray()
-        self._exp_len: int = 0  # expected packet length
+        self._pkglen: int = 0  # expected packet length
         self._data_final: dict[int, bytearray] = {}
         self._pack_count = 0
         self._char_write_handle: int | None = None
-        self._FIELDS: Final[
-            list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
-        ] = [
-            (ATTR_TEMPERATURE, self.EIB_LEN, 20, 2, False, lambda x: float(x / 10)),
-            (
-                ATTR_VOLTAGE,
-                self.EIA_LEN,
-                0,
-                4,
-                False,
-                lambda x: float(self._swap32(x) / 100),
-            ),
-            (
-                ATTR_CURRENT,
-                self.EIA_LEN,
-                4,
-                4,
-                False,
-                lambda x: float((self._swap32(x, True)) / 10),
-            ),
-            (
-                ATTR_CYCLE_CHRG,
-                self.EIA_LEN,
-                8,
-                4,
-                False,
-                lambda x: float(self._swap32(x) / 100),
-            ),
-            (KEY_PACK_COUNT, self.EIA_LEN, 44, 2, False, lambda x: x),
-            (ATTR_CYCLES, self.EIA_LEN, 46, 2, False, lambda x: x),
-            (ATTR_BATTERY_LEVEL, self.EIA_LEN, 48, 2, False, lambda x: float(x / 10)),
-        ]  # Protocol Seplos V3
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -137,69 +118,62 @@ class BMS(BaseBMS):
         """Retrieve BMS data update."""
 
         if (
-            len(data) > self.HEAD_LEN + self.CRC_LEN
+            len(data) > BMS.HEAD_LEN + BMS.CRC_LEN
             and data[0] <= self._pack_count
-            and data[1] & 0x7F == self.CMD_READ  # include read errors
-            and data[2] >= self.HEAD_LEN + self.CRC_LEN
+            and data[1] & 0x7F == BMS.CMD_READ  # include read errors
+            and data[2] >= BMS.HEAD_LEN + BMS.CRC_LEN
         ):
             self._data = bytearray()
-            self._exp_len = data[2] + self.HEAD_LEN + self.CRC_LEN
+            self._pkglen = data[2] + BMS.HEAD_LEN + BMS.CRC_LEN
         elif (  # error message
-            len(data) == self.HEAD_LEN + self.CRC_LEN
+            len(data) == BMS.HEAD_LEN + BMS.CRC_LEN
             and data[0] <= self._pack_count
             and data[1] & 0x80
         ):
-            LOGGER.debug("%s: Rx BLE error: %x", self._ble_device.name, int(data[2]))
+            self._log.debug("Rx error: %X", int(data[2]))
             self._data = bytearray()
-            self._exp_len = self.HEAD_LEN + self.CRC_LEN
+            self._pkglen = BMS.HEAD_LEN + BMS.CRC_LEN
 
         self._data += data
-        LOGGER.debug(
-            "%s: Rx BLE data (%s): %s",
-            self._ble_device.name,
-            "start" if data == self._data else "cnt.",
-            data,
+        self._log.debug(
+            "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
         # verify that data long enough
-        if len(self._data) < self._exp_len:
+        if len(self._data) < self._pkglen:
             return
 
-        crc = crc_xmodem(self._data[: self._exp_len - 2])
-        if int.from_bytes(self._data[self._exp_len - 2 : self._exp_len]) != crc:
-            LOGGER.debug(
-                "%s: Rx data CRC is invalid: 0x%X != 0x%X",
-                self._ble_device.name,
-                int.from_bytes(self._data[self._exp_len - 2 : self._exp_len]),
+        crc = crc_modbus(self._data[: self._pkglen - 2])
+        if int.from_bytes(self._data[self._pkglen - 2 : self._pkglen], "little") != crc:
+            self._log.debug(
+                "invalid checksum 0x%X != 0x%X",
+                int.from_bytes(self._data[self._pkglen - 2 : self._pkglen], "little"),
                 crc,
             )
             self._data_final[int(self._data[0])] = bytearray()  # reset invalid data
         elif (
-            not (self._data[2] == self.EIA_LEN * 2 or self._data[2] == self.EIB_LEN * 2)
+            not (self._data[2] == BMS.EIA_LEN * 2 or self._data[2] == BMS.EIB_LEN * 2)
             and not self._data[1] & 0x80
         ):
-            LOGGER.debug(
-                "%s: unknown message: %s, length: %s",
-                self._ble_device.name,
-                self._data[0:2],
-                self._data[2],
+            self._log.debug(
+                "unknown message: %s, length: %s", self._data[0:2], self._data[2]
             )
             self._data = bytearray()
             return
         else:
             self._data_final[int(self._data[0]) << 8 | int(self._data[2])] = self._data
-            if len(self._data) != self._exp_len:
-                LOGGER.debug(
-                    "%s: Wrong data length (%i!=%s): %s",
-                    self._ble_device.name,
+            if len(self._data) != self._pkglen:
+                self._log.debug(
+                    "wrong data length (%i!=%s): %s",
                     len(self._data),
-                    self._exp_len,
+                    self._pkglen,
                     self._data,
                 )
 
         self._data_event.set()
 
-    def _swap32(self, value: int, signed: bool = False) -> int:
+    @staticmethod
+    def _swap32(value: int, signed: bool = False) -> int:
         """Swap high and low 16bit in 32bit integer."""
 
         value = ((value >> 16) & 0xFFFF) | (value & 0xFFFF) << 16
@@ -207,7 +181,8 @@ class BMS(BaseBMS):
             value = -0x100000000 + value
         return value
 
-    def _cmd(self, device: int, cmd: int, start: int, count: int) -> bytearray:
+    @staticmethod
+    def _cmd(device: int, cmd: int, start: int, count: int) -> bytearray:
         """Assemble a Seplos BMS command."""
         assert device >= 0x00 and (device <= 0x10 or device in (0xC0, 0xE0))
         assert cmd in (0x01, 0x04)  # allow only read commands
@@ -215,46 +190,40 @@ class BMS(BaseBMS):
         frame = bytearray([device, cmd])
         frame += bytearray(int.to_bytes(start, 2, byteorder="big"))
         frame += bytearray(int.to_bytes(count, 2, byteorder="big"))
-        frame += bytearray(int.to_bytes(crc_xmodem(frame), 2, byteorder="big"))
+        frame += bytearray(int.to_bytes(crc_modbus(frame), 2, byteorder="little"))
         return frame
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         for block in ["EIA", "EIB"]:
-            await self._client.write_gatt_char(
-                BMS.uuid_tx(), data=self._cmd(0x0, *self.QUERY[block])
-            )
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+            await self._await_reply(BMS._cmd(0x0, *BMS.QUERY[block]))
             # check if a valid frame was received otherwise terminate immediately
-            if self.QUERY[block][2] * 2 not in self._data_final:
+            if BMS.QUERY[block][2] * 2 not in self._data_final:
                 return {}
 
         data = {
             key: func(
                 int.from_bytes(
                     self._data_final[msg * 2][
-                        self.HEAD_LEN + idx : self.HEAD_LEN + idx + size
+                        BMS.HEAD_LEN + idx : BMS.HEAD_LEN + idx + size
                     ],
                     byteorder="big",
                     signed=sign,
                 )
             )
-            for key, msg, idx, size, sign, func in self._FIELDS
+            for key, msg, idx, size, sign, func in BMS._FIELDS
         }
         self._pack_count = min(int(data.get(KEY_PACK_COUNT, 0)), 0x10)
 
         for pack in range(1, 1 + self._pack_count):
-            await self._client.write_gatt_char(
-                BMS.uuid_tx(), data=self._cmd(pack, *self.QUERY["PIB"])
-            )
-            await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT)
+            await self._await_reply(self._cmd(pack, *BMS.QUERY["PIB"]))
             # get cell voltages
-            if pack << 8 | self.PIB_LEN * 2 in self._data_final:
+            if pack << 8 | BMS.PIB_LEN * 2 in self._data_final:
                 pack_cells = [
                     float(
                         int.from_bytes(
-                            self._data_final[pack << 8 | self.PIB_LEN * 2][
-                                self.HEAD_LEN + idx * 2 : self.HEAD_LEN + idx * 2 + 2
+                            self._data_final[pack << 8 | BMS.PIB_LEN * 2][
+                                BMS.HEAD_LEN + idx * 2 : BMS.HEAD_LEN + idx * 2 + 2
                             ],
                             byteorder="big",
                         )
@@ -278,11 +247,8 @@ class BMS(BaseBMS):
                 data |= {
                     f"{KEY_TEMP_VALUE}{idx+8*(pack-1)}": (
                         int.from_bytes(
-                            self._data_final[pack << 8 | self.PIB_LEN * 2][
-                                self.TEMP_START
-                                + idx * 2 : self.TEMP_START
-                                + idx * 2
-                                + 2
+                            self._data_final[pack << 8 | BMS.PIB_LEN * 2][
+                                BMS.TEMP_START + idx * 2 : BMS.TEMP_START + idx * 2 + 2
                             ],
                             byteorder="big",
                         )

@@ -6,8 +6,9 @@ from uuid import UUID
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
-from custom_components.bms_ble.plugins.seplos_bms import BMS
 import pytest
+
+from custom_components.bms_ble.plugins.seplos_bms import BMS
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -150,7 +151,7 @@ class MockSeplosBleakClient(MockBleakClient):
     async def send_frag_response(
         self,
         data: Buffer,
-        _response: bool = None,  # type: ignore[implicit-optional] # same as upstream
+        _response: bool | None = None,
     ) -> None:
         """Send fragmented response."""
 
@@ -169,7 +170,7 @@ class MockSeplosBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # type: ignore[implicit-optional] # same as upstream
+        response: bool | None = None,
     ) -> None:
         """Issue write command to GATT."""
 
@@ -189,7 +190,7 @@ class MockWrongCRCBleakClient(MockSeplosBleakClient):
     async def send_frag_response(
         self,
         data: Buffer,
-        _response: bool = None,  # type: ignore[implicit-optional] # same as upstream
+        _response: bool | None = None,
     ) -> None:
         """Send fragmented response."""
 
@@ -231,7 +232,7 @@ class MockOversizedBleakClient(MockSeplosBleakClient):
     async def send_frag_response(
         self,
         data: Buffer,
-        response: bool = None,  # type: ignore[implicit-optional] # same as upstream
+        _response: bool | None = None,
     ) -> None:
         """Send fragmented response and add trash to each message."""
 
@@ -329,7 +330,7 @@ async def test_invalid_message(monkeypatch) -> None:
     """Test data update with BMS returning error message."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.seplos_bms.BAT_TIMEOUT",
+        "custom_components.bms_ble.plugins.seplos_bms.BMS.BAT_TIMEOUT",
         0.1,
     )
 

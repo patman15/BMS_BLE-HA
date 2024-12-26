@@ -11,7 +11,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 ## Features
 - Zero configuration
 - Autodetects compatible batteries
-- Supports [ESPHome Bluetooth proxy][btproxy-url]  ([BT proxy limit][btproxy-url]: 3 devices/proxy)
+- Supports [ESPHome Bluetooth proxy][btproxy-url]  (limit: 3 devices/proxy)
 - Any number of batteries in parallel
 - Native Home Assistant integration (works with all [HA installation methods](https://www.home-assistant.io/installation/#advanced-installation-methods))
 - Readout of individual cell voltages to be able to judge battery health
@@ -20,16 +20,22 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - CBT Power BMS, Creabest batteries
 - D-powercore BMS (show up as `DXB-`&#x2026;), Fliteboard batteries (show up as `TBA-`&#x2026;)
 - Daly BMS (show up as `DL-`&#x2026;)
-- E&J Technology BMS, Supervolt v1 batteries
-- JBD BMS, Jiabaida
-  - accurat batteries
-  - Supervolt v3 batteries
-- JK BMS, Jikong, (HW version >=11 required)
+- E&J Technology BMS
+    - Supervolt v1 batteries
+    - Elektronicx batteries (show up as `LT-`&#x2026;)
+- Ective batteries
+- JBD BMS, Jiabaida (show up as `SP..S`&#x2026;)
+    - accurat batteries (show up as `GJ-`&#x2026;)
+    - Supervolt v3 batteries (show up as `SX1*`&#x2026;)
+- JK BMS, Jikong, (HW version &ge; 6 required)
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
-- LiTime, Redodo batteries
+- LiTime, Power Queen, and Redodo batteries
+- Seplos v2 (show up as `BP0?`)
 - Seplos v3 (show up as `SP0`&#x2026; or `SP1`&#x2026;)
+- TDT BMS (show up as e.g., `XDZN`&#x2026;)
 
-New device types can be easily added via the plugin architecture of this integration. See the [contribution guidelines](CONTRIBUTING.md) for details.
+> [!TIP]
+> New device types can be easily added via the plugin architecture of this integration. See the [contribution guidelines](CONTRIBUTING.md) for details.
 
 ### Provided Information
 > [!CAUTION]
@@ -46,10 +52,10 @@ Platform | Description | Unit | Details
 `sensor` | current | `A` | positive for charging, negative for discharging; if supported, balance current is available as attribute to this sensor
 `sensor` | delta voltage | `V` | maximum difference between any two cells; individual cell voltage are available as attribute to this sensor
 `sensor` | power | `W` | positive for charging, negative for discharging
-`sensor` | runtime | `s` | remaining discharge time till SoC 0%
+`sensor` | runtime | `s` | remaining discharge time till SoC 0%, `unavailable` during idle/charging
 `sensor` | SoC | `%` | state of charge, range 100% (full) to 0% (battery empty)
 `sensor` | stored energy | `Wh` | currently stored energy
-`sensor` | temperature | `°C` | individual temperature values are available as attribute to this sensor, if the BMS supports multiple sensors
+`sensor` | temperature | `°C` | (average) battery temperature; if the BMS supports multiple sensors, individual temperature values are available as attribute to this sensor
 `sensor` | voltage | `V` | overall battery voltage
 `sensor`* | link quality  | `%` | successful BMS queries from the last hundred update periods
 `sensor`* | RSSI          | `dBm`| received signal strength indicator 
@@ -67,7 +73,9 @@ bad | 0 to 60  | -90 to low
 
 ## Installation
 ### Automatic
-Installation can be done using [HACS](https://hacs.xyz/) by [adding a custom repository](https://hacs.xyz/docs/faq/custom_repositories/).
+Installation can be done using [HACS](https://hacs.xyz/docs/use/) by [adding a custom repository](https://hacs.xyz/docs/faq/custom_repositories/):<br>
+`Repository`: https://github.com/patman15/BMS_BLE-HA/<br>
+`Type`: integration
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=patman15&repository=BMS_BLE-HA&category=Integration)
 
@@ -79,6 +87,12 @@ Installation can be done using [HACS](https://hacs.xyz/) by [adding a custom rep
 1. Place the files you downloaded in the new directory (folder) you created.
 1. Restart Home Assistant
 1. In the HA UI go to "Configuration" -> "Integrations" click "+" and [search](https://my.home-assistant.io/redirect/config_flow_start/?domain=bms_ble) for "BLE Battery Management"
+
+## Known Issues
+
+<details><summary>Elektronicx batteries</summary>
+Bluetooth is turned off, when there is no current. Thus device will get unavailble / cannot be added.
+</details>
 
 ## FAQ
 ### My sensors show unknown/unavailable at startup!
@@ -136,10 +150,18 @@ Then you need to pair your device first. This is procedure is only required once
 Once pairing is done, the integration should automatically detect the BMS.
 
 ## Troubleshooting
-In case you have severe troubles,
+### If your device is not recognized
+
+1. Check that your BMS type is listed as [supported device](#supported-devices)
+1. Make sure that no other device is connected to the BMS, e.g. app on your phone
+1. Check that your are running the [latest release](https://github.com//patman15/BMS_BLE-HA/releases)  of the integration
+1. Open a [terminal to Home Assistant](https://www.home-assistant.io/common-tasks/supervised/#installing-and-using-the-ssh-add-on) and verify that your BMS is listed in the ouput of the command `bluetoothctl devices`. Try to connect to the BMS using `bluetoothctl connect <MAC>`.
+1. If you use a BT proxy, make sure you have set `active: true` and that you do not exced the [BT proxy limit][btproxy-url] of 3 devices/proxy; check the logs of the proxy if the device is recognized.
+
+### In case you have severe troubles
 
 - please [enable the debug protocol](https://www.home-assistant.io/docs/configuration/troubleshooting/#debug-logs-and-diagnostics) for the [BLE Battery Management integration](https://my.home-assistant.io/redirect/integration/?domain=bms_ble),
-- reproduce the issue,
+- restart Home Assistant and reproduce the issue,
 - disable the log (Home Assistant will prompt you to download the log), and finally
 - [open an issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=Bug&projects=&template=bug.yml) with a good description of what happened and attach the log.
 
@@ -150,7 +172,7 @@ In case you have severe troubles,
 - Add further battery types on [request](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.yml)
 
 ## Thanks to
-> [@gkathan](https://github.com/patman15/BMS_BLE-HA/issues/2), [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22), [@Goaheadz](https://github.com/patman15/BMS_BLE-HA/issues/24), [@alros100, @majonessyltetoy](https://github.com/patman15/BMS_BLE-HA/issues/52), [@snipah, @Gruni22](https://github.com/patman15/BMS_BLE-HA/issues/59), [@azisto](https://github.com/patman15/BMS_BLE-HA/issues/78), [@BikeAtor, @Karatzie](https://github.com/patman15/BMS_BLE-HA/issues/57), [@SkeLLLa,@romanshypovskyi](https://github.com/patman15/BMS_BLE-HA/issues/90)
+> [@gkathan](https://github.com/patman15/BMS_BLE-HA/issues/2), [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22), [@Goaheadz](https://github.com/patman15/BMS_BLE-HA/issues/24), [@alros100, @majonessyltetoy](https://github.com/patman15/BMS_BLE-HA/issues/52), [@snipah, @Gruni22](https://github.com/patman15/BMS_BLE-HA/issues/59), [@azisto](https://github.com/patman15/BMS_BLE-HA/issues/78), [@BikeAtor, @Karatzie](https://github.com/patman15/BMS_BLE-HA/issues/57), [@SkeLLLa,@romanshypovskyi](https://github.com/patman15/BMS_BLE-HA/issues/90), [@riogrande75, @ebagnoli, @andreas-bulling](https://github.com/patman15/BMS_BLE-HA/issues/101), [@goblinmaks, @andreitoma-github](https://github.com/patman15/BMS_BLE-HA/issues/102), [@hacsler](https://github.com/patman15/BMS_BLE-HA/issues/103)
 
 for helping with making the integration better.
 
