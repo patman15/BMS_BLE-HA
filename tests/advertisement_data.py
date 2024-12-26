@@ -5,25 +5,25 @@ from typing import Final
 from .bluetooth import generate_advertisement_data
 
 ADVERTISEMENTS: Final[list] = [
-    # (  # source LOG
-    #     generate_advertisement_data(
-    #         local_name="NWJ20221223010330",#\x11",
-    #         manufacturer_data={65535: b"0UD7\xa2\xd2"},
-    #         service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
-    #         rssi=-56,
-    #     ),
-    #     "ective_bms",
-    # ),
-    # ( # source LOG
-    #     generate_advertisement_data(
-    #         local_name="NWJ20221223010388",#\x11",
-    #         manufacturer_data={65535: b"0UD7b\xec"},
-    #         service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
-    #         rssi=-47,
-    #     ),
-    #     "ective_bms",
-    # ),
     (  # source LOG
+        generate_advertisement_data(
+            local_name="NWJ20221223010330\x11",
+            manufacturer_data={65535: b"0UD7\xa2\xd2"},
+            service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
+            rssi=-56,
+        ),
+        "ective_bms",
+    ),
+    (  # source LOG
+        generate_advertisement_data(
+            local_name="NWJ20221223010388\x11",
+            manufacturer_data={65535: b"0UD7b\xec"},
+            service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
+            rssi=-47,
+        ),
+        "ective_bms",
+    ),
+    (
         generate_advertisement_data(
             local_name="BatteryOben-00",
             manufacturer_data={2917: b"\x88\xa0\xc8G\x80\x0f\xd5\xc5"},

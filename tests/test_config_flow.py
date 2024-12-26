@@ -40,7 +40,7 @@ def bms_advertisement(request) -> BluetoothServiceInfoBleak:
     address: Final[str] = "c0:ff:ee:c0:ff:ee"
     return BluetoothServiceInfoBleak(
         name=str(dev.local_name),
-        address=request.param[1],
+        address=f"{address}_{request.param[1]}",
         device=generate_ble_device(address=address, name=dev.local_name),
         rssi=dev.rssi,
         service_uuids=dev.service_uuids,
@@ -56,22 +56,17 @@ def bms_advertisement(request) -> BluetoothServiceInfoBleak:
     )
 
 
-async def test_device_discovery(
-    advertisement: BluetoothServiceInfoBleak, hass: HomeAssistant
+async def test_bluetooth_discovery(
+    hass: HomeAssistant, advertisement: BluetoothServiceInfoBleak
 ) -> None:
-    """Test discovery via bluetooth with a valid device."""
-
-    result: ConfigFlowResult = await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={"source": SOURCE_BLUETOOTH},
-        data=advertisement,
-    )
-
-    assert result.get("type") == FlowResultType.FORM
-    assert result.get("step_id") == "bluetooth_confirm"
-    assert result.get("description_placeholders") == {"name": advertisement.name}
+    """Test bluetooth device discovery."""
 
     inject_bluetooth_service_info_bleak(hass, advertisement)
+    await hass.async_block_till_done(wait_background_tasks=True)
+
+    result: ConfigFlowResult = hass.config_entries.flow.async_progress_by_handler(DOMAIN)[0]
+    assert result.get("step_id") == "bluetooth_confirm"
+    assert result.get("context", {}).get("unique_id") == advertisement.address
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], user_input={"not": "empty"}
@@ -80,10 +75,10 @@ async def test_device_discovery(
     assert result.get("type") == FlowResultType.CREATE_ENTRY
     assert result.get("title") == advertisement.name
 
-    # BluetoothServiceInfoBleak contains BMS type in the address, see bms_advertisement
+    # BluetoothServiceInfoBleak contains BMS type as trailer to the address, see bms_advertisement
     assert (
         hass.config_entries.async_entries()[1].data["type"]
-        == f"custom_components.bms_ble.plugins.{advertisement.address}"
+        == f"custom_components.bms_ble.plugins.{advertisement.address.split('_',1)[-1]}"
     )
 
 
@@ -95,7 +90,7 @@ async def test_device_setup(
 ) -> None:
     """Test discovery via bluetooth with a valid device."""
 
-    result = await hass.config_entries.flow.async_init(
+    result: ConfigFlowResult = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_BLUETOOTH},
         data=BTdiscovery,
@@ -154,7 +149,7 @@ async def test_invalid_plugin(monkeypatch, BTdiscovery, hass: HomeAssistant) -> 
     """
 
     monkeypatch.delattr(BaseBMS, "supported")
-    result = await hass.config_entries.flow.async_init(
+    result: ConfigFlowResult = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_BLUETOOTH},
         data=BTdiscovery,
@@ -231,7 +226,7 @@ async def test_user_setup(
 
     inject_bluetooth_service_info_bleak(hass, BTdiscovery)
 
-    result = await hass.config_entries.flow.async_init(
+    result: ConfigFlowResult = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_USER}
     )
     assert result.get("type") == FlowResultType.FORM
@@ -297,7 +292,7 @@ async def test_user_setup_double_configure(
 
     inject_bluetooth_service_info_bleak(hass, BTdiscovery)
 
-    result = await hass.config_entries.flow.async_init(
+    result: ConfigFlowResult = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_USER}
     )
     assert result.get("type") == FlowResultType.ABORT
