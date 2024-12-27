@@ -71,6 +71,14 @@ ADVERTISEMENTS: Final[list] = [
     ),
     (
         generate_advertisement_data(
+            local_name="SP66B2404270002       ",
+            service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
+            rssi=-81,
+        ),
+        "seplos_bms",
+    ),
+    (
+        generate_advertisement_data(
             local_name="BP02",
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
             rssi=-81,
