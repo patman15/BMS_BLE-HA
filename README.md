@@ -31,7 +31,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
 - LiTime, Power Queen, and Redodo batteries
 - Seplos v2 (show up as `BP0?`)
-- Seplos v3 (show up as `SP0`&#x2026; or `SP1`&#x2026;)
+- Seplos v3 (show up as `SP0`&#x2026;, `SP1`&#x2026;, or `SP6`&#x2026;)
 - TDT BMS (show up as e.g., `XDZN`&#x2026;)
 
 > [!TIP]
@@ -49,7 +49,7 @@ Platform | Description | Unit | Details
 -- | -- | -- | --
 `binary_sensor` | battery charging | `bool` | indicates `True` if battery is charging
 `sensor` | charge cycles | `#` | lifetime number of charge cycles
-`sensor` | current | `A` | positive for charging, negative for discharging
+`sensor` | current | `A` | positive for charging, negative for discharging; if supported, balance current is available as attribute to this sensor
 `sensor` | delta voltage | `V` | maximum difference between any two cells; individual cell voltage are available as attribute to this sensor
 `sensor` | power | `W` | positive for charging, negative for discharging
 `sensor` | runtime | `s` | remaining discharge time till SoC 0%, `unavailable` during idle/charging

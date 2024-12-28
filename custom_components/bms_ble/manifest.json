@@ -43,6 +43,10 @@
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
+      "local_name": "SP6*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },
+    {
       "local_name": "TBA-*"
     },
     {
@@ -90,5 +94,5 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bleak_retry_connector"],
   "requirements": [],
-  "version": "1.11.1"
+  "version": "1.11.2"
 }
