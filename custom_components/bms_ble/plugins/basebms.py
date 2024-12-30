@@ -228,6 +228,7 @@ class BaseBMS(metaclass=ABCMeta):
         """Send data to the BMS and wait for valid reply notification."""
 
         self._log.debug("TX BLE data: %s", data.hex(" "))
+        self._data_event.clear()  # clear event before requesting new data
         await self._client.write_gatt_char(char or self.uuid_tx(), data)
         if wait_for_notify:
             await asyncio.wait_for(self._wait_event(), timeout=self.BAT_TIMEOUT)
