@@ -190,6 +190,7 @@ ADVERTISEMENTS: Final[list] = [
         generate_advertisement_data( # ECO-WORTHY LiFePO4 12V 100Ah
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
             manufacturer_data={8856: "\x28\x37\xc2\xa5"},
+            rssi=-53,
         ),
         "jbd_bms",
     ),
