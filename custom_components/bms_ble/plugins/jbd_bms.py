@@ -58,6 +58,12 @@ class BMS(BaseBMS):
                 "connectable": True,
             }
             for pattern in ["SP0?S*", "SP1?S*", "SP2?S*", "GJ-*", "SX1*"]
+        ] + [
+            { # ECO-WORTHY LiFePO4 12V 100Ah
+                "service_uuid": BMS.uuid_services()[0],
+                "manufacturer_id": 0x2298,
+                "connectable": True,
+            }
         ]
 
     @staticmethod
