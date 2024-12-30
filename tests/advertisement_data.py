@@ -179,10 +179,17 @@ ADVERTISEMENTS: Final[list] = [
         "daly_bms",
     ),
     (  # source nRF (https://github.com/patman15/BMS_BLE-HA/issues/22#issuecomment-2198586195)
-        generate_advertisement_data(
-            local_name="SX100P-B230201",  # Supervolt Battery
+        generate_advertisement_data(  # Supervolt battery
+            local_name="SX100P-B230201",
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
             manufacturer_data={31488: "\x02\xFF\xFF\x7D"},
+        ),
+        "jbd_bms",
+    ),
+    (  # source bluetoothctl (https://github.com/patman15/BMS_BLE-HA/issues/134)
+        generate_advertisement_data( # ECO-WORTHY LiFePO4 12V 100Ah
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            manufacturer_data={8856: "\x28\x37\xc2\xa5"},
         ),
         "jbd_bms",
     ),
