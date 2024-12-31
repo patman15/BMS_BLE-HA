@@ -23,6 +23,23 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "ective_bms",
     ),
+    (  # nRF Connect (https://github.com/patman15/BMS_BLE-HA/issues/82#issuecomment-2498299433)
+        generate_advertisement_data(
+            local_name="$PFLAC,R,RADIOID\x0D\x0A",
+            manufacturer_data={65535: b"\x10\x55\x44\x33\xE8\xB4"},
+            service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
+            rssi=-47,
+        ),
+        "ective_bms",
+    ),
+    (  # bluetoothctl (https://github.com/patman15/BMS_BLE-HA/issues/137)
+        generate_advertisement_data(
+            local_name="NWJ20200720020539",
+            manufacturer_data={0: b"\x34\x14\xb5\x9d\x78\xE7\x4c"},
+            service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
+        ),
+        "ective_bms",
+    ),
     (
         generate_advertisement_data(
             local_name="BatteryOben-00",
