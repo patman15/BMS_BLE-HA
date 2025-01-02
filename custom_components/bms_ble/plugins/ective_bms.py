@@ -55,7 +55,6 @@ class BMS(BaseBMS):
             {
                 "local_name": pattern,
                 "service_uuid": BMS.uuid_services()[0],
-                "manufacturer_id": 65535,
                 "connectable": True,
             } for pattern in ["$PFLAC*", "NWJ20*"]
         ]

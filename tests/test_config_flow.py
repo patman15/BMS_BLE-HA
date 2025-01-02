@@ -64,7 +64,11 @@ async def test_bluetooth_discovery(
     inject_bluetooth_service_info_bleak(hass, advertisement)
     await hass.async_block_till_done(wait_background_tasks=True)
 
-    result: ConfigFlowResult = hass.config_entries.flow.async_progress_by_handler(DOMAIN)[0]
+    flowresults: list[ConfigFlowResult] = (
+        hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+    )
+    assert len(flowresults) == 1, f"Expected one flow result for {advertisement}"
+    result: ConfigFlowResult = flowresults[0]
     assert result.get("step_id") == "bluetooth_confirm"
     assert result.get("context", {}).get("unique_id") == advertisement.address
 
