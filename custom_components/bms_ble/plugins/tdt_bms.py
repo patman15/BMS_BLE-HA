@@ -58,9 +58,8 @@ class BMS(BaseBMS):
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
         super().__init__(__name__, self._notification_handler, ble_device, reconnect)
-        self._data: bytearray = bytearray()
-        self._exp_len: int = 0
         self._data_final: dict[int, bytearray] = {}
+        self._exp_len: int = 0
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -108,6 +107,7 @@ class BMS(BaseBMS):
             self._log.debug("error unlocking BMS: %X", ret)
 
         await super()._init_connection()
+        self._exp_len = 0
 
     def _notification_handler(self, _sender, data: bytearray) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""

@@ -64,7 +64,6 @@ class BMS(BaseBMS):
         """Intialize private BMS members."""
         super().__init__(__name__, self._notification_handler, ble_device, reconnect)
         assert self._ble_device.name is not None  # required for unlock
-        self._data: bytearray = bytearray()
         self._data_final: bytearray = bytearray()
 
     @staticmethod
@@ -205,7 +204,7 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        data = {}
+        data: BMSsample = {}
         for request in [Cmd.LEGINFO1, Cmd.LEGINFO2, Cmd.CELLVOLT]:
             await self._await_reply(self._cmd_frame(request, b""))
 

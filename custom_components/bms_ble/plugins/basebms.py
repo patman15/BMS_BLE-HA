@@ -75,11 +75,12 @@ class BaseBMS(metaclass=ABCMeta):
             self.device_id(),
             ble_device.address,
         )
-        self._client = BleakClient(
+        self._client: BleakClient = BleakClient(
             self._ble_device,
             disconnected_callback=self._on_disconnect,
             services=[*self.uuid_services()],
         )
+        self._data: bytearray = bytearray()
         self._data_event: Final[asyncio.Event] = asyncio.Event()
 
     @staticmethod
@@ -192,6 +193,10 @@ class BaseBMS(metaclass=ABCMeta):
         self._log.debug("disconnected from BMS")
 
     async def _init_connection(self) -> None:
+         # reset any stale data from BMS
+        self._data.clear()
+        self._data_event.clear()
+
         await self._client.start_notify(self.uuid_rx(), self._notification_method)
 
     async def _connect(self) -> None:
@@ -202,7 +207,7 @@ class BaseBMS(metaclass=ABCMeta):
             return
 
         self._log.debug("connecting BMS")
-        self._client: BleakClient = await establish_connection(
+        self._client = await establish_connection(
             client_class=BleakClient,
             device=self._ble_device,
             name=self._ble_device.address,

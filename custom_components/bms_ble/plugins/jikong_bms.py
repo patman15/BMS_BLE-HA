@@ -50,7 +50,6 @@ class BMS(BaseBMS):
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
         super().__init__(__name__, self._notification_handler, ble_device, reconnect)
-        self._data: bytearray = bytearray()
         self._data_final: bytearray = bytearray()
         self._char_write_handle: int = -1
         self._bms_info: dict[str, str] = {}
@@ -154,7 +153,7 @@ class BMS(BaseBMS):
         self._data_event.set()
 
     async def _init_connection(self) -> None:
-        """Initialize RX/TX characteristics."""
+        """Initialize RX/TX characteristics and protocol state."""
         char_notify_handle: int = -1
         self._char_write_handle = -1
 

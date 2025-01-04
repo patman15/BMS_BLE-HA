@@ -52,9 +52,8 @@ class BMS(BaseBMS):
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
         super().__init__(__name__, self._notification_handler, ble_device, reconnect)
-        self._data: bytearray = bytearray()
-        self._exp_len: int = 0
         self._data_final: dict[int, bytearray] = {}
+        self._exp_len: int = 0
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -147,6 +146,11 @@ class BMS(BaseBMS):
 
         self._data_final[self._data[3]] = self._data
         self._data_event.set()
+
+    async def _init_connection(self) -> None:
+        """Initialize protocol state."""
+        await super()._init_connection()
+        self._exp_len = 0
 
     @staticmethod
     def _cmd(cmd: int, address: int = 0, data: bytearray = bytearray()) -> bytearray:
