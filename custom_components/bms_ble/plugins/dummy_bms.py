@@ -1,7 +1,5 @@
 """Module to support Dummy BMS."""
 
-from typing import Any
-
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
@@ -31,7 +29,7 @@ class BMS(BaseBMS):
         super().__init__(__name__, ble_device, reconnect)
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [{"local_name": "dummy", "connectable": True}]
 

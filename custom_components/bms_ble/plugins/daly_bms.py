@@ -1,7 +1,7 @@
 """Module to support Daly Smart BMS."""
 
 from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
@@ -56,7 +56,7 @@ class BMS(BaseBMS):
         super().__init__(__name__, ble_device, reconnect)
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [
             {

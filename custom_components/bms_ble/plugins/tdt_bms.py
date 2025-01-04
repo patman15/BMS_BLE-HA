@@ -1,7 +1,7 @@
 """Module to support TDT BMS."""
 
 from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
@@ -63,7 +63,7 @@ class BMS(BaseBMS):
         self._exp_len: int = 0
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [{"manufacturer_id": 54976, "connectable": True}]
 

@@ -3,6 +3,7 @@
 from collections import deque
 from datetime import timedelta
 from time import monotonic
+from typing import Final
 
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
@@ -36,8 +37,8 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
             always_update=False,  # only update when sensor value has changed
         )
-        self.name: str = ble_device.name
-        self._mac = ble_device.address
+        self.name: Final[str] = ble_device.name
+        self._mac: Final[str] = ble_device.address
         LOGGER.debug(
             "Initializing coordinator for %s (%s) as %s",
             self.name,
@@ -51,8 +52,8 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             LOGGER.debug("%s: advertisement: %s", self.name, service_info.as_dict())
 
         # retrieve BMS class and initialize it
-        self._device: BaseBMS = bms_device
-        device_info = self._device.device_info()
+        self._device: Final[BaseBMS] = bms_device
+        device_info: dict[str, str] = self._device.device_info()
         self.device_info = DeviceInfo(
             identifiers={
                 (DOMAIN, self._mac),
@@ -92,7 +93,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
 
         LOGGER.debug("%s: BMS data update", self.name)
 
-        start = monotonic()
+        start: Final[float] = monotonic()
         try:
             battery_info = await self._device.async_update()
             if not battery_info:

@@ -1,7 +1,7 @@
 """Module to support Seplos V2 BMS."""
 
 from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
@@ -57,7 +57,7 @@ class BMS(BaseBMS):
         self._exp_len: int = 0
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [
             {
@@ -131,7 +131,7 @@ class BMS(BaseBMS):
             self._log.debug("BMS reported error code: 0x%X", self._data[4])
             return
 
-        crc = crc_xmodem(self._data[1:-3])
+        crc: Final[int] = crc_xmodem(self._data[1:-3])
         if int.from_bytes(self._data[-3:-1]) != crc:
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",

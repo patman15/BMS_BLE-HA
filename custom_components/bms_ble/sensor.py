@@ -146,8 +146,8 @@ async def async_setup_entry(
 ) -> None:
     """Add sensors for passed config_entry in Home Assistant."""
 
-    bms: BTBmsCoordinator = config_entry.runtime_data
-    mac: str = format_mac(config_entry.unique_id)
+    bms: Final[BTBmsCoordinator] = config_entry.runtime_data
+    mac: Final[str] = format_mac(config_entry.unique_id)
     for descr in SENSOR_TYPES:
         if descr.key == ATTR_RSSI:
             async_add_entities([RSSISensor(bms, descr, mac)])

@@ -1,7 +1,7 @@
 """Module to support Seplos V3 Smart BMS."""
 
 from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
@@ -70,7 +70,7 @@ class BMS(BaseBMS):
         self._pkglen: int = 0  # expected packet length
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [
             {
@@ -190,7 +190,7 @@ class BMS(BaseBMS):
         assert device >= 0x00 and (device <= 0x10 or device in (0xC0, 0xE0))
         assert cmd in (0x01, 0x04)  # allow only read commands
         assert start >= 0 and count > 0 and start + count <= 0xFFFF
-        frame = bytearray([device, cmd])
+        frame: bytearray = bytearray([device, cmd])
         frame += bytearray(int.to_bytes(start, 2, byteorder="big"))
         frame += bytearray(int.to_bytes(count, 2, byteorder="big"))
         frame += bytearray(int.to_bytes(crc_modbus(frame), 2, byteorder="little"))

@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 from enum import IntEnum
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
@@ -68,7 +68,7 @@ class BMS(BaseBMS):
         self._data_final: bytearray = bytearray()
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [
             {
@@ -165,8 +165,8 @@ class BMS(BaseBMS):
 
     @staticmethod
     def _cmd_frame(cmd: Cmd, data: bytes) -> bytes:
-        frame = bytes([cmd.value, 0x00, 0x00]) + data
-        checksum = BMS._crc(frame)
+        frame: bytes = bytes([cmd.value, 0x00, 0x00]) + data
+        checksum: Final[int] = BMS._crc(frame)
         frame = (
             bytes([0x3A, 0x03, 0x05])
             + frame

@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 import asyncio
 import logging
 from statistics import fmean
-from typing import Any, Final, Literal
+from typing import Final, Literal
 
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -83,7 +83,7 @@ class BaseBMS(metaclass=ABCMeta):
 
     @staticmethod
     @abstractmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[dict]:
         """Return a list of Bluetooth matchers."""
 
     @staticmethod

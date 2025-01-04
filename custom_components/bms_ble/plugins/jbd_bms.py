@@ -1,7 +1,7 @@
 """Module to support JBD Smart BMS."""
 
 from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
@@ -49,7 +49,7 @@ class BMS(BaseBMS):
         self._data_final: bytearray = bytearray()
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [
             {
