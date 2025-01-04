@@ -103,9 +103,9 @@ class BMS(BaseBMS):
         # check if answer is a heading of basic info (0x3) or cell block info (0x4)
         if (
             data.startswith(self.HEAD_RSP)
-            and (data[1] == 0x03 or data[1] == 0x04)
-            and data[2] == 0x00
             and len(self._data) > self.INFO_LEN
+            and data[1] in (0x03, 0x04)
+            and data[2] == 0x00
             and len(self._data) >= self.INFO_LEN + self._data[3]
         ):
             self._data = bytearray()
