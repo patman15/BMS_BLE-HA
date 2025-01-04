@@ -45,7 +45,6 @@ class BMS(BaseBMS):
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
         super().__init__(__name__, self._notification_handler, ble_device, reconnect)
-        self._data: bytearray = bytearray()
         self._data_final: bytearray = bytearray()
 
     @staticmethod
@@ -58,6 +57,12 @@ class BMS(BaseBMS):
                 "connectable": True,
             }
             for pattern in ["SP0?S*", "SP1?S*", "SP2?S*", "GJ-*", "SX1*"]
+        ] + [
+            { # ECO-WORTHY LiFePO4 12V 100Ah
+                "service_uuid": BMS.uuid_services()[0],
+                "manufacturer_id": 0x2298,
+                "connectable": True,
+            }
         ]
 
     @staticmethod

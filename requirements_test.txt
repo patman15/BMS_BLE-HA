@@ -22,4 +22,4 @@ bluetooth-data-tools
 pyserial-asyncio
 pyudev
 pytest-homeassistant-custom-component==0.13.132
-
+kegtron-ble

@@ -80,6 +80,7 @@ class BaseBMS(metaclass=ABCMeta):
             disconnected_callback=self._on_disconnect,
             services=[*self.uuid_services()],
         )
+        self._data: bytearray = bytearray()
         self._data_event: Final[asyncio.Event] = asyncio.Event()
 
     @staticmethod
@@ -193,6 +194,10 @@ class BaseBMS(metaclass=ABCMeta):
         self._log.debug("disconnected from BMS")
 
     async def _init_connection(self) -> None:
+         # reset any stale data from BMS
+        self._data.clear()
+        self._data_event.clear()
+
         await self._client.start_notify(self.uuid_rx(), self._notification_method)
 
     async def _connect(self) -> None:
@@ -229,6 +234,7 @@ class BaseBMS(metaclass=ABCMeta):
         """Send data to the BMS and wait for valid reply notification."""
 
         self._log.debug("TX BLE data: %s", data.hex(" "))
+        self._data_event.clear()  # clear event before requesting new data
         await self._client.write_gatt_char(char or self.uuid_tx(), data)
         if wait_for_notify:
             await asyncio.wait_for(self._wait_event(), timeout=self.BAT_TIMEOUT)

@@ -64,26 +64,20 @@ class BMS(BaseBMS):
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
         super().__init__(__name__, self._notification_handler, ble_device, reconnect)
-        self._data: bytearray = bytearray()
-        self._pkglen: int = 0  # expected packet length
         self._data_final: dict[int, bytearray] = {}
-        self._pack_count: int = 0
-        self._char_write_handle: int | None = None
+        self._pack_count: int = 0  # number of battery packs
+        self._pkglen: int = 0  # expected packet length
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
         """Provide BluetoothMatcher definition."""
         return [
             {
-                "local_name": "SP0*",
+                "local_name": pattern,
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
-            },
-            {
-                "local_name": "SP1*",
-                "service_uuid": BMS.uuid_services()[0],
-                "connectable": True,
-            },
+            }
+            for pattern in ["SP0*", "SP1*", "SP6*"]
         ]
 
     @staticmethod
@@ -171,6 +165,12 @@ class BMS(BaseBMS):
                 )
 
         self._data_event.set()
+
+    async def _init_connection(self) -> None:
+        """Initialize RX/TX characteristics."""
+        await super()._init_connection()
+        self._pack_count = 0
+        self._pkglen = 0
 
     @staticmethod
     def _swap32(value: int, signed: bool = False) -> int:

@@ -45,7 +45,6 @@ class BMS(BaseBMS):
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
         super().__init__(__name__, self._notification_handler, ble_device, reconnect)
-        self._data: bytearray = bytearray()
         self._data_final: bytearray = bytearray()
 
     @staticmethod
@@ -55,7 +54,6 @@ class BMS(BaseBMS):
             {
                 "local_name": pattern,
                 "service_uuid": BMS.uuid_services()[0],
-                "manufacturer_id": 65535,
                 "connectable": True,
             } for pattern in ["$PFLAC*", "NWJ20*"]
         ]
