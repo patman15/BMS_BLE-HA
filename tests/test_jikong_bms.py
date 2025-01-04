@@ -616,3 +616,43 @@ async def test_invalid_device(monkeypatch) -> None:
     assert result == {}
 
     await bms.disconnect()
+
+
+async def test_non_stale_data(monkeypatch) -> None:
+    """Test if BMS class is reset if connection is reset."""
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.jikong_bms.BMS.BAT_TIMEOUT",
+        0.1,
+    )
+
+    monkeypatch.setattr(
+        "tests.test_jikong_bms.MockJikongBleakClient._FRAME", _PROTO_DEFS["JK02_32S"]
+    )
+
+    orig_response = MockJikongBleakClient._response
+    monkeypatch.setattr(
+        "tests.test_jikong_bms.MockJikongBleakClient._response",
+        lambda _s, _c_, d: bytearray(b"\x55\xaa\xeb\x90\x05")
+        + bytearray(10),  # invalid frame type (0x5)
+    )
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient", MockJikongBleakClient
+    )
+
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
+
+    # run an update which provides half a valid message and then disconnects
+    result: BMSsample = {}
+    with pytest.raises(TimeoutError):
+        result = await bms.async_update()
+    assert result == {}
+    await bms.disconnect()
+
+    # restore working BMS responses and run a test again to see if stale data is kept
+    monkeypatch.setattr(
+        "tests.test_jikong_bms.MockJikongBleakClient._response", orig_response
+    )
+
+    assert await bms.async_update() == _RESULT_DEFS["JK02_32S"]
