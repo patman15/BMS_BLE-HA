@@ -3,6 +3,7 @@
 from collections.abc import Callable
 from typing import Any, Final
 
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
@@ -37,7 +38,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, ble_device, reconnect)
         self._type: str = self.name[9] if len(self.name) >= 9 else "?"
         self._key: int = sum(
             CRYPT_SEQ[int(c, 16)] for c in (f"{int(self.name[10:]):0>4X}")
@@ -142,7 +143,9 @@ class BMS(BaseBMS):
 
         return self._values
 
-    def _notification_handler(self, sender, data: bytearray) -> None:
+    def _notification_handler(
+        self, sender: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
         self._log.debug("RX BLE data: %s", data)
 
         valid, reg, nat_value = self._ogt_response(data)

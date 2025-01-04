@@ -3,6 +3,7 @@
 from collections.abc import Callable
 from typing import Any, Final
 
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
@@ -44,7 +45,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, ble_device, reconnect)
         self._data_final: bytearray = bytearray()
 
     @staticmethod
@@ -58,7 +59,7 @@ class BMS(BaseBMS):
             }
             for pattern in ["SP0?S*", "SP1?S*", "SP2?S*", "GJ-*", "SX1*"]
         ] + [
-            { # ECO-WORTHY LiFePO4 12V 100Ah
+            {  # ECO-WORTHY LiFePO4 12V 100Ah
                 "service_uuid": BMS.uuid_services()[0],
                 "manufacturer_id": 0x2298,
                 "connectable": True,
@@ -96,7 +97,9 @@ class BMS(BaseBMS):
             ATTR_TEMPERATURE,
         }
 
-    def _notification_handler(self, _sender, data: bytearray) -> None:
+    def _notification_handler(
+        self, _sender: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
         # check if answer is a heading of basic info (0x3) or cell block info (0x4)
         if (
             data.startswith(self.HEAD_RSP)

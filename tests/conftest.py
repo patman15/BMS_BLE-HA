@@ -149,7 +149,7 @@ def mock_config(bms: str, unique_id: str | None = "cc:cc:cc:cc:cc:cc"):
 
 
 @pytest.fixture(params=["OGTBms", "DalyBms"])
-def mock_config_v0_1(request, unique_id="cc:cc:cc:cc:cc:cc"):
+def mock_config_v0_1(request, unique_id="cc:cc:cc:cc:cc:cc") -> MockConfigEntry[Any]:
     """Return a Mock of the HA entity config."""
     return MockConfigEntry(
         domain=DOMAIN,
@@ -162,13 +162,13 @@ def mock_config_v0_1(request, unique_id="cc:cc:cc:cc:cc:cc"):
 
 
 @pytest.fixture(params=[TimeoutError, BleakError, EOFError])
-def mock_coordinator_exception(request):
+def mock_coordinator_exception(request: pytest.FixtureRequest)-> Exception:
     """Return possible exceptions for mock BMS update function."""
     return request.param
 
 
 @pytest.fixture(params=[*BMS_TYPES, "dummy_bms"])
-def plugin_fixture(request) -> BaseBMS:
+def plugin_fixture(request: pytest.FixtureRequest) -> BaseBMS:
     """Return instance of a BMS."""
     return importlib.import_module(
         f"custom_components.bms_ble.plugins.{request.param}",
@@ -177,7 +177,7 @@ def plugin_fixture(request) -> BaseBMS:
 
 
 @pytest.fixture(params=[False, True])
-def reconnect_fixture(request) -> bool:
+def reconnect_fixture(request: pytest.FixtureRequest) -> bool:
     """Return False, True for reconnect test."""
     return request.param
 
@@ -197,10 +197,10 @@ class Mock_BMS(BaseBMS):
     ) -> None:  # , ble_device, reconnect: bool = False
         """Initialize BMS."""
         super().__init__(
-            LOGGER.name, lambda char, data: None, generate_ble_device(address=""), False
+            LOGGER.name, generate_ble_device(address=""), False
         )
         LOGGER.debug("%s init(), Test except: %s", self.device_id(), str(exc))
-        self._exception = exc
+        self._exception: Exception | None = exc
         self._ret_value: BMSsample = (
             ret_value
             if ret_value is not None
@@ -236,6 +236,11 @@ class Mock_BMS(BaseBMS):
     def uuid_tx() -> str:
         """Return characteristic that provides write property."""
         return "cafe"
+
+    def _notification_handler(
+        self, sender: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
+        """Retrieve BMS data update."""
 
     async def disconnect(self) -> None:
         """Disconnect connection to BMS if active."""

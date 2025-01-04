@@ -2,10 +2,9 @@
 
 from abc import ABCMeta, abstractmethod
 import asyncio
-from collections.abc import Callable
 import logging
 from statistics import fmean
-from typing import Any, Final
+from typing import Any, Final, Literal
 
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -42,7 +41,6 @@ class BaseBMS(metaclass=ABCMeta):
     def __init__(
         self,
         logger_name: str,
-        notification_handler: Callable[[BleakGATTCharacteristic, bytearray], None],
         ble_device: BLEDevice,
         reconnect: bool = False,
     ) -> None:
@@ -53,22 +51,15 @@ class BaseBMS(metaclass=ABCMeta):
         ble_device: the Bleak device to connect to
         reconnect: if true, the connection will be closed after each update
         """
-        self._notification_method: Final[
-            Callable[[BleakGATTCharacteristic, bytearray], None]
-        ] = notification_handler
-        self._ble_device: Final = ble_device
+        assert (
+            getattr(self, "_notification_handler", None) is not None
+        ), "BMS class must define _notification_handler method"
+        self._ble_device: Final[BLEDevice] = ble_device
         self._reconnect: Final[bool] = reconnect
         self.name: Final[str] = self._ble_device.name or "undefined"
         self._log: Final[logging.Logger] = logging.getLogger(logger_name)
         if not self._log.filters:
-            self._log.addFilter(  # add BMS name and 2 bytes of MAC as prefix to all messages
-                lambda record: setattr(
-                    record,
-                    "msg",
-                    f"{self.name}[{self._ble_device.address[-5:]}]: {record.msg}",
-                )
-                or True
-            )
+            self._log.addFilter(self._prefix_filter)
 
         self._log.debug(
             "initializing %s, BT address: %s",
@@ -82,6 +73,13 @@ class BaseBMS(metaclass=ABCMeta):
         )
         self._data: bytearray = bytearray()
         self._data_event: Final[asyncio.Event] = asyncio.Event()
+
+    def _prefix_filter(self, record: logging.LogRecord) -> Literal[True]:
+        """Add BMS name and 2 bytes of MAC as prefix to all messages."""
+        setattr(
+            record, "msg", f"{self.name}[{self._ble_device.address[-5:]}]: {record.msg}"
+        )
+        return True
 
     @staticmethod
     @abstractmethod
@@ -194,11 +192,13 @@ class BaseBMS(metaclass=ABCMeta):
         self._log.debug("disconnected from BMS")
 
     async def _init_connection(self) -> None:
-         # reset any stale data from BMS
+        # reset any stale data from BMS
         self._data.clear()
         self._data_event.clear()
 
-        await self._client.start_notify(self.uuid_rx(), self._notification_method)
+        await self._client.start_notify(
+            self.uuid_rx(), getattr(self, "_notification_handler")
+        )
 
     async def _connect(self) -> None:
         """Connect to the BMS and setup notification if not connected."""

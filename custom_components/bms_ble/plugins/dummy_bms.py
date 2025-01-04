@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
@@ -27,7 +28,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, ble_device, reconnect)
 
     @staticmethod
     def matcher_dict_list() -> list[dict[str, Any]]:
@@ -61,7 +62,9 @@ class BMS(BaseBMS):
             ATTR_BATTERY_CHARGING,
         }  # calculate further values from BMS provided set ones
 
-    def _notification_handler(self, _sender, data: bytearray) -> None:
+    def _notification_handler(
+        self, _sender: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
         # self._log.debug("RX BLE data: %s", data)
         #

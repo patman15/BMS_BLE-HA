@@ -3,6 +3,7 @@
 from collections.abc import Callable
 from typing import Any, Final
 
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
@@ -51,7 +52,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, ble_device, reconnect)
         self._data_final: dict[int, bytearray] = {}
         self._exp_len: int = 0
 
@@ -97,7 +98,9 @@ class BMS(BaseBMS):
             ATTR_TEMPERATURE,
         }  # calculate further values from BMS provided set ones
 
-    def _notification_handler(self, _sender, data: bytearray) -> None:
+    def _notification_handler(
+        self, _sender: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
         if (
             data[0] == BMS._HEAD
