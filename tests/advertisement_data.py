@@ -209,4 +209,12 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "jbd_bms",
     ),
+    (  # source bluetoothctl (https://github.com/patman15/BMS_BLE-HA/issues/134)
+        generate_advertisement_data(  # https://liontron.com/download/german/LISMART1240LX.pdf
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            manufacturer_data={15984: "\x97\xd1\xc1\x8c"}, # MAC address
+            rssi=-53,
+        ),
+        "jbd_bms",
+    ),
 ]
