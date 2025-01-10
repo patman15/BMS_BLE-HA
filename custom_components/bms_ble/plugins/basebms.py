@@ -15,12 +15,14 @@ from bleak_retry_connector import establish_connection
 
 from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
+    ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
     ATTR_CYCLE_CAP,
     ATTR_CYCLE_CHRG,
     ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     ATTR_RUNTIME,
+    ATTR_STATE,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
@@ -38,6 +40,7 @@ class BaseBMS(metaclass=ABCMeta):
     """Base class for battery management system."""
 
     BAT_TIMEOUT = 10
+    MAX_CELL_VOLTAGE: Final[float] = 5.906  # max cell potential
 
     def __init__(
         self,
@@ -187,13 +190,26 @@ class BaseBMS(metaclass=ABCMeta):
             temp_values = [v for k, v in data.items() if k.startswith(KEY_TEMP_VALUE)]
             data[ATTR_TEMPERATURE] = round(fmean(temp_values), 3)
 
+        # do sanity check on values to set problem state
+        data[ATTR_STATE] = data.get(ATTR_STATE, False) or (
+            data.get(ATTR_VOLTAGE, 1) <= 0
+            or any(
+                v <= 0 or v > BaseBMS.MAX_CELL_VOLTAGE
+                for k, v in data.items()
+                if k.startswith(KEY_CELL_VOLTAGE)
+            )
+            or data.get(ATTR_DELTA_VOLTAGE, 0) > BaseBMS.MAX_CELL_VOLTAGE
+            or data.get(ATTR_CYCLE_CHRG, 1) <= 0
+            or data.get(ATTR_BATTERY_LEVEL, 0) > 100
+        )
+
     def _on_disconnect(self, _client: BleakClient) -> None:
         """Disconnect callback function."""
 
         self._log.debug("disconnected from BMS")
 
     async def _init_connection(self) -> None:
-         # reset any stale data from BMS
+        # reset any stale data from BMS
         self._data.clear()
         self._data_event.clear()
 

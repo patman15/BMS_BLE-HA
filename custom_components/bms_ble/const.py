@@ -6,6 +6,7 @@ from typing import Final
 from homeassistant.const import (  # noqa: F401
     ATTR_BATTERY_CHARGING,
     ATTR_BATTERY_LEVEL,
+    ATTR_STATE,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
 )

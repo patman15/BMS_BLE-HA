@@ -5,7 +5,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
-from homeassistant.const import ATTR_BATTERY_CHARGING
+from homeassistant.const import ATTR_BATTERY_CHARGING, ATTR_STATE, EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -20,7 +20,13 @@ BINARY_SENSOR_TYPES: list[BinarySensorEntityDescription] = [
         key=ATTR_BATTERY_CHARGING,
         translation_key=ATTR_BATTERY_CHARGING,
         device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
-    )
+    ),
+    BinarySensorEntityDescription(
+        key=ATTR_STATE,
+        translation_key=ATTR_STATE,
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
 ]
 
 
