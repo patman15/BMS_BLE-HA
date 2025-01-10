@@ -201,8 +201,18 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "jbd_bms",
     ),
-    (  # source bluetoothctl (https://github.com/patman15/BMS_BLE-HA/issues/134)
+    (  # source LOG (https://github.com/patman15/BMS_BLE-HA/issues/144)
         generate_advertisement_data(  # ECO-WORTHY LiFePO4 12V 100Ah
+            local_name="DP04S007L4S100A",
+            manufacturer_data={6226: b"\x28\x37\xc2\xa5"},
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            rssi=-57,
+        ),
+        "jbd_bms",
+    ),
+    (  # source PCAP, bluetoothctl (https://github.com/patman15/BMS_BLE-HA/issues/134)
+        generate_advertisement_data(  # ECO-WORTHY LiFePO4 12V 100Ah
+            local_name="DP04S007L4S100A",
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
             manufacturer_data={8856: "\x28\x37\xc2\xa5"},
             rssi=-53,
