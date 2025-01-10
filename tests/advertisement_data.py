@@ -86,6 +86,19 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "seplos_bms",
     ),
+    (  # source bluetoothctl (https://github.com/patman15/BMS_BLE-HA/issues/142)
+        generate_advertisement_data(
+            local_name="SP51B2407270006       ",
+            service_uuids=[
+                "00001800-0000-1000-8000-00805f9b34fb",
+                "00001801-0000-1000-8000-00805f9b34fb",
+                "0000fff0-0000-1000-8000-00805f9b34fb",
+                "02f00000-0000-0000-8000-00000000fe00"
+                ],
+            rssi=-46,
+        ),
+        "seplos_bms",
+    ),
     (  # source LOG
         generate_advertisement_data(
             local_name="SP66B2404270002       ",
