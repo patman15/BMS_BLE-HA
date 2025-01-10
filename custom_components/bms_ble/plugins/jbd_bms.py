@@ -60,9 +60,9 @@ class BMS(BaseBMS):
         ] + [
             { # ECO-WORTHY LiFePO4 12V 100Ah
                 "service_uuid": BMS.uuid_services()[0],
-                "manufacturer_id": 0x2298,
+                "manufacturer_id": manufacturer_id,
                 "connectable": True,
-            }
+            } for manufacturer_id in [0x2298, 0x3e70]
         ]
 
     @staticmethod
