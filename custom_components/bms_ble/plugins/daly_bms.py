@@ -62,7 +62,8 @@ class BMS(BaseBMS):
                 "local_name": "DL-*",
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
-            }
+            },
+            {"local_name": "JHB-*", "manufacturer_id": 0x0104, "connectable": True},
         ]
 
     @staticmethod
