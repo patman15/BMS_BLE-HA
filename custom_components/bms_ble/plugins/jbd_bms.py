@@ -1,8 +1,9 @@
 """Module to support JBD Smart BMS."""
 
 from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
@@ -44,11 +45,11 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, ble_device, reconnect)
         self._data_final: bytearray = bytearray()
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [
             {
@@ -58,11 +59,12 @@ class BMS(BaseBMS):
             }
             for pattern in ["SP0?S*", "SP1?S*", "SP2?S*", "GJ-*", "SX1*"]
         ] + [
-            { # ECO-WORTHY LiFePO4 12V 100Ah
+            { # ECO-WORTHY LiFePO4
                 "service_uuid": BMS.uuid_services()[0],
-                "manufacturer_id": 0x2298,
+                "manufacturer_id": manufacturer_id,
                 "connectable": True,
             }
+            for manufacturer_id in [0x1852, 0x2298]
         ]
 
     @staticmethod
@@ -96,13 +98,15 @@ class BMS(BaseBMS):
             ATTR_TEMPERATURE,
         }
 
-    def _notification_handler(self, _sender, data: bytearray) -> None:
+    def _notification_handler(
+        self, _sender: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
         # check if answer is a heading of basic info (0x3) or cell block info (0x4)
         if (
             data.startswith(self.HEAD_RSP)
-            and (data[1] == 0x03 or data[1] == 0x04)
-            and data[2] == 0x00
             and len(self._data) > self.INFO_LEN
+            and data[1] in (0x03, 0x04)
+            and data[2] == 0x00
             and len(self._data) >= self.INFO_LEN + self._data[3]
         ):
             self._data = bytearray()
@@ -149,7 +153,7 @@ class BMS(BaseBMS):
 
     @staticmethod
     def _decode_data(data: bytearray) -> dict[str, int | float]:
-        result = {
+        result: dict[str, int | float] = {
             key: func(
                 int.from_bytes(data[idx : idx + size], byteorder="big", signed=sign)
             )
@@ -180,7 +184,7 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        data = {}
+        data: BMSsample = {}
         for cmd, exp_len, dec_fct in [
             (BMS._cmd(b"\x03"), BMS.BASIC_INFO, BMS._decode_data),
             (BMS._cmd(b"\x04"), 0, BMS._cell_voltages),
