@@ -5,14 +5,14 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
-from homeassistant.const import ATTR_BATTERY_CHARGING, ATTR_STATE, EntityCategory
+from homeassistant.const import ATTR_BATTERY_CHARGING, EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import BTBmsConfigEntry
-from .const import DOMAIN
+from .const import ATTR_PROBLEM, DOMAIN
 from .coordinator import BTBmsCoordinator
 
 BINARY_SENSOR_TYPES: list[BinarySensorEntityDescription] = [
@@ -22,8 +22,8 @@ BINARY_SENSOR_TYPES: list[BinarySensorEntityDescription] = [
         device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
     ),
     BinarySensorEntityDescription(
-        key=ATTR_STATE,
-        translation_key=ATTR_STATE,
+        key=ATTR_PROBLEM,
+        translation_key=ATTR_PROBLEM,
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),

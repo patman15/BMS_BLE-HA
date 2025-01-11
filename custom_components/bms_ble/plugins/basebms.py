@@ -20,8 +20,8 @@ from custom_components.bms_ble.const import (
     ATTR_CYCLE_CHRG,
     ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
+    ATTR_PROBLEM,
     ATTR_RUNTIME,
-    ATTR_STATE,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
@@ -186,11 +186,13 @@ class BaseBMS(metaclass=ABCMeta):
             )
         # calculate temperature (average of all sensors)
         if can_calc(ATTR_TEMPERATURE, frozenset({f"{KEY_TEMP_VALUE}0"})):
-            temp_values = [v for k, v in data.items() if k.startswith(KEY_TEMP_VALUE)]
-            data[ATTR_TEMPERATURE] = round(fmean(temp_values), 3)
+            data[ATTR_TEMPERATURE] = round(
+                fmean([v for k, v in data.items() if k.startswith(KEY_TEMP_VALUE)]),
+                3,
+            )
 
         # do sanity check on values to set problem state
-        data[ATTR_STATE] = data.get(ATTR_STATE, False) or (
+        data[ATTR_PROBLEM] = data.get(ATTR_PROBLEM, False) or (
             data.get(ATTR_VOLTAGE, 1) <= 0
             or any(
                 v <= 0 or v > BaseBMS.MAX_CELL_VOLTAGE

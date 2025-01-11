@@ -6,7 +6,6 @@ from typing import Final
 from homeassistant.const import (  # noqa: F401
     ATTR_BATTERY_CHARGING,
     ATTR_BATTERY_LEVEL,
-    ATTR_STATE,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
 )
@@ -39,6 +38,7 @@ ATTR_CYCLES: Final[str] = "cycles"  # [#]
 ATTR_DELTA_VOLTAGE: Final[str] = "delta_voltage"  # [V]
 ATTR_LQ: Final[str] = "link_quality"  # [%]
 ATTR_POWER: Final[str] = "power"  # [W]
+ATTR_PROBLEM: Final[str] = "problem"  # [bool]
 ATTR_RSSI: Final[str] = "rssi"  # [dBm]
 ATTR_RUNTIME: Final[str] = "runtime"  # [s]
 ATTR_TEMP_SENSORS: Final[str] = "temperature_sensors"  # [°C]
