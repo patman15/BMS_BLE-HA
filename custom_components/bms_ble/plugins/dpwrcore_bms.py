@@ -1,9 +1,10 @@
 """Module to support D-powercore Smart BMS."""
 
 from collections.abc import Callable
-from enum import Enum
-from typing import Any, Final
+from enum import IntEnum
+from typing import Final
 
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
@@ -26,7 +27,7 @@ from custom_components.bms_ble.const import (
 from .basebms import BaseBMS, BMSsample
 
 
-class Cmd(Enum):
+class Cmd(IntEnum):
     """BMS operation codes."""
 
     UNLOCKACC = 0x32
@@ -62,12 +63,12 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, ble_device, reconnect)
         assert self._ble_device.name is not None  # required for unlock
         self._data_final: bytearray = bytearray()
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [
             {
@@ -112,7 +113,9 @@ class BMS(BaseBMS):
             ATTR_RUNTIME,
         }
 
-    async def _notification_handler(self, _sender, data: bytearray) -> None:
+    async def _notification_handler(
+        self, _sender: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
         self._log.debug("RX BLE data: %s", data)
 
         if len(data) != BMS._PAGE_LEN:
@@ -162,8 +165,8 @@ class BMS(BaseBMS):
 
     @staticmethod
     def _cmd_frame(cmd: Cmd, data: bytes) -> bytes:
-        frame = bytes([cmd.value, 0x00, 0x00]) + data
-        checksum = BMS._crc(frame)
+        frame: bytes = bytes([cmd.value, 0x00, 0x00]) + data
+        checksum: Final[int] = BMS._crc(frame)
         frame = (
             bytes([0x3A, 0x03, 0x05])
             + frame

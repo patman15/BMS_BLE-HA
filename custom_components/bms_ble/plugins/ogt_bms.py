@@ -1,8 +1,9 @@
 """Module to support Offgridtec Smart Pro BMS."""
 
 from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
@@ -24,22 +25,22 @@ from custom_components.bms_ble.const import (
 from .basebms import BaseBMS, BMSsample
 
 # magic crypt sequence of length 16
-CRYPT_SEQ: Final = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
+CRYPT_SEQ: Final[list[int]] = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
 
 
 class BMS(BaseBMS):
     """Offgridtec LiFePO4 Smart Pro type A and type B battery class implementation."""
 
-    BAT_TIMEOUT: Final = 1
+    BAT_TIMEOUT = 1
     IDX_NAME: Final = 0
     IDX_LEN: Final = 1
     IDX_FCT: Final = 2
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
-        self._type = self.name[9] if len(self.name) >= 9 else "?"
-        self._key = sum(
+        super().__init__(__name__, ble_device, reconnect)
+        self._type: str = self.name[9] if len(self.name) >= 9 else "?"
+        self._key: int = sum(
             CRYPT_SEQ[int(c, 16)] for c in (f"{int(self.name[10:]):0>4X}")
         ) + (5 if (self._type == "A") else 8)
         self._log.info(
@@ -89,7 +90,7 @@ class BMS(BaseBMS):
             self._log.exception("unkown device type '%c'", self._type)
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[dict]:
         """Return a list of Bluetooth matchers."""
         return [
             {
@@ -130,7 +131,9 @@ class BMS(BaseBMS):
             try:
                 await self._await_reply(data=self._ogt_command(reg))
             except TimeoutError:
-                self._log.debug("reading %s timed out", self._REGISTERS[reg][BMS.IDX_NAME])
+                self._log.debug(
+                    "reading %s timed out", self._REGISTERS[reg][BMS.IDX_NAME]
+                )
             if reg > 48 and f"{KEY_CELL_VOLTAGE}{64-reg}" not in self._values:
                 break
 
@@ -140,7 +143,9 @@ class BMS(BaseBMS):
 
         return self._values
 
-    def _notification_handler(self, sender, data: bytearray) -> None:
+    def _notification_handler(
+        self, sender: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
         self._log.debug("RX BLE data: %s", data)
 
         valid, reg, nat_value = self._ogt_response(data)
@@ -148,7 +153,7 @@ class BMS(BaseBMS):
         # check that descrambled message is valid and from the right characteristic
         if valid and sender.uuid == normalize_uuid_str(BMS.uuid_rx()):
             name, _length, func = self._REGISTERS[reg]
-            value = func(nat_value) if func else nat_value
+            value: int | float = func(nat_value) if func else nat_value
             self._log.debug(
                 "decoded data: reg: %s (#%i), raw: %i, value: %f",
                 name,
@@ -164,17 +169,17 @@ class BMS(BaseBMS):
     def _ogt_response(self, resp: bytearray) -> tuple[bool, int, int]:
         """Descramble a response from the BMS."""
 
-        msg = bytearray((resp[x] ^ self._key) for x in range(len(resp))).decode(
-            encoding="ascii"
-        )
+        msg: Final[str] = bytearray(
+            (resp[x] ^ self._key) for x in range(len(resp))
+        ).decode(encoding="ascii")
         self._log.debug("response: %s", msg[:-2])
         # verify correct response
         if msg[4:7] == "Err" or msg[:4] != "+RD," or msg[-2:] != "\r\n":
             return False, 0, 0
         # 16-bit value in network order (plus optional multiplier for 24-bit values)
         # multiplier has 1 as minimum due to current value in A type battery
-        signed = len(msg) > 12
-        value = int.from_bytes(
+        signed: bool = len(msg) > 12
+        value: int = int.from_bytes(
             bytes.fromhex(msg[6:10]), byteorder="little", signed=signed
         ) * (max(int(msg[10:12], 16), 1) if signed else 1)
         return True, int(msg[4:6], 16), value
@@ -182,7 +187,7 @@ class BMS(BaseBMS):
     def _ogt_command(self, command: int) -> bytes:
         """Put together an scambled query to the BMS."""
 
-        cmd = (
+        cmd: Final[str] = (
             f"{self._HEADER}{command:0>2X}{self._REGISTERS[command][BMS.IDX_LEN]:0>2X}"
         )
         self._log.debug("command: %s", cmd)

@@ -1,8 +1,9 @@
 """Module to support Seplos V3 Smart BMS."""
 
 from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
@@ -63,13 +64,13 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, ble_device, reconnect)
         self._data_final: dict[int, bytearray] = {}
         self._pack_count: int = 0  # number of battery packs
         self._pkglen: int = 0  # expected packet length
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [
             {
@@ -108,7 +109,9 @@ class BMS(BaseBMS):
     def _calc_values() -> set[str]:
         return {ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_RUNTIME}
 
-    def _notification_handler(self, _sender, data: bytearray) -> None:
+    def _notification_handler(
+        self, _sender: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
         """Retrieve BMS data update."""
 
         if (
@@ -187,7 +190,7 @@ class BMS(BaseBMS):
         assert device >= 0x00 and (device <= 0x10 or device in (0xC0, 0xE0))
         assert cmd in (0x01, 0x04)  # allow only read commands
         assert start >= 0 and count > 0 and start + count <= 0xFFFF
-        frame = bytearray([device, cmd])
+        frame: bytearray = bytearray([device, cmd])
         frame += bytearray(int.to_bytes(start, 2, byteorder="big"))
         frame += bytearray(int.to_bytes(count, 2, byteorder="big"))
         frame += bytearray(int.to_bytes(crc_modbus(frame), 2, byteorder="little"))
@@ -201,7 +204,7 @@ class BMS(BaseBMS):
             if BMS.QUERY[block][2] * 2 not in self._data_final:
                 return {}
 
-        data = {
+        data: BMSsample = {
             key: func(
                 int.from_bytes(
                     self._data_final[msg * 2][
@@ -219,7 +222,7 @@ class BMS(BaseBMS):
             await self._await_reply(self._cmd(pack, *BMS.QUERY["PIB"]))
             # get cell voltages
             if pack << 8 | BMS.PIB_LEN * 2 in self._data_final:
-                pack_cells = [
+                pack_cells: list[float] = [
                     float(
                         int.from_bytes(
                             self._data_final[pack << 8 | BMS.PIB_LEN * 2][

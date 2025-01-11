@@ -3,8 +3,9 @@
 import asyncio
 from collections.abc import Callable
 from string import hexdigits
-from typing import Any, Final
+from typing import Final
 
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
@@ -44,18 +45,19 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, ble_device, reconnect)
         self._data_final: bytearray = bytearray()
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [
             {
                 "local_name": pattern,
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
-            } for pattern in ["$PFLAC*", "NWJ20*"]
+            }
+            for pattern in ["$PFLAC*", "NWJ20*"]
         ]
 
     @staticmethod
@@ -88,7 +90,9 @@ class BMS(BaseBMS):
             ATTR_RUNTIME,
         }  # calculate further values from BMS provided set ones
 
-    def _notification_handler(self, _sender, data: bytearray) -> None:
+    def _notification_handler(
+        self, _sender: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
 
         data = data.strip(b"\x00")  # remove leading/trailing string end

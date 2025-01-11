@@ -1,7 +1,8 @@
 """Config flow for BLE Battery Management System integration."""
 
 from dataclasses import dataclass
-from typing import Any
+from types import ModuleType
+from typing import Any, Final
 
 import voluptuous as vol
 
@@ -14,7 +15,11 @@ from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_ADDRESS
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.importlib import async_import_module
-from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig
+from homeassistant.helpers.selector import (
+    SelectOptionDict,
+    SelectSelector,
+    SelectSelectorConfig,
+)
 
 from .const import BMS_TYPES, DOMAIN, LOGGER
 
@@ -44,7 +49,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> str | None:
         """Check if device is supported by an available BMS class."""
         for bms_type in BMS_TYPES:
-            bms_plugin = await async_import_module(
+            bms_plugin: ModuleType = await async_import_module(
                 self.hass, f"custom_components.bms_ble.plugins.{bms_type}"
             )
             try:
@@ -69,7 +74,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(discovery_info.address)
         self._abort_if_unique_id_configured()
 
-        device_class = await self._async_device_supported(discovery_info)
+        device_class: Final[str | None] = await self._async_device_supported(
+            discovery_info
+        )
         if device_class is None:
             return self.async_abort(reason="not_supported")
 
@@ -118,12 +125,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data={"type": self._discovered_device.type},
             )
 
-        current_addresses = self._async_current_ids()
+        current_addresses: Final[set[str | None]] = self._async_current_ids()
         for discovery_info in async_discovered_service_info(self.hass, False):
             address = discovery_info.address
             if address in current_addresses or address in self._discovered_devices:
                 continue
-            device_class = await self._async_device_supported(discovery_info)
+            device_class: str | None = await self._async_device_supported(
+                discovery_info
+            )
             if not device_class:
                 continue
 
@@ -134,9 +143,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if not self._discovered_devices:
             return self.async_abort(reason="no_devices_found")
 
-        titles = []
+        titles: list[SelectOptionDict] = []
         for address, discovery in self._discovered_devices.items():
-            titles.append({"value": address, "label": f"{discovery.name} ({address})"})
+            titles.append(
+                SelectOptionDict(value=address, label=f"{discovery.name} ({address})")
+            )
 
         return self.async_show_form(
             step_id="user",

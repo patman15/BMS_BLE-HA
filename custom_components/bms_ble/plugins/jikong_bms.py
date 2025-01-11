@@ -2,8 +2,9 @@
 
 import asyncio
 from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
@@ -49,7 +50,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, ble_device, reconnect)
         self._data_final: bytearray = bytearray()
         self._char_write_handle: int = -1
         self._bms_info: dict[str, str] = {}
@@ -57,7 +58,7 @@ class BMS(BaseBMS):
         self._valid_reply: int = 0x02
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [
             {
@@ -97,7 +98,9 @@ class BMS(BaseBMS):
             ATTR_TEMPERATURE,
         }
 
-    def _notification_handler(self, _sender, data: bytearray) -> None:
+    def _notification_handler(
+        self, _sender: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
         """Retrieve BMS data update."""
 
         if data.startswith(BMS.BT_MODULE_MSG):
