@@ -142,7 +142,7 @@ class BaseBMS(metaclass=ABCMeta):
         data: data dictionary from BMS
         values: list of values to add to the dictionary
         """
-        if not values:
+        if not values or not data:
             return
 
         def can_calc(value: str, using: frozenset[str]) -> bool:
