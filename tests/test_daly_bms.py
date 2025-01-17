@@ -8,7 +8,8 @@ from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.plugins.daly_bms import BMS
+from custom_components.bms_ble.const import ATTR_PROBLEM
+from custom_components.bms_ble.plugins.daly_bms import BMS, BMSsample
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -123,6 +124,7 @@ async def test_update(monkeypatch, bool_fixture, reconnect_fixture) -> None:
             "temp_sensors": 4,
             "cycle_capacity": 4838.4,
             "power": 42.0,
+            ATTR_PROBLEM: False,
             "battery_charging": True,
         }
         | {
@@ -160,7 +162,7 @@ async def test_too_short_frame(monkeypatch) -> None:
         MockInvalidBleakClient,
     )
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
+    bms: BMS = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
     assert not await bms.async_update()
 
@@ -212,10 +214,67 @@ async def test_invalid_response(monkeypatch, wrong_response) -> None:
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
-    result = {}
+    result: BMSsample = {}
     with pytest.raises(TimeoutError):
         result = await bms.async_update()
 
     assert not result
+
+    await bms.disconnect()
+
+
+
+@pytest.fixture(
+    name="bms_err_response",
+    params=[
+        (
+            bytearray(
+                b"\xd2\x03\x7c\x10\x1f\x10\x29\x10\x33\x10\x3d\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x3c\x00\x3d\x00\x3e\x00\x3f\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x8c\x75\x4e\x03\x84\x10\x3d\x10\x1f\x00\x00\x00\x00\x00\x00\x0d"
+                b"\x80\x00\x04\x00\x04\x00\x39\x00\x01\x00\x00\x00\x01\x10\x2e\x01\x41\x00\x2a\x01"
+                b"\x00\x00\x00\x00\x00\x00\x00\x61\x13"
+            ),
+            "first_bit",
+        ),
+        (
+            bytearray(
+                b"\xd2\x03\x7c\x10\x1f\x10\x29\x10\x33\x10\x3d\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x3c\x00\x3d\x00\x3e\x00\x3f\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x8c\x75\x4e\x03\x84\x10\x3d\x10\x1f\x00\x00\x00\x00\x00\x00\x0d"
+                b"\x80\x00\x04\x00\x04\x00\x39\x00\x01\x00\x00\x00\x01\x10\x2e\x01\x41\x00\x2a\x00"
+                b"\x00\x00\x00\x00\x00\x00\x80\xa1\x7f"
+            ),
+            "last_bit",
+        ),
+    ],
+    ids=lambda param: param[1],
+)
+def err_response(request):
+    """Return faulty response frame."""
+    return request.param[0]
+
+
+async def test_bms_errors(monkeypatch, bms_err_response) -> None:
+    """Test data update with BMS returning error flags."""
+
+    monkeypatch.setattr(
+        "tests.test_daly_bms.MockDalyBleakClient._response",
+        lambda _s, _c_, d: bms_err_response,
+    )
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
+        MockDalyBleakClient,
+    )
+
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
+
+    result: BMSsample = await bms.async_update()
+    assert result.get(ATTR_PROBLEM, False) # we expect a problem
 
     await bms.disconnect()
