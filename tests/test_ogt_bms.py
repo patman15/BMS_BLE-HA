@@ -133,8 +133,7 @@ async def test_update(monkeypatch, ogt_bms_fixture, reconnect_fixture) -> None:
 
     result = await bms.async_update()
 
-    if str(ogt_bms_fixture)[10] == "A":
-        assert len(result) == 10  # verify number of entries
+    if str(ogt_bms_fixture)[9] == "A":
         assert result == {
             "voltage": 45.681,
             "current": -1.23,
@@ -147,8 +146,7 @@ async def test_update(monkeypatch, ogt_bms_fixture, reconnect_fixture) -> None:
             "battery_charging": False,
             "runtime": 7200,
         }  # verify all sensors are reported
-    elif str(ogt_bms_fixture)[10] == "B":
-        assert len(result) == 9  # verify number of entries
+    else:
         assert result == {
             "voltage": 45.681,
             "current": 1.23,
