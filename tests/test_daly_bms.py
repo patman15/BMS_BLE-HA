@@ -204,7 +204,7 @@ async def test_invalid_response(monkeypatch, wrong_response) -> None:
 
     monkeypatch.setattr(
         "tests.test_daly_bms.MockDalyBleakClient._response",
-        lambda _s, _c_, d: wrong_response,
+        lambda _s, _c, _d: wrong_response,
     )
 
     monkeypatch.setattr(
@@ -254,7 +254,7 @@ async def test_invalid_response(monkeypatch, wrong_response) -> None:
     ],
     ids=lambda param: param[1],
 )
-def err_response(request):
+def prb_response(request):
     """Return faulty response frame."""
     return request.param[0]
 
@@ -264,7 +264,7 @@ async def test_problem_response(monkeypatch, problem_response) -> None:
 
     monkeypatch.setattr(
         "tests.test_daly_bms.MockDalyBleakClient._response",
-        lambda _s, _c_, d: problem_response,
+        lambda _s, _c, _d: problem_response,
     )
 
     monkeypatch.setattr(

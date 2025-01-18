@@ -532,7 +532,7 @@ async def test_invalid_response(monkeypatch) -> None:
     # return type 0x03 (first requested message) with incorrect CRC
     monkeypatch.setattr(
         "tests.test_jikong_bms.MockInvalidBleakClient._response",
-        lambda _s, _c_, d: bytearray(b"\x55\xaa\xeb\x90\x03") + bytearray(295),
+        lambda _s, _c, _d: bytearray(b"\x55\xaa\xeb\x90\x03") + bytearray(295),
     )
 
     monkeypatch.setattr(
@@ -559,7 +559,7 @@ async def test_invalid_frame_type(monkeypatch) -> None:
 
     monkeypatch.setattr(
         "tests.test_jikong_bms.MockInvalidBleakClient._response",
-        lambda _s, _c_, d: bytearray(b"\x55\xaa\xeb\x90\x05")
+        lambda _s, _c, _d: bytearray(b"\x55\xaa\xeb\x90\x05")
         + bytearray(295),  # invalid frame type (0x5)
     )
 
@@ -633,7 +633,7 @@ async def test_non_stale_data(monkeypatch) -> None:
     orig_response = MockJikongBleakClient._response
     monkeypatch.setattr(
         "tests.test_jikong_bms.MockJikongBleakClient._response",
-        lambda _s, _c_, d: bytearray(b"\x55\xaa\xeb\x90\x05")
+        lambda _s, _c, _d: bytearray(b"\x55\xaa\xeb\x90\x05")
         + bytearray(10),  # invalid frame type (0x5)
     )
 

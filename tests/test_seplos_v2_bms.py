@@ -173,7 +173,7 @@ async def test_invalid_response(monkeypatch, wrong_response) -> None:
 
     monkeypatch.setattr(
         "tests.test_seplos_v2_bms.MockSeplosv2BleakClient._response",
-        lambda _s, _c_, d: wrong_response,
+        lambda _s, _c, _d: wrong_response,
     )
 
     monkeypatch.setattr(

@@ -261,7 +261,7 @@ async def test_invalid_response(monkeypatch, wrong_response) -> None:
 
     monkeypatch.setattr(
         "tests.test_tdt_bms.MockTDTBleakClient._response",
-        lambda _s, _c_, d: wrong_response,
+        lambda _s, _c, _d: wrong_response,
     )
 
     monkeypatch.setattr(
