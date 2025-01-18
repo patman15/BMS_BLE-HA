@@ -225,7 +225,7 @@ async def test_invalid_response(monkeypatch, wrong_response) -> None:
 
 
 @pytest.fixture(
-    name="bms_err_response",
+    name="problem_response",
     params=[
         (
             bytearray(
@@ -259,12 +259,12 @@ def err_response(request):
     return request.param[0]
 
 
-async def test_bms_errors(monkeypatch, bms_err_response) -> None:
+async def test_problem_response(monkeypatch, problem_response) -> None:
     """Test data update with BMS returning error flags."""
 
     monkeypatch.setattr(
         "tests.test_daly_bms.MockDalyBleakClient._response",
-        lambda _s, _c_, d: bms_err_response,
+        lambda _s, _c_, d: problem_response,
     )
 
     monkeypatch.setattr(
