@@ -128,6 +128,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "temp#1": 22.3,
         "temp#2": 21.7,
         "delta_voltage": 0.015,
+        "problem": False,
     }
 
     # query again to check already connected state
@@ -216,6 +217,89 @@ async def test_oversized_response(monkeypatch) -> None:
         "temp#1": 22.3,
         "temp#2": 21.7,
         "delta_voltage": 0.015,
+        "problem": False,
     }
 
     await bms.disconnect()
+
+
+@pytest.fixture(
+    name="problem_response",
+    params=[
+        (
+            bytearray(
+                b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
+                b"\x00\x01\x00\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x83\x77"
+            ),
+            "first_bit",
+        ),
+        (
+            bytearray(
+                b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
+                b"\x00\x00\x80\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x04\x77"
+            ),
+            "last_bit",
+        ),
+    ],
+    ids=lambda param: param[1],
+)
+def prb_response(request) -> bytearray:
+    """Return faulty response frame."""
+    return request.param[0]
+
+
+async def test_problem_response(monkeypatch, problem_response) -> None:
+    """Test data update with BMS returning invalid data (wrong CRC)."""
+
+    #    pytest.fail("missing implementation", False)
+
+    def _response(
+        self,
+        char_specifier: BleakGATTCharacteristic | int | str | UUID,
+        data: Buffer,
+        resp: bytearray = problem_response,
+    ) -> bytearray:
+        if (
+            isinstance(char_specifier, str)
+            and normalize_uuid_str(char_specifier) == normalize_uuid_str("ff02")
+            and bytearray(data)[0] == self.HEAD_CMD
+        ):
+            if bytearray(data)[1:3] == self.CMD_INFO:
+                return resp
+            if bytearray(data)[1:3] == self.CMD_CELL:
+                return bytearray(
+                    b"\xdd\x04\x00\x08\x0d\x66\x0d\x61\x0d\x68\x0d\x59\xfe\x3c\x77"
+                )  # {'cell#0': 3.43, 'cell#1': 3.425, 'cell#2': 3.432, 'cell#3': 3.417}
+
+        return bytearray()
+
+    monkeypatch.setattr("tests.test_jbd_bms.MockJBDBleakClient._response", _response)
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient", MockJBDBleakClient
+    )
+
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
+
+    assert await bms.async_update() == {
+        "temp_sensors": 3,
+        "voltage": 15.6,
+        "current": -2.87,
+        "battery_level": 100,
+        "cycle_charge": 4.98,
+        "cycles": 42,
+        "temperature": 22.133,
+        "cycle_capacity": 77.688,
+        "power": -44.772,
+        "battery_charging": False,
+        "runtime": 6246,
+        "cell#0": 3.43,
+        "cell#1": 3.425,
+        "cell#2": 3.432,
+        "cell#3": 3.417,
+        "temp#0": 22.4,
+        "temp#1": 22.3,
+        "temp#2": 21.7,
+        "delta_voltage": 0.015,
+        "problem": True,
+    }

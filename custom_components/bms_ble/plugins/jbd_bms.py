@@ -16,6 +16,7 @@ from custom_components.bms_ble.const import (
     ATTR_CYCLES,
     ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
+    ATTR_PROBLEM,
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
@@ -41,6 +42,7 @@ class BMS(BaseBMS):
         (ATTR_BATTERY_LEVEL, 23, 1, False, lambda x: x),
         (ATTR_CYCLE_CHRG, 8, 2, False, lambda x: float(x / 100)),
         (ATTR_CYCLES, 12, 2, False, lambda x: x),
+        (ATTR_PROBLEM, 20, 2, False, lambda x: bool(x != 0)),
     ]  # general protocol v4
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -59,7 +61,7 @@ class BMS(BaseBMS):
             }
             for pattern in ["SP0?S*", "SP1?S*", "SP2?S*", "GJ-*", "SX1*"]
         ] + [
-            { # ECO-WORTHY LiFePO4
+            {  # ECO-WORTHY LiFePO4
                 "service_uuid": BMS.uuid_services()[0],
                 "manufacturer_id": manufacturer_id,
                 "connectable": True,
