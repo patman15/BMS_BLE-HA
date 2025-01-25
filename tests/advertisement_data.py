@@ -206,6 +206,14 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "daly_bms",
     ),
+    (  # source bluetoothctl (https://github.com/patman15/BMS_BLE-HA/issues/145)
+        generate_advertisement_data(
+            local_name="JHB-501812XXXXXX",
+            manufacturer_data={260: b"\x01\x50\x18\x12\x01\xa3\xb3\x4a\x48\x42"},
+            rssi=-46,
+        ),
+        "daly_bms",
+    ),
     (  # source nRF (https://github.com/patman15/BMS_BLE-HA/issues/22#issuecomment-2198586195)
         generate_advertisement_data(  # Supervolt battery
             local_name="SX100P-B230201",

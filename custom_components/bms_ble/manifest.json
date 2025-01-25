@@ -11,6 +11,10 @@
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
+      "local_name": "JHB-*",
+      "manufacturer_id": 260
+    },
+    {
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
       "manufacturer_id": 2917
     },
