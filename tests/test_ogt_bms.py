@@ -145,6 +145,7 @@ async def test_update(monkeypatch, ogt_bms_fixture, reconnect_fixture) -> None:
             "power": -56.188,
             "battery_charging": False,
             "runtime": 7200,
+            "problem": False,
         }  # verify all sensors are reported
     else:
         assert result == {
@@ -157,6 +158,7 @@ async def test_update(monkeypatch, ogt_bms_fixture, reconnect_fixture) -> None:
             "cycle_capacity": 365.448,
             "power": 56.188,
             "battery_charging": True,
+            "problem": False,
         }  # verify all sensors are reported (except runtime (battery charging))
 
     # query again to check already connected state
