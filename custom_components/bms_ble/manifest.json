@@ -41,7 +41,11 @@
     {
       "manufacturer_id": 6226,
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },        
+    },
+    {
+      "manufacturer_id": 41239,
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },    
     {
       "manufacturer_id": 8856,
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
@@ -108,5 +112,5 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bleak_retry_connector"],
   "requirements": [],
-  "version": "1.11.4"
+  "version": "1.11.5"
 }

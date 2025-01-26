@@ -240,4 +240,13 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "jbd_bms",
     ),
+    (  # source bluetoothctl (https://github.com/patman15/BMS_BLE-HA/issues/157)
+        generate_advertisement_data(  # DCHOUSE FW v6.6
+            local_name="DP04S007L4S120A",
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            manufacturer_data={41239: "\x2e\x37\xc2\xa5"},
+            rssi=-63,
+        ),
+        "jbd_bms",
+    ),
 ]
