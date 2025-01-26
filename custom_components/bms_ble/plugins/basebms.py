@@ -25,6 +25,7 @@ from custom_components.bms_ble.const import (
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
+    KEY_PROBLEM,
     KEY_TEMP_VALUE,
 )
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
@@ -192,16 +193,20 @@ class BaseBMS(metaclass=ABCMeta):
             )
 
         # do sanity check on values to set problem state
-        data[ATTR_PROBLEM] = data.get(ATTR_PROBLEM, False) or (
-            data.get(ATTR_VOLTAGE, 1) <= 0
-            or any(
-                v <= 0 or v > BaseBMS.MAX_CELL_VOLTAGE
-                for k, v in data.items()
-                if k.startswith(KEY_CELL_VOLTAGE)
+        data[ATTR_PROBLEM] = (
+            data.get(ATTR_PROBLEM, False)
+            or bool(data.get(KEY_PROBLEM, False))
+            or (
+                data.get(ATTR_VOLTAGE, 1) <= 0
+                or any(
+                    v <= 0 or v > BaseBMS.MAX_CELL_VOLTAGE
+                    for k, v in data.items()
+                    if k.startswith(KEY_CELL_VOLTAGE)
+                )
+                or data.get(ATTR_DELTA_VOLTAGE, 0) > BaseBMS.MAX_CELL_VOLTAGE
+                or data.get(ATTR_CYCLE_CHRG, 1) <= 0
+                or data.get(ATTR_BATTERY_LEVEL, 0) > 100
             )
-            or data.get(ATTR_DELTA_VOLTAGE, 0) > BaseBMS.MAX_CELL_VOLTAGE
-            or data.get(ATTR_CYCLE_CHRG, 1) <= 0
-            or data.get(ATTR_BATTERY_LEVEL, 0) > 100
         )
 
     def _on_disconnect(self, _client: BleakClient) -> None:

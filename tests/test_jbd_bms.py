@@ -129,6 +129,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "temp#2": 21.7,
         "delta_voltage": 0.015,
         "problem": False,
+        "problem_code": 0,
     }
 
     # query again to check already connected state
@@ -218,6 +219,7 @@ async def test_oversized_response(monkeypatch) -> None:
         "temp#2": 21.7,
         "delta_voltage": 0.015,
         "problem": False,
+        "problem_code": 0,
     }
 
     await bms.disconnect()
@@ -229,14 +231,14 @@ async def test_oversized_response(monkeypatch) -> None:
         (
             bytearray(
                 b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
-                b"\x00\x01\x00\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x83\x77"
+                b"\x00\x00\x01\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x83\x77"
             ),
             "first_bit",
         ),
         (
             bytearray(
                 b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
-                b"\x00\x00\x80\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x04\x77"
+                b"\x00\x80\x00\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x04\x77"
             ),
             "last_bit",
         ),
@@ -245,7 +247,7 @@ async def test_oversized_response(monkeypatch) -> None:
 )
 def prb_response(request) -> bytearray:
     """Return faulty response frame."""
-    return request.param[0]
+    return request.param
 
 
 async def test_problem_response(monkeypatch, problem_response) -> None:
@@ -257,7 +259,7 @@ async def test_problem_response(monkeypatch, problem_response) -> None:
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        resp: bytearray = problem_response,
+        resp: bytearray = problem_response[0],
     ) -> bytearray:
         if (
             isinstance(char_specifier, str)
@@ -302,4 +304,5 @@ async def test_problem_response(monkeypatch, problem_response) -> None:
         "temp#2": 21.7,
         "delta_voltage": 0.015,
         "problem": True,
+        "problem_code": 1 if problem_response[1] == "first_bit" else 32768,
     }

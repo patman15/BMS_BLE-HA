@@ -16,12 +16,12 @@ from custom_components.bms_ble.const import (
     ATTR_CYCLES,
     ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
-    ATTR_PROBLEM,
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
+    KEY_PROBLEM,
     KEY_TEMP_SENS,
     KEY_TEMP_VALUE,
 )
@@ -50,7 +50,7 @@ class BMS(BaseBMS):
         (KEY_TEMP_SENS, 100 + HEAD_LEN, 2, lambda x: min(x, BMS.MAX_TEMP)),
         (ATTR_CYCLES, 102 + HEAD_LEN, 2, lambda x: x),
         (ATTR_DELTA_VOLTAGE, 112 + HEAD_LEN, 2, lambda x: float(x / 1000)),
-        (ATTR_PROBLEM, 116 + HEAD_LEN, 8, lambda x: bool(x != 0)),
+        (KEY_PROBLEM, 116 + HEAD_LEN, 8, lambda x: x),
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:

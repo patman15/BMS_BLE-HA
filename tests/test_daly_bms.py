@@ -8,7 +8,6 @@ from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.const import ATTR_PROBLEM
 from custom_components.bms_ble.plugins.daly_bms import BMS, BMSsample
 
 from .bluetooth import generate_ble_device
@@ -124,8 +123,9 @@ async def test_update(monkeypatch, bool_fixture, reconnect_fixture) -> None:
             "temp_sensors": 4,
             "cycle_capacity": 4838.4,
             "power": 42.0,
-            ATTR_PROBLEM: False,
             "battery_charging": True,
+            "problem": False,
+            "problem_code": 0,
         }
         | {
             "temperature": 24.8,
@@ -275,6 +275,6 @@ async def test_problem_response(monkeypatch, problem_response) -> None:
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
     result: BMSsample = await bms.async_update()
-    assert result.get(ATTR_PROBLEM, False) # we expect a problem
+    assert result.get("problem", False) # we expect a problem
 
     await bms.disconnect()
