@@ -20,6 +20,7 @@ from custom_components.bms_ble.const import (
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
+    KEY_PROBLEM,
 )
 
 from .basebms import BaseBMS, BMSsample
@@ -45,6 +46,7 @@ class BMS(BaseBMS):
         (ATTR_CYCLE_CHRG, Cmd.CAP, 15, 4, lambda x: float(x) / 10),
         (ATTR_TEMPERATURE, Cmd.RT, 97, 2, lambda x: x - 40),  # only 1st sensor relevant
         (ATTR_CYCLES, Cmd.RT, 115, 4, lambda x: x),
+        (KEY_PROBLEM, Cmd.RT, 105, 4, lambda x: x & 0x0FFC),  # mask status bits
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -179,6 +181,11 @@ class BMS(BaseBMS):
                 self._log.debug("single frame protocol detected")
                 raw_data[Cmd.CAP] = bytearray(15) + self._data_final[125:]
                 break
+
+        if len(raw_data) != len(list(Cmd)) or not all(
+            len(value) > 0 for value in raw_data.values()
+        ):
+            return {}
 
         return {
             key: func(int(raw_data[cmd.value][idx : idx + size], 16))

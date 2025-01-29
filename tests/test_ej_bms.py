@@ -7,7 +7,7 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.plugins.ej_bms import BMS
+from custom_components.bms_ble.plugins.ej_bms import BMS, BMSsample
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -72,6 +72,23 @@ class MockEJsfBleakClient(MockEJBleakClient):
         return bytearray()
 
 
+class MockEJinvalidBleakClient(MockEJBleakClient):
+    """Emulate a E&J technology BMS BleakClient without sending second frame."""
+
+    def _response(
+        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
+    ) -> bytearray:
+        if isinstance(char_specifier, str) and normalize_uuid_str(
+            char_specifier
+        ) != normalize_uuid_str("6e400002-b5a3-f393-e0a9-e50e24dcca9e"):
+            return bytearray()
+
+        return bytearray(
+            b":0082310080000101C00000880F540F3C0F510FD70F310F2C0F340F3A0FED0FED0000000000000000"
+            b"000000000000000248424242F0000000000000000001AB~"
+        )  # TODO: put numbers
+
+
 async def test_update(monkeypatch, reconnect_fixture) -> None:
     """Test E&J technology BMS data update."""
 
@@ -109,6 +126,8 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
         "power": -0.79,
         "runtime": 36000,
         "battery_charging": False,
+        "problem": False,
+        "problem_code": 0,
     }
 
     # query again to check already connected state
@@ -148,12 +167,28 @@ async def test_update_single_frame(monkeypatch, reconnect_fixture) -> None:
         "cycle_capacity": 1442.98,
         "power": 18.365,
         "battery_charging": True,
+        "problem": False,
+        "problem_code": 0,
     }
 
     # query again to check already connected state
     result = await bms.async_update()
     assert bms._client.is_connected is not reconnect_fixture  # noqa: SLF001
 
+    await bms.disconnect()
+
+
+async def test_invalid(monkeypatch) -> None:
+    """Test E&J technology BMS data update."""
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
+        MockEJinvalidBleakClient,
+    )
+
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+
+    assert await bms.async_update() == {}
     await bms.disconnect()
 
 
@@ -197,4 +232,55 @@ async def test_invalid_response(monkeypatch, wrong_response) -> None:
         result = await bms.async_update()
 
     assert not result
+    await bms.disconnect()
+
+
+@pytest.fixture(
+    name="problem_response",
+    params=[
+        (
+            bytearray(
+                b":008231008C000000000000000CBF0CC00CEA0CD50000000000000000000000000000000000000000"
+                b"00000000008C000041282828F004000000000100004B044C05DC05DCAE~"
+            ),
+            "first_bit",
+        ),
+        (
+            bytearray(
+                b":008231008C000000000000000CBF0CC00CEA0CD50000000000000000000000000000000000000000"
+                b"00000000008C000041282828F800000000000100004B044C05DC05DCAA~"
+            ),
+            "last_bit",
+        ),
+    ],
+    ids=lambda param: param[1],
+)
+def prb_response(request):
+    """Return faulty response frame."""
+    return request.param
+
+
+async def test_problem_response(monkeypatch, problem_response) -> None:
+    """Test data update with BMS returning error flags."""
+
+    monkeypatch.setattr(
+        "tests.test_ej_bms.MockEJBleakClient._response",
+        lambda _s, _c, _d: problem_response[0],
+    )
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
+        MockEJBleakClient,
+    )
+
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
+
+    result: BMSsample = await bms.async_update()
+    assert result.get("problem", False)  # we expect a problem
+    assert (
+        result.get("problem_code", 0) == 0x4
+        if problem_response[0] == "first_bit"
+        else 0x800
+    )
+
     await bms.disconnect()
