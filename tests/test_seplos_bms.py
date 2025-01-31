@@ -31,7 +31,7 @@ def ref_value() -> dict:
         "power": -350.678,
         "battery_charging": False,
         "runtime": 72064,
-        "pack_count": 3,  # last packet does not report data!
+        "pack_count": 2,  # last packet does not report data!
         "cell#0": 3.272,
         "cell#1": 3.272,
         "cell#2": 3.272,
@@ -73,6 +73,14 @@ def ref_value() -> dict:
         "temp#9": 23.75,
         "temp#10": 23.85,
         "temp#11": 24.85,
+        "pack_battery_level#0": 47.9,
+        "pack_battery_level#1": 48.0,
+        "pack_current#0": -7.2,
+        "pack_current#1": -7.19,
+        "pack_cycles#0": 9,
+        "pack_cycles#1": 10,
+        "pack_voltage#0": 52.34,
+        "pack_voltage#1": 52.35,
     }
 
 
@@ -80,11 +88,11 @@ class MockSeplosBleakClient(MockBleakClient):
     """Emulate a Seplos BMS BleakClient."""
 
     PKT_FRAME = 0x5  # header(3) + crc(2)
-    RESP = {
+    RESP: dict[str, bytearray] = {
         "EIA": bytearray(
             b"\x00\x04\x34\x14\x72\x00\x00\xFF\xBD\xFF\xFF\x34\x64\x00\x00\x6D\x60\x00\x00\x00\xD5"
             b"\x00\x00\x6D\x60\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x07\x08\x00\x00\x07\x08\x00"
-            b"\x00\x02\x40\x01\xD0\x00\x03\x00\x09\x01\xDF\x03\xE7\xA3\xF6"
+            b"\x00\x02\x40\x01\xD0\x00\x02\x00\x09\x01\xDF\x03\xE7\xB3\x36"  # A3F6
         ),
         "EIB": bytearray(
             b"\x00\x04\x2C\x0C\xC9\x0C\xC6\x00\x02\x00\x07\x14\x72\x14\x72\x00\x00\x00\x00\x00\xFA"
@@ -92,8 +100,16 @@ class MockSeplosBleakClient(MockBleakClient):
             b"\x0A\x00\x00\x00\x00\x57\x96"
         ),
         "EIX": bytearray(  # Note: unknown to the BMS implementation, just for testing
-            b"\x00\x04\x22\x14\x72\xFD\x30\x34\x64\x6D\x60\x00\xD5\x01\xDF\x03\xE7\x00\x09\x0C\xC7"
-            b"\x0B\x9F\x0C\xC8\x0C\xC6\x0B\xA5\x0B\x99\x00\x00\x00\xB4\x00\xB4\x73\x63"
+            b"\x00\x04\x20\x14\x72\xFD\x30\x34\x64\x6D\x60\x00\xD5\x01\xDF\x03\xE7\x00\x09\x0C\xC7"
+            b"\x0B\x9F\x0C\xC8\x0C\xC6\x0B\xA5\x0B\x99\x00\x00\x00\xB4\x62\xB0"
+        ),
+        "PIA1": bytearray(
+            b"\x01\x04\x22\x14\x72\xFD\x30\x34\x64\x6D\x60\x00\xD5\x01\xDF\x03\xE7\x00\x09\x0C\xC7"
+            b"\x0B\x9F\x0C\xC8\x0C\xC6\x0B\xA5\x0B\x99\x00\x00\x00\xB4\x00\xB4\x6F\xF3"
+        ),
+        "PIA2": bytearray(
+            b"\x02\x04\x22\x14\x73\xFD\x31\x34\x64\x6D\x60\x00\xD5\x01\xE0\x03\xE7\x00\x0A\x0C\xC7"
+            b"\x0B\x9F\x0C\xC8\x0C\xC6\x0B\xA5\x0B\x99\x00\x00\x00\xB4\x00\xB4\xA6\xE2"
         ),
         "PIB1": bytearray(
             b"\x01\x04\x34\x0C\xC8\x0C\xC8\x0C\xC8\x0C\xC7\x0C\xC7\x0C\xC7\x0C\xC7\x0C\xC6\x0C\xC6"
@@ -141,7 +157,10 @@ class MockSeplosBleakClient(MockBleakClient):
             if start == 0x2100:
                 assert length == len(self.RESP["EIB"])
                 return self.RESP["EIB"].copy()
-        if device and device <= 0x10:  # BMS battery pack #1
+        if device and device <= 0x10:  # BMS battery packs
+            if start == 0x1000:
+                assert length == len(self.RESP[f"PIA{device}"])
+                return self.RESP[f"PIA{device}"].copy()
             if start == 0x1100:
                 assert length == len(self.RESP[f"PIB{device}"])
                 return self.RESP[f"PIB{device}"].copy()
@@ -254,8 +273,7 @@ async def test_update(monkeypatch, ref_value, reconnect_fixture) -> None:
     """Test Seplos BMS data update."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockSeplosBleakClient,
+        "custom_components.bms_ble.plugins.basebms.BleakClient", MockSeplosBleakClient
     )
 
     bms = BMS(
@@ -263,12 +281,10 @@ async def test_update(monkeypatch, ref_value, reconnect_fixture) -> None:
         reconnect_fixture,
     )
 
-    result = await bms.async_update()
-
-    assert result == ref_value
+    assert await bms.async_update() == ref_value
 
     # query again to check already connected state
-    result = await bms.async_update()
+    assert await bms.async_update() == ref_value
     assert (
         bms._client and bms._client.is_connected is not reconnect_fixture
     )  # noqa: SLF001
@@ -280,15 +296,20 @@ async def test_wrong_crc(monkeypatch) -> None:
     """Test data update with BMS returning invalid data (wrong CRC)."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockWrongCRCBleakClient,
+        "custom_components.bms_ble.plugins.seplos_bms.BMS.BAT_TIMEOUT", 0.1
+    )
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient", MockWrongCRCBleakClient
     )
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
-    result = await bms.async_update()
+    result = {}
+    with pytest.raises(TimeoutError):
+        result = await bms.async_update()
 
-    assert result == {}
+    assert not result
 
     await bms.disconnect()
 
@@ -296,15 +317,20 @@ async def test_wrong_crc(monkeypatch) -> None:
 async def test_error_response(monkeypatch) -> None:
     """Test data update with BMS returning error message."""
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockErrRespBleakClient,
+        "custom_components.bms_ble.plugins.seplos_bms.BMS.BAT_TIMEOUT", 0.1
+    )
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient", MockErrRespBleakClient
     )
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
-    result = await bms.async_update()
+    result = {}
+    with pytest.raises(TimeoutError):
+        result = await bms.async_update()
 
-    assert result == {}
+    assert not result
 
     await bms.disconnect()
 
@@ -319,9 +345,7 @@ async def test_oversized_response(monkeypatch, ref_value) -> None:
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
-    result = await bms.async_update()
-
-    assert result == ref_value
+    assert await bms.async_update() == ref_value
 
     await bms.disconnect()
 
@@ -330,8 +354,7 @@ async def test_invalid_message(monkeypatch) -> None:
     """Test data update with BMS returning error message."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.seplos_bms.BMS.BAT_TIMEOUT",
-        0.1,
+        "custom_components.bms_ble.plugins.seplos_bms.BMS.BAT_TIMEOUT", 0.1
     )
 
     monkeypatch.setattr(
@@ -345,6 +368,6 @@ async def test_invalid_message(monkeypatch) -> None:
     with pytest.raises(TimeoutError):
         result = await bms.async_update()
 
-    assert result == {}
+    assert not result
 
     await bms.disconnect()

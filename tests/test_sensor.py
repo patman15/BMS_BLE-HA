@@ -129,3 +129,5 @@ async def test_update(
     assert current_state is not None and current_state.attributes[ATTR_BALANCE_CUR] == [
         -1.234
     ]
+
+    # TODO check per-pack values as attributes
