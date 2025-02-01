@@ -544,7 +544,7 @@ async def test_invalid_response(monkeypatch) -> None:
     result: BMSsample = {}
     with pytest.raises(TimeoutError):
         result = await bms.async_update()
-    assert result == {}
+    assert not result
 
     await bms.disconnect()
 
@@ -572,7 +572,7 @@ async def test_invalid_frame_type(monkeypatch) -> None:
     result: BMSsample = {}
     with pytest.raises(TimeoutError):
         result = await bms.async_update()
-    assert result == {}
+    assert not result
 
     await bms.disconnect()
 
@@ -613,7 +613,7 @@ async def test_invalid_device(monkeypatch) -> None:
     ):
         result = await bms.async_update()
 
-    assert result == {}
+    assert not result
 
     await bms.disconnect()
 
@@ -647,7 +647,7 @@ async def test_non_stale_data(monkeypatch) -> None:
     result: BMSsample = {}
     with pytest.raises(TimeoutError):
         result = await bms.async_update()
-    assert result == {}
+    assert not result
     await bms.disconnect()
 
     # restore working BMS responses and run a test again to see if stale data is kept
