@@ -11,7 +11,10 @@
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
-      "local_name": "JHB-*",
+      "local_name": "DL-*",
+      "manufacturer_id": 770
+    },    
+    {
       "manufacturer_id": 260
     },
     {
@@ -108,5 +111,5 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bleak_retry_connector"],
   "requirements": [],
-  "version": "1.11.4"
+  "version": "1.11.6"
 }
