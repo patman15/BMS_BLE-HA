@@ -206,6 +206,14 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "daly_bms",
     ),
+    (  # source LOG, proxy (https://github.com/patman15/BMS_BLE-HA/issues/160)
+        generate_advertisement_data(
+            local_name="DL-401710015C9B",
+            manufacturer_data={770: b"\x16\x40\x17\x10\x01\x5c\x9b\x44\x4c"},
+            rssi=-36,
+        ),
+        "daly_bms",
+    ),
     (  # source bluetoothctl (https://github.com/patman15/BMS_BLE-HA/issues/145)
         generate_advertisement_data(
             local_name="JHB-501812XXXXXX",
