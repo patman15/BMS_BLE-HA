@@ -93,8 +93,8 @@ ADVERTISEMENTS: Final[list] = [
                 "00001800-0000-1000-8000-00805f9b34fb",
                 "00001801-0000-1000-8000-00805f9b34fb",
                 "0000fff0-0000-1000-8000-00805f9b34fb",
-                "02f00000-0000-0000-8000-00000000fe00"
-                ],
+                "02f00000-0000-0000-8000-00000000fe00",
+            ],
             rssi=-46,
         ),
         "seplos_bms",
@@ -214,6 +214,15 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "daly_bms",
     ),
+    (  # source LOG (https://github.com/patman15/BMS_BLE-HA/issues/160#issuecomment-2629318416)
+        generate_advertisement_data(
+            local_name="Randomname",  # JHB-50181201A494
+            manufacturer_data={260: b"\x01\x50\x18\x12\x01\xa4\x94JHB"},
+            tx_power=-127,
+            rssi=-36,
+        ),
+        "daly_bms",
+    ),
     (  # source nRF (https://github.com/patman15/BMS_BLE-HA/issues/22#issuecomment-2198586195)
         generate_advertisement_data(  # Supervolt battery
             local_name="SX100P-B230201",
@@ -237,6 +246,16 @@ ADVERTISEMENTS: Final[list] = [
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
             manufacturer_data={8856: "\x28\x37\xc2\xa5"},
             rssi=-53,
+        ),
+        "jbd_bms",
+    ),
+    (  # source LOG (https://github.com/patman15/BMS_BLE-HA/issues/160#issuecomment-2629318416)
+        generate_advertisement_data(
+            local_name="SP17S005P17S120A",
+            manufacturer_data={34114: b"\34\37\xc2\xa5"},
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            tx_power=-127,
+            rssi=-31,
         ),
         "jbd_bms",
     ),
