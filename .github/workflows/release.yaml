@@ -1,0 +1,36 @@
+name: "Release"
+
+on:
+  release:
+    types:
+      - "published"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: "Release"
+    runs-on: "ubuntu-latest"
+    permissions:
+      contents: write
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@v4"
+
+      - name: "Adjust version number"
+        shell: "bash"
+        run: |
+          yq -i -o json '.version="${{ github.event.release.tag_name }}"' \
+            "${{ github.workspace }}/custom_components/bms_ble/manifest.json"
+
+      - name: "Generate .zip"
+        shell: "bash"
+        run: |
+          cd "${{ github.workspace }}/custom_components/bms_ble"
+          zip bms_ble.zip -r ./
+
+      - name: "Upload .zip to the release"
+        uses: softprops/action-gh-release@v2.2.1
+        with:
+          files: ${{ github.workspace }}/custom_components/bms_ble/bms_ble.zip
