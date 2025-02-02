@@ -134,7 +134,7 @@ class BMS(BaseBMS):
                 value := int.from_bytes(
                     data[52 + idx * 2 : 54 + idx * 2],
                     byteorder="little",
-                    signed=False,
+                    signed=True,
                 )
             )
         }
