@@ -240,4 +240,12 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "jbd_bms",
     ),
+    (  # source LOG, proxy (https://github.com/patman15/BMS_BLE-HA/issues/164#issue-2825586172)
+        generate_advertisement_data(  # ECO-WORTHY 100AH IOT battery & BW02 adapter.
+            local_name="ECO-WORTHY 02_B8EF",
+            manufacturer_data={49844: "\xE0\xFA\xB8\xF0"},
+            rssi=-53,
+        ),
+        "jbd_bms",
+    ),
 ]
