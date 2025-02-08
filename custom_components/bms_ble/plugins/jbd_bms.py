@@ -56,13 +56,13 @@ class BMS(BaseBMS):
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             }
-            for pattern in ["SP0?S*", "SP1?S*", "SP2?S*", "GJ-*", "SX1*"]
+            for pattern in ["SP0?S*", "SP1?S*", "SP2?S*", "GJ-*", "SX1*", "LT40AH"]
         ] + [
-            { # ECO-WORTHY LiFePO4 12V 100Ah
+            { # ECO-WORTHY LiFePO4 12V 100Ah, LISMART1240LX/LISMART1255LX, XL19110253
                 "service_uuid": BMS.uuid_services()[0],
                 "manufacturer_id": manufacturer_id,
                 "connectable": True,
-            } for manufacturer_id in [0x2298, 0x3e70]
+            } for manufacturer_id in [0x2298, 0x3e70, 0xc1a4]
         ]
 
     @staticmethod
