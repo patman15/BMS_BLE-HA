@@ -32,7 +32,7 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "ective_bms",
     ),
-    (  # bluetoothctl (https://github.com/patman15/BMS_BLE-HA/issues/137)
+    (  # BTctl (https://github.com/patman15/BMS_BLE-HA/issues/137)
         generate_advertisement_data(
             local_name="NWJ20200720020539",
             manufacturer_data={0: b"\x34\x14\xb5\x9d\x78\xE7\x4c"},
@@ -86,7 +86,7 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "seplos_bms",
     ),
-    (  # source bluetoothctl (https://github.com/patman15/BMS_BLE-HA/issues/142)
+    (  # source BTctl (https://github.com/patman15/BMS_BLE-HA/issues/142)
         generate_advertisement_data(
             local_name="SP51B2407270006       ",
             service_uuids=[
@@ -166,7 +166,7 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "tdt_bms",
     ),
-    (  # source bluetoothctl (https://github.com/patman15/BMS_BLE-HA/issues/52#issuecomment-2390048120)
+    (  # source BTctl (https://github.com/patman15/BMS_BLE-HA/issues/52#issuecomment-2390048120)
         generate_advertisement_data(
             local_name="TBA-13500277",
             service_uuids=[
@@ -214,7 +214,7 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "daly_bms",
     ),
-    (  # source bluetoothctl (https://github.com/patman15/BMS_BLE-HA/issues/145)
+    (  # source BTctl (https://github.com/patman15/BMS_BLE-HA/issues/145)
         generate_advertisement_data(
             local_name="JHB-501812XXXXXX",
             manufacturer_data={260: b"\x01\x50\x18\x12\x01\xa3\xb3\x4a\x48\x42"},
@@ -228,6 +228,14 @@ ADVERTISEMENTS: Final[list] = [
             manufacturer_data={260: b"\x01\x50\x18\x12\x01\xa4\x94JHB"},
             tx_power=-127,
             rssi=-36,
+        ),
+        "daly_bms",
+    ),
+    (  # source BTctl (https://github.com/patman15/BMS_BLE-HA/issues/174#issuecomment-2637936795)
+        generate_advertisement_data(
+            local_name="BT270-2",
+            manufacturer_data={770: b"\x16\x40\x17\x12\x01\x11\x97\x44\x4c"},
+            rssi=-60,
         ),
         "daly_bms",
     ),
@@ -248,7 +256,7 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "jbd_bms",
     ),
-    (  # source PCAP, bluetoothctl (https://github.com/patman15/BMS_BLE-HA/issues/134)
+    (  # source PCAP, BTctl (https://github.com/patman15/BMS_BLE-HA/issues/134)
         generate_advertisement_data(  # ECO-WORTHY LiFePO4 12V 100Ah
             local_name="DP04S007L4S100A",
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
