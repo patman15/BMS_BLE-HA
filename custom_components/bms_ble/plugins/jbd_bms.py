@@ -65,6 +65,11 @@ class BMS(BaseBMS):
                 "connectable": True,
             }
             for manufacturer_id in [0x1852, 0x2298]
+        ] + [
+            { # Eleksol
+                "service_uuid": "00010203-0405-0607-0809-0a0b0c0d1912",
+                "connectable": True,
+            }
         ]
 
     @staticmethod
