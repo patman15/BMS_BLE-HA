@@ -46,9 +46,7 @@ def bms_advertisement(request) -> BluetoothServiceInfoBleak:
         service_uuids=dev.service_uuids,
         manufacturer_data=dev.manufacturer_data,
         service_data=dev.service_data,
-        advertisement=generate_advertisement_data(
-            local_name=dev.local_name, service_uuids=dev.service_uuids
-        ),
+        advertisement=generate_advertisement_data(**dev._asdict()),
         source=SOURCE_BLUETOOTH,
         connectable=True,
         time=0,
