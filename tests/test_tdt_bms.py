@@ -9,7 +9,7 @@ from bleak.exc import BleakDeviceNotFoundError
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.plugins.tdt_bms import BMS
+from custom_components.bms_ble.plugins.tdt_bms import BMS, BMSsample
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -56,6 +56,8 @@ def ref_value() -> dict:
             "temp#5": 18.65,
             "delta_voltage": 0.012,
             "runtime": 62589,
+            "problem": False,
+            "problem_code": 0,
         },
         "4S4T": {
             "cell_count": 4,
@@ -78,6 +80,8 @@ def ref_value() -> dict:
             "temp#2": 22.55,
             "temp#3": 22.45,
             "delta_voltage": 0.005,
+            "problem": False,
+            "problem_code": 0,
         },
     }
 
@@ -201,9 +205,9 @@ async def test_update_4s_4t(monkeypatch, reconnect_fixture) -> None:
             b"\x04\x1c\x00\x08\x03\xe8\x00\x37\x91\x91\x0d"
         ),
         0x8D: bytearray(
-            b"\x7e\x00\x01\x03\x00\x8d\x00\x18\x04\x00\x00\x00\x00\x04\xc0\x00"
+            b"\x7e\x00\x41\x03\x00\x8d\x00\x18\x04\x00\x00\x00\x00\x04\x00\x00"
             b"\x00\x00\x00\x00\x00\x00\x00\x00\x06\x09\x00\x00\x18\x00\x00\x00"
-            b"\xdf\x18\x0d"
+            b"\xdf\x68\x0d"
         ),
     }
 
@@ -307,5 +311,106 @@ async def test_init_fail(monkeypatch, bool_fixture) -> None:
             assert not await bms.async_update()
     else:
         assert await bms.async_update() == ref_value()["16S6T"]
+
+    await bms.disconnect()
+
+
+@pytest.fixture(
+    name="problem_response",
+    params=[
+        (
+            {
+                0x8C: bytearray(  # 4 cell message
+                    b"\x7e\x00\x01\x03\x00\x8c\x00\x20\x04\x0c\xe1\x0c\xdf\x0c\xe1\x0c"
+                    b"\xdc\x04\x0b\x93\x0b\x9b\x0b\x8d\x0b\x8c\x40\x00\x05\x26\x02\x3f"
+                    b"\x04\x1c\x00\x08\x03\xe8\x00\x37\x91\x91\x0d"
+                ),
+                0x8D: bytearray(
+                    b"\x7e\x00\x41\x03\x00\x8d\x00\x18\x04\x00\x00\x00\x00\x04\x00\x00"
+                    b"\x00\x00\x00\x00\x00\x00\x00\x01\x06\x09\x00\x00\x18\x00\x00\x00"
+                    b"\x4f\x65\x0d"  #          ^^  ^^ problem bits
+                ),
+            },
+            "first_bit_4cell",
+        ),
+        (
+            {
+                0x8C: bytearray(  # 4 cell message
+                    b"\x7e\x00\x01\x03\x00\x8c\x00\x20\x04\x0c\xe1\x0c\xdf\x0c\xe1\x0c"
+                    b"\xdc\x04\x0b\x93\x0b\x9b\x0b\x8d\x0b\x8c\x40\x00\x05\x26\x02\x3f"
+                    b"\x04\x1c\x00\x08\x03\xe8\x00\x37\x91\x91\x0d"
+                ),
+                0x8D: bytearray(
+                    b"\x7e\x00\x41\x03\x00\x8d\x00\x18\x04\x00\x00\x00\x00\x04\x00\x00"
+                    b"\x00\x00\x00\x00\x00\x00\x80\x00\x06\x09\x00\x00\x18\x00\x00\x00"
+                    b"\x37\x6f\x0d"  #          ^^  ^^ problem bits
+                ),
+            },
+            "last_bit_4cell",
+        ),
+        (
+            {
+                0x8C: bytearray(  # 16 celll message
+                    b"\x7e\x00\x01\x03\x00\x8c\x00\x3c\x10\x0c\xe3\x0c\xe6\x0c\xde\x0c\xde\x0c\xdd\x0c\xde"
+                    b"\x0c\xdd\x0c\xdc\x0c\xdc\x0c\xda\x0c\xde\x0c\xde\x0c\xde\x0c\xdd\x0c\xdf\x0c\xde\x06"
+                    b"\x0b\x5e\x0b\x6f\x0b\x5e\x0b\x5e\x0b\x5e\x0b\x66\xc0\x39\x14\x96\x03\xdf\x04\x3b\x00"
+                    b"\x08\x03\xe8\x00\x5b\x2b\x9c\x0d"
+                ),
+                0x8D: bytearray(
+                    b"\x7e\x00\x01\x03\x00\x8d\x00\x27\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                    b"\x00\x00\x00\x00\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x01\x0e\x01\x00\x00"
+                    b"\x18\x00\x00\x00\x00\xce\x2a\x0d"  #                          ^^  ^^ problem bits
+                ),
+            },
+            "first_bit_16cell",
+        ),
+        (
+            {
+                0x8C: bytearray(  # 16 celll message
+                    b"\x7e\x00\x01\x03\x00\x8c\x00\x3c\x10\x0c\xe3\x0c\xe6\x0c\xde\x0c\xde\x0c\xdd\x0c\xde"
+                    b"\x0c\xdd\x0c\xdc\x0c\xdc\x0c\xda\x0c\xde\x0c\xde\x0c\xde\x0c\xdd\x0c\xdf\x0c\xde\x06"
+                    b"\x0b\x5e\x0b\x6f\x0b\x5e\x0b\x5e\x0b\x5e\x0b\x66\xc0\x39\x14\x96\x03\xdf\x04\x3b\x00"
+                    b"\x08\x03\xe8\x00\x5b\x2b\x9c\x0d"
+                ),
+                0x8D: bytearray(
+                    b"\x7e\x00\x01\x03\x00\x8d\x00\x27\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                    b"\x00\x00\x00\x00\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x80\x00\x0e\x01\x00\x00"
+                    b"\x18\x00\x00\x00\x00\xc9\xd2\x0d"  #                          ^^  ^^ problem bits
+                ),
+            },
+            "last_bit_16cell",
+        ),
+    ],
+    ids=lambda param: param[1],
+)
+def prb_response(request) -> list[tuple[dict[int, bytearray], str]]:
+    """Return faulty response frame."""
+    return request.param
+
+
+async def test_problem_response(monkeypatch, problem_response) -> None:
+    """Test data update with BMS returning error flags."""
+
+    monkeypatch.setattr(
+        "tests.test_tdt_bms.MockTDTBleakClient.RESP",
+        problem_response[0],
+    )
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
+        MockTDTBleakClient,
+    )
+
+    bms = BMS(
+        generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73), False
+    )
+
+    result: BMSsample = await bms.async_update()
+    assert result.get("problem", False)  # we expect a problem
+    assert (
+        result.get("problem_code", 0) == 0x1
+        if problem_response[1].startswith("first_bit")
+        else 0x8000
+    )
 
     await bms.disconnect()
