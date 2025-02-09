@@ -179,7 +179,7 @@ async def test_invalid_response(monkeypatch) -> None:
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "SmartBat-A12345", None, -73))
 
     result = await bms.async_update()
-    assert result == {}
+    assert not result
     assert bms._client.is_connected
     await bms.disconnect()
 
@@ -195,6 +195,6 @@ async def test_invalid_bms_type(monkeypatch) -> None:
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "SmartBat-C12294", None, -73))
 
     result = await bms.async_update()
-    assert result == {}
+    assert not result
     assert bms._client.is_connected
     await bms.disconnect()

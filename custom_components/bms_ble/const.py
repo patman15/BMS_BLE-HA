@@ -47,6 +47,7 @@ ATTR_TEMP_SENSORS: Final[str] = "temperature_sensors"  # [°C]
 KEY_CELL_COUNT: Final[str] = "cell_count"  # [#]
 KEY_CELL_VOLTAGE: Final[str] = "cell#"  # [V]
 KEY_DESIGN_CAP: Final[str] = "design_capacity"  # [Ah]
+KEY_PACK: Final[str] = "pack"  # prefix for pack sensors
 KEY_PACK_COUNT: Final[str] = "pack_count"  # [#]
 KEY_PROBLEM: Final[str] = "problem_code"  # [#]
 KEY_TEMP_SENS: Final[str] = "temp_sensors"  # [#]

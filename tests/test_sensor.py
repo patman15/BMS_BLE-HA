@@ -37,6 +37,7 @@ async def test_update(
         """Patch async_update to return a specific value."""
         return {
             "balance_current": -1.234,
+            "battery_level": 42,
             "voltage": 17.0,
             "current": 0,
             "cell#0": 3,
@@ -48,6 +49,15 @@ async def test_update(
                 "temp#0": 73,
                 "temp#1": 31.4,
                 "temp#2": 27.18,
+                "pack_battery_level#0": 1.0,
+                "pack_battery_level#1": 2.0,
+                "pack_count": 2,
+                "pack_current#0": -3.14,
+                "pack_current#1": 2.71,
+                "pack_cycles#0": 0,
+                "pack_cycles#1": 1,
+                "pack_voltage#0": 12.34,
+                "pack_voltage#1": 24.56,
             }
             if bool_fixture
             else {}
@@ -109,7 +119,7 @@ async def test_update(
     # check all sensor have correct updated value
     assert data == {
         f"sensor.smartbat_b12345_{ATTR_VOLTAGE}": "17.0",
-        "sensor.smartbat_b12345_battery": "unknown",
+        "sensor.smartbat_b12345_battery": "42",
         f"sensor.smartbat_b12345_{ATTR_TEMPERATURE}": "43.86",
         f"sensor.smartbat_b12345_{ATTR_CURRENT}": "0",
         "sensor.smartbat_b12345_stored_energy": "unknown",
@@ -121,22 +131,38 @@ async def test_update(
         f"sensor.smartbat_b12345_{ATTR_RUNTIME}": "unknown",
     }
     # check delta voltage sensor has cell voltage as attribute array
-    delta_state: State | None = hass.states.get(f"sensor.smartbat_b12345_{ATTR_DELTA_VOLTAGE}")
+    delta_state: State | None = hass.states.get(
+        f"sensor.smartbat_b12345_{ATTR_DELTA_VOLTAGE}"
+    )
     assert delta_state is not None and delta_state.attributes[ATTR_CELL_VOLTAGES] == [
         3,
         3.123,
     ]
 
     # check temperature sensor has individual sensors as attribute array
-    temp_state: State | None = hass.states.get(f"sensor.smartbat_b12345_{ATTR_TEMPERATURE}")
-    assert (
-        temp_state is not None
-        and temp_state.attributes[ATTR_TEMP_SENSORS] == [73, 31.4, 27.18]
-        if bool_fixture
-        else [temp_state]
+    temp_state: State | None = hass.states.get(
+        f"sensor.smartbat_b12345_{ATTR_TEMPERATURE}"
+    )
+    assert temp_state is not None and temp_state.attributes[ATTR_TEMP_SENSORS] == (
+        [73, 31.4, 27.18] if bool_fixture else [float(temp_state.state)]
     )
     # check balance current as attribute
-    current_state = hass.states.get(f"sensor.smartbat_b12345_{ATTR_CURRENT}")
+    current_state: State | None = hass.states.get(
+        f"sensor.smartbat_b12345_{ATTR_CURRENT}"
+    )
     assert current_state is not None and current_state.attributes[ATTR_BALANCE_CUR] == [
         -1.234
     ]
+
+    # check battery pack attributes
+    for sensor, attribute, ref_value in [
+        (ATTR_CURRENT, "pack_current", [-3.14, 2.71]),
+        (ATTR_CYCLES, "pack_cycles", [0, 1]),
+        ("battery", "pack_battery_level", [1.0, 2.0]),
+        (ATTR_VOLTAGE, "pack_voltage", [12.34, 24.56]),
+    ]:
+        pack_state: State | None = hass.states.get(f"sensor.smartbat_b12345_{sensor}")
+        assert pack_state is not None, f"failed to get state of sensor '{sensor}'"
+        assert pack_state.attributes.get(attribute, None) == (
+            ref_value if bool_fixture else None
+        ), f"faild to verify sensor '{sensor}' attribute '{attribute}'"

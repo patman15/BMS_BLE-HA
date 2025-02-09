@@ -59,14 +59,7 @@ class BMS(BaseBMS):
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             }
-            for pattern in ["SP0?S*", "SP1?S*", "SP2?S*", "GJ-*", "SX1*"]
-        ] + [
-            {  # ECO-WORTHY LiFePO4
-                "service_uuid": BMS.uuid_services()[0],
-                "manufacturer_id": manufacturer_id,
-                "connectable": True,
-            }
-            for manufacturer_id in [0x1852, 0x2298]
+            for pattern in ["SP0?S*", "SP1?S*", "SP2?S*", "GJ-*", "SX1*", "DP04S*"]
         ]
 
     @staticmethod

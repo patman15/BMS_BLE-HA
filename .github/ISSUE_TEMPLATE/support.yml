@@ -19,6 +19,6 @@ body:
 - type: textarea
   attributes:
     label: "Describe the issue"
-    description: "Please describe your issue, ask your question and give necessary context (BMS you are using)."
+    description: "Please describe your issue, ask your question and give necessary context ([debug log](https://github.com/patman15/BMS_BLE-HA/blob/main/README.md#troubleshooting), or BMS you are using)."
   validations:
     required: true
