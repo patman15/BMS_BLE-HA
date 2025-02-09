@@ -20,7 +20,9 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 ### Supported Devices
 - CBT Power BMS, Creabest batteries
 - D-powercore BMS (show up as `DXB-`&#x2026;), Fliteboard batteries (show up as `TBA-`&#x2026;)
-- Daly BMS (show up as `DL-`&#x2026; or `JHB-`&#x2026;)
+- Daly BMS (show up as `DL-`&#x2026;)
+    - 100Balance BMS (show up as `JHB-`&#x2026;)
+    - Bulltron batteries
 - E&J Technology BMS
     - Supervolt v1 batteries
     - Elektronicx batteries (show up as `LT-`&#x2026;)
