@@ -258,7 +258,8 @@ ADVERTISEMENTS: Final[list] = [
         "jbd_bms",
     ),
     (  # source LOG (https://github.com/patman15/BMS_BLE-HA/issues/134)
-        generate_advertisement_data(  # ECO-WORTHY LiFePO4 12V 150Ah
+        # (https://github.com/patman15/BMS_BLE-HA/issues/157)
+        generate_advertisement_data(  # ECO-WORTHY LiFePO4 12V 150Ah, DCHOUSE FW v6.6
             local_name="DP04S007L4S120A",
             manufacturer_data={42435: b"\x27\x37\xc2\xa5"},  # MAC address, wrong
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
