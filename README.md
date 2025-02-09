@@ -49,20 +49,20 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 > 
 > **Do not rely** on the values to control actions that prevent battery damage, overheating (fire), or similar.
 
-Platform | Description | Unit | Details
--- | -- | -- | --
+Platform | Description | Unit | Decription | optional Attributes
+-- | -- | -- | -- | --
 `binary_sensor` | battery charging | `bool` | indicates `True` if battery is charging
-`sensor` | charge cycles | `#` | lifetime number of charge cycles
-`sensor` | current | `A` | positive for charging, negative for discharging; if supported, balance current is available as attribute to this sensor
-`sensor` | delta voltage | `V` | maximum difference between any two cells; individual cell voltage are available as attribute to this sensor
+`sensor` | charge cycles | `#` | lifetime number of charge cycles | package charge cycles
+`sensor` | current | `A` | positive for charging, negative for discharging | balance current, package current
+`sensor` | delta voltage | `V` | maximum difference between any two cells | cell voltages
 `sensor` | power | `W` | positive for charging, negative for discharging
 `sensor` | runtime | `s` | remaining discharge time till SoC 0%, `unavailable` during idle/charging
-`sensor` | SoC | `%` | state of charge, range 100% (full) to 0% (battery empty)
+`sensor` | SoC | `%` | state of charge, range 100% (full) to 0% (battery empty) | package SoC
 `sensor` | stored energy | `Wh` | currently stored energy
-`sensor` | temperature | `°C` | (average) battery temperature; if the BMS supports multiple sensors, individual temperature values are available as attribute to this sensor
-`sensor` | voltage | `V` | overall battery voltage
+`sensor` | temperature | `°C` | (average) battery temperature | individual temperature values
+`sensor` | voltage | `V` | overall battery voltage | package voltage
 `sensor`* | link quality  | `%` | successful BMS queries from the last hundred update periods
-`sensor`* | RSSI          | `dBm`| received signal strength indicator 
+`sensor`* | RSSI          | `dBm`| received signal strength indicator
 
 *) In case sensors are reported `unavailable` please enable the diagnostic sensors, i.e. `RSSI` and `link quality` and check your connection quality. The value of `link quality` results from (temporarily) bad `RSSI` values, which are impacted by disturbances of the Bluetooth communication.
  
@@ -194,6 +194,6 @@ for helping with making the integration better.
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-317_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-327_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=Analytics&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
