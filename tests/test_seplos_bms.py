@@ -8,80 +8,77 @@ from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.plugins.seplos_bms import BMS
+from custom_components.bms_ble.plugins.seplos_bms import BMS, BMSsample
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
 BT_FRAME_SIZE = 27  # ATT maximum is 512, minimal 27
 CHAR_UUID = "fff1"
-
-
-@pytest.fixture
-def ref_value() -> dict:
-    """Return reference value for mock Seplos BMS."""
-    return {
-        "voltage": 52.34,
-        "current": -6.7,
-        "battery_level": 47.9,
-        "cycle_charge": 134.12,
-        "cycles": 9,
-        "temperature": 24.4,
-        "cycle_capacity": 7019.841,
-        "power": -350.678,
-        "battery_charging": False,
-        "runtime": 72064,
-        "pack_count": 2,  # last packet does not report data!
-        "cell#0": 3.272,
-        "cell#1": 3.272,
-        "cell#2": 3.272,
-        "cell#3": 3.271,
-        "cell#4": 3.271,
-        "cell#5": 3.271,
-        "cell#6": 3.271,
-        "cell#7": 3.27,
-        "cell#8": 3.27,
-        "cell#9": 3.271,
-        "cell#10": 3.271,
-        "cell#11": 3.271,
-        "cell#12": 3.271,
-        "cell#13": 3.272,
-        "cell#14": 3.272,
-        "cell#15": 3.272,
-        "cell#16": 3.528,
-        "cell#17": 3.528,
-        "cell#18": 3.528,
-        "cell#19": 3.527,
-        "cell#20": 3.527,
-        "cell#21": 3.527,
-        "cell#22": 3.527,
-        "cell#23": 3.526,
-        "cell#24": 3.526,
-        "cell#25": 3.527,
-        "cell#26": 3.527,
-        "cell#27": 3.527,
-        "cell#28": 3.527,
-        "cell#29": 3.528,
-        "cell#30": 3.528,
-        "cell#31": 3.529,
-        "delta_voltage": 0.003,
-        "temp#0": 24.95,
-        "temp#1": 23.75,
-        "temp#2": 23.85,
-        "temp#3": 24.85,
-        "temp#8": 24.95,
-        "temp#9": 23.75,
-        "temp#10": 23.85,
-        "temp#11": 24.85,
-        "pack_battery_level#0": 47.9,
-        "pack_battery_level#1": 48.0,
-        "pack_current#0": -7.2,
-        "pack_current#1": -7.19,
-        "pack_cycles#0": 9,
-        "pack_cycles#1": 10,
-        "pack_voltage#0": 52.34,
-        "pack_voltage#1": 52.35,
-    }
+REF_VALUE: BMSsample = {
+    "voltage": 52.34,
+    "current": -6.7,
+    "battery_level": 47.9,
+    "cycle_charge": 134.12,
+    "cycles": 9,
+    "temperature": 24.4,
+    "cycle_capacity": 7019.841,
+    "power": -350.678,
+    "battery_charging": False,
+    "runtime": 72064,
+    "pack_count": 2,  # last packet does not report data!
+    "cell#0": 3.272,
+    "cell#1": 3.272,
+    "cell#2": 3.272,
+    "cell#3": 3.271,
+    "cell#4": 3.271,
+    "cell#5": 3.271,
+    "cell#6": 3.271,
+    "cell#7": 3.27,
+    "cell#8": 3.27,
+    "cell#9": 3.271,
+    "cell#10": 3.271,
+    "cell#11": 3.271,
+    "cell#12": 3.271,
+    "cell#13": 3.272,
+    "cell#14": 3.272,
+    "cell#15": 3.272,
+    "cell#16": 3.528,
+    "cell#17": 3.528,
+    "cell#18": 3.528,
+    "cell#19": 3.527,
+    "cell#20": 3.527,
+    "cell#21": 3.527,
+    "cell#22": 3.527,
+    "cell#23": 3.526,
+    "cell#24": 3.526,
+    "cell#25": 3.527,
+    "cell#26": 3.527,
+    "cell#27": 3.527,
+    "cell#28": 3.527,
+    "cell#29": 3.528,
+    "cell#30": 3.528,
+    "cell#31": 3.529,
+    "delta_voltage": 0.003,
+    "temp#0": 24.95,
+    "temp#1": 23.75,
+    "temp#2": 23.85,
+    "temp#3": 24.85,
+    "temp#8": 24.95,
+    "temp#9": 23.75,
+    "temp#10": 23.85,
+    "temp#11": 24.85,
+    "pack_battery_level#0": 47.9,
+    "pack_battery_level#1": 48.0,
+    "pack_current#0": -7.2,
+    "pack_current#1": -7.19,
+    "pack_cycles#0": 9,
+    "pack_cycles#1": 10,
+    "pack_voltage#0": 52.34,
+    "pack_voltage#1": 52.35,
+    "problem": False,
+    "problem_code": 0,
+}
 
 
 class MockSeplosBleakClient(MockBleakClient):
@@ -99,6 +96,9 @@ class MockSeplosBleakClient(MockBleakClient):
             b"\x00\xEE\x00\xF4\x00\x00\x00\x01\x01\xDF\x01\xDF\x00\x09\x03\xE7\x01\x0A\x01\x0A\x01"
             b"\x0A\x00\x00\x00\x00\x57\x96"
         ),
+        "EIC": bytearray(
+            b"\x00\x01\x0A\x01\x00\x00\x00\x00\x00\x00\x03\x00\x00\x7E\x35"
+        ),  # discharge, dis/charge-FET on, no alarm
         "EIX": bytearray(  # Note: unknown to the BMS implementation, just for testing
             b"\x00\x04\x20\x14\x72\xFD\x30\x34\x64\x6D\x60\x00\xD5\x01\xDF\x03\xE7\x00\x09\x0C\xC7"
             b"\x0B\x9F\x0C\xC8\x0C\xC6\x0B\xA5\x0B\x99\x00\x00\x00\xB4\x62\xB0"
@@ -142,12 +142,13 @@ class MockSeplosBleakClient(MockBleakClient):
         req = bytearray(data)
 
         assert int.from_bytes(req[-2:]) == self._crc16(req[:-2])  # check CRC of request
-        assert req[1] == 0x04  # check if read command
+        assert req[1] in [0x01, 0x04]  # check if read command
 
         device, start, length = [
             int(req[0]),
             int.from_bytes(req[2:4], byteorder="big"),
-            int.from_bytes(req[4:6], byteorder="big") * 2 + self.PKT_FRAME,
+            int.from_bytes(req[4:6], byteorder="big") * (2 if req[1] == 0x4 else 0.125)
+            + self.PKT_FRAME,
         ]
 
         if device == 0x00:  # EMS device
@@ -157,6 +158,9 @@ class MockSeplosBleakClient(MockBleakClient):
             if start == 0x2100:
                 assert length == len(self.RESP["EIB"])
                 return self.RESP["EIB"].copy()
+            if start == 0x2200:
+                assert length == len(self.RESP["EIC"])
+                return self.RESP["EIC"].copy()
         if device and device <= 0x10:  # BMS battery packs
             if start == 0x1000:
                 assert length == len(self.RESP[f"PIA{device}"])
@@ -269,7 +273,7 @@ class MockOversizedBleakClient(MockSeplosBleakClient):
             self._notify_callback("MockOversizedBleakClient", notify_data)
 
 
-async def test_update(monkeypatch, ref_value, reconnect_fixture) -> None:
+async def test_update(monkeypatch, reconnect_fixture) -> None:
     """Test Seplos BMS data update."""
 
     monkeypatch.setattr(
@@ -281,10 +285,10 @@ async def test_update(monkeypatch, ref_value, reconnect_fixture) -> None:
         reconnect_fixture,
     )
 
-    assert await bms.async_update() == ref_value
+    assert await bms.async_update() == REF_VALUE
 
     # query again to check already connected state
-    assert await bms.async_update() == ref_value
+    assert await bms.async_update() == REF_VALUE
     assert (
         bms._client and bms._client.is_connected is not reconnect_fixture
     )  # noqa: SLF001
@@ -335,7 +339,7 @@ async def test_error_response(monkeypatch) -> None:
     await bms.disconnect()
 
 
-async def test_oversized_response(monkeypatch, ref_value) -> None:
+async def test_oversized_response(monkeypatch) -> None:
     """Test data update with BMS returning oversized data, result shall still be ok."""
 
     monkeypatch.setattr(
@@ -345,7 +349,7 @@ async def test_oversized_response(monkeypatch, ref_value) -> None:
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
-    assert await bms.async_update() == ref_value
+    assert await bms.async_update() == REF_VALUE
 
     await bms.disconnect()
 
@@ -371,3 +375,29 @@ async def test_invalid_message(monkeypatch) -> None:
     assert not result
 
     await bms.disconnect()
+
+
+async def test_problem_response(monkeypatch) -> None:
+    """Test data update with BMS returning invalid data (wrong CRC)."""
+
+    #    pytest.fail("missing implementation", False)
+
+    problem_resp: dict[str, bytearray] = MockSeplosBleakClient.RESP.copy()
+    problem_resp["EIC"] = bytearray(
+        b"\x00\x01\x0A\x01\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x03\xFF\xCB\x45"
+    )
+
+    monkeypatch.setattr(
+        "tests.test_seplos_bms.MockSeplosBleakClient.RESP", problem_resp
+    )
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient", MockSeplosBleakClient
+    )
+
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
+
+    assert await bms.async_update() == REF_VALUE | {
+        "problem": True,
+        "problem_code": 0xFFFF00FF00FF0000FF
+    }
