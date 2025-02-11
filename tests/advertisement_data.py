@@ -268,15 +268,11 @@ ADVERTISEMENTS: Final[list] = [
         "jbd_bms",
     ),
     (  # source LOG (https://github.com/patman15/BMS_BLE-HA/issues/173)
-        generate_advertisement_data(  # Eleksol
+        generate_advertisement_data(  # Eleksol 12V300AH
             local_name="12300DE00013",
-            manufacturer_data={44580: b"\x27\x37\xc2\xa5"},  # MAC address
+            manufacturer_data={44580: b"\x27\x37\xc2\xa5"},  # MAC address, wrong
             service_uuids=[
-                "00001800-0000-1000-8000-00805f9b34fb",
-                "00001801-0000-1000-8000-00805f9b34fb",
-                "0000180a-0000-1000-8000-00805f9b34fb",
                 "0000ff00-0000-1000-8000-00805f9b34fb",
-                "00010203-0405-0607-0809-0a0b0c0d1912",
             ],
             rssi=-60,
         ),
