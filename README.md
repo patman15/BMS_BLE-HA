@@ -191,6 +191,7 @@ for helping with making the integration better.
 - Jikong BMS: [esphome-jk-bms](https://github.com/syssi/esphome-jk-bms)
 - JBD BMS: [esphome-jbd-bms](https://github.com/syssi/esphome-jbd-bms)
 - D-powercore BMS: [Strom BMS monitor](https://github.com/majonessyltetoy/strom)
+- Redodo BMS: [LiTime BMS bluetooth](https://github.com/calledit/LiTime_BMS_bluetooth)
 
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge
