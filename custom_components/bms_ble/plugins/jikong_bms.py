@@ -46,7 +46,7 @@ class BMS(BaseBMS):
             (ATTR_CYCLE_CHRG, 174, 4, False, lambda x: float(x / 1000)),
             (ATTR_CYCLES, 182, 4, False, lambda x: x),
             (ATTR_BALANCE_CUR, 170, 2, True, lambda x: float(x / 1000)),
-            (KEY_PROBLEM, 166, 4, False, lambda x: x), # other message (03)
+            (KEY_PROBLEM, 166, 4, False, lambda x: x),
         ]
     )
 
@@ -155,7 +155,6 @@ class BMS(BaseBMS):
             return
 
         self._data_final = self._data.copy()
-        self._log.debug(f"{self._data_final=}")  # FIXME!
         self._data_event.set()
 
     async def _init_connection(self) -> None:

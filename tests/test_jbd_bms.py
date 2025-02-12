@@ -170,7 +170,7 @@ async def test_invalid_response(monkeypatch, wrong_response) -> None:
 
     monkeypatch.setattr(
         "tests.test_jbd_bms.MockJBDBleakClient._response",
-        lambda _s, _c_, d: wrong_response,
+        lambda _s, _c, _d: wrong_response,
     )
 
     monkeypatch.setattr(
@@ -253,8 +253,6 @@ def prb_response(request) -> bytearray:
 async def test_problem_response(monkeypatch, problem_response) -> None:
     """Test data update with BMS returning invalid data (wrong CRC)."""
 
-    #    pytest.fail("missing implementation", False)
-
     def _response(
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
@@ -304,5 +302,5 @@ async def test_problem_response(monkeypatch, problem_response) -> None:
         "temp#2": 21.7,
         "delta_voltage": 0.015,
         "problem": True,
-        "problem_code": 1 if problem_response[1] == "first_bit" else 32768,
+        "problem_code": 1 << (0 if problem_response[1] == "first_bit" else 15),
     }
