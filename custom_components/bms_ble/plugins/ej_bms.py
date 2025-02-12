@@ -55,10 +55,11 @@ class BMS(BaseBMS):
     @staticmethod
     def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
-        return [  # Fliteboard, Electronix battery, Lithtech Energy
+        return [  # Fliteboard, Electronix battery
             {"local_name": "libatt*", "manufacturer_id": 21320, "connectable": True},
             {"local_name": "LT-*", "manufacturer_id": 33384, "connectable": True},
-            {"local_name": "L-12V???AH-*", "connectable": True},
+            {"local_name": "L-12V???AH-*", "connectable": True}, # Lithtech Energy
+            {"local_name": "LT-12V-*", "connectable": True}, # Lithtech Energy
         ]
 
     @staticmethod
