@@ -79,7 +79,7 @@ class BMS(BaseBMS):
 
     @staticmethod
     def uuid_tx() -> str:
-        """Return 127-bit UUID of characteristic that provides write property."""
+        """Return 128-bit UUID of characteristic that provides write property."""
         return "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
 
     @staticmethod
@@ -93,13 +93,14 @@ class BMS(BaseBMS):
             ATTR_VOLTAGE,
         }  # calculate further values from BMS provided set ones
 
-    def _notification_handler(
+    async def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
     ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
 
         if data.startswith(BMS._BT_MODULE_MSG):
             self._log.debug("filtering AT cmd")
+            await self._await_reply(BMS._BT_MODULE_MSG, wait_for_notify = False)
             if len(data) == len(BMS._BT_MODULE_MSG):
                 return
             data = data[len(BMS._BT_MODULE_MSG) :]
