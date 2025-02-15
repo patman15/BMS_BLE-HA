@@ -136,6 +136,22 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "ej_bms",
     ),
+    (  # proxy LOG (https://github.com/patman15/BMS_BLE-HA/issues/187)
+        generate_advertisement_data(
+            local_name="L-12V100AH-0902",
+            tx_power=5,
+            rssi=-87,
+        ),
+        "ej_bms",
+    ),
+    (  # proxy LOG (https://github.com/patman15/BMS_BLE-HA/issues/187)
+        generate_advertisement_data(
+            local_name="LT-12V-0002\r\n",
+            tx_power=5,
+            rssi=-94,
+        ),
+        "ej_bms",
+    ),
     (  # source LOG
         generate_advertisement_data(
             local_name="170R000121",

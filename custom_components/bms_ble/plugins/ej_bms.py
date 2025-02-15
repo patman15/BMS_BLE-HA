@@ -58,6 +58,8 @@ class BMS(BaseBMS):
         return [  # Fliteboard, Electronix battery
             {"local_name": "libatt*", "manufacturer_id": 21320, "connectable": True},
             {"local_name": "LT-*", "manufacturer_id": 33384, "connectable": True},
+            {"local_name": "L-12V???AH-*", "connectable": True}, # Lithtech Energy
+            {"local_name": "LT-12V-*", "connectable": True}, # Lithtech Energy
         ]
 
     @staticmethod
@@ -77,7 +79,7 @@ class BMS(BaseBMS):
 
     @staticmethod
     def uuid_tx() -> str:
-        """Return 127-bit UUID of characteristic that provides write property."""
+        """Return 128-bit UUID of characteristic that provides write property."""
         return "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
 
     @staticmethod
