@@ -4,11 +4,11 @@
 name        = "BMS_BLE-HA"
 classifiers = [
     "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
-    "Programming Language :: Python :: 3"
+    "Programming Language :: Python :: 3.13"
 ]
 description = "Integration that allows monitoring of Bluetooth Low Energy (BLE) battery management systems (BMS) from within Home Assistant."
 readme      = "README.md"
-requires-python = ">= 3.12"
+requires-python = ">= 3.13.0"
 
 [project.urls]
 "Source Code" = "https://github.com/patman15/BMS_BLE-HA"
@@ -25,9 +25,9 @@ testpaths = [
 ]
 asyncio_mode = "auto"
 
-# ruff settings from HA 2024.12.0.dev0
+# ruff settings from HA 2025.2.2
 [tool.ruff]
-required-version = ">=0.6.8"
+required-version = ">=0.9.1"
 
 [tool.ruff.lint]
 select = [
@@ -46,8 +46,10 @@ select = [
     "B017", # pytest.raises(BaseException) should be considered evil
     "B018", # Found useless attribute access. Either assign it to a variable or remove it.
     "B023", # Function definition does not bind loop variable {name}
+    "B024", # `{name}` is an abstract base class, but it has no abstract methods or properties
     "B026", # Star-arg unpacking after a keyword argument is strongly discouraged
     "B032", # Possible unintentional type annotation (using :). Did you mean to assign (using =)?
+    "B035", # Dictionary comprehension uses static key
     "B904", # Use raise from to specify exception cause
     "B905", # zip() without an explicit strict= parameter
     "BLE",
@@ -81,12 +83,27 @@ select = [
     "RSE", # flake8-raise
     "RUF005", # Consider iterable unpacking instead of concatenation
     "RUF006", # Store a reference to the return value of asyncio.create_task
+    "RUF007", # Prefer itertools.pairwise() over zip() when iterating over successive pairs
+    "RUF008", # Do not use mutable default values for dataclass attributes
     "RUF010", # Use explicit conversion flag
     "RUF013", # PEP 484 prohibits implicit Optional
+    "RUF016", # Slice in indexed access to type {value_type} uses type {index_type} instead of an integer
     "RUF017", # Avoid quadratic list summation
     "RUF018", # Avoid assignment expressions in assert statements
     "RUF019", # Unnecessary key check before dictionary access
-    # "RUF100", # Unused `noqa` directive; temporarily every now and then to clean them up
+    "RUF020", # {never_like} | T is equivalent to T
+    "RUF021", # Parenthesize a and b expressions when chaining and and or together, to make the precedence clear
+    "RUF022", # Sort __all__
+    "RUF023", # Sort __slots__
+    "RUF024", # Do not pass mutable objects as values to dict.fromkeys
+    "RUF026", # default_factory is a positional-only argument to defaultdict
+    "RUF030", # print() call in assert statement is likely unintentional
+    "RUF032", # Decimal() called with float literal argument
+    "RUF033", # __post_init__ method with argument defaults
+    "RUF034", # Useless if-else condition
+    "RUF100", # Unused `noqa` directive
+    "RUF101", # noqa directives that use redirected rule codes
+    "RUF200", # Failed to parse pyproject.toml: {message}
     "S102", # Use of exec detected
     "S103", # bad-file-permissions
     "S108", # hardcoded-temp-file
@@ -110,7 +127,7 @@ select = [
     "SLOT", # flake8-slots
     "T100", # Trace found: {name} used
     "T20", # flake8-print
-    "TCH", # flake8-type-checking
+    "TC", # flake8-type-checking
     "TID", # Tidy imports
     "TRY", # tryceratops
     "UP", # pyupgrade
@@ -146,9 +163,9 @@ ignore = [
 #    "SIM115", # Use context handler for opening files
 
     # Moving imports into type-checking blocks can mess with pytest.patch()
-    "TCH001", # Move application import {} into a type-checking block
-    "TCH002", # Move third-party import {} into a type-checking block
-    "TCH003", # Move standard library import {} into a type-checking block
+    "TC001", # Move application import {} into a type-checking block
+    "TC002", # Move third-party import {} into a type-checking block
+    "TC003", # Move standard library import {} into a type-checking block
 
     "TRY003", # Avoid specifying long messages outside the exception class
     "TRY400", # Use `logging.exception` instead of `logging.error`
