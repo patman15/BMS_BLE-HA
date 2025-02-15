@@ -93,14 +93,13 @@ class BMS(BaseBMS):
             ATTR_VOLTAGE,
         }  # calculate further values from BMS provided set ones
 
-    async def _notification_handler(
+    def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
     ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
 
         if data.startswith(BMS._BT_MODULE_MSG):
             self._log.debug("filtering AT cmd")
-            await self._await_reply(BMS._BT_MODULE_MSG, wait_for_notify = False)
             if len(data) == len(BMS._BT_MODULE_MSG):
                 return
             data = data[len(BMS._BT_MODULE_MSG) :]
