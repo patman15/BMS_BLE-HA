@@ -63,17 +63,11 @@ class BMS(BaseBMS):
                 "SP2?S*",
                 "GJ-*",  # accurat batteries
                 "SX1*",  # Supervolt v3
+                "DP04S*", # ECO-WORTHY, DCHOUSE
                 "121?0*",  # Eleksol
                 "12200*",
                 "12300*",
             ]
-        ] + [
-            {  # ECO-WORTHY LiFePO4
-                "service_uuid": BMS.uuid_services()[0],
-                "manufacturer_id": manufacturer_id,
-                "connectable": True,
-            }
-            for manufacturer_id in [0x1852, 0x2298]
         ]
 
     @staticmethod
