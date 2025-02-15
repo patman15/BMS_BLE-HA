@@ -136,6 +136,22 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "ej_bms",
     ),
+    (  # proxy LOG (https://github.com/patman15/BMS_BLE-HA/issues/187)
+        generate_advertisement_data(
+            local_name="L-12V100AH-0902",
+            tx_power=5,
+            rssi=-87,
+        ),
+        "ej_bms",
+    ),
+    (  # proxy LOG (https://github.com/patman15/BMS_BLE-HA/issues/187)
+        generate_advertisement_data(
+            local_name="LT-12V-0002\r\n",
+            tx_power=5,
+            rssi=-94,
+        ),
+        "ej_bms",
+    ),
     (  # source LOG, https://github.com/patman15/BMS_BLE-HA/issues/59
         generate_advertisement_data(
             local_name="170R000121",
@@ -283,6 +299,17 @@ ADVERTISEMENTS: Final[list] = [
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
             tx_power=-127,
             rssi=-31,
+        ),
+        "jbd_bms",
+    ),
+    (  # source LOG (https://github.com/patman15/BMS_BLE-HA/issues/173)
+        generate_advertisement_data(  # Eleksol 12V300AH
+            local_name="12300DE00013",
+            manufacturer_data={44580: b"\x27\x37\xc2\xa5"},  # MAC address, wrong
+            service_uuids=[
+                "0000ff00-0000-1000-8000-00805f9b34fb",
+            ],
+            rssi=-60,
         ),
         "jbd_bms",
     ),
