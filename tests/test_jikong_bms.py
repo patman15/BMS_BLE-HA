@@ -130,11 +130,12 @@ _RESULT_DEFS: Final[dict[str, BMSsample]] = {
         "temp#0": 18.1,
         "temp#1": 18.6,
         "temp#2": 22.8,
+        "temp_sensors": 7,
     },
     "JK02_32S": {
         "cell_count": 16,
         "delta_voltage": 0.002,
-        "temperature": 18.2,
+        "temperature": 18.217,
         "voltage": 52.234,
         "current": -10.595,
         "balance_current": 0.001,
@@ -166,6 +167,8 @@ _RESULT_DEFS: Final[dict[str, BMSsample]] = {
         "temp#2": 18.2,
         "temp#3": 18.0,
         "temp#4": 18.3,
+        "temp#5": 18.3,
+        "temp_sensors": 255,
     },
 }
 
@@ -460,18 +463,18 @@ async def test_update(monkeypatch, protocol_type, reconnect_fixture) -> None:
 async def test_hide_temp_sensors(monkeypatch, protocol_type) -> None:
     """Test Jikong BMS data update with not connected temperature sensors."""
 
-    temp2_zero: dict[str, bytearray] = deepcopy(_PROTO_DEFS[protocol_type])
+    temp2_hide: dict[str, bytearray] = deepcopy(_PROTO_DEFS[protocol_type])
 
     # clear temp sensor #2
     if protocol_type == "JK02_24S":
-        temp2_zero["cell"][134:136] = bytearray(2)
+        temp2_hide["cell"][182:184] = bytearray(b"\x03\x00")
     else:
-        temp2_zero["cell"][164:166] = bytearray(2)
+        temp2_hide["cell"][214:216] = bytearray(b"\xFB\x00")
     # recalculate CRC
-    temp2_zero["cell"][-1] = crc_sum(temp2_zero["cell"][:-1])
+    temp2_hide["cell"][-1] = crc_sum(temp2_hide["cell"][:-1])
 
     monkeypatch.setattr(
-        "tests.test_jikong_bms.MockJikongBleakClient._FRAME", temp2_zero
+        "tests.test_jikong_bms.MockJikongBleakClient._FRAME", temp2_hide
     )
 
     monkeypatch.setattr(
@@ -483,7 +486,9 @@ async def test_hide_temp_sensors(monkeypatch, protocol_type) -> None:
     # modify result dict to match removed temp#2
     ref_result = deepcopy(_RESULT_DEFS[protocol_type])
     if protocol_type == "JK02_24S":
-        ref_result["temperature"] = 18.35
+        ref_result |= {"temp_sensors": 3, "temperature": 18.35}
+    elif protocol_type == "JK02_32S":
+        ref_result |= {"temp_sensors": 251, "temperature": 18.22}
     del ref_result["temp#2"]
 
     assert await bms.async_update() == ref_result

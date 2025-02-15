@@ -23,6 +23,7 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
+    KEY_TEMP_SENS,
     KEY_TEMP_VALUE,
 )
 
@@ -45,6 +46,7 @@ class BMS(BaseBMS):
             (ATTR_CYCLE_CHRG, 174, 4, False, lambda x: float(x / 1000)),
             (ATTR_CYCLES, 182, 4, False, lambda x: x),
             (ATTR_BALANCE_CUR, 170, 2, True, lambda x: float(x / 1000)),
+            (KEY_TEMP_SENS, 214, 2, True, lambda x: x),
         ]
     )
 
@@ -228,20 +230,18 @@ class BMS(BaseBMS):
         }
 
     @staticmethod
-    def _temp_sensors(data: bytearray, offs: int) -> dict[str, float]:
+    def _temp_sensors(data: bytearray, offs: int, mask: int) -> dict[str, float]:
         temp_pos: Final[list[tuple[int, int]]] = (
             [(0, 130), (1, 132), (2, 134)]
             if offs
-            else [(0, 144), (1, 162), (2, 164), (3, 256), (4, 258)]
+            else [(0, 144), (1, 162), (2, 164), (3, 256), (4, 258), (5, 258)]
         )
         return {
-            f"{KEY_TEMP_VALUE}{idx}": value / 10
-            for idx, pos in temp_pos
-            if (
-                value := int.from_bytes(
-                    data[pos : pos + 2], byteorder="little", signed=True
-                )
+            f"{KEY_TEMP_VALUE}{idx}": int.from_bytes(
+                data[pos : pos + 2], byteorder="little", signed=True
             )
+            / 10
+            for idx, pos in temp_pos if mask & (1 << idx)
         }
 
     @staticmethod
@@ -283,7 +283,7 @@ class BMS(BaseBMS):
             )
 
         data: BMSsample = self._decode_data(self._data_final, self._prot_offset)
-        data.update(BMS._temp_sensors(self._data_final, self._prot_offset))
+        data.update(BMS._temp_sensors(self._data_final, self._prot_offset, int(data.get(KEY_TEMP_SENS, 0))))
         data.update(BMS._cell_voltages(self._data_final, int(data[KEY_CELL_COUNT])))
 
         return data
