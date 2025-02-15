@@ -57,7 +57,17 @@ class BMS(BaseBMS):
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             }
-            for pattern in ["SP0?S*", "SP1?S*", "SP2?S*", "GJ-*", "SX1*", "DP04S*"]
+            for pattern in [
+                "SP0?S*",
+                "SP1?S*",
+                "SP2?S*",
+                "GJ-*",  # accurat batteries
+                "SX1*",  # Supervolt v3
+                "DP04S*", # ECO-WORTHY, DCHOUSE
+                "121?0*",  # Eleksol
+                "12200*",
+                "12300*",
+            ]
         ]
 
     @staticmethod
