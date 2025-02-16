@@ -21,6 +21,7 @@ from custom_components.bms_ble.const import (
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
+#    KEY_PROBLEM,
     KEY_TEMP_VALUE,
 )
 
@@ -45,7 +46,6 @@ class BMS(BaseBMS):
             lambda x: (int(x[0][0]) * int(x[0][2])) / 1e7,
         ),
         (ATTR_BATTERY_LEVEL, "BatsocList", lambda x: float(x[0][0] / 100)),
-        # (ATTR_CYCLES, "cur", lambda x: float(x)),
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -136,12 +136,10 @@ class BMS(BaseBMS):
         """Update battery status information."""
 
         await self._await_reply(BMS._CMD_PRE + BMS._CMD_RT)
-        self._log.debug("JSON: %s", self._data_final)
-        # #
-        # # parse data from self._data here
 
         return (
             BMS._decode_data(self._data_final)
             | BMS._temp_sensors(self._data_final)
             | BMS._cell_voltages(self._data_final)
+#            | {KEY_PROBLEM: self._data_final.get("Bwarn", 0) + self._data_final.get("Bfault", 0)}
         )
