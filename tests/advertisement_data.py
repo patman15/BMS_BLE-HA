@@ -313,4 +313,11 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "jbd_bms",
     ),
+    (  # source BTctl (https://github.com/patman15/BMS_BLE-HA/issues/161)
+        generate_advertisement_data(  # Felicity Solar LUX-Y-48300LG01
+            local_name="F100011002424470238",
+            rssi=-56,
+        ),
+        "felicity_bms",
+    ),
 ]
