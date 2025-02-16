@@ -101,7 +101,7 @@ async def test_unload_entry(
     trace_fct = {"shutdown_called": False}
 
     assert await hass.config_entries.async_remove(cfg.entry_id)
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
 
     assert trace_fct["shutdown_called"], "Failed to call coordinator async_shutdown()."
     assert (

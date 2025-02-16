@@ -24,6 +24,7 @@ testpaths = [
     "tests",
 ]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 
 # ruff settings from HA 2025.2.2
 [tool.ruff]
@@ -204,3 +205,17 @@ split-on-trailing-comma = false
 
 [tool.ruff.lint.mccabe]
 max-complexity = 25
+
+[tool.pylint.MAIN]
+py-version = "3.13"
+
+load-plugins = [
+    "pylint.extensions.code_style",
+    "pylint.extensions.typing",
+    "pylint_per_file_ignores",
+]
+
+[tool.pylint."MESSAGES CONTROL"]
+per-file-ignores = [
+    "/tests/:protected-access",
+]

@@ -238,7 +238,7 @@ class MockJikongBleakClient(MockBleakClient):
     async def disconnect(self) -> bool:
         """Mock disconnect and wait for send task."""
         await asyncio.wait_for(self._task, 0.1)
-        assert self._task.result, "send task still running!"
+        assert self._task.done(), "send task still running!"
         return await super().disconnect()
 
     class JKservice(BleakGATTService):
@@ -450,9 +450,7 @@ async def test_update(monkeypatch, protocol_type, reconnect_fixture) -> None:
 
     # query again to check already connected state
     assert await bms.async_update() == _RESULT_DEFS[protocol_type]
-    assert (
-        bms._client and bms._client.is_connected is not reconnect_fixture
-    )  # noqa: SLF001
+    assert bms._client and bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
 
@@ -515,9 +513,7 @@ async def test_stream_update(monkeypatch, protocol_type, reconnect_fixture) -> N
 
     # query again to check already connected state
     assert await bms.async_update() == _RESULT_DEFS[protocol_type]
-    assert (
-        bms._client and bms._client.is_connected is not reconnect_fixture
-    )  # noqa: SLF001
+    assert bms._client and bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
 
