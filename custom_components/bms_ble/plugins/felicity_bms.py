@@ -111,6 +111,10 @@ class BMS(BaseBMS):
             self._log.debug("JSON decode error: %s", self._data)
             return
 
+        if (ver := self._data_final.get("CommVer", 0)) != 1:
+            self._log.debug("Unknown protocol version (%i)", ver)
+            return
+
         self._data_event.set()
 
     @staticmethod

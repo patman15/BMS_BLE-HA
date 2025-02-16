@@ -8,8 +8,8 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 
 # from bleak.exc import BleakDeviceNotFoundError
 from bleak.uuids import normalize_uuid_str
+import pytest
 
-# import pytest
 from custom_components.bms_ble.plugins.felicity_bms import BMS
 
 from .bluetooth import generate_ble_device
@@ -147,78 +147,43 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
     await bms.disconnect()
 
 
-# @pytest.fixture(
-#     name="wrong_response",
-#     params=[
-#         (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xA1\x18\x00", "invalid frame end"),
-#         (b"\x7e\x10\x01\x03\x00\x8c\x00\x01\x00\xAD\x19\x0D", "invalid version"),
-#         (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xA1\x00\x0D", "invalid CRC"),
-#         (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xA1\x18\x0D\x00", "oversized frame"),
-#         (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xA1\x0D", "undersized frame"),
-#         (b"\x7e\x00\x01\x03\x01\x8c\x00\x01\x00\x61\x25\x0D", "error response"),
-#     ],
-#     ids=lambda param: param[1],
-# )
-# def response(request):
-#     """Return faulty response frame."""
-#     return request.param[0]
+@pytest.fixture(
+    name="wrong_response",
+    params=[
+        (b'"CommVer":1,"wifiSN":"F100011002424470238","iotType":3}', "invalid frame start"),
+        (b'{"CommVer":1,"wifiSN":"F100011002424470238","iotType":3', "invalid frame end"),
+        (b'{"CommVer":2,"wifiSN":"F100011002424470238","iotType":3}', "invalid protocol"),
+    ],
+    ids=lambda param: param[1],
+)
+def response(request):
+    """Return faulty response frame."""
+    return request.param[0]
 
 
-# async def test_invalid_response(monkeypatch, wrong_response) -> None:
-#     """Test data up date with BMS returning invalid data."""
+async def test_invalid_response(monkeypatch, wrong_response) -> None:
+    """Test data up date with BMS returning invalid data."""
 
-#     monkeypatch.setattr(
-#         "custom_components.bms_ble.plugins.felicity_bms.BMS.BAT_TIMEOUT",
-#         0.1,
-#     )
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.felicity_bms.BMS.BAT_TIMEOUT",
+        0.1,
+    )
 
-#     monkeypatch.setattr(
-#         "tests.test_felicity_bms.MockFelicityBleakClient._response",
-#         lambda _s, _c_, d: wrong_response,
-#     )
+    monkeypatch.setattr(
+        "tests.test_felicity_bms.MockFelicityBleakClient._response",
+        lambda _s, _c_, d: wrong_response,
+    )
 
-#     monkeypatch.setattr(
-#         "custom_components.bms_ble.plugins.basebms.BleakClient",
-#         MockFelicityBleakClient,
-#     )
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
+        MockFelicityBleakClient,
+    )
 
-#     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
-#     result = {}
-#     with pytest.raises(TimeoutError):
-#         result = await bms.async_update()
+    result = {}
+    with pytest.raises(TimeoutError):
+        result = await bms.async_update()
 
-#     assert not result
-#     await bms.disconnect()
-
-
-# async def test_init_fail(monkeypatch, bool_fixture) -> None:
-#     """Test that failing to initialize simply continues and tries to read data."""
-
-#     throw_exception: bool = bool_fixture
-
-#     async def error_repsonse(*_args, **_kwargs) -> bytearray:
-#         return bytearray(b"\x00")
-
-#     async def throw_response(*_args, **_kwargs) -> bytearray:
-#         raise BleakDeviceNotFoundError("MockFelicityBleakClient")
-
-#     monkeypatch.setattr(
-#         "tests.test_felicity_bms.MockFelicityBleakClient.read_gatt_char",
-#         throw_response if throw_exception else error_repsonse,
-#     )
-
-#     monkeypatch.setattr(
-#         "custom_components.bms_ble.plugins.basebms.BleakClient",
-#         MockFelicityBleakClient,
-#     )
-
-#     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
-
-#     if bool_fixture:
-#         with pytest.raises(BleakDeviceNotFoundError):
-#             assert not await bms.async_update()
-#     else:
-#         assert await bms.async_update() == ref_value()["16S6T"]
-
-#     await bms.disconnect()
+    assert not result
+    await bms.disconnect()
