@@ -15,11 +15,13 @@ from custom_components.bms_ble.const import (
     ATTR_CYCLE_CAP,
     ATTR_CYCLE_CHRG,
     # ATTR_CYCLES,
-    # ATTR_DELTA_VOLTAGE,
+    ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
-    # ATTR_RUNTIME,
-    # ATTR_TEMPERATURE,
+    ATTR_RUNTIME,
+    ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
+    KEY_CELL_VOLTAGE,
+    KEY_TEMP_VALUE,
 )
 
 from .basebms import BaseBMS, BMSsample
@@ -35,8 +37,8 @@ class BMS(BaseBMS):
     _CMD_DT: Final[bytes] = b"get Date"
     _CMD_RT: Final[bytes] = b"get dev real infor"
     _FIELDS: Final[list[tuple[str, str, Callable[[list], int | float]]]] = [
-        (ATTR_VOLTAGE, "BattList", lambda x: float(x[0][0] / 1000)),
-        (ATTR_CURRENT, "BattList", lambda x: float(x[1][0] / 10)),
+        (ATTR_VOLTAGE, "Batt", lambda x: float(x[0][0] / 1000)),
+        (ATTR_CURRENT, "Batt", lambda x: float(x[1][0] / 10)),
         (
             ATTR_CYCLE_CHRG,
             "BatsocList",
@@ -81,7 +83,10 @@ class BMS(BaseBMS):
         return {
             ATTR_BATTERY_CHARGING,
             ATTR_CYCLE_CAP,
+            ATTR_DELTA_VOLTAGE,
             ATTR_POWER,
+            ATTR_RUNTIME,
+            ATTR_TEMPERATURE,
         }  # calculate further values from BMS provided set ones
 
     def _notification_handler(
@@ -112,6 +117,21 @@ class BMS(BaseBMS):
     def _decode_data(data: dict) -> dict[str, int | float]:
         return {key: func(data.get(itm, [])) for key, itm, func in BMS._FIELDS}
 
+    @staticmethod
+    def _cell_voltages(data: dict) -> dict[str, float]:
+        return {
+            f"{KEY_CELL_VOLTAGE}{idx}": value / 1000
+            for idx, value in enumerate(data.get("BatcelList", [])[0])
+        }
+
+    @staticmethod
+    def _temp_sensors(data: dict) -> dict[str, float]:
+        return {
+            f"{KEY_TEMP_VALUE}{idx}": value / 10
+            for idx, value in enumerate(data.get("BtemList", [])[0])
+            if value != 0x7FFF
+        }
+
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
@@ -120,4 +140,8 @@ class BMS(BaseBMS):
         # #
         # # parse data from self._data here
 
-        return BMS._decode_data(self._data_final)
+        return (
+            BMS._decode_data(self._data_final)
+            | BMS._temp_sensors(self._data_final)
+            | BMS._cell_voltages(self._data_final)
+        )
