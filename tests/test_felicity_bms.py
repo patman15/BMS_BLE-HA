@@ -140,9 +140,7 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
 
     # query again to check already connected state
     result = await bms.async_update()
-    assert (
-        bms._client and bms._client.is_connected is not reconnect_fixture
-    )  # noqa: SLF001
+    assert bms._client and bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
 
@@ -150,9 +148,9 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
 @pytest.fixture(
     name="wrong_response",
     params=[
-        (b'"CommVer":1,"wifiSN":"F100011002424470238","iotType":3}', "invalid frame start"),
-        (b'{"CommVer":1,"wifiSN":"F100011002424470238","iotType":3', "invalid frame end"),
-        (b'{"CommVer":2,"wifiSN":"F100011002424470238","iotType":3}', "invalid protocol"),
+        (b'"CommVer":1,"wifiSN":"F100011002424470238"}', "invalid frame start"),
+        (b'{"CommVer":1,"wifiSN":"F100011002424470238"', "invalid frame end"),
+        (b'{"CommVer":2,"wifiSN":"F100011002424470238"}', "invalid protocol"),
     ],
     ids=lambda param: param[1],
 )
