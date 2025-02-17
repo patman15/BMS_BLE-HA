@@ -28,6 +28,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Lithtech batteries (show up as `LT-12V-`&#x2026; or `L-12V`&#x2026;)
     - Meritsun, Supervolt v1, Volthium batteries
 - Ective batteries
+- Felicity ESS batteries (show up as `F10`&#x2026;)
 - JBD BMS, Jiabaida (show up as `SP..S`&#x2026;)
     - accurat batteries (show up as `GJ-`&#x2026;)
     - DCHOUSE, ECO-WORTHY batteries (show up as `DP04S`&#x2026;)
@@ -182,7 +183,7 @@ Once pairing is done, the integration should automatically detect the BMS.
 - Add further battery types on [request](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.yml)
 
 ## Thanks to
-> [@gkathan](https://github.com/patman15/BMS_BLE-HA/issues/2), [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22), [@Goaheadz](https://github.com/patman15/BMS_BLE-HA/issues/24), [@alros100, @majonessyltetoy](https://github.com/patman15/BMS_BLE-HA/issues/52), [@snipah, @Gruni22](https://github.com/patman15/BMS_BLE-HA/issues/59), [@azisto](https://github.com/patman15/BMS_BLE-HA/issues/78), [@BikeAtor, @Karatzie](https://github.com/patman15/BMS_BLE-HA/issues/57), [@SkeLLLa,@romanshypovskyi](https://github.com/patman15/BMS_BLE-HA/issues/90), [@riogrande75, @ebagnoli, @andreas-bulling](https://github.com/patman15/BMS_BLE-HA/issues/101), [@goblinmaks, @andreitoma-github](https://github.com/patman15/BMS_BLE-HA/issues/102), [@hacsler](https://github.com/patman15/BMS_BLE-HA/issues/103), [@ViPeR5000](https://github.com/patman15/BMS_BLE-HA/pull/182)
+> [@gkathan](https://github.com/patman15/BMS_BLE-HA/issues/2), [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22), [@Goaheadz](https://github.com/patman15/BMS_BLE-HA/issues/24), [@alros100, @majonessyltetoy](https://github.com/patman15/BMS_BLE-HA/issues/52), [@snipah, @Gruni22](https://github.com/patman15/BMS_BLE-HA/issues/59), [@azisto](https://github.com/patman15/BMS_BLE-HA/issues/78), [@BikeAtor, @Karatzie](https://github.com/patman15/BMS_BLE-HA/issues/57), [@SkeLLLa,@romanshypovskyi](https://github.com/patman15/BMS_BLE-HA/issues/90), [@riogrande75, @ebagnoli, @andreas-bulling](https://github.com/patman15/BMS_BLE-HA/issues/101), [@goblinmaks, @andreitoma-github](https://github.com/patman15/BMS_BLE-HA/issues/102), [@hacsler](https://github.com/patman15/BMS_BLE-HA/issues/103), [@ViPeR5000](https://github.com/patman15/BMS_BLE-HA/pull/182), [@edelstahlratte](https://github.com/patman15/BMS_BLE-HA/issues/161)
 
 for helping with making the integration better.
 
@@ -196,6 +197,6 @@ for helping with making the integration better.
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-327_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-333_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=Analytics&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
