@@ -203,7 +203,7 @@ class MockJikongBleakClient(MockBleakClient):
 
         return bytearray()
 
-    async def _send_confirm(self):
+    async def _send_confirm(self) -> None:
         assert self._notify_callback, "send confirm called but notification not enabled"
         await asyncio.sleep(0.01)
         self._notify_callback(

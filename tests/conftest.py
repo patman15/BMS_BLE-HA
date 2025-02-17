@@ -31,17 +31,17 @@ from homeassistant.config_entries import SOURCE_BLUETOOTH
 
 from .bluetooth import generate_advertisement_data, generate_ble_device
 
-LOGGER = logging.getLogger(__name__)
+LOGGER: logging.Logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(autouse=True)
-def auto_enable_custom_integrations(enable_custom_integrations: Any):
+def auto_enable_custom_integrations(enable_custom_integrations: Any) -> None:
     """Auto add enable_custom_integrations."""
     return
 
 
 @pytest.fixture(autouse=True)
-def mock_bluetooth(enable_bluetooth):
+def mock_bluetooth(enable_bluetooth) -> None:
     """Auto mock bluetooth."""
 
 
