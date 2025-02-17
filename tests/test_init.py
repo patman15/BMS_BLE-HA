@@ -98,12 +98,14 @@ async def test_unload_entry(
     assert cfg.state is ConfigEntryState.LOADED
 
     # run removal of entry (actual test)
-    trace_fct = {"shutdown_called": False}
+    trace_fct: dict[str, bool] = {"shutdown_called": False}
 
     assert await hass.config_entries.async_remove(cfg.entry_id)
     await hass.async_block_till_done(wait_background_tasks=True)
 
-    assert trace_fct["shutdown_called"], "Failed to call coordinator async_shutdown()."
+    assert ( # shutdown is only called if entry unload succeeded
+        trace_fct["shutdown_called"] or unload_fail
+    ), "Failed to call coordinator async_shutdown()."
     assert (
         cfg not in hass.config_entries.async_entries()
     ), "Failed to remove configuration entry."
