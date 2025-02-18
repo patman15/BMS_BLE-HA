@@ -115,29 +115,27 @@ class BMS(BaseBMS):
     def _cell_voltages(data: bytearray, cells: int) -> dict[str, float]:
         """Return cell voltages from status message."""
         return {
-            f"{KEY_CELL_VOLTAGE}{idx}": int.from_bytes(
-                data[16 + 2 * idx : 16 + 2 * idx + 2],
-                byteorder="little",
-                signed=False,
-            )
-            / 1000
+            f"{KEY_CELL_VOLTAGE}{idx}": value / 1000
             for idx in range(cells)
-            if int.from_bytes(data[16 + 2 * idx : 16 + 2 * idx + 2], byteorder="little")
+            if (
+                value := int.from_bytes(
+                    data[16 + 2 * idx : 16 + 2 * idx + 2],
+                    byteorder="little",
+                )
+            )
         }
 
     @staticmethod
     def _temp_sensors(data: bytearray, sensors: int) -> dict[str, int]:
         return {
-            f"{KEY_TEMP_VALUE}{idx}": int.from_bytes(
-                data[52 + idx * 2 : 54 + idx * 2],
-                byteorder="little",
-                signed=False,
-            )
+            f"{KEY_TEMP_VALUE}{idx}": value
             for idx in range(sensors)
-            if int.from_bytes(
-                data[52 + idx * 2 : 54 + idx * 2],
-                byteorder="little",
-                signed=False,
+            if (
+                value := int.from_bytes(
+                    data[52 + idx * 2 : 54 + idx * 2],
+                    byteorder="little",
+                    signed=True,
+                )
             )
         }
 

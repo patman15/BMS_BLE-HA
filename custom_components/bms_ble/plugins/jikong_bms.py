@@ -147,7 +147,7 @@ class BMS(BaseBMS):
             self._log.debug("wrong data length (%i): %s", len(self._data), self._data)
             self._data = self._data[: BMS.INFO_LEN]
 
-        crc: int = crc_sum(self._data[:-1])
+        crc: Final[int] = crc_sum(self._data[:-1])
         if self._data[-1] != crc:
             self._log.debug("invalid checksum 0x%X != 0x%X", self._data[-1], crc)
             return
@@ -235,12 +235,13 @@ class BMS(BaseBMS):
             else [(0, 144), (1, 162), (2, 164), (3, 256), (4, 258)]
         )
         return {
-            f"{KEY_TEMP_VALUE}{idx}": int.from_bytes(
-                data[pos : pos + 2], byteorder="little", signed=False
-            )
-            / 10
+            f"{KEY_TEMP_VALUE}{idx}": value / 10
             for idx, pos in temp_pos
-            if int.from_bytes(data[pos : pos + 2], byteorder="little", signed=False)
+            if (
+                value := int.from_bytes(
+                    data[pos : pos + 2], byteorder="little", signed=True
+                )
+            )
         }
 
     @staticmethod
