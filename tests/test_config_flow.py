@@ -304,12 +304,13 @@ async def test_user_setup_double_configure(
     assert result.get("type") == FlowResultType.ABORT
 
 
-async def test_no_migration(monkeypatch, bms_fixture, hass: HomeAssistant) -> None:
+async def test_no_migration(bms_fixture, hass: HomeAssistant) -> None:
     """Test that entries of correct version are kept."""
 
-    cfg = mock_config(bms=bms_fixture)
-    monkeypatch.setattr(cfg, "minor_version", 1)
+    cfg: MockConfigEntry = mock_config(bms=bms_fixture)
+    #monkeypatch.setattr(cfg, "minor_version", 1)
     cfg.add_to_hass(hass)
+    hass.config_entries.async_update_entry(cfg, minor_version=1)
 
     assert not await hass.config_entries.async_setup(cfg.entry_id)
     await hass.async_block_till_done()
@@ -320,14 +321,13 @@ async def test_no_migration(monkeypatch, bms_fixture, hass: HomeAssistant) -> No
     assert cfg.state is ConfigEntryState.SETUP_RETRY
 
 
-async def test_migrate_entry_future_version(
-    monkeypatch, bms_fixture, hass: HomeAssistant
-) -> None:
+async def test_migrate_entry_future_version(bms_fixture, hass: HomeAssistant) -> None:
     """Test migrating entries from future version."""
 
-    cfg = mock_config(bms=bms_fixture)
-    monkeypatch.setattr(cfg, "version", 999)
+    cfg: MockConfigEntry = mock_config(bms=bms_fixture)
+    # monkeypatch.setattr(cfg, "version", 999)
     cfg.add_to_hass(hass)
+    hass.config_entries.async_update_entry(cfg, version=999)
 
     assert not await hass.config_entries.async_setup(cfg.entry_id)
     await hass.async_block_till_done()
@@ -336,15 +336,14 @@ async def test_migrate_entry_future_version(
     assert cfg.state is ConfigEntryState.MIGRATION_ERROR
 
 
-async def test_migrate_invalid_v_0_1(
-    monkeypatch, bms_fixture, hass: HomeAssistant
-) -> None:
+async def test_migrate_invalid_v_0_1(bms_fixture, hass: HomeAssistant) -> None:
     """Test migrating an invalid entry in version 0.1."""
 
-    cfg = mock_config(bms=bms_fixture)
-    monkeypatch.setattr(cfg, "version", 0)
-    monkeypatch.setattr(cfg, "data", {"type": None})
+    cfg: MockConfigEntry = mock_config(bms=bms_fixture)
+    # monkeypatch.setattr(cfg, "version", 0)
+    # monkeypatch.setattr(cfg, "data", {"type": None})
     cfg.add_to_hass(hass)
+    hass.config_entries.async_update_entry(cfg, version=0, data={"type": None})
 
     assert not await hass.config_entries.async_setup(cfg.entry_id)
     await hass.async_block_till_done()
@@ -379,7 +378,7 @@ async def test_migrate_entry_from_v_0_1(
 
 async def test_migrate_unique_id(hass: HomeAssistant) -> None:
     """Verify that old style unique_ids are correctly migrated to new style."""
-    cfg = mock_config("jikong_bms")
+    cfg: MockConfigEntry = mock_config("jikong_bms")
     cfg.add_to_hass(hass)
     await hass.async_block_till_done()
 
@@ -391,7 +390,6 @@ async def test_migrate_unique_id(hass: HomeAssistant) -> None:
     entry_old = ent_reg.async_get_or_create(
         capabilities={"state_class": "measurement"},
         config_entry=config_entry,
-        device_id="0a93efc4fd01acbcfcb034bfd903b2b0",
         domain=DOMAIN,
         has_entity_name=True,
         original_device_class="battery",
@@ -407,7 +405,6 @@ async def test_migrate_unique_id(hass: HomeAssistant) -> None:
     entry_new = ent_reg.async_get_or_create(
         capabilities={"state_class": "measurement"},
         config_entry=config_entry,
-        device_id="0a93efc4fd01acbcfcb034bfd903b2b0",
         domain=DOMAIN,
         has_entity_name=True,
         original_device_class="battery",

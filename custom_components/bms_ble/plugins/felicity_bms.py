@@ -21,7 +21,7 @@ from custom_components.bms_ble.const import (
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
-#    KEY_PROBLEM,
+#    KEY_PROBLEM, # TODO: enable
     KEY_TEMP_VALUE,
 )
 

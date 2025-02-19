@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from .bluetooth import inject_bluetooth_service_info_bleak
-from .conftest import Mock_BMS
+from .conftest import Mock_BMS, mock_config
 
 
 async def test_update(
@@ -32,7 +32,9 @@ async def test_update(
             mock_last_service_info,
         )
 
-    coordinator = BTBmsCoordinator(hass, BTdiscovery.device, Mock_BMS())
+    coordinator = BTBmsCoordinator(
+        hass, BTdiscovery.device, Mock_BMS(), mock_config(bms="update")
+    )
 
     inject_bluetooth_service_info_bleak(hass, BTdiscovery)
 
@@ -64,7 +66,9 @@ async def test_update(
 async def test_nodata(patch_bleakclient, BTdiscovery, hass: HomeAssistant) -> None:
     """Test if coordinator raises exception in case no data, e.g. invalid CRC, is returned."""
 
-    coordinator = BTBmsCoordinator(hass, BTdiscovery.device, Mock_BMS(ret_value={}))
+    coordinator = BTBmsCoordinator(
+        hass, BTdiscovery.device, Mock_BMS(ret_value={}), mock_config(bms="nodata")
+    )
 
     inject_bluetooth_service_info_bleak(hass, BTdiscovery)
 
@@ -85,7 +89,10 @@ async def test_update_exception(
     """Test if coordinator raises appropriate exception from BMS."""
 
     coordinator = BTBmsCoordinator(
-        hass, BTdiscovery.device, Mock_BMS(mock_coordinator_exception)
+        hass,
+        BTdiscovery.device,
+        Mock_BMS(mock_coordinator_exception),
+        mock_config(bms="update_exception"),
     )
 
     await coordinator.async_refresh()
