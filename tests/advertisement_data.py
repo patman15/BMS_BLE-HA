@@ -353,4 +353,14 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "felicity_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/197)
+        generate_advertisement_data(  # Creabest
+            local_name="100R0002E3",
+            manufacturer_data={21330: "2134ba03ec110909010500010000"},
+            service_uuids=["000003c1-0000-1000-8000-00805f9b34fb"],
+            rssi=-76,
+            tx_power=0,
+        ),
+        "cbtpwr_bms",
+    ),
 ]
