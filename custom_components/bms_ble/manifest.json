@@ -11,9 +11,8 @@
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
-      "local_name": "DL-*",
       "manufacturer_id": 770
-    },    
+    },
     {
       "manufacturer_id": 260
     },
@@ -42,13 +41,29 @@
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
+      "local_name": "121?0*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "12200*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "12300*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
       "manufacturer_id": 6226,
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },        
+    },
     {
       "manufacturer_id": 8856,
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },    
+    },
+    {
+      "local_name": "DP04S*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
     {
       "local_name": "SP0*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
@@ -91,6 +106,12 @@
       "manufacturer_id": 33384
     },
     {
+      "local_name": "L-12V???AH-*"
+    },
+    {
+      "local_name": "LT-12V-*"
+    },
+    {
       "local_name": "$PFLAC*",
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb"
     },
@@ -103,17 +124,26 @@
     },
     {
       "local_name": "BP0?",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"      
-    }    
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "F10*"
+    }
   ],
-  "codeowners": ["@patman15"],
+  "codeowners": [
+    "@patman15"
+  ],
   "config_flow": true,
-  "dependencies": ["bluetooth_adapters"],
+  "dependencies": [
+    "bluetooth_adapters"
+  ],
   "documentation": "https://github.com/patman15/BMS_BLE-HA",
   "integration_type": "device",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
-  "loggers": ["bleak_retry_connector"],
+  "loggers": [
+    "bleak_retry_connector"
+  ],
   "requirements": [],
-  "version": "1.11.6"
+  "version": "1.12.0"
 }
