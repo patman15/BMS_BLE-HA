@@ -27,6 +27,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Elektronicx batteries (show up as `LT-`&#x2026;)
     - Lithtech batteries (show up as `LT-12V-`&#x2026; or `L-12V`&#x2026;)
     - Meritsun, Supervolt v1, Volthium batteries
+- ECO-WORTHY + BW02 adapter
 - Ective batteries
 - Felicity ESS batteries (show up as `F10`&#x2026;)
 - JBD BMS, Jiabaida (show up as `SP..S`&#x2026;)

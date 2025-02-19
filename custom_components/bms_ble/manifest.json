@@ -61,6 +61,7 @@
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
+      "local_name": "ECO-WORTHY*",
       "manufacturer_id": 49844
     },
     {
@@ -144,5 +145,5 @@
     "bleak_retry_connector"
   ],
   "requirements": [],
-  "version": "1.12.1"
+  "version": "1.13.0"
 }
