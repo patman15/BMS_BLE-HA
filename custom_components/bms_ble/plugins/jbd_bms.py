@@ -20,6 +20,7 @@ from custom_components.bms_ble.const import (
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
+    KEY_PROBLEM,
     KEY_TEMP_SENS,
     KEY_TEMP_VALUE,
 )
@@ -41,6 +42,7 @@ class BMS(BaseBMS):
         (ATTR_BATTERY_LEVEL, 23, 1, False, lambda x: x),
         (ATTR_CYCLE_CHRG, 8, 2, False, lambda x: float(x / 100)),
         (ATTR_CYCLES, 12, 2, False, lambda x: x),
+        (KEY_PROBLEM, 20, 2, False, lambda x: x),
     ]  # general protocol v4
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:

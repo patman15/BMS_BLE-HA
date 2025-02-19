@@ -152,7 +152,7 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "ej_bms",
     ),
-    (  # source LOG
+    (  # source LOG, https://github.com/patman15/BMS_BLE-HA/issues/59
         generate_advertisement_data(
             local_name="170R000121",
             manufacturer_data={

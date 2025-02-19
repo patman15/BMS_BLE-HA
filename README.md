@@ -55,6 +55,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 Platform | Description | Unit | Decription | optional Attributes
 -- | -- | -- | -- | --
 `binary_sensor` | battery charging | `bool` | indicates `True` if battery is charging
+`binary_sensor` | problem | `bool` | indicates `True` if the battery is reports an issue or plausibility checks on values fail | problem code
 `sensor` | charge cycles | `#` | lifetime number of charge cycles | package charge cycles
 `sensor` | current | `A` | positive for charging, negative for discharging | balance current, package current
 `sensor` | delta voltage | `V` | maximum difference between any two cells | cell voltages
@@ -178,7 +179,6 @@ Once pairing is done, the integration should automatically detect the BMS.
 
 ## Outlook
 - Clean-up of translations
-- Implement status report of the BMS, e.g. warnings, errors as (single) binary sensor (ok, not ok)
 - Add option to only have temporary connections (lowers reliability, but helps running more devices via [ESPHome Bluetooth proxy][btproxy-url])
 - Add further battery types on [request](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.yml)
 
@@ -193,10 +193,11 @@ for helping with making the integration better.
 - Jikong BMS: [esphome-jk-bms](https://github.com/syssi/esphome-jk-bms)
 - JBD BMS: [esphome-jbd-bms](https://github.com/syssi/esphome-jbd-bms)
 - D-powercore BMS: [Strom BMS monitor](https://github.com/majonessyltetoy/strom)
+- Redodo BMS: [LiTime BMS bluetooth](https://github.com/calledit/LiTime_BMS_bluetooth)
 
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-338_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-369_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=Analytics&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy

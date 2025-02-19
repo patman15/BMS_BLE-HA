@@ -37,18 +37,18 @@ class MockDPwrcoreBleakClient(MockBleakClient):
             return bytearray(
                 b"\x12\x12\x3A\x05\x03\x60\x00\x0A\x02\x13\x00\x00\x71\xC5\x45\x8E\x3D\x00\x02\xCD"
                 b"\x02\x22\x0D\x0A\x03\x60\x00\x0A\x02\x13\x00\x00\x71\xC5\x45\x8E\x3D\x00\x02\xCD"
-            )  # TODO: put numbers
+            )  # 2nd line only 4 bytes valid! TODO: put numbers
         if cmd == 0x61:
             return bytearray(
                 b"\x12\x12\x3A\x05\x03\x61\x00\x0C\x00\x12\x00\x12\x6D\x60\x0B\x7E\x8F\xDB\x18\x20"
                 b"\x04\x22\x03\x91\x0D\x0A\x00\x0C\x00\x12\x00\x12\x6D\x60\x0B\x7E\x8F\xDB\x18\x20"
-            )  # TODO: put numbers
+            )  # 2nd line only 6 bytes valid! TODO: put numbers
         if cmd == 0x62:
             return bytearray(
                 b"\x12\x13\x3A\x05\x03\x62\x00\x1D\x0E\x0E\xD7\x0E\xD6\x0E\xD6\x0E\xD5\x0E\xD5\x0E"
                 b"\x12\x23\xD6\x0E\xD1\x0E\xD2\x0E\xD5\x0E\xD6\x0E\xD4\x0E\xD8\x0E\xD7\x0E\xDB\x0D"
                 b"\x03\x33\x08\x0D\x0A\x0E\xD2\x0E\xD5\x0E\xD6\x0E\xD4\x0E\xD8\x0E\xD7\x0E\xDB\x0D"
-            )  # TODO: put numbers
+            )  # 2nd line only 5 bytes valid TODO: put numbers
         if cmd == 0x64:
             assert bytearray(data)[8:10] == bytes.fromhex("C0FE"), "incorrect password"
             assert bytearray(data)[0] == 0xE, "incorrect unlock CMD length"
@@ -68,7 +68,7 @@ class MockDPwrcoreBleakClient(MockBleakClient):
         if data_ba[0] & 0x80:  # ignore ACK messages # TODO: verify those?
             return
         assert self._notify_callback is not None
-        resp = self._response(char_specifier, data)
+        resp: bytearray = self._response(char_specifier, data)
         await self._notify_callback(  # send acknowledge
             "MockPwrcoreBleakClient", bytearray([data_ba[0] | 0x80]) + data_ba[1:]
         )
@@ -126,6 +126,26 @@ class MockInvalidBleakClient(MockDPwrcoreBleakClient):
         raise BleakError
 
 
+class MockProblemBleakClient(MockDPwrcoreBleakClient):
+    """Emulate a D-powercore BMS BleakClient reporting a problem."""
+
+    def _response(
+        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
+    ) -> bytearray:
+        if isinstance(char_specifier, str) and normalize_uuid_str(
+            char_specifier
+        ) != normalize_uuid_str("fff3"):
+            return bytearray()
+        cmd: int = int(bytearray(data)[5])
+        if cmd == 0x60:
+            return bytearray(
+                b"\x12\x12\x3A\x05\x03\x60\x00\x0A\x02\x13\x00\x00\x71\xC5\x45\x8E\x3D\xFF\x03\xCC"
+                b"\x02\x22\x0D\x0A\x03\x60\x00\x0A\x02\x13\x00\x00\x71\xC5\x45\x8E\x3D\x00\x03\xCC"
+            )  # 2nd line only 4 bytes valid!
+
+        return super()._response(char_specifier, data)
+
+
 async def test_update(monkeypatch, dev_name, reconnect_fixture) -> None:
     """Test D-pwercore BMS data update."""
 
@@ -167,6 +187,8 @@ async def test_update(monkeypatch, dev_name, reconnect_fixture) -> None:
         "cycle_capacity": 945.499,
         "power": 0.0,
         "battery_charging": False,
+        "problem": False,
+        "problem_code": 0,
     }
 
     # query again to check already connected state
@@ -220,5 +242,48 @@ async def test_wrong_crc(monkeypatch, dev_name) -> None:
         result = await bms.async_update()
 
     assert not result
+
+    await bms.disconnect()
+
+
+async def test_problem_response(monkeypatch, dev_name) -> None:
+    """Test D-pwercore BMS data update."""
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
+        MockProblemBleakClient,
+    )
+
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", dev_name, None, -73), False)
+
+    assert await bms.async_update() == {
+        "voltage": 53.1,
+        "current": 0,
+        "battery_level": 61.0,
+        "cycles": 18,
+        "cycle_charge": 17.806,
+        "cell#0": 3.799,
+        "cell#1": 3.798,
+        "cell#2": 3.798,
+        "cell#3": 3.797,
+        "cell#4": 3.797,
+        "cell#5": 3.798,
+        "cell#6": 3.793,
+        "cell#7": 3.794,
+        "cell#8": 3.797,
+        "cell#9": 3.798,
+        "cell#10": 3.796,
+        "cell#11": 3.800,
+        "cell#12": 3.799,
+        "cell#13": 3.803,
+        "cell_count": 14,
+        "delta_voltage": 0.01,
+        "temperature": 21.1,
+        "cycle_capacity": 945.499,
+        "power": 0.0,
+        "battery_charging": False,
+        "problem": True,
+        "problem_code": 255,
+    }
 
     await bms.disconnect()
