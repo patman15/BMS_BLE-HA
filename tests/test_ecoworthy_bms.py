@@ -1,6 +1,8 @@
 """Test the ECOW implementation."""
 
+import asyncio
 from collections.abc import Awaitable, Callable
+import contextlib
 from typing import Final
 from uuid import UUID
 
@@ -25,7 +27,7 @@ def ref_value() -> dict:
         "battery_level": 72,
         "cycle_charge": 72.0,
         "design_capacity": 100.0,
-        "cycles": 8,
+#        "cycles": 8,
         "temperature": 19.567,
         "cycle_capacity": 956.88,
         "power": -15.151,
@@ -64,6 +66,20 @@ class MockECOWBleakClient(MockBleakClient):
             b"\x00\xc0\x00\xbe\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18\x97\x6a"
         ),
     }
+    _task: asyncio.Task
+
+    async def _notify(self) -> None:
+        """Notify function."""
+
+        assert (
+            self._notify_callback
+        ), "write to characteristics but notification not enabled"
+
+        while True:
+            for msg in self.RESP.values():
+                self._notify_callback("MockECOWBleakClient", msg)
+                await asyncio.sleep(0)
+
 
     async def start_notify(
         self,
@@ -76,12 +92,14 @@ class MockECOWBleakClient(MockBleakClient):
         """Issue write command to GATT."""
         await super().start_notify(char_specifier, callback, **kwargs)
 
-        assert (
-            self._notify_callback
-        ), "write to characteristics but notification not enabled"
+        self._task = asyncio.create_task(self._notify())
 
-        self._notify_callback("MockECOWBleakClient", self.RESP[0xA1])
-        self._notify_callback("MockECOWBleakClient", self.RESP[0xA2])
+    async def disconnect(self) -> bool:
+        """Mock disconnect and wait for send task."""
+        self._task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await self._task
+        return await super().disconnect()
 
 
 async def test_update(monkeypatch, reconnect_fixture) -> None:

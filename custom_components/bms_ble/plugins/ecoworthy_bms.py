@@ -1,5 +1,6 @@
 """Module to support Dummy BMS."""
 
+import asyncio
 from collections.abc import Callable
 from typing import Final
 
@@ -47,6 +48,7 @@ class BMS(BaseBMS):
         (KEY_TEMP_SENS, 0xA2, _TEMP_POS, 2, False, lambda x: x),
         # (ATTR_CYCLES, 0xA1, 8, 2, False, lambda x: x),
     ]
+    _CMDS: Final[set[int]] = set({field[1] for field in _FIELDS})
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -159,7 +161,11 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        # await self._send(b"<some_command>")
+
+        for _ in range(2):
+            await asyncio.wait_for(self._wait_event(), timeout=self.BAT_TIMEOUT)
+        if not BMS._CMDS.issubset(self._data_final.keys()):
+            return {}
 
         result: BMSsample = BMS._decode_data(self._data_final)
 
@@ -178,4 +184,5 @@ class BMS(BaseBMS):
             self._data_final[0xA2], int(result.get(KEY_TEMP_SENS, 0)), BMS._TEMP_POS + 2
         )
 
+        self._data_final.clear()
         return result
