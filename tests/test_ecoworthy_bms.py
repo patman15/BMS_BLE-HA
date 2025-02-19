@@ -14,8 +14,6 @@ from custom_components.bms_ble.plugins.ecoworthy_bms import BMS
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
-BT_FRAME_SIZE = 27
-
 
 def ref_value() -> dict:
     """Return reference value for mock Seplos BMS."""
@@ -25,10 +23,11 @@ def ref_value() -> dict:
         "voltage": 13.29,
         "current": -1.14,
         "battery_level": 72,
-        "cycle_charge": 99.1,
+        "cycle_charge": 72.0,
+        "design_capacity": 100.0,
         "cycles": 8,
         "temperature": 19.567,
-        "cycle_capacity": 5222.57,
+        "cycle_capacity": 956.88,
         "power": -15.151,
         "battery_charging": False,
         "cell#0": 3.323,
@@ -39,7 +38,7 @@ def ref_value() -> dict:
         "temp#1": 19.2,
         "temp#2": 19.0,
         "delta_voltage": 0.003,
-        "runtime": 62589,
+        "runtime": 227368,
     }
 
 
@@ -51,13 +50,13 @@ class MockECOWBleakClient(MockBleakClient):
         0xA2: bytearray(b"\x00\x01\x03\x00\x8d\x00\x00\x59\x13"),
     }
     RESP: Final[dict[int, bytearray]] = {
-        0xA1: bytearray(  # 16 celll message
-            b"\xa1\x00\x00\x00\x65\x00\x00\x00\x00\x00\x18\x01\x03\x44\x00\x18\x00\x48\x00\x64\x05"  # 21
+        0xA1: bytearray(
+            b"\xa1\x00\x00\x00\x65\x00\x00\x00\x00\x00\x18\x01\x03\x44\x00\x18\x00\x48\x00\x64\x05"
             b"\x31\xff\x8e\x00\x00\x27\x10\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01"
             b"\x00\x02\x00\x00\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
             b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x21\x86"
         ),
-        0xA2: bytearray(
+        0xA2: bytearray(  # 4 cells, 3 temp sensors
             b"\xa2\x00\x00\x00\x65\x00\x00\x00\x00\x00\x18\x01\x03\x56\x00\x04\x0c\xfb\x0c\xfd\x0c"
             b"\xfb\x0c\xfa\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
             b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
