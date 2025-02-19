@@ -41,7 +41,7 @@ class BMS(BaseBMS):
         (ATTR_BATTERY_LEVEL, 0xA1, 16, 2, False, lambda x: x),
         (ATTR_VOLTAGE, 0xA1, 20, 2, False, lambda x: float(x / 100)),
         (ATTR_CURRENT, 0xA1, 22, 2, True, lambda x: float(x / 100)),
-        # (ATTR_CYCLE_CHRG, 0xA1, 16, 2, False, lambda x: float(x / 10)),
+        # (ATTR_PROBLEM, 0xA1, 51, 2, False, lambda x: x)
         (KEY_DESIGN_CAP, 0xA1, 26, 2, False, lambda x: float(x / 100)),
         (KEY_CELL_COUNT, 0xA2, _CELL_POS, 2, False, lambda x: x),
         (KEY_TEMP_SENS, 0xA2, _TEMP_POS, 2, False, lambda x: x),
