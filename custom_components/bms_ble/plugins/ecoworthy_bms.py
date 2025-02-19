@@ -11,8 +11,8 @@ from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
     ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
-    ATTR_CYCLE_CAP,
-    ATTR_CYCLE_CHRG,
+    # ATTR_CYCLE_CAP,
+    # ATTR_CYCLE_CHRG,
     # ATTR_CYCLES,
     ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
@@ -21,7 +21,6 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
-    KEY_DESIGN_CAP,
     KEY_TEMP_SENS,
     KEY_TEMP_VALUE,
 )
@@ -38,10 +37,10 @@ class BMS(BaseBMS):
     _FIELDS: Final[
         list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
     ] = [
-        (ATTR_CYCLE_CHRG, 0xA1, 16, 2, False, lambda x: x),
-        (KEY_DESIGN_CAP, 0xA1, 18, 2, False, lambda x: x),
+        (ATTR_BATTERY_LEVEL, 0xA1, 16, 2, False, lambda x: x),
         (ATTR_VOLTAGE, 0xA1, 20, 2, False, lambda x: float(x / 100)),
         (ATTR_CURRENT, 0xA1, 22, 2, True, lambda x: float(x / 100)),
+        # (ATTR_CYCLE_CHRG, 0xA1, 16, 2, False, lambda x: float(x / 10)),
         (KEY_CELL_COUNT, 0xA2, _CELL_POS, 2, False, lambda x: x),
         (KEY_TEMP_SENS, 0xA2, _TEMP_POS, 2, False, lambda x: x),
         # (ATTR_BATTERY_LEVEL, 0xA1, 13, 1, False, lambda x: x),
@@ -88,7 +87,6 @@ class BMS(BaseBMS):
     def _calc_values() -> set[str]:
         return {
             ATTR_BATTERY_CHARGING,
-            ATTR_CYCLE_CAP,
             ATTR_DELTA_VOLTAGE,
             ATTR_POWER,
             ATTR_RUNTIME,
@@ -162,11 +160,6 @@ class BMS(BaseBMS):
         # await self._send(b"<some_command>")
 
         result: BMSsample = BMS._decode_data(self._data_final)
-        # get SoC from cycle charge and design capacity
-        if result.get(KEY_DESIGN_CAP) and result.get(ATTR_CYCLE_CHRG):
-            result[ATTR_BATTERY_LEVEL] = round(
-                result[ATTR_CYCLE_CHRG] * 100 / result[KEY_DESIGN_CAP]
-            )
         result |= BMS._cell_voltages(
             self._data_final[0xA2],
             int(result.get(KEY_CELL_COUNT, 0)),
