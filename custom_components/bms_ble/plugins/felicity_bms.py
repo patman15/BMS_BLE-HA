@@ -21,7 +21,7 @@ from custom_components.bms_ble.const import (
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
-#    KEY_PROBLEM, # TODO: enable
+    KEY_PROBLEM,
     KEY_TEMP_VALUE,
 )
 
@@ -145,5 +145,8 @@ class BMS(BaseBMS):
             BMS._decode_data(self._data_final)
             | BMS._temp_sensors(self._data_final)
             | BMS._cell_voltages(self._data_final)
-#            | {KEY_PROBLEM: self._data_final.get("Bwarn", 0) + self._data_final.get("Bfault", 0)}
+            | {
+                KEY_PROBLEM: self._data_final.get("Bwarn", 0)
+                + self._data_final.get("Bfault", 0)
+            }
         )
