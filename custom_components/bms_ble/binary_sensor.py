@@ -12,7 +12,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import BTBmsConfigEntry
-from .const import ATTR_PROBLEM, DOMAIN, KEY_PROBLEM
+from .const import ATTR_PROBLEM, DOMAIN
 from .coordinator import BTBmsCoordinator
 
 BINARY_SENSOR_TYPES: list[BinarySensorEntityDescription] = [
@@ -68,7 +68,7 @@ class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity): 
     @property
     def extra_state_attributes(self) -> dict | None:  # type: ignore[reportIncompatibleVariableOverride]
         """Return entity specific state attributes, e.g. problem code."""
-        # add cell voltages to delta voltage sensor
-        if self.entity_description.key == ATTR_PROBLEM:
-            return {KEY_PROBLEM: self.coordinator.data.get(self.entity_description.key)}
+        # add problem code to sensor attributes
+        # if self.entity_description.key == ATTR_PROBLEM:
+        #    return {KEY_PROBLEM: self.coordinator.data.get(self.entity_description.key)}
         return None

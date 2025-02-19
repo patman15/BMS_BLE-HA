@@ -55,7 +55,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 Platform | Description | Unit | Decription | optional Attributes
 -- | -- | -- | -- | --
 `binary_sensor` | battery charging | `bool` | indicates `True` if battery is charging
-`binary_sensor` | problem | `bool` | indicates `True` if the battery is reports an issue or plausibility checks on values fail | problem code
+`binary_sensor` | problem | `bool` | indicates `True` if the battery reports an issue or plausibility checks on values fail
 `sensor` | charge cycles | `#` | lifetime number of charge cycles | package charge cycles
 `sensor` | current | `A` | positive for charging, negative for discharging | balance current, package current
 `sensor` | delta voltage | `V` | maximum difference between any two cells | cell voltages
