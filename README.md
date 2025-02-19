@@ -7,7 +7,7 @@
 
 This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). After installation, no configuration is required. You can use the [ESPHome Bluetooth proxy][btproxy-url] to extend the bluetooth coverage range. By using standard dashboard cards, it is easy to visualize the current state of remote batteries.
 
-![Dashboard](https://github.com/user-attachments/assets/f2f68bf6-6bdf-41a7-aa81-17d03b8a6a6e)
+![dashboard](https://github.com/user-attachments/assets/e62024f2-f5fa-4cbe-ac93-8cc62846e663)
 
 ## Features
 - Zero configuration
