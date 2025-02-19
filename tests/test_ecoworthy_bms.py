@@ -14,8 +14,6 @@ from custom_components.bms_ble.plugins.ecoworthy_bms import BMS
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
-BT_FRAME_SIZE = 27
-
 
 def ref_value() -> dict:
     """Return reference value for mock Seplos BMS."""
@@ -25,10 +23,11 @@ def ref_value() -> dict:
         "voltage": 13.29,
         "current": -1.14,
         "battery_level": 72,
-        "cycle_charge": 99.1,
+        "cycle_charge": 72,
+        "design_capacity": 100,
         "cycles": 8,
         "temperature": 19.567,
-        "cycle_capacity": 5222.57,
+        "cycle_capacity": 956.88,
         "power": -15.151,
         "battery_charging": False,
         "cell#0": 3.323,
@@ -39,7 +38,7 @@ def ref_value() -> dict:
         "temp#1": 19.2,
         "temp#2": 19.0,
         "delta_voltage": 0.003,
-        "runtime": 62589,
+        "runtime": 227368,
     }
 
 
