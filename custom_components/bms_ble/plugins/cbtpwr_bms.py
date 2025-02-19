@@ -62,8 +62,10 @@ class BMS(BaseBMS):
     def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [
+            {"service_uuid": BMS.uuid_services()[0], "connectable": True},
             {
-                "service_uuid": normalize_uuid_str("ffb0"),
+                "service_uuid": normalize_uuid_str("fff0"),
+                "manufacturer_id": 0,
                 "connectable": True,
             },
         ]
