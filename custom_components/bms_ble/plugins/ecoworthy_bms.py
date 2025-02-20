@@ -1,4 +1,4 @@
-"""Module to support Dummy BMS."""
+"""Module to support ECO-WORTHY BMS."""
 
 import asyncio
 from collections.abc import Callable
@@ -23,6 +23,7 @@ from custom_components.bms_ble.const import (
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
     KEY_DESIGN_CAP,
+    KEY_PROBLEM,
     KEY_TEMP_SENS,
     KEY_TEMP_VALUE,
 )
@@ -31,7 +32,7 @@ from .basebms import BaseBMS, BMSsample, crc_modbus
 
 
 class BMS(BaseBMS):
-    """Dummy battery class implementation."""
+    """ECO-WORTHY battery class implementation."""
 
     _HEAD: Final[list[int]] = [0xA1, 0xA2]
     _CELL_POS: Final[int] = 14
@@ -42,7 +43,7 @@ class BMS(BaseBMS):
         (ATTR_BATTERY_LEVEL, 0xA1, 16, 2, False, lambda x: x),
         (ATTR_VOLTAGE, 0xA1, 20, 2, False, lambda x: float(x / 100)),
         (ATTR_CURRENT, 0xA1, 22, 2, True, lambda x: float(x / 100)),
-        # (ATTR_PROBLEM, 0xA1, 51, 2, False, lambda x: x)
+        (KEY_PROBLEM, 0xA1, 51, 2, False, lambda x: x),
         (KEY_DESIGN_CAP, 0xA1, 26, 2, False, lambda x: float(x / 100)),
         (KEY_CELL_COUNT, 0xA2, _CELL_POS, 2, False, lambda x: x),
         (KEY_TEMP_SENS, 0xA2, _TEMP_POS, 2, False, lambda x: x),
@@ -118,7 +119,8 @@ class BMS(BaseBMS):
             return
 
         self._data_final[data[0]] = data.copy()
-        self._data_event.set()
+        if BMS._CMDS.issubset(self._data_final.keys()):
+            self._data_event.set()
 
     @staticmethod
     def _decode_data(data: dict[int, bytearray]) -> dict[str, int | float]:
@@ -162,10 +164,9 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
-        for _ in range(2):
-            await asyncio.wait_for(self._wait_event(), timeout=self.BAT_TIMEOUT)
-        if not BMS._CMDS.issubset(self._data_final.keys()):
-            return {}
+        self._data_final.clear()
+        self._data_event.clear()  # clear event to ensure new data is acquired
+        await asyncio.wait_for(self._wait_event(), timeout=self.BAT_TIMEOUT)
 
         result: BMSsample = BMS._decode_data(self._data_final)
 
@@ -184,5 +185,4 @@ class BMS(BaseBMS):
             self._data_final[0xA2], int(result.get(KEY_TEMP_SENS, 0)), BMS._TEMP_POS + 2
         )
 
-        self._data_final.clear()
         return result
