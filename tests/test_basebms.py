@@ -15,6 +15,7 @@ from custom_components.bms_ble.const import (
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
+    KEY_DESIGN_CAP,
     KEY_PROBLEM,
 )
 from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
@@ -36,7 +37,7 @@ def test_calc_missing_values(bms_data_fixture: BMSsample) -> None:
             "invalid",
         },
     )
-    ref = ref | {
+    ref: BMSsample = ref | {
         ATTR_CYCLE_CAP: 238,
         ATTR_DELTA_VOLTAGE: 0.111,
         ATTR_POWER: (
@@ -57,13 +58,15 @@ def test_calc_missing_values(bms_data_fixture: BMSsample) -> None:
 def test_calc_voltage() -> None:
     """Check if missing data is correctly calculated."""
     bms_data = ref = {f"{KEY_CELL_VOLTAGE}0": 3.456, f"{KEY_CELL_VOLTAGE}1": 3.567}
-    BaseBMS._add_missing_values(
-        bms_data,
-        {ATTR_VOLTAGE},
-    )
-    ref = ref | {ATTR_VOLTAGE: 7.023}
+    BaseBMS._add_missing_values(bms_data, {ATTR_VOLTAGE})
+    assert bms_data == ref | {ATTR_VOLTAGE: 7.023}
 
-    assert bms_data == ref
+
+def test_calc_cycle_chrg() -> None:
+    """Check if missing data is correctly calculated."""
+    bms_data = ref = {ATTR_BATTERY_LEVEL: 73, KEY_DESIGN_CAP: 125.0}
+    BaseBMS._add_missing_values(bms_data, {ATTR_CYCLE_CHRG})
+    assert bms_data == ref | {ATTR_CYCLE_CHRG: 91.25}
 
 
 @pytest.fixture(
@@ -76,7 +79,7 @@ def test_calc_voltage() -> None:
         ({ATTR_CYCLE_CHRG: 0}, "doubtful cycle charge"),
         ({ATTR_BATTERY_LEVEL: 101}, "doubtful SoC"),
         ({KEY_PROBLEM: 0x1}, "BMS problem code"),
-        ({ATTR_PROBLEM: True}, "BMS problem report")
+        ({ATTR_PROBLEM: True}, "BMS problem report"),
     ],
     ids=lambda param: param[1],
 )
