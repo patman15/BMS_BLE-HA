@@ -22,6 +22,7 @@ from custom_components.bms_ble.const import (
     KEY_CELL_VOLTAGE,
     KEY_PACK,
     KEY_PACK_COUNT,
+    KEY_PROBLEM,
     KEY_TEMP_VALUE,
 )
 
@@ -31,18 +32,20 @@ from .basebms import BaseBMS, BMSsample, crc_modbus
 class BMS(BaseBMS):
     """Seplos V3 Smart BMS class implementation."""
 
-    CMD_READ: Final[int] = 0x04
+    CMD_READ: Final[list[int]] = [0x01, 0x04]
     HEAD_LEN: Final[int] = 3
     CRC_LEN: Final[int] = 2
     PIA_LEN: Final[int] = 0x11
     PIB_LEN: Final[int] = 0x1A
     EIA_LEN: Final[int] = PIB_LEN
     EIB_LEN: Final[int] = 0x16
+    EIC_LEN: Final[int] = 0x5
     TEMP_START: Final[int] = HEAD_LEN + 32
     QUERY: Final[dict[str, tuple[int, int, int]]] = {
         # name: cmd, reg start, length
         "EIA": (0x4, 0x2000, EIA_LEN),
         "EIB": (0x4, 0x2100, EIB_LEN),
+        "EIC": (0x1, 0x2200, EIC_LEN),
     }
     PQUERY: Final[dict[str, tuple[int, int, int]]] = {
         "PIA": (0x4, 0x1000, PIA_LEN),
@@ -65,6 +68,7 @@ class BMS(BaseBMS):
         (KEY_PACK_COUNT, EIA_LEN, 44, 2, False, lambda x: x),
         (ATTR_CYCLES, EIA_LEN, 46, 2, False, lambda x: x),
         (ATTR_BATTERY_LEVEL, EIA_LEN, 48, 2, False, lambda x: float(x / 10)),
+        (KEY_PROBLEM, EIC_LEN, 1, 9, False, lambda x: x & 0xFFFF00FF00FF0000FF),
     ]  # Protocol Seplos V3
     _PFIELDS: Final[list[tuple[str, int, bool, Callable[[int], int | float]]]] = [
         (ATTR_VOLTAGE, 0, False, lambda x: float(x / 100)),
@@ -131,7 +135,7 @@ class BMS(BaseBMS):
         if (
             len(data) > BMS.HEAD_LEN + BMS.CRC_LEN
             and data[0] <= self._pack_count
-            and data[1] & 0x7F == BMS.CMD_READ  # include read errors
+            and data[1] & 0x7F in BMS.CMD_READ  # include read errors
             and data[2] >= BMS.HEAD_LEN + BMS.CRC_LEN
         ):
             self._data = bytearray()
@@ -207,7 +211,9 @@ class BMS(BaseBMS):
         assert start >= 0 and count > 0 and start + count <= 0xFFFF
         frame: bytearray = bytearray([device, cmd])
         frame += bytearray(int.to_bytes(start, 2, byteorder="big"))
-        frame += bytearray(int.to_bytes(count, 2, byteorder="big"))
+        frame += bytearray(
+            int.to_bytes(count * (0x10 if cmd == 0x1 else 0x1), 2, byteorder="big")
+        )
         frame += bytearray(int.to_bytes(crc_modbus(frame), 2, byteorder="little"))
         return frame
 

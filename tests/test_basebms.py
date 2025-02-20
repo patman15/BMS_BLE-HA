@@ -1,15 +1,21 @@
 """Test the BLE Battery Management System base class functions."""
 
+import pytest
+
 from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
+    ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
     ATTR_CYCLE_CAP,
+    ATTR_CYCLE_CHRG,
     ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
+    ATTR_PROBLEM,
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
+    KEY_PROBLEM,
 )
 from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 
@@ -58,3 +64,31 @@ def test_calc_voltage() -> None:
     ref = ref | {ATTR_VOLTAGE: 7.023}
 
     assert bms_data == ref
+
+
+@pytest.fixture(
+    name="problem_samples",
+    params=[
+        ({ATTR_VOLTAGE: -1}, "negative overall voltage"),
+        ({f"{KEY_CELL_VOLTAGE}0": 5.907}, "high cell voltage"),
+        ({f"{KEY_CELL_VOLTAGE}0": -0.001}, "negative cell voltage"),
+        ({ATTR_DELTA_VOLTAGE: 5.907}, "doubtful delta voltage"),
+        ({ATTR_CYCLE_CHRG: 0}, "doubtful cycle charge"),
+        ({ATTR_BATTERY_LEVEL: 101}, "doubtful SoC"),
+        ({KEY_PROBLEM: 0x1}, "BMS problem code"),
+        ({ATTR_PROBLEM: True}, "BMS problem report")
+    ],
+    ids=lambda param: param[1],
+)
+def mock_bms_data(request: pytest.FixtureRequest) -> BMSsample:
+    """Return BMS data to check error handling function."""
+    return request.param[0]
+
+
+def test_problems(problem_samples: BMSsample) -> None:
+    """Check if missing data is correctly calculated."""
+    bms_data: BMSsample = problem_samples
+
+    BaseBMS._add_missing_values(bms_data, {ATTR_RUNTIME})
+
+    assert bms_data == problem_samples | {"problem": True}

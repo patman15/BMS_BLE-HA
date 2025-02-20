@@ -152,7 +152,7 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "ej_bms",
     ),
-    (  # source LOG
+    (  # source LOG, https://github.com/patman15/BMS_BLE-HA/issues/59
         generate_advertisement_data(
             local_name="170R000121",
             manufacturer_data={
@@ -173,6 +173,39 @@ ADVERTISEMENTS: Final[list] = [
             ],
             tx_power=0,
             rssi=-75,
+        ),
+        "cbtpwr_bms",
+    ),
+    (  # source LOG
+        generate_advertisement_data(
+            local_name="170R000086",
+            manufacturer_data={
+                21330: b"!4\xba\x03\xec\x11\x0c\xf8\x01\x05\x00\x01\x00\x00"
+            },
+            service_uuids=[
+                "00001800-0000-1000-8000-00805f9b34fb",
+                "00001801-0000-1000-8000-00805f9b34fb",
+                "0000180a-0000-1000-8000-00805f9b34fb",
+                "0000fd00-0000-1000-8000-00805f9b34fb",
+                "0000ff90-0000-1000-8000-00805f9b34fb",
+                "0000ffb0-0000-1000-8000-00805f9b34fb",
+                "0000ffc0-0000-1000-8000-00805f9b34fb",
+                "0000ffd0-0000-1000-8000-00805f9b34fb",
+                "0000ffe0-0000-1000-8000-00805f9b34fb",
+                "0000ffe5-0000-1000-8000-00805f9b34fb",
+                "0000fff0-0000-1000-8000-00805f9b34fb",
+            ],
+            tx_power=0,
+            rssi=-73,
+        ),
+        "cbtpwr_bms",
+    ),
+    (  # source BT monitor (https://github.com/patman15/BMS_BLE-HA/issues/176)
+        generate_advertisement_data(
+            local_name="140R000288",
+            manufacturer_data={0: b"ffffffff6400ff000000000000000000"},
+            service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
+            rssi=-82,
         ),
         "cbtpwr_bms",
     ),
@@ -312,5 +345,12 @@ ADVERTISEMENTS: Final[list] = [
             rssi=-60,
         ),
         "jbd_bms",
+    ),
+    (  # source BTctl (https://github.com/patman15/BMS_BLE-HA/issues/161)
+        generate_advertisement_data(  # Felicity Solar LUX-Y-48300LG01
+            local_name="F100011002424470238",
+            rssi=-56,
+        ),
+        "felicity_bms",
     ),
 ]

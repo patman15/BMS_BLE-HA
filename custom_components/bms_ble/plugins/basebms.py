@@ -14,15 +14,18 @@ from bleak_retry_connector import establish_connection
 
 from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
+    ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
     ATTR_CYCLE_CAP,
     ATTR_CYCLE_CHRG,
     ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
+    ATTR_PROBLEM,
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
+    KEY_PROBLEM,
     KEY_TEMP_VALUE,
 )
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
@@ -36,7 +39,8 @@ type BMSsample = dict[str, int | float | bool]
 class BaseBMS(metaclass=ABCMeta):
     """Base class for battery management system."""
 
-    BAT_TIMEOUT: float = 10
+    BAT_TIMEOUT = 10
+    MAX_CELL_VOLTAGE: Final[float] = 5.906  # max cell potential
 
     def __init__(
         self,
@@ -139,7 +143,7 @@ class BaseBMS(metaclass=ABCMeta):
         data: data dictionary from BMS
         values: list of values to add to the dictionary
         """
-        if not values:
+        if not values or not data:
             return
 
         def can_calc(value: str, using: frozenset[str]) -> bool:
@@ -183,8 +187,27 @@ class BaseBMS(metaclass=ABCMeta):
             )
         # calculate temperature (average of all sensors)
         if can_calc(ATTR_TEMPERATURE, frozenset({f"{KEY_TEMP_VALUE}0"})):
-            temp_values = [v for k, v in data.items() if k.startswith(KEY_TEMP_VALUE)]
-            data[ATTR_TEMPERATURE] = round(fmean(temp_values), 3)
+            data[ATTR_TEMPERATURE] = round(
+                fmean([v for k, v in data.items() if k.startswith(KEY_TEMP_VALUE)]),
+                3,
+            )
+
+        # do sanity check on values to set problem state
+        data[ATTR_PROBLEM] = (
+            data.get(ATTR_PROBLEM, False)
+            or bool(data.get(KEY_PROBLEM, False))
+            or (
+                data.get(ATTR_VOLTAGE, 1) <= 0
+                or any(
+                    v <= 0 or v > BaseBMS.MAX_CELL_VOLTAGE
+                    for k, v in data.items()
+                    if k.startswith(KEY_CELL_VOLTAGE)
+                )
+                or data.get(ATTR_DELTA_VOLTAGE, 0) > BaseBMS.MAX_CELL_VOLTAGE
+                or data.get(ATTR_CYCLE_CHRG, 1) <= 0
+                or data.get(ATTR_BATTERY_LEVEL, 0) > 100
+            )
+        )
 
     def _on_disconnect(self, _client: BleakClient) -> None:
         """Disconnect callback function."""

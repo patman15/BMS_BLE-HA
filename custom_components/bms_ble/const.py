@@ -23,6 +23,7 @@ BMS_TYPES: Final[list[str]] = [
     "seplos_v2_bms",
     "tdt_bms",
     "dpwrcore_bms",  # only name filter
+    "felicity_bms",
 ]  # available BMS types
 DOMAIN: Final[str] = "bms_ble"
 LOGGER: Final = logging.getLogger(__package__)
@@ -38,6 +39,7 @@ ATTR_CYCLES: Final[str] = "cycles"  # [#]
 ATTR_DELTA_VOLTAGE: Final[str] = "delta_voltage"  # [V]
 ATTR_LQ: Final[str] = "link_quality"  # [%]
 ATTR_POWER: Final[str] = "power"  # [W]
+ATTR_PROBLEM: Final[str] = "problem"  # [bool]
 ATTR_RSSI: Final[str] = "rssi"  # [dBm]
 ATTR_RUNTIME: Final[str] = "runtime"  # [s]
 ATTR_TEMP_SENSORS: Final[str] = "temperature_sensors"  # [°C]
@@ -48,5 +50,6 @@ KEY_CELL_VOLTAGE: Final[str] = "cell#"  # [V]
 KEY_DESIGN_CAP: Final[str] = "design_capacity"  # [Ah]
 KEY_PACK: Final[str] = "pack"  # prefix for pack sensors
 KEY_PACK_COUNT: Final[str] = "pack_count"  # [#]
+KEY_PROBLEM: Final[str] = "problem_code"  # [#]
 KEY_TEMP_SENS: Final[str] = "temp_sensors"  # [#]
 KEY_TEMP_VALUE: Final[str] = "temp#"  # [°C]

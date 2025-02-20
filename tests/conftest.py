@@ -31,17 +31,17 @@ from homeassistant.config_entries import SOURCE_BLUETOOTH
 
 from .bluetooth import generate_advertisement_data, generate_ble_device
 
-LOGGER = logging.getLogger(__name__)
+LOGGER: logging.Logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(autouse=True)
-def auto_enable_custom_integrations(enable_custom_integrations: Any):
+def auto_enable_custom_integrations(enable_custom_integrations: Any) -> None:
     """Auto add enable_custom_integrations."""
     return
 
 
 @pytest.fixture(autouse=True)
-def mock_bluetooth(enable_bluetooth):
+def mock_bluetooth(enable_bluetooth) -> None:
     """Auto mock bluetooth."""
 
 
@@ -149,7 +149,7 @@ def mock_config(bms: str, unique_id: str | None = "cc:cc:cc:cc:cc:cc"):
 
 
 @pytest.fixture(params=["OGTBms", "DalyBms"])
-def mock_config_v0_1(request, unique_id="cc:cc:cc:cc:cc:cc") -> MockConfigEntry[Any]:
+def mock_config_v0_1(request, unique_id="cc:cc:cc:cc:cc:cc") -> MockConfigEntry:
     """Return a Mock of the HA entity config."""
     return MockConfigEntry(
         domain=DOMAIN,

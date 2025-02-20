@@ -22,6 +22,7 @@ from custom_components.bms_ble.const import (
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
+    KEY_PROBLEM,
 )
 
 from .basebms import BaseBMS, BMSsample
@@ -41,6 +42,7 @@ class BMS(BaseBMS):
         (ATTR_CYCLE_CHRG, 17, 8, False, lambda x: float(x / 1000)),
         (ATTR_CYCLES, 25, 4, False, lambda x: x),
         (ATTR_TEMPERATURE, 33, 4, False, lambda x: round(x * 0.1 - 273.15, 1)),
+        (KEY_PROBLEM, 37, 2, False, lambda x: x),
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:

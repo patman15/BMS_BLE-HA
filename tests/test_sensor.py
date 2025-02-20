@@ -1,6 +1,7 @@
 """Test the BLE Battery Management System integration sensor definition."""
 
 from datetime import timedelta
+from typing import Final
 
 from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
@@ -20,6 +21,7 @@ from custom_components.bms_ble.const import (
 )
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, State
+from homeassistant.helpers.entity_component import async_update_entity
 import homeassistant.util.dt as dt_util
 
 from .bluetooth import inject_bluetooth_service_info_bleak
@@ -72,12 +74,12 @@ async def test_update(
     inject_bluetooth_service_info_bleak(hass, BTdiscovery)
 
     assert await hass.config_entries.async_setup(config.entry_id)
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
 
     assert config in hass.config_entries.async_entries()
     assert config.state is ConfigEntryState.LOADED
     assert len(hass.states.async_all(["sensor"])) == 11
-    data = {
+    data: dict[str, str] = {
         entity.entity_id: entity.state for entity in hass.states.async_all(["sensor"])
     }
     assert data == {
@@ -101,6 +103,15 @@ async def test_update(
 
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=UPDATE_INTERVAL))
     await hass.async_block_till_done()
+
+    # check that link quality has been updated, since the coordinator and the LQ sensor are
+    # asynchronous to each other, a race condition can happen, thus update LQ sensor again
+    # to cover the case that LQ is updated before the coordinator changes the value
+    lq: Final[State | None] = hass.states.get(f"sensor.smartbat_b12345_{ATTR_LQ}")
+    assert lq is not None and int(lq.state) >= 50
+    await async_update_entity(hass, f"sensor.smartbat_b12345_{ATTR_LQ}")
+    await hass.async_block_till_done()
+
     data = {
         entity.entity_id: entity.state for entity in hass.states.async_all(["sensor"])
     }

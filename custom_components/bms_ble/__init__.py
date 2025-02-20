@@ -50,7 +50,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> boo
         )
 
     plugin: ModuleType = await async_import_module(hass, entry.data["type"])
-    coordinator = BTBmsCoordinator(hass, ble_device, bms_device=plugin.BMS(ble_device))
+    coordinator = BTBmsCoordinator(hass, ble_device, plugin.BMS(ble_device), entry)
 
     # Query the device the first time, initialise coordinator.data
     await coordinator.async_config_entry_first_refresh()
@@ -66,7 +66,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> boo
 
 async def async_unload_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> bool:
     """Unload a config entry."""
-    unload_ok: Final[bool] = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    unload_ok: Final[bool] = await hass.config_entries.async_unload_platforms(
+        entry, PLATFORMS
+    )
     LOGGER.debug("Unloaded config entry: %s, ok? %s!", entry.unique_id, str(unload_ok))
 
     return unload_ok
