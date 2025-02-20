@@ -314,14 +314,6 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "jbd_bms",
     ),
-    (  # source LOG, proxy (https://github.com/patman15/BMS_BLE-HA/issues/164#issue-2825586172)
-        generate_advertisement_data(  # ECO-WORTHY 100AH IOT battery & BW02 adapter.
-            local_name="ECO-WORTHY 02_B8EF",
-            manufacturer_data={49844: "\xE0\xFA\xB8\xF0"},
-            rssi=-53,
-        ),
-        "jbd_bms",
-    ),
     (  # source LOG (https://github.com/patman15/BMS_BLE-HA/issues/134)
         # (https://github.com/patman15/BMS_BLE-HA/issues/157)
         generate_advertisement_data(  # ECO-WORTHY LiFePO4 12V 150Ah, DCHOUSE FW v6.6
@@ -360,5 +352,18 @@ ADVERTISEMENTS: Final[list] = [
             rssi=-56,
         ),
         "felicity_bms",
+    ),
+    (  # source LOG, proxy (https://github.com/patman15/BMS_BLE-HA/issues/164#issue-2825586172)
+        generate_advertisement_data(
+            local_name="ECO-WORTHY 02_B8EF",
+            manufacturer_data={49844: b"\xe0\xfa\xb8\xf0"},  # MAC address, correct
+            service_uuids=[
+                "00001800-0000-1000-8000-00805f9b34fb",
+                "00001801-0000-1000-8000-00805f9b34fb",
+                "0000fff0-0000-1000-8000-00805f9b34fb",
+            ],
+            rssi=-50,
+        ),
+        "ecoworthy_bms",
     ),
 ]
