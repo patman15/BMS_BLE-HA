@@ -17,6 +17,30 @@ from .conftest import MockBleakClient
 
 BT_FRAME_SIZE = 35
 
+RESP_VALUE: Final[dict[str, bytearray]] = {
+    "dat": bytearray(
+        b'{"CommVer":1,"wifiSN":"F100011002424470238","iotType":3,"dateTime":"20210101010459",'
+        b'"timeZMin":480}'
+    ),
+    "rt": bytearray(
+        b'{"CommVer":1,"wifiSN":"F100011002424470238","modID":1,"date":"20210101010501",'
+        b'"DevSN":"100011002424470238","Type":112,"SubType":7300,"Estate":960,"Bfault":0,'
+        b'"Bwarn":0,"Bstate":960,"BBfault":0,"BBwarn":0,"BTemp":[[130,130],[256,256]],"Batt":'
+        b'[[52800],[-1],[null]],"Batsoc":[[3300,1000,300000]],"Templist":[[130,130],[0,0],'
+        b'[65535,65535],[65535,65535]],"BattList":[[52750,65535],[-1,-1]],"BatsocList":'
+        b'[[3300,1000,300000]],"BatcelList":[[3296,3296,3297,3297,3297,3297,3297,3297,3297,'
+        b"3297,3296,3297,3297,3297,3297,3297],[65535,65535,65535,65535,65535,65535,65535,"
+        b'65535,65535,65535,65535,65535,65535,65535,65535,65535]],"EMSpara":[[1,2]],"BMaxMin":'
+        b'[[3297,3296],[2,0]],"LVolCur":[[576,480],[1500,1500]],"BMSpara":[[1,2]],"BLVolCu":'
+        b'[[576,480],[1500,1500]],"BtemList":[[130,130,130,130,32767,32767,32767,32767]]}'
+    ),
+    "bas": bytearray(
+        b'{"CommVer":1,"version":"2.06","wifiSN":"F100011002424470238","COM":3,"iotType":3,'
+        b'"modID":1,"DevSN":"100011002424470238","Type":112,"SubType":7300,"DSwVer":65535,'
+        b'"M1SwVer":519,"M2SwVer":16,"DHwVer":0,"CtHwVer":0,"PwHwVer":65535}'
+    ),
+}
+
 
 def ref_value() -> dict:
     """Return reference value for mock Seplos BMS."""
@@ -51,6 +75,8 @@ def ref_value() -> dict:
         "temp#3": 13.0,
         "delta_voltage": 0.001,
         "runtime": 3564000,
+        "problem": False,
+        "problem_code": 0,
     }
 
 
@@ -64,29 +90,7 @@ class MockFelicityBleakClient(MockBleakClient):
         "bas": bytearray(b"wifilocalMonitor:get dev basice infor"),
         "rt": bytearray(b"wifilocalMonitor:get dev real infor"),
     }
-    RESP: Final[dict[str, bytearray]] = {
-        "dat": bytearray(
-            b'{"CommVer":1,"wifiSN":"F100011002424470238","iotType":3,"dateTime":"20210101010459",'
-            b'"timeZMin":480}'
-        ),
-        "rt": bytearray(
-            b'{"CommVer":1,"wifiSN":"F100011002424470238","modID":1,"date":"20210101010501",'
-            b'"DevSN":"100011002424470238","Type":112,"SubType":7300,"Estate":960,"Bfault":0,'
-            b'"Bwarn":0,"Bstate":960,"BBfault":0,"BBwarn":0,"BTemp":[[130,130],[256,256]],"Batt":'
-            b'[[52800],[-1],[null]],"Batsoc":[[3300,1000,300000]],"Templist":[[130,130],[0,0],'
-            b'[65535,65535],[65535,65535]],"BattList":[[52750,65535],[-1,-1]],"BatsocList":'
-            b'[[3300,1000,300000]],"BatcelList":[[3296,3296,3297,3297,3297,3297,3297,3297,3297,'
-            b"3297,3296,3297,3297,3297,3297,3297],[65535,65535,65535,65535,65535,65535,65535,"
-            b'65535,65535,65535,65535,65535,65535,65535,65535,65535]],"EMSpara":[[1,2]],"BMaxMin":'
-            b'[[3297,3296],[2,0]],"LVolCur":[[576,480],[1500,1500]],"BMSpara":[[1,2]],"BLVolCu":'
-            b'[[576,480],[1500,1500]],"BtemList":[[130,130,130,130,32767,32767,32767,32767]]}'
-        ),
-        "bas": bytearray(
-            b'{"CommVer":1,"version":"2.06","wifiSN":"F100011002424470238","COM":3,"iotType":3,'
-            b'"modID":1,"DevSN":"100011002424470238","Type":112,"SubType":7300,"DSwVer":65535,'
-            b'"M1SwVer":519,"M2SwVer":16,"DHwVer":0,"CtHwVer":0,"PwHwVer":65535}'
-        ),
-    }
+    RESP: Final[dict[str, bytearray]] = RESP_VALUE
 
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
@@ -140,9 +144,33 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
 
     # query again to check already connected state
     result = await bms.async_update()
-    assert (
-        bms._client and bms._client.is_connected is not reconnect_fixture
-    )  # noqa: SLF001
+    assert bms._client and bms._client.is_connected is not reconnect_fixture
+
+    await bms.disconnect()
+
+
+async def test_problem_response(monkeypatch) -> None:
+    """Test Felicity BMS data update with problem response."""
+
+    prb_resp: dict[str, bytearray] = RESP_VALUE.copy()
+    prb_resp["rt"][146:166] = b'"Bfault":1,"Bwarn":10'  # patch problem codes
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient", MockFelicityBleakClient
+    )
+
+    monkeypatch.setattr(
+        "tests.test_felicity_bms.MockFelicityBleakClient.RESP", prb_resp
+    )
+
+    bms = BMS(
+        generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73), False
+    )
+
+    assert await bms.async_update() == ref_value() | {
+        "problem": True,
+        "problem_code": 11,
+    }
 
     await bms.disconnect()
 
@@ -150,9 +178,9 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
 @pytest.fixture(
     name="wrong_response",
     params=[
-        (b'"CommVer":1,"wifiSN":"F100011002424470238","iotType":3}', "invalid frame start"),
-        (b'{"CommVer":1,"wifiSN":"F100011002424470238","iotType":3', "invalid frame end"),
-        (b'{"CommVer":2,"wifiSN":"F100011002424470238","iotType":3}', "invalid protocol"),
+        (b'"CommVer":1,"wifiSN":"F100011002424470238"}', "invalid frame start"),
+        (b'{"CommVer":1,"wifiSN":"F100011002424470238"', "invalid frame end"),
+        (b'{"CommVer":2,"wifiSN":"F100011002424470238"}', "invalid protocol"),
     ],
     ids=lambda param: param[1],
 )

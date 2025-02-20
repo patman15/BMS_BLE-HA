@@ -22,6 +22,7 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
+    KEY_PROBLEM,
 )
 
 from .basebms import BaseBMS, BMSsample
@@ -59,6 +60,7 @@ class BMS(BaseBMS):
         ),
         (KEY_CELL_COUNT, Cmd.CELLVOLT, 6, 1, lambda x: min(x, BMS._MAX_CELLS)),
         (ATTR_CYCLES, Cmd.LEGINFO2, 8, 2, lambda x: x),
+        (KEY_PROBLEM, Cmd.LEGINFO1, 15, 1, lambda x: x & 0xFF),
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:

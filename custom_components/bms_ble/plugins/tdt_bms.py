@@ -21,6 +21,7 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
+    KEY_PROBLEM,
     KEY_TEMP_SENS,
     KEY_TEMP_VALUE,
 )
@@ -53,6 +54,7 @@ class BMS(BaseBMS):
         (ATTR_CYCLE_CHRG, 0x8C, 4, 2, False, lambda x: float(x / 10)),
         (ATTR_BATTERY_LEVEL, 0x8C, 13, 1, False, lambda x: x),
         (ATTR_CYCLES, 0x8C, 8, 2, False, lambda x: x),
+        (KEY_PROBLEM, 0x8D, 36, 2, False, lambda x: x),
     ]
     _CMDS: Final[list[int]] = [*list({field[1] for field in _FIELDS})]
 
@@ -145,7 +147,7 @@ class BMS(BaseBMS):
             self._log.debug("BMS reported error code: 0x%X", self._data[4])
             return
 
-        crc = crc_modbus(self._data[:-3])
+        crc: Final[int] = crc_modbus(self._data[:-3])
         if int.from_bytes(self._data[-3:-1], "big") != crc:
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",
@@ -198,20 +200,14 @@ class BMS(BaseBMS):
     @staticmethod
     def _temp_sensors(data: bytearray, sensors: int, offs: int) -> dict[str, float]:
         return {
-            f"{KEY_TEMP_VALUE}{idx}": (
-                int.from_bytes(
+            f"{KEY_TEMP_VALUE}{idx}": (value - 2731.5) / 10
+            for idx in range(sensors)
+            if (
+                value := int.from_bytes(
                     data[offs + idx * 2 : offs + (idx + 1) * 2],
                     byteorder="big",
                     signed=False,
                 )
-                - 2731.5
-            )
-            / 10
-            for idx in range(sensors)
-            if int.from_bytes(
-                data[offs + idx * 2 : offs + (idx + 1) * 2],
-                byteorder="big",
-                signed=False,
             )
         }
 
@@ -232,9 +228,13 @@ class BMS(BaseBMS):
             int(result[KEY_TEMP_SENS]),
             BMS._CELL_POS + int(result[KEY_CELL_COUNT]) * 2 + 2,
         )
+        idx: Final[int] = int(result[KEY_CELL_COUNT] + result[KEY_TEMP_SENS])
         result |= BMS._decode_data(
             self._data_final,
-            BMS._CELL_POS + int(result[KEY_CELL_COUNT] + result[KEY_TEMP_SENS]) * 2 + 2,
+            BMS._CELL_POS + idx * 2 + 2,
+        )
+        result[KEY_PROBLEM] = int.from_bytes(
+            self._data_final[0x8D][BMS._CELL_POS + idx + 6 : BMS._CELL_POS + idx + 8]
         )
 
         self._data_final.clear()

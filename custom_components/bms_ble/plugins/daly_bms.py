@@ -21,6 +21,7 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
+    KEY_PROBLEM,
     KEY_TEMP_SENS,
     KEY_TEMP_VALUE,
 )
@@ -40,15 +41,16 @@ class BMS(BaseBMS):
     MAX_TEMP: Final[int] = 8
     INFO_LEN: Final[int] = 84 + HEAD_LEN + CRC_LEN + MAX_CELLS + MAX_TEMP
     MOS_TEMP_POS: Final[int] = HEAD_LEN + 8
-    _FIELDS: Final[list[tuple[str, int, Callable[[int], int | float]]]] = [
-        (ATTR_VOLTAGE, 80 + HEAD_LEN, lambda x: float(x / 10)),
-        (ATTR_CURRENT, 82 + HEAD_LEN, lambda x: float((x - 30000) / 10)),
-        (ATTR_BATTERY_LEVEL, 84 + HEAD_LEN, lambda x: float(x / 10)),
-        (ATTR_CYCLE_CHRG, 96 + HEAD_LEN, lambda x: float(x / 10)),
-        (KEY_CELL_COUNT, 98 + HEAD_LEN, lambda x: min(x, BMS.MAX_CELLS)),
-        (KEY_TEMP_SENS, 100 + HEAD_LEN, lambda x: min(x, BMS.MAX_TEMP)),
-        (ATTR_CYCLES, 102 + HEAD_LEN, lambda x: x),
-        (ATTR_DELTA_VOLTAGE, 112 + HEAD_LEN, lambda x: float(x / 1000)),
+    _FIELDS: Final[list[tuple[str, int, int, Callable[[int], int | float]]]] = [
+        (ATTR_VOLTAGE, 80 + HEAD_LEN, 2, lambda x: float(x / 10)),
+        (ATTR_CURRENT, 82 + HEAD_LEN, 2, lambda x: float((x - 30000) / 10)),
+        (ATTR_BATTERY_LEVEL, 84 + HEAD_LEN, 2, lambda x: float(x / 10)),
+        (ATTR_CYCLE_CHRG, 96 + HEAD_LEN, 2, lambda x: float(x / 10)),
+        (KEY_CELL_COUNT, 98 + HEAD_LEN, 2, lambda x: min(x, BMS.MAX_CELLS)),
+        (KEY_TEMP_SENS, 100 + HEAD_LEN, 2, lambda x: min(x, BMS.MAX_TEMP)),
+        (ATTR_CYCLES, 102 + HEAD_LEN, 2, lambda x: x),
+        (ATTR_DELTA_VOLTAGE, 112 + HEAD_LEN, 2, lambda x: float(x / 1000)),
+        (KEY_PROBLEM, 116 + HEAD_LEN, 8, lambda x: x),
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -154,9 +156,11 @@ class BMS(BaseBMS):
 
         data |= {
             key: func(
-                int.from_bytes(self._data[idx : idx + 2], byteorder="big", signed=True)
+                int.from_bytes(
+                    self._data[idx : idx + size], byteorder="big", signed=True
+                )
             )
-            for key, idx, func in BMS._FIELDS
+            for key, idx, size, func in BMS._FIELDS
         }
 
         # get temperatures

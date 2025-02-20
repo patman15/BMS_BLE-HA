@@ -11,6 +11,7 @@ from habluetooth import BluetoothServiceInfoBleak
 
 from homeassistant.components.bluetooth import async_last_service_info
 from homeassistant.components.bluetooth.const import DOMAIN as BLUETOOTH_DOMAIN
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH, DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -27,6 +28,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
         hass: HomeAssistant,
         ble_device: BLEDevice,
         bms_device: BaseBMS,
+        config_entry: ConfigEntry,
     ) -> None:
         """Initialize BMS data coordinator."""
         assert ble_device.name is not None
@@ -36,6 +38,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             name=ble_device.name,
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
             always_update=False,  # only update when sensor value has changed
+            config_entry=config_entry,
         )
         self.name: Final[str] = ble_device.name
         self._mac: Final[str] = ble_device.address
