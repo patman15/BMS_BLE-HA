@@ -85,12 +85,13 @@ class BMS(BaseBMS):
     @staticmethod
     def uuid_tx() -> str:
         """Return 16-bit UUID of characteristic that provides write property."""
-        return "fff2"
+        raise NotImplementedError
 
     @staticmethod
     def _calc_values() -> set[str]:
         return {
             ATTR_BATTERY_CHARGING,
+            ATTR_CYCLE_CHRG,
             ATTR_CYCLE_CAP,
             ATTR_DELTA_VOLTAGE,
             ATTR_POWER,
@@ -169,12 +170,6 @@ class BMS(BaseBMS):
         await asyncio.wait_for(self._wait_event(), timeout=self.BAT_TIMEOUT)
 
         result: BMSsample = BMS._decode_data(self._data_final)
-
-        # get cycle charge from design capacity and SoC
-        if result.get(KEY_DESIGN_CAP) and result.get(ATTR_BATTERY_LEVEL):
-            result[ATTR_CYCLE_CHRG] = (
-                result[KEY_DESIGN_CAP] * result[ATTR_BATTERY_LEVEL] / 100
-            )
 
         result |= BMS._cell_voltages(
             self._data_final[0xA2],

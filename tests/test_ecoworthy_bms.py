@@ -1,4 +1,4 @@
-"""Test the ECOW implementation."""
+"""Test the ECO-WORTHY implementation."""
 
 import asyncio
 from collections.abc import Awaitable, Callable
@@ -7,11 +7,9 @@ from typing import Final
 from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
+import pytest
 
-# from bleak.exc import BleakDeviceNotFoundError
-# from bleak.uuids import normalize_uuid_str
-# import pytest
-from custom_components.bms_ble.plugins.ecoworthy_bms import BMS
+from custom_components.bms_ble.plugins.ecoworthy_bms import BMS, BMSsample
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -27,7 +25,7 @@ def ref_value() -> dict:
         "battery_level": 72,
         "cycle_charge": 72.0,
         "design_capacity": 100.0,
-#        "cycles": 8,
+        #        "cycles": 8,
         "temperature": 19.567,
         "cycle_capacity": 956.88,
         "power": -15.151,
@@ -41,11 +39,13 @@ def ref_value() -> dict:
         "temp#2": 19.0,
         "delta_voltage": 0.003,
         "runtime": 227368,
+        "problem": False,
+        "problem_code": 0,
     }
 
 
 class MockECOWBleakClient(MockBleakClient):
-    """Emulate a ECOW BMS BleakClient."""
+    """Emulate a ECO-WORTHY BMS BleakClient."""
 
     CMDS: Final[dict[int, bytearray]] = {
         0xA1: bytearray(b"\x00\x01\x03\x00\x8c\x00\x00\x99\x42"),
@@ -78,8 +78,7 @@ class MockECOWBleakClient(MockBleakClient):
         while True:
             for msg in self.RESP.values():
                 self._notify_callback("MockECOWBleakClient", msg)
-                await asyncio.sleep(0)
-
+                await asyncio.sleep(0.1)
 
     async def start_notify(
         self,
@@ -103,7 +102,7 @@ class MockECOWBleakClient(MockBleakClient):
 
 
 async def test_update(monkeypatch, reconnect_fixture) -> None:
-    """Test ECOW BMS data update."""
+    """Test ECO-WORTHY BMS data update."""
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.basebms.BleakClient",
@@ -121,85 +120,87 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
 
     # query again to check already connected state
     result = await bms.async_update()
-    assert (
-        bms._client and bms._client.is_connected is not reconnect_fixture
-    )  # noqa: SLF001
+    assert bms._client and bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
 
 
-# @pytest.fixture(
-#     name="wrong_response",
-#     params=[
-#         (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xA1\x18\x00", "invalid frame end"),
-#         (b"\x7e\x10\x01\x03\x00\x8c\x00\x01\x00\xAD\x19\x0D", "invalid version"),
-#         (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xA1\x00\x0D", "invalid CRC"),
-#         (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xA1\x18\x0D\x00", "oversized frame"),
-#         (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xA1\x0D", "undersized frame"),
-#         (b"\x7e\x00\x01\x03\x01\x8c\x00\x01\x00\x61\x25\x0D", "error response"),
-#     ],
-#     ids=lambda param: param[1],
-# )
-# def response(request):
-#     """Return faulty response frame."""
-#     return request.param[0]
+@pytest.fixture(
+    name="wrong_response",
+    params=[
+        (
+            bytearray(
+                b"\xa3\x00\x00\x00\x65\x00\x00\x00\x00\x00\x18\x01\x03\x44\x00\x18\x00\x48\x00\x64\x05"
+                b"\x31\xff\x8e\x00\x00\x27\x10\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01"
+                b"\x00\x02\x00\x00\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x70\x20"
+            ),
+            "wrong_type",
+        ),
+        (
+            bytearray(
+                b"\xa2\x00\x00\x00\x65\x00\x00\x00\x00\x00\x18\x01\x03\x56\x00\x04\x0c\xfb\x0c\xfd\x0c"
+                b"\xfb\x0c\xfa\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+                b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+                b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x03\x00\xcd"
+                b"\x00\xc0\x00\xbe\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18\x97\x6a"
+            ),
+            "single_type_sent",
+        ),
+        (
+            bytearray(  # correct CRC: 0x2187
+                b"\xa1\x00\x00\x00\x65\x00\x00\x00\x00\x00\x18\x01\x03\x44\x00\x18\x00\x48\x00\x64\x05"
+                b"\x31\xff\x8e\x00\x00\x27\x10\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01"
+                b"\x00\x02\x00\x00\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x21\x87"
+            ),
+            "wrong_CRC",
+        ),
+    ],
+    ids=lambda param: param[1],
+)
+def response(request):
+    """Return faulty response frame."""
+    return request.param[0]
 
 
-# async def test_invalid_response(monkeypatch, wrong_response) -> None:
-#     """Test data up date with BMS returning invalid data."""
+async def test_tx_notimplemented(monkeypatch) -> None:
+    """Test Ective BMS uuid_tx not implemented for coverage."""
 
-#     monkeypatch.setattr(
-#         "custom_components.bms_ble.plugins.ECOW_bms.BMS.BAT_TIMEOUT",
-#         0.1,
-#     )
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient", MockECOWBleakClient
+    )
 
-#     monkeypatch.setattr(
-#         "tests.test_ECOW_bms.MockECOWBleakClient._response",
-#         lambda _s, _c_, d: wrong_response,
-#     )
+    bms = BMS(
+        generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73), False
+    )
 
-#     monkeypatch.setattr(
-#         "custom_components.bms_ble.plugins.basebms.BleakClient",
-#         MockECOWBleakClient,
-#     )
-
-#     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
-
-#     result = {}
-#     with pytest.raises(TimeoutError):
-#         result = await bms.async_update()
-
-#     assert not result
-#     await bms.disconnect()
+    with pytest.raises(NotImplementedError):
+        _ret: str = bms.uuid_tx()
 
 
-# async def test_init_fail(monkeypatch, bool_fixture) -> None:
-#     """Test that failing to initialize simply continues and tries to read data."""
+async def test_invalid_response(monkeypatch, wrong_response) -> None:
+    """Test data up date with BMS returning invalid data."""
 
-#     throw_exception: bool = bool_fixture
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.ecoworthy_bms.BMS.BAT_TIMEOUT", 0.2
+    )
 
-#     async def error_repsonse(*_args, **_kwargs) -> bytearray:
-#         return bytearray(b"\x00")
+    monkeypatch.setattr(
+        "tests.test_ecoworthy_bms.MockECOWBleakClient.RESP",
+        {0xA1: wrong_response, 0xA2: MockECOWBleakClient.RESP[0xA2]},
+    )
 
-#     async def throw_response(*_args, **_kwargs) -> bytearray:
-#         raise BleakDeviceNotFoundError("MockECOWBleakClient")
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
+        MockECOWBleakClient,
+    )
 
-#     monkeypatch.setattr(
-#         "tests.test_ECOW_bms.MockECOWBleakClient.read_gatt_char",
-#         throw_response if throw_exception else error_repsonse,
-#     )
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
-#     monkeypatch.setattr(
-#         "custom_components.bms_ble.plugins.basebms.BleakClient",
-#         MockECOWBleakClient,
-#     )
+    result: BMSsample = {}
+    with pytest.raises(TimeoutError):
+        result = await bms.async_update()
 
-#     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
-
-#     if bool_fixture:
-#         with pytest.raises(BleakDeviceNotFoundError):
-#             assert not await bms.async_update()
-#     else:
-#         assert await bms.async_update() == ref_value()["16S6T"]
-
-#     await bms.disconnect()
+    assert not result
+    await bms.disconnect()

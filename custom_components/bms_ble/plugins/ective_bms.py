@@ -87,6 +87,7 @@ class BMS(BaseBMS):
         return {
             ATTR_BATTERY_CHARGING,
             ATTR_CYCLE_CAP,
+            ATTR_CYCLE_CHRG,
             ATTR_DELTA_VOLTAGE,
             ATTR_POWER,
             ATTR_RUNTIME,

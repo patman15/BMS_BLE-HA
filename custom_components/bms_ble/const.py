@@ -13,6 +13,7 @@ from homeassistant.const import (  # noqa: F401
 BMS_TYPES: Final[list[str]] = [
     "cbtpwr_bms",
     "daly_bms",
+    "ecoworthy_bms",
     "ective_bms",
     "ej_bms",
     "jbd_bms",
