@@ -15,7 +15,7 @@ from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
 
-def ref_value() -> dict:
+def ref_value() -> BMSsample:
     """Return reference value for mock Seplos BMS."""
     return {
         "cell_count": 4,
@@ -203,4 +203,57 @@ async def test_invalid_response(monkeypatch, wrong_response) -> None:
         result = await bms.async_update()
 
     assert not result
+    await bms.disconnect()
+
+
+@pytest.fixture(
+    name="problem_response",
+    params=[
+        (
+            bytearray(
+                b"\xa1\x00\x00\x00\x65\x00\x00\x00\x00\x00\x18\x01\x03\x44\x00\x18\x00\x48\x00\x64\x05"
+                b"\x31\xff\x8e\x00\x00\x27\x10\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01"
+                b"\x00\x02\x00\x00\xff\xff\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x20\xD6"
+            ),
+            "first_bit",
+        ),
+        (
+            bytearray(
+                b"\xa1\x00\x00\x00\x65\x00\x00\x00\x00\x00\x18\x01\x03\x44\x00\x18\x00\x48\x00\x64\x05"
+                b"\x31\xff\x8e\x00\x00\x27\x10\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01"
+                b"\x00\x02\x00\x00\xff\xff\x00\x00\x00\x80\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x20\x0E"
+            ),
+            "last_bit",
+        ),
+    ],
+    ids=lambda param: param[1],
+)
+def prb_response(request):
+    """Return faulty response frame."""
+    return request.param
+
+
+async def test_problem_response(monkeypatch, problem_response) -> None:
+    """Test data update with BMS returning error flags."""
+
+    monkeypatch.setattr(
+        "tests.test_ecoworthy_bms.MockECOWBleakClient.RESP",
+        {0xA1: problem_response[0], 0xA2: MockECOWBleakClient.RESP[0xA2]},
+    )
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
+        MockECOWBleakClient,
+    )
+
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
+
+    result: BMSsample = await bms.async_update()
+    assert result == ref_value() | {
+        "problem": True,
+        "problem_code": 1 << (0 if problem_response[1] == "first_bit" else 15),
+    }
+
     await bms.disconnect()
