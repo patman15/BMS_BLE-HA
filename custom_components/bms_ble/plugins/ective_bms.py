@@ -109,9 +109,11 @@ class BMS(BaseBMS):
         if len(self._data) < BMS._INFO_LEN:
             return
 
+        self._data = self._data[: BMS._INFO_LEN]  # cut off exceeding data
+
         if not (
             self._data.startswith(BMS._HEAD_RSP)
-            and set(self._data.decode()[3:]).issubset(hexdigits)
+            and set(self._data.decode(errors="replace")[1:]).issubset(hexdigits)
         ):
             self._log.debug("incorrect frame coding: %s", self._data)
             self._data.clear()
