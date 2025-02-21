@@ -23,6 +23,7 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
+    KEY_PROBLEM,
     KEY_TEMP_VALUE,
 )
 
@@ -45,6 +46,7 @@ class BMS(BaseBMS):
             (ATTR_CYCLE_CHRG, 174, 4, False, lambda x: float(x / 1000)),
             (ATTR_CYCLES, 182, 4, False, lambda x: x),
             (ATTR_BALANCE_CUR, 170, 2, True, lambda x: float(x / 1000)),
+            (KEY_PROBLEM, 166, 4, False, lambda x: x),
         ]
     )
 
@@ -283,6 +285,15 @@ class BMS(BaseBMS):
             )
 
         data: BMSsample = self._decode_data(self._data_final, self._prot_offset)
+        data.update(
+            {
+                KEY_PROBLEM: (
+                    (int(data[KEY_PROBLEM]) >> 16)
+                    if self._prot_offset
+                    else (int(data[KEY_PROBLEM]) & 0xFFFF)
+                )
+            }
+        )
         data.update(BMS._temp_sensors(self._data_final, self._prot_offset))
         data.update(BMS._cell_voltages(self._data_final, int(data[KEY_CELL_COUNT])))
 

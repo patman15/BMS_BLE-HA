@@ -21,6 +21,7 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
     KEY_DESIGN_CAP,
+    KEY_PROBLEM,
 )
 from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
@@ -49,6 +50,7 @@ class BMS(BaseBMS):
         (KEY_DESIGN_CAP, 0x15, 4, 2, False, lambda x: x),
         (ATTR_CYCLES, 0x15, 6, 2, False, lambda x: x),
         (ATTR_RUNTIME, 0x0C, 14, 2, False, lambda x: float(x * _HRS_TO_SECS / 100)),
+        (KEY_PROBLEM, 0x21, 4, 4, False, lambda x: x),
     ]
     _CMDS: Final[list[int]] = list({field[1] for field in _FIELDS})
 
@@ -60,8 +62,15 @@ class BMS(BaseBMS):
     def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [
+            {"service_uuid": BMS.uuid_services()[0], "connectable": True},
+            {  # Creabest
+                "service_uuid": normalize_uuid_str("fff0"),
+                "manufacturer_id": 0,
+                "connectable": True,
+            },
             {
-                "service_uuid": normalize_uuid_str("ffb0"),
+                "service_uuid": normalize_uuid_str("03c1"),
+                "manufacturer_id": 0x5352,
                 "connectable": True,
             },
         ]

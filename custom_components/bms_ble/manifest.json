@@ -87,7 +87,11 @@
       "local_name": "DXB-*"
     },
     {
-      "service_uuid": "0000ffb0-0000-1000-8000-00805f9b34fb"
+      "service_uuid": "0000ffe5-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb",
+      "manufacturer_id": 0
     },
     {
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
@@ -128,6 +132,10 @@
     },
     {
       "local_name": "F10*"
+    },
+    {
+      "service_uuid": "000003c1-0000-1000-8000-00805f9b34fb",
+      "manufacturer_id": 21330
     }
   ],
   "codeowners": [
@@ -145,5 +153,5 @@
     "bleak_retry_connector"
   ],
   "requirements": [],
-  "version": "1.12.0"
+  "version": "1.13.0"
 }

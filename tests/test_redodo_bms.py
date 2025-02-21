@@ -1,16 +1,44 @@
 """Test the E&J technology BMS implementation."""
 
 from collections.abc import Buffer
+from typing import Final
 from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.plugins.redodo_bms import BMS
+from custom_components.bms_ble.plugins.redodo_bms import BMS, BMSsample
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
+
+_RESULT_DEFS: Final[BMSsample] = {
+    "voltage": 26.556,
+    "current": -1.435,
+    "cell#0": 3.317,
+    "cell#1": 3.319,
+    "cell#2": 3.324,
+    "cell#3": 3.323,
+    "cell#4": 3.320,
+    "cell#5": 3.314,
+    "cell#6": 3.322,
+    "cell#7": 3.317,
+    "delta_voltage": 0.01,
+    "power": -38.108,
+    "battery_charging": False,
+    "battery_level": 65,
+    "cycle_charge": 68.89,
+    "cycle_capacity": 1829.443,
+    "runtime": 172825,
+    "temp#0": 23,
+    "temp#1": 22,
+    "temp#2": -2,
+    "temperature": 14.333,
+    "cycles": 3,
+    "problem": False,
+    "problem_code": 0,
+}
 
 
 class MockRedodoBleakClient(MockBleakClient):
@@ -64,34 +92,11 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
 
     result = await bms.async_update()
 
-    assert result == {
-        "voltage": 26.556,
-        "current": -1.435,
-        "cell#0": 3.317,
-        "cell#1": 3.319,
-        "cell#2": 3.324,
-        "cell#3": 3.323,
-        "cell#4": 3.320,
-        "cell#5": 3.314,
-        "cell#6": 3.322,
-        "cell#7": 3.317,
-        "delta_voltage": 0.01,
-        "power": -38.108,
-        "battery_charging": False,
-        "battery_level": 65,
-        "cycle_charge": 68.89,
-        "cycle_capacity": 1829.443,
-        "runtime": 172825,
-        "temp#0": 23,
-        "temp#1": 22,
-        "temp#2": -2,
-        "temperature": 14.333,
-        "cycles": 3,
-    }
+    assert result == _RESULT_DEFS
 
     # query again to check already connected state
     result = await bms.async_update()
-    assert bms._client.is_connected is not reconnect_fixture  # noqa: SLF001
+    assert bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
 
@@ -151,7 +156,7 @@ async def test_invalid_response(monkeypatch, wrong_response) -> None:
 
     monkeypatch.setattr(
         "tests.test_redodo_bms.MockRedodoBleakClient._response",
-        lambda _s, _c_, d: wrong_response,
+        lambda _s, _c, _d: wrong_response,
     )
 
     monkeypatch.setattr(
@@ -166,4 +171,60 @@ async def test_invalid_response(monkeypatch, wrong_response) -> None:
         result = await bms.async_update()
 
     assert not result
+    await bms.disconnect()
+
+
+@pytest.fixture(
+    name="problem_response",
+    params=[
+        (
+            bytearray(
+                b"\x00\x00\x65\x01\x93\x55\xaa\x00\x46\x66\x00\x00\xbc\x67\x00\x00\xf5\x0c\xf7\x0c"
+                b"\xfc\x0c\xfb\x0c\xf8\x0c\xf2\x0c\xfa\x0c\xf5\x0c\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x65\xfa\xff\xff\x17\x00\x16\x00\xfe\xff\x00\x00"
+                b"\x00\x00\xe9\x1a\x04\x29\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x41\x00\x64\x00\x00\x00\x03\x00\x00\x00"
+                b"\x5f\x01\x00\x00\xa3"
+            ),
+            "first_bit",
+        ),
+        (
+            bytearray(
+                b"\x00\x00\x65\x01\x93\x55\xaa\x00\x46\x66\x00\x00\xbc\x67\x00\x00\xf5\x0c\xf7\x0c"
+                b"\xfc\x0c\xfb\x0c\xf8\x0c\xf2\x0c\xfa\x0c\xf5\x0c\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x65\xfa\xff\xff\x17\x00\x16\x00\xfe\xff\x00\x00"
+                b"\x00\x00\xe9\x1a\x04\x29\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x41\x00\x64\x00\x00\x00\x03\x00\x00\x00"
+                b"\x5f\x01\x00\x00\x22"
+            ),
+            "last_bit",
+        ),
+    ],
+    ids=lambda param: param[1],
+)
+def prb_response(request):
+    """Return faulty response frame."""
+    return request.param
+
+
+async def test_problem_response(monkeypatch, problem_response) -> None:
+    """Test data up date with BMS returning protection flags."""
+
+    monkeypatch.setattr(
+        "tests.test_redodo_bms.MockRedodoBleakClient._response",
+        lambda _s, _c, _d: problem_response[0],
+    )
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient",
+        MockRedodoBleakClient,
+    )
+
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+
+    assert await bms.async_update() == _RESULT_DEFS | {
+        "problem": True,
+        "problem_code": 1 << 0 if problem_response[1] == "first_bit" else 1 << 31,
+    }
+
     await bms.disconnect()

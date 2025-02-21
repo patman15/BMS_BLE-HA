@@ -22,6 +22,7 @@ from custom_components.bms_ble.const import (
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
     KEY_PACK_COUNT,
+    KEY_PROBLEM,
     KEY_TEMP_SENS,
     KEY_TEMP_VALUE,
 )
@@ -39,7 +40,13 @@ class BMS(BaseBMS):
     _MIN_LEN: Final[int] = 10
     _MAX_SUBS: Final[int] = 0xF
     _CELL_POS: Final[int] = 9
-    _FIELDS: Final[
+    _FIELDS: Final[  # Seplos V2: device manufacturer info 0x51, parallel data 0x62
+        list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
+    ] = [
+        (KEY_PACK_COUNT, 0x51, 42, 1, False, lambda x: min(int(x), BMS._MAX_SUBS)),
+        (KEY_PROBLEM, 0x62, 47, 6, False, lambda x: x),
+    ]
+    _PFIELDS: Final[  # Seplos V2: single machine data
         list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
     ] = [
         (ATTR_VOLTAGE, 0x61, 2, 2, False, lambda x: float(x / 100)),
@@ -47,8 +54,8 @@ class BMS(BaseBMS):
         (ATTR_CYCLE_CHRG, 0x61, 4, 2, False, lambda x: float(x / 100)),  # /10 for 0x62
         (ATTR_CYCLES, 0x61, 13, 2, False, lambda x: x),
         (ATTR_BATTERY_LEVEL, 0x61, 9, 2, False, lambda x: float(x / 10)),
-    ]  # Protocol Seplos V2 (parallel data 0x62, device manufacturer info 0x51)
-    _CMDS: Final[list[tuple[int, bytes]]] = [(0x51, b""), (0x61, b"\x00")]
+    ]
+    _CMDS: Final[list[tuple[int, bytes]]] = [(0x51, b""), (0x61, b"\x00"), (0x62, b"")]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -177,26 +184,20 @@ class BMS(BaseBMS):
                     signed=sign,
                 )
             )
-            for key, cmd, idx, size, sign, func in BMS._FIELDS
+            for key, cmd, idx, size, sign, func in BMS._PFIELDS
         }
 
     @staticmethod
     def _temp_sensors(data: bytearray, sensors: int, offs: int) -> dict[str, float]:
         return {
-            f"{KEY_TEMP_VALUE}{idx}": (
-                int.from_bytes(
+            f"{KEY_TEMP_VALUE}{idx}": (value - 2731.5) / 10
+            for idx in range(sensors)
+            if (
+                value := int.from_bytes(
                     data[offs + idx * 2 : offs + (idx + 1) * 2],
                     byteorder="big",
                     signed=False,
                 )
-                - 2731.5
-            )
-            / 10
-            for idx in range(sensors)
-            if int.from_bytes(
-                data[offs + idx * 2 : offs + (idx + 1) * 2],
-                byteorder="big",
-                signed=False,
             )
         }
 
@@ -222,7 +223,17 @@ class BMS(BaseBMS):
         result[KEY_TEMP_SENS] = int(
             self._data_final[0x61][BMS._CELL_POS + int(result[KEY_CELL_COUNT]) * 2 + 1]
         )
-        result[KEY_PACK_COUNT] = min(int(self._data_final[0x51][42]), BMS._MAX_SUBS)
+
+        result |= {
+            key: func(
+                int.from_bytes(
+                    self._data_final[cmd][idx : idx + size],
+                    byteorder="big",
+                    signed=sign,
+                )
+            )
+            for key, cmd, idx, size, sign, func in BMS._FIELDS
+        }
 
         result |= BMS._cell_voltages(self._data_final[0x61])
         result |= BMS._temp_sensors(
