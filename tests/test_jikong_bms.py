@@ -471,18 +471,20 @@ async def test_update(monkeypatch, protocol_type, reconnect_fixture) -> None:
 async def test_hide_temp_sensors(monkeypatch, protocol_type) -> None:
     """Test Jikong BMS data update with not connected temperature sensors."""
 
-    temp2_hide: dict[str, bytearray] = deepcopy(_PROTO_DEFS[protocol_type])
+    temp12_hide: dict[str, bytearray] = deepcopy(_PROTO_DEFS[protocol_type])
 
     # clear temp sensor #2
     if protocol_type == "JK02_24S":
-        temp2_hide["cell"][182:184] = bytearray(b"\x03\x00")
+        temp12_hide["cell"][182:184] = bytearray(b"\x03\x00")
+        temp12_hide["cell"][132:134] = bytearray(b"\x30\xf8") # -200.0
     else:
-        temp2_hide["cell"][214:216] = bytearray(b"\xFB\x00")
+        temp12_hide["cell"][214:216] = bytearray(b"\xFB\x00")
+        temp12_hide["cell"][162:164] = bytearray(b"\x30\xf8") # -200.0
     # recalculate CRC
-    temp2_hide["cell"][-1] = crc_sum(temp2_hide["cell"][:-1])
+    temp12_hide["cell"][-1] = crc_sum(temp12_hide["cell"][:-1])
 
     monkeypatch.setattr(
-        "tests.test_jikong_bms.MockJikongBleakClient._FRAME", temp2_hide
+        "tests.test_jikong_bms.MockJikongBleakClient._FRAME", temp12_hide
     )
 
     monkeypatch.setattr(
@@ -494,9 +496,10 @@ async def test_hide_temp_sensors(monkeypatch, protocol_type) -> None:
     # modify result dict to match removed temp#2
     ref_result = deepcopy(_RESULT_DEFS[protocol_type])
     if protocol_type == "JK02_24S":
-        ref_result |= {"temp_sensors": 3, "temperature": 18.35}
+        ref_result |= {"temp_sensors": 3, "temperature": 18.1}
     elif protocol_type == "JK02_32S":
-        ref_result |= {"temp_sensors": 251, "temperature": 18.22}
+        ref_result |= {"temp_sensors": 251, "temperature": 18.275}
+    del ref_result["temp#1"]
     del ref_result["temp#2"]
 
     assert await bms.async_update() == ref_result
