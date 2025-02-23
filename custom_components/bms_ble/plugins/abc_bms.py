@@ -11,15 +11,16 @@ from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
     ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
-    # ATTR_CYCLE_CAP,
+    ATTR_CYCLE_CAP,
     ATTR_CYCLE_CHRG,
     ATTR_CYCLES,
     # ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
-    # ATTR_RUNTIME,
+    ATTR_RUNTIME,
     # ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
-    KEY_DESIGN_CAP,
+    # KEY_DESIGN_CAP,
+    KEY_TEMP_SENS,
 )
 
 from .basebms import BaseBMS, BMSsample, crc8
@@ -34,10 +35,10 @@ class BMS(BaseBMS):
     _FIELDS: Final[
         list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
     ] = [
-        #        (KEY_TEMP_SENS, 26, 1, False, lambda x: x),  # count is not limited
+        (KEY_TEMP_SENS, 0xF2, 4, 1, False, lambda x: x),
         (ATTR_VOLTAGE, 0xF0, 2, 3, False, lambda x: float(x / 1000)),
         (ATTR_CURRENT, 0xF0, 5, 3, True, lambda x: float(x / 100)),
-        (KEY_DESIGN_CAP, 0xF0, 8, 3, False, lambda x: float(x / 1000)),
+        # (KEY_DESIGN_CAP, 0xF0, 8, 3, False, lambda x: float(x / 1000)),
         (ATTR_BATTERY_LEVEL, 0xF0, 16, 1, False, lambda x: x),
         (ATTR_CYCLE_CHRG, 0xF0, 11, 3, False, lambda x: float(x / 1000)),
         (ATTR_CYCLES, 0xF0, 14, 2, False, lambda x: x),
@@ -61,7 +62,7 @@ class BMS(BaseBMS):
                 "service_uuid": normalize_uuid_str("fff0"),
                 "connectable": True,
             }
-            for pattern in ["SOK-*", "ABC-*"] # "NB-*", "Hoover",
+            for pattern in ["SOK-*", "ABC-*"]  # "NB-*", "Hoover",
         ]
 
     @staticmethod
@@ -88,6 +89,8 @@ class BMS(BaseBMS):
     def _calc_values() -> set[str]:
         return {
             ATTR_POWER,
+            ATTR_CYCLE_CAP,
+            ATTR_RUNTIME,
             ATTR_BATTERY_CHARGING,
         }  # calculate further values from BMS provided set ones
 
