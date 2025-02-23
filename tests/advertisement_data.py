@@ -363,4 +363,12 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "cbtpwr_bms",
     ),
+    (  # source pcap (https://github.com/patman15/BMS_BLE-HA/issues/168)
+        generate_advertisement_data(
+            local_name="SOK-24V1127",
+            service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
+            rssi=-94,
+        ),
+        "abc_bms",
+    ),
 ]
