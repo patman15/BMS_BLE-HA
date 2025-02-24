@@ -1,5 +1,6 @@
 """Module to support ABC BMS."""
 
+import asyncio
 from collections.abc import Callable
 from typing import Final
 
@@ -43,7 +44,7 @@ class BMS(BaseBMS):
         (ATTR_CYCLE_CHRG, 0xF0, 11, 3, False, lambda x: float(x / 1000)),
         (ATTR_CYCLES, 0xF0, 14, 2, False, lambda x: x),
         #        (KEY_PROBLEM, 20, 2, False, lambda x: x),
-    ]  # general protocol v4
+    ]
     _RESPS: Final[set[int]] = {field[1] for field in _FIELDS} | {
         field[1] for field in _FIELDS
     }
@@ -139,8 +140,9 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         self._data_final.clear()
-        for cmd in range(4):
+        for cmd in range(0xC0, 0xC5, 0x1):
             await self._await_reply(BMS._cmd(bytes([cmd])))
+            await asyncio.sleep(0.2)
         if not BMS._RESPS.issubset(set(self._data_final.keys())):
             self._log.debug("Incomplete data set")
             return {}

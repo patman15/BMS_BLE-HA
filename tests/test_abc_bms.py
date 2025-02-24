@@ -63,7 +63,7 @@ class MockABCBleakClient(MockBleakClient):
         # if (cmd := int(bytearray(data)[1]) | 0xF0) not in self.RESP:
         #     pytest.fail("Unknown query 0x%X" % cmd)
 
-        return self.RESP.get(int(bytearray(data)[1]) | 0xF0, bytearray())
+        return self.RESP.get(int(bytearray(data)[1]) | 0x30, bytearray())
 
     async def write_gatt_char(
         self,
