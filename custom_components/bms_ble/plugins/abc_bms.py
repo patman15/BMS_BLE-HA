@@ -38,7 +38,7 @@ class BMS(BaseBMS):
     ] = [
         (KEY_TEMP_SENS, 0xF2, 4, 1, False, lambda x: x),
         (ATTR_VOLTAGE, 0xF0, 2, 3, False, lambda x: float(x / 1000)),
-        (ATTR_CURRENT, 0xF0, 5, 3, True, lambda x: float(x / 100)),
+        (ATTR_CURRENT, 0xF0, 5, 3, True, lambda x: float(x / 1000)),
         # (KEY_DESIGN_CAP, 0xF0, 8, 3, False, lambda x: float(x / 1000)),
         (ATTR_BATTERY_LEVEL, 0xF0, 16, 1, False, lambda x: x),
         (ATTR_CYCLE_CHRG, 0xF0, 11, 3, False, lambda x: float(x / 1000)),
