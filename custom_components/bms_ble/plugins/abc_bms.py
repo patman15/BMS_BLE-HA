@@ -1,6 +1,5 @@
 """Module to support ABC BMS."""
 
-import asyncio
 from collections.abc import Callable
 from typing import Final
 
@@ -15,13 +14,15 @@ from custom_components.bms_ble.const import (
     ATTR_CYCLE_CAP,
     ATTR_CYCLE_CHRG,
     ATTR_CYCLES,
-    # ATTR_DELTA_VOLTAGE,
+    ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     ATTR_RUNTIME,
-    # ATTR_TEMPERATURE,
+    ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
-    # KEY_DESIGN_CAP,
+    KEY_CELL_VOLTAGE,
+    KEY_PROBLEM,
     KEY_TEMP_SENS,
+    KEY_TEMP_VALUE,
 )
 
 from .basebms import BaseBMS, BMSsample, crc8
@@ -43,7 +44,14 @@ class BMS(BaseBMS):
         (ATTR_BATTERY_LEVEL, 0xF0, 16, 1, False, lambda x: x),
         (ATTR_CYCLE_CHRG, 0xF0, 11, 3, False, lambda x: float(x / 1000)),
         (ATTR_CYCLES, 0xF0, 14, 2, False, lambda x: x),
-        #        (KEY_PROBLEM, 20, 2, False, lambda x: x),
+        (  # only first bit per byte is used
+            KEY_PROBLEM,
+            0xF9,
+            2,
+            16,
+            False,
+            lambda x: sum(((x >> (i * 8)) & 1) << i for i in range(16)),
+        ),
     ]
     _RESPS: Final[set[int]] = {field[1] for field in _FIELDS} | {
         field[1] for field in _FIELDS
@@ -89,10 +97,12 @@ class BMS(BaseBMS):
     @staticmethod
     def _calc_values() -> set[str]:
         return {
-            ATTR_POWER,
-            ATTR_CYCLE_CAP,
-            ATTR_RUNTIME,
             ATTR_BATTERY_CHARGING,
+            ATTR_CYCLE_CAP,
+            ATTR_DELTA_VOLTAGE,
+            ATTR_POWER,
+            ATTR_RUNTIME,
+            ATTR_TEMPERATURE,
         }  # calculate further values from BMS provided set ones
 
     def _notification_handler(
@@ -113,8 +123,11 @@ class BMS(BaseBMS):
             self._log.debug("invalid checksum 0x%X != 0x%X", data[-1], crc)
             return
 
-        # TODO: wait for right response
-        self._data_final[data[1]] = data.copy()
+        if data[1] == 0xF4 and 0xF4 in self._data_final:
+            # expand cell voltage frame with all parts
+            self._data_final[0xF4] = bytearray(self._data_final[0xF4][:-2] + data[2:])
+        else:
+            self._data_final[data[1]] = data.copy()
         self._data_event.set()
 
     @staticmethod
@@ -123,6 +136,26 @@ class BMS(BaseBMS):
         frame = bytearray([BMS._HEAD_CMD, cmd[0], 0x00, 0x00, 0x00])
         frame += bytes([crc8(frame)])
         return frame
+
+    @staticmethod
+    def _cell_voltages(data: bytearray) -> dict[str, float]:
+        """Return cell voltages from status message."""
+        return {
+            f"{KEY_CELL_VOLTAGE}{data[2+idx*4]-1}": int.from_bytes(
+                data[3 + idx * 4 : 6 + idx * 4], byteorder="little", signed=False
+            )
+            / 1000
+            for idx in range(4 * (len(data) - 4) // 16)
+        }
+
+    @staticmethod
+    def _temp_sensors(data: bytearray, sensors: int) -> dict[str, float]:
+        return {
+            f"{KEY_TEMP_VALUE}{idx}": int.from_bytes(
+                data[5 + idx : 6 + idx], byteorder="little", signed=True
+            )
+            for idx in range(sensors)
+        }
 
     @staticmethod
     def _decode_data(data: dict[int, bytearray]) -> dict[str, int | float]:
@@ -140,11 +173,18 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         self._data_final.clear()
-        for cmd in range(0xC0, 0xC5, 0x1):
+        for cmd in (0xC1, 0xC2, 0xC4):
             await self._await_reply(BMS._cmd(bytes([cmd])))
-            await asyncio.sleep(0.2)
-        if not BMS._RESPS.issubset(set(self._data_final.keys())):
+
+        if not {*BMS._RESPS, 0xF4}.issubset(set(self._data_final.keys())):
             self._log.debug("Incomplete data set")
             return {}
 
-        return BMS._decode_data(self._data_final)
+        result: BMSsample = BMS._decode_data(self._data_final)
+        return (
+            result
+            | BMS._cell_voltages(self._data_final[0xF4])
+            | BMS._temp_sensors(
+                self._data_final[0xF2], int(result.get(KEY_TEMP_SENS, 0))
+            )
+        )

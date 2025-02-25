@@ -29,8 +29,11 @@ class MockABCBleakClient(MockBleakClient):
         0xF3: bytearray(
             b"\xcc\xf3\x17\x03\x12\x00\x64\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x36"
         ),
-        0xF4: bytearray(
+        0xF41: bytearray(
             b"\xcc\xf4\x01\x72\x0d\x00\x02\xa8\x0d\x00\x03\x2f\x0d\x00\x04\x88\x0d\x00\x00\x8b"
+        ),  #           ^^ 1B idx, 3B voltage
+        0xF45: bytearray(
+            b"\xcc\xf4\x05\x81\x0d\x00\x06\x65\x0d\x00\x07\x1f\x0d\x00\x08\x5c\x0d\x00\x00\x33"
         ),
         0xF5: bytearray(
             b"\xcc\xf5\x42\x0e\x10\x0e\xc4\x09\xf6\x09\xa0\x86\x01\xa0\x86\x01\x00\x00\x00\x55"
@@ -53,17 +56,14 @@ class MockABCBleakClient(MockBleakClient):
     }
 
     def _response(
-        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
+        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, cmd: int
     ) -> bytearray:
         if isinstance(char_specifier, str) and normalize_uuid_str(
             char_specifier
         ) != normalize_uuid_str("ffe2"):
             return bytearray()
 
-        # if (cmd := int(bytearray(data)[1]) | 0xF0) not in self.RESP:
-        #     pytest.fail("Unknown query 0x%X" % cmd)
-
-        return self.RESP.get(int(bytearray(data)[1]) | 0x30, bytearray())
+        return self.RESP.get(cmd, bytearray())
 
     async def write_gatt_char(
         self,
@@ -76,9 +76,16 @@ class MockABCBleakClient(MockBleakClient):
 
         assert self._notify_callback is not None
 
-        self._notify_callback(
-            "MockABCBleakClient", self._response(char_specifier, data)
-        )
+        for cmd in {  # determine which responses to command
+            0xC0: [0xF1],
+            0xC1: [0xF0, 0xF2],
+            0xC2: [0xF0, 0xF3, 0xF41, 0xF45],
+            0xC3: [0xF5, 0xF6, 0xF7, 0xF8, 0xFA],
+            0xC4: [0xF9],
+        }.get(bytearray(data)[1], []):
+            self._notify_callback(
+                "MockABCBleakClient", self._response(char_specifier, cmd)
+            )
 
 
 # class MockInvalidBleakClient(MockABCBleakClient):
@@ -172,25 +179,28 @@ async def test_update(monkeypatch, reconnect_fixture: bool) -> None:
     result = await bms.async_update()
 
     assert result == {
-        "voltage": 13.4,
-        "current": -3.14,
-        "battery_level": 100,
-        "cycles": 3,
-        "cycle_charge": 40.0,
-        "cell#0": 3.339,
-        "cell#1": 3.339,
-        "cell#2": 3.338,
-        "cell#3": 3.338,
-        "cell#4": 2.317,
-        "delta_voltage": 1.022,
-        "temperature": -2,
-        "cycle_capacity": 536.0,
-        "design_capacity": 40,
-        "power": -42.076,
-        "runtime": 22608,
-        "battery_charging": False,
-        "problem": False,
+        "temp_sensors": 1,
+        "voltage": 27.554,
+        "current": 0.0,
+        "battery_level": 99,
+        "cycle_charge": 106.048,
+        "cycles": 7,
         "problem_code": 0,
+        "cell#0": 3.442,
+        "cell#1": 3.496,
+        "cell#2": 3.375,
+        "cell#3": 3.464,
+        "cell#4": 3.457,
+        "cell#5": 3.429,
+        "cell#6": 3.359,
+        "cell#7": 3.42,
+        "temp#0": 20,
+        "delta_voltage": 0.137,
+        "cycle_capacity": 2922.047,
+        "power": 0.0,
+        "battery_charging": False,
+        "temperature": 20.0,
+        "problem": False,
     }
 
     # query again to check already connected state
