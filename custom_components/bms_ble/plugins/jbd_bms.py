@@ -66,7 +66,7 @@ class BMS(BaseBMS):
                 "GJ-*",  # accurat batteries
                 "SX1*",  # Supervolt v3
                 "DP04S*", # ECO-WORTHY, DCHOUSE
-                "121?0*",  # Eleksol
+                "121?0*",  # Eleksol, Ultimatron
                 "12200*",
                 "12300*",
             ]
