@@ -97,8 +97,8 @@ class BMS(BaseBMS):
     ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
 
-        data = data.strip(b"\x00")  # remove leading/trailing string end
-        if data.startswith(BMS._HEAD_RSP):  # check for beginning of frame
+        if (start := data.find(BMS._HEAD_RSP)) != -1:  # check for beginning of frame
+            data = data[start:]
             self._data.clear()
 
         self._data += data
