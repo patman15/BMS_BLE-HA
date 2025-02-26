@@ -34,6 +34,13 @@ class BMS(BaseBMS):
     _HEAD_CMD: Final[int] = 0xEE
     _HEAD_RESP: Final[int] = 0xCC
     _INFO_LEN: Final[int] = 0x14
+    _EXP_REPLY: Final[dict[int, list[int]]] = {
+        0xC0: [0xF1],
+        0xC1: [0xF0, 0xF2],
+        0xC2: [0xF0, 0xF3, 0xF4],
+        0xC3: [0xF5, 0xF6, 0xF7, 0xF8, 0xFA],
+        0xC4: [0xF9],
+    }
     _FIELDS: Final[
         list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
     ] = [
@@ -61,6 +68,7 @@ class BMS(BaseBMS):
         """Initialize BMS."""
         super().__init__(__name__, ble_device, reconnect)
         self._data_final: dict[int, bytearray] = {}
+        self._exp_reply: list[int] = []
 
     @staticmethod
     def matcher_dict_list() -> list[dict]:
@@ -128,7 +136,12 @@ class BMS(BaseBMS):
             self._data_final[0xF4] = bytearray(self._data_final[0xF4][:-2] + data[2:])
         else:
             self._data_final[data[1]] = data.copy()
-        self._data_event.set()
+
+        if data[1] in self._exp_reply:
+            self._exp_reply.remove(data[1])
+
+        if not self._exp_reply: # check if all expected replies are received
+            self._data_event.set()
 
     @staticmethod
     def _cmd(cmd: bytes) -> bytes:
@@ -173,7 +186,8 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         self._data_final.clear()
-        for cmd in (0xC1, 0xC2, 0xC4):
+        for cmd in (0xC4, 0xC2, 0xC1):
+            self._exp_reply = BMS._EXP_REPLY[cmd]
             await self._await_reply(BMS._cmd(bytes([cmd])))
 
         if not {*BMS._RESPS, 0xF4}.issubset(set(self._data_final.keys())):
