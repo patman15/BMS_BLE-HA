@@ -221,7 +221,6 @@ async def test_invalid_response(monkeypatch, wrong_response) -> None:
     await bms.disconnect()
 
 
-
 @pytest.fixture(
     name="problem_response",
     params=[
@@ -232,8 +231,8 @@ async def test_invalid_response(monkeypatch, wrong_response) -> None:
                 b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
                 b"\x00\x00\x00\x00\x00\x00\x00\x00\x3c\x00\x3d\x00\x3e\x00\x3f\x00\x00\x00\x00\x00"
                 b"\x00\x00\x00\x00\x8c\x75\x4e\x03\x84\x10\x3d\x10\x1f\x00\x00\x00\x00\x00\x00\x0d"
-                b"\x80\x00\x04\x00\x04\x00\x39\x00\x01\x00\x00\x00\x01\x10\x2e\x01\x41\x00\x2a\x01"
-                b"\x00\x00\x00\x00\x00\x00\x00\x61\x13"
+                b"\x80\x00\x04\x00\x04\x00\x39\x00\x01\x00\x00\x00\x01\x10\x2e\x01\x41\x00\x2a\x00"
+                b"\x00\x00\x00\x00\x00\x00\x01\x61\x1f"
             ),
             "first_bit",
         ),
@@ -244,8 +243,8 @@ async def test_invalid_response(monkeypatch, wrong_response) -> None:
                 b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
                 b"\x00\x00\x00\x00\x00\x00\x00\x00\x3c\x00\x3d\x00\x3e\x00\x3f\x00\x00\x00\x00\x00"
                 b"\x00\x00\x00\x00\x8c\x75\x4e\x03\x84\x10\x3d\x10\x1f\x00\x00\x00\x00\x00\x00\x0d"
-                b"\x80\x00\x04\x00\x04\x00\x39\x00\x01\x00\x00\x00\x01\x10\x2e\x01\x41\x00\x2a\x00"
-                b"\x00\x00\x00\x00\x00\x00\x80\xa1\x7f"
+                b"\x80\x00\x04\x00\x04\x00\x39\x00\x01\x00\x00\x00\x01\x10\x2e\x01\x41\x00\x2a\x80"
+                b"\x00\x00\x00\x00\x00\x00\x00\xA8\xBF"
             ),
             "last_bit",
         ),
@@ -254,15 +253,17 @@ async def test_invalid_response(monkeypatch, wrong_response) -> None:
 )
 def prb_response(request):
     """Return faulty response frame."""
-    return request.param[0]
+    return request.param
 
 
-async def test_problem_response(monkeypatch, problem_response) -> None:
+async def test_problem_response(
+    monkeypatch, problem_response: tuple[bytearray, str]
+) -> None:
     """Test data update with BMS returning error flags."""
 
     monkeypatch.setattr(
         "tests.test_daly_bms.MockDalyBleakClient._response",
-        lambda _s, _c, _d: problem_response,
+        lambda _s, _c, _d: problem_response[0],
     )
 
     monkeypatch.setattr(
@@ -273,6 +274,9 @@ async def test_problem_response(monkeypatch, problem_response) -> None:
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
     result: BMSsample = await bms.async_update()
-    assert result.get("problem", False) # we expect a problem
+    assert result.get("problem", False)  # we expect a problem
+    assert result.get("problem_code", 0) == (
+        1 << (0 if problem_response[1] == "first_bit" else 63)
+    )
 
     await bms.disconnect()

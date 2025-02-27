@@ -718,7 +718,7 @@ async def test_problem_response(
 
     assert await bms.async_update() == _RESULT_DEFS[protocol_type] | {
         "problem": True,
-        "problem_code": 1 << 0 if problem_response[1] == "first_bit" else 1 << 15,
+        "problem_code": 1 << (0 if problem_response[1] == "first_bit" else 15),
     }
 
     await bms.disconnect()
