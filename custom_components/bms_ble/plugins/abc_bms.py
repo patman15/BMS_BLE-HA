@@ -187,7 +187,7 @@ class BMS(BaseBMS):
         """Update battery status information."""
         self._data_final.clear()
         for cmd in (0xC4, 0xC2, 0xC1):
-            self._exp_reply = BMS._EXP_REPLY[cmd]
+            self._exp_reply = BMS._EXP_REPLY[cmd].copy()
             await self._await_reply(BMS._cmd(bytes([cmd])))
 
         if not {*BMS._RESPS, 0xF4}.issubset(set(self._data_final.keys())):
