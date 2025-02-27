@@ -50,7 +50,7 @@ class BMS(BaseBMS):
         (KEY_TEMP_SENS, 100 + HEAD_LEN, 2, lambda x: min(x, BMS.MAX_TEMP)),
         (ATTR_CYCLES, 102 + HEAD_LEN, 2, lambda x: x),
         (ATTR_DELTA_VOLTAGE, 112 + HEAD_LEN, 2, lambda x: float(x / 1000)),
-        (KEY_PROBLEM, 116 + HEAD_LEN, 8, lambda x: x),
+        (KEY_PROBLEM, 116 + HEAD_LEN, 8, lambda x: x % 2**64),
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
