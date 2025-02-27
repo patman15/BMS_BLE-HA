@@ -28,12 +28,12 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Lithtech batteries (show up as `LT-12V-`&#x2026; or `L-12V`&#x2026;)
     - Meritsun, Supervolt v1, Volthium batteries
 - ECO-WORTHY + BW02 adapter
-- Ective batteries
+- Ective, Topband batteries
 - Felicity ESS batteries (show up as `F10`&#x2026;)
 - JBD BMS, Jiabaida (show up as `SP..S`&#x2026;)
     - accurat batteries (show up as `GJ-`&#x2026;)
     - DCHOUSE, ECO-WORTHY batteries (show up as `DP04S`&#x2026;)
-    - Eleksol batteries (show up as `12??0`&#x2026;)
+    - Eleksol, Ultimatron batteries (show up as `12??0`&#x2026;)
     - Supervolt v3 batteries (show up as `SX1`&#x2026;)
 - JK BMS, Jikong, (HW version &ge; 6 required)
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
@@ -199,6 +199,6 @@ for helping with making the integration better.
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-369_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-386_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=Analytics&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy

@@ -366,6 +366,15 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "ecoworthy_bms",
     ),
+    (  # source BTctl (https://github.com/patman15/BMS_BLE-HA/issues/194)
+        generate_advertisement_data(  # Topband
+            local_name="ZM20210512010036�",
+            manufacturer_data={0: "\xfc\x45\xc3\xbc\xd6\xa8"},
+            service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
+            rssi=-48,
+        ),
+        "ective_bms",
+    ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/197)
         generate_advertisement_data(  # Creabest
             local_name="100R0002E3",
