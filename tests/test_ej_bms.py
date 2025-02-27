@@ -277,10 +277,8 @@ async def test_problem_response(monkeypatch, problem_response) -> None:
 
     result: BMSsample = await bms.async_update()
     assert result.get("problem", False)  # we expect a problem
-    assert (
-        result.get("problem_code", 0) == 0x4
-        if problem_response[0] == "first_bit"
-        else 0x800
+    assert result.get("problem_code", 0) == (
+        0x4 if problem_response[1] == "first_bit" else 0x800
     )
 
     await bms.disconnect()

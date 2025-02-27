@@ -224,7 +224,7 @@ async def test_problem_response(monkeypatch, problem_response) -> None:
 
     assert await bms.async_update() == _RESULT_DEFS | {
         "problem": True,
-        "problem_code": 1 << 0 if problem_response[1] == "first_bit" else 1 << 31,
+        "problem_code": 1 << (0 if problem_response[1] == "first_bit" else 31),
     }
 
     await bms.disconnect()
