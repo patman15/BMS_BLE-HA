@@ -79,7 +79,7 @@ class BMS(BaseBMS):
                 "service_uuid": normalize_uuid_str("fff0"),
                 "connectable": True,
             }
-            for pattern in ["SOK-*", "ABC-*"]  # "NB-*", "Hoover",
+            for pattern in ("SOK-*", "ABC-*")  # "NB-*", "Hoover",
         ]
 
     @staticmethod
@@ -140,7 +140,7 @@ class BMS(BaseBMS):
         if data[1] in self._exp_reply:
             self._exp_reply.remove(data[1])
 
-        if not self._exp_reply: # check if all expected replies are received
+        if not self._exp_reply:  # check if all expected replies are received
             self._data_event.set()
 
     @staticmethod
@@ -189,10 +189,6 @@ class BMS(BaseBMS):
         for cmd in (0xC4, 0xC2, 0xC1):
             self._exp_reply = BMS._EXP_REPLY[cmd].copy()
             await self._await_reply(BMS._cmd(bytes([cmd])))
-
-        if not {*BMS._RESPS, 0xF4}.issubset(set(self._data_final.keys())):
-            self._log.debug("Incomplete data set")
-            return {}
 
         result: BMSsample = BMS._decode_data(self._data_final)
         return (
