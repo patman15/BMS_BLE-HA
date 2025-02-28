@@ -103,7 +103,10 @@ BMS_BLE is a default repository in [HACS](https://hacs.xyz/). Please follow the 
 <details><summary>Elektronicx, Lithtech batteries</summary>
 Bluetooth is turned off, when there is no current. Thus, device will get unavailble / cannot be added.
 </details>
-
+<details><summary>Seplos V2</summary>
+The internal Bluetooth adapter issues <code>AT</code> commands in regular intervals which can interfer with BMS messages causing them to be corrupted. This impacts data availability (<code>link quality</code>).
+</details>
+    
 ## FAQ
 ### My sensors show unknown/unavailable at startup!
 The polling interval is 30 seconds. So at startup it takes a few minutes to detect the battery and query the sensors. Then data will be available.
