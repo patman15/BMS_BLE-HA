@@ -385,4 +385,12 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "cbtpwr_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/204)
+        generate_advertisement_data(  # 16S LiFePo 250A BMS
+            local_name="DL-40160901534C",
+            manufacturer_data={258: "04"},
+            rssi=-87,
+        ),
+        "daly_bms",
+    ),
 ]
