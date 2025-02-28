@@ -268,7 +268,7 @@ async def test_problem_response(monkeypatch, problem_response) -> None:
         "runtime": 53961,
         "battery_charging": False,
         "problem": True,
-        "problem_code": 1 if problem_response[1] == "first_bit" else 128,
+        "problem_code": (1 if problem_response[1] == "first_bit" else 128),
     }
 
     await bms.disconnect()
