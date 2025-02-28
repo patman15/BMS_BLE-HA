@@ -1,6 +1,7 @@
 """Module to support ABC BMS."""
 
 from collections.abc import Callable
+import contextlib
 from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -31,15 +32,16 @@ from .basebms import BaseBMS, BMSsample, crc8
 class BMS(BaseBMS):
     """ABC battery class implementation."""
 
+    BAT_TIMEOUT = 1
     _HEAD_CMD: Final[int] = 0xEE
     _HEAD_RESP: Final[int] = 0xCC
     _INFO_LEN: Final[int] = 0x14
-    _EXP_REPLY: Final[dict[int, list[int]]] = {
+    _EXP_REPLY: Final[dict[int, list[int]]] = {  # wait for these replies
         0xC0: [0xF1],
         0xC1: [0xF0, 0xF2],
         0xC2: [0xF0, 0xF3, 0xF4],
         0xC3: [0xF5, 0xF6, 0xF7, 0xF8, 0xFA],
-        0xC4: [0xF9],
+        0xC4: [0xF9] * 2,  # 4 cells per message
     }
     _FIELDS: Final[
         list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
@@ -181,6 +183,7 @@ class BMS(BaseBMS):
                 )
             )
             for key, cmd, idx, size, sign, func in BMS._FIELDS
+            if cmd in data
         }
 
     async def _async_update(self) -> BMSsample:
@@ -188,7 +191,13 @@ class BMS(BaseBMS):
         self._data_final.clear()
         for cmd in (0xC4, 0xC2, 0xC1):
             self._exp_reply = BMS._EXP_REPLY[cmd].copy()
-            await self._await_reply(BMS._cmd(bytes([cmd])))
+            with contextlib.suppress(TimeoutError):
+                await self._await_reply(BMS._cmd(bytes([cmd])))
+
+        # check all repsonses are here, 0xF9 is not mandatory
+        if not BMS._RESPS.issubset(set(self._data_final.keys()) | {0xF9}):
+            self._log.debug("Incomplete data set %s", self._data_final.keys())
+            raise TimeoutError("BMS data incomplete.")
 
         result: BMSsample = BMS._decode_data(self._data_final)
         return (
