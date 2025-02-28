@@ -353,6 +353,19 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "felicity_bms",
     ),
+    (  # source LOG, proxy (https://github.com/patman15/BMS_BLE-HA/issues/164#issue-2825586172)
+        generate_advertisement_data(
+            local_name="ECO-WORTHY 02_B8EF",
+            manufacturer_data={49844: b"\xe0\xfa\xb8\xf0"},  # MAC address, correct
+            service_uuids=[
+                "00001800-0000-1000-8000-00805f9b34fb",
+                "00001801-0000-1000-8000-00805f9b34fb",
+                "0000fff0-0000-1000-8000-00805f9b34fb",
+            ],
+            rssi=-50,
+        ),
+        "ecoworthy_bms",
+    ),
     (  # source BTctl (https://github.com/patman15/BMS_BLE-HA/issues/194)
         generate_advertisement_data(  # Topband
             local_name="ZM20210512010036�",
