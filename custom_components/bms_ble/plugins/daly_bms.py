@@ -66,8 +66,9 @@ class BMS(BaseBMS):
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             },
-            {"manufacturer_id": 0x0302, "connectable": True},
-            {"manufacturer_id": 0x0104, "connectable": True},
+        ] + [
+            {"manufacturer_id": m_id, "connectable": True}
+            for m_id in (0x102, 0x104, 0x0302)
         ]
 
     @staticmethod

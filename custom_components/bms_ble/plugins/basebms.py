@@ -25,6 +25,7 @@ from custom_components.bms_ble.const import (
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
+    KEY_DESIGN_CAP,
     KEY_PROBLEM,
     KEY_TEMP_VALUE,
 )
@@ -164,6 +165,12 @@ class BaseBMS(metaclass=ABCMeta):
                 float(v) for k, v in data.items() if k.startswith(KEY_CELL_VOLTAGE)
             ]
             data[ATTR_DELTA_VOLTAGE] = round(max(cell_voltages) - min(cell_voltages), 3)
+
+        # calculate cycle charge from design capacity and SoC
+        if can_calc(ATTR_CYCLE_CHRG, frozenset({KEY_DESIGN_CAP, ATTR_BATTERY_LEVEL})):
+            data[ATTR_CYCLE_CHRG] = (
+                data[KEY_DESIGN_CAP] * data[ATTR_BATTERY_LEVEL]
+            ) / 100
 
         # calculate cycle capacity from voltage and cycle charge
         if can_calc(ATTR_CYCLE_CAP, frozenset({ATTR_VOLTAGE, ATTR_CYCLE_CHRG})):
