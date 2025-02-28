@@ -216,7 +216,14 @@ class BMS(BaseBMS):
 
     @staticmethod
     def _dec_devinfo(data: bytearray) -> dict[str, str]:
-        return {"hw_version": data[22:27].decode(), "sw_version": data[30:35].decode()}
+        fields: Final[dict[str, int]] = {
+            "hw_version": 22,
+            "sw_version": 30,
+        }
+        return {
+            key: data[idx : idx + 8].decode(errors="replace").strip("\x00")
+            for key, idx in fields.items()
+        }
 
     @staticmethod
     def _cell_voltages(data: bytearray, cells: int) -> dict[str, float]:
