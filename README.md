@@ -100,8 +100,8 @@ BMS_BLE is a default repository in [HACS](https://hacs.xyz/). Please follow the 
 
 ## Known Issues
 
-<details><summary>Elektronicx batteries</summary>
-Bluetooth is turned off, when there is no current. Thus device will get unavailble / cannot be added.
+<details><summary>Elektronicx, Lithtech batteries</summary>
+Bluetooth is turned off, when there is no current. Thus, device will get unavailble / cannot be added.
 </details>
 
 ## FAQ
@@ -199,6 +199,6 @@ for helping with making the integration better.
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-386_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-387_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=Analytics&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
