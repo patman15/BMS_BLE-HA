@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from enum import IntEnum
+from string import hexdigits
 from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -185,6 +186,10 @@ class BMS(BaseBMS):
 
         # unlock BMS if not TBA version
         if self.name.startswith("TBA-"):
+            return
+
+        if not all(c in hexdigits for c in self.name[-4:]):
+            self._log.debug("unable to unlock BMS")
             return
 
         pwd = int(self.name[-4:], 16)

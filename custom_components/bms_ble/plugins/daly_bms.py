@@ -50,7 +50,7 @@ class BMS(BaseBMS):
         (KEY_TEMP_SENS, 100 + HEAD_LEN, 2, lambda x: min(x, BMS.MAX_TEMP)),
         (ATTR_CYCLES, 102 + HEAD_LEN, 2, lambda x: x),
         (ATTR_DELTA_VOLTAGE, 112 + HEAD_LEN, 2, lambda x: float(x / 1000)),
-        (KEY_PROBLEM, 116 + HEAD_LEN, 8, lambda x: x),
+        (KEY_PROBLEM, 116 + HEAD_LEN, 8, lambda x: x % 2**64),
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -66,8 +66,9 @@ class BMS(BaseBMS):
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             },
-            {"manufacturer_id": 0x0302, "connectable": True},
-            {"manufacturer_id": 0x0104, "connectable": True},
+        ] + [
+            {"manufacturer_id": m_id, "connectable": True}
+            for m_id in (0x102, 0x104, 0x0302)
         ]
 
     @staticmethod

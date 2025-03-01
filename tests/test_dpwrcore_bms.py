@@ -14,10 +14,14 @@ from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
 
-@pytest.fixture(name="dev_name", params=["TBA-", "DXB-"])
+@pytest.fixture(
+    name="dev_name",
+    params=["TBA-MockBLEDevice_C0FE", "DXB-MockBLEDevice_C0FE", "invalid"],
+    ids=["TBA", "DXB", "wrong"],
+)
 def patch_dev_name(request) -> str:
     """Provide device name variants."""
-    return request.param + "MockBLEDevice_C0FE"
+    return request.param
 
 
 class MockDPwrcoreBleakClient(MockBleakClient):

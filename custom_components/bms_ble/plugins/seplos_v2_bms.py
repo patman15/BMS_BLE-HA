@@ -61,7 +61,7 @@ class BMS(BaseBMS):
         """Initialize BMS."""
         super().__init__(__name__, ble_device, reconnect)
         self._data_final: dict[int, bytearray] = {}
-        self._exp_len: int = 0
+        self._exp_len: int = self._MIN_LEN
 
     @staticmethod
     def matcher_dict_list() -> list[dict]:
@@ -110,8 +110,8 @@ class BMS(BaseBMS):
     ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
         if (
-            data[0] == BMS._HEAD
-            and len(data) > BMS._MIN_LEN
+            len(data) > BMS._MIN_LEN
+            and data[0] == BMS._HEAD
             and len(self._data) >= self._exp_len
         ):
             self._exp_len = BMS._MIN_LEN + int.from_bytes(data[5:7])
@@ -160,7 +160,7 @@ class BMS(BaseBMS):
     async def _init_connection(self) -> None:
         """Initialize protocol state."""
         await super()._init_connection()
-        self._exp_len = 0
+        self._exp_len = BMS._MIN_LEN
 
     @staticmethod
     def _cmd(cmd: int, address: int = 0, data: bytearray = bytearray()) -> bytearray:

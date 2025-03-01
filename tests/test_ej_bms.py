@@ -199,6 +199,7 @@ async def test_invalid(monkeypatch) -> None:
         (b":009031001E0000001400080016F4x", "wrong EOI"),
         (b":009031001D0000001400080016F4~", "wrong length"),
         (b":009031001E00000002000A000AD9~", "wrong CRC"),
+        (b":009031001E000X001400080016F4~", "wrong encoding"),
     ],
     ids=lambda param: param[1],
 )
@@ -277,10 +278,8 @@ async def test_problem_response(monkeypatch, problem_response) -> None:
 
     result: BMSsample = await bms.async_update()
     assert result.get("problem", False)  # we expect a problem
-    assert (
-        result.get("problem_code", 0) == 0x4
-        if problem_response[0] == "first_bit"
-        else 0x800
+    assert result.get("problem_code", 0) == (
+        0x4 if problem_response[1] == "first_bit" else 0x800
     )
 
     await bms.disconnect()

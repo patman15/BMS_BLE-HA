@@ -14,6 +14,7 @@ BMS_TYPES: Final[list[str]] = [
     "abc_bms",
     "cbtpwr_bms",
     "daly_bms",
+    "ecoworthy_bms",
     "ective_bms",
     "ej_bms",
     "jbd_bms",

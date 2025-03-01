@@ -353,6 +353,28 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "felicity_bms",
     ),
+    (  # source LOG, proxy (https://github.com/patman15/BMS_BLE-HA/issues/164#issue-2825586172)
+        generate_advertisement_data(
+            local_name="ECO-WORTHY 02_B8EF",
+            manufacturer_data={49844: b"\xe0\xfa\xb8\xf0"},  # MAC address, correct
+            service_uuids=[
+                "00001800-0000-1000-8000-00805f9b34fb",
+                "00001801-0000-1000-8000-00805f9b34fb",
+                "0000fff0-0000-1000-8000-00805f9b34fb",
+            ],
+            rssi=-50,
+        ),
+        "ecoworthy_bms",
+    ),
+    (  # source BTctl (https://github.com/patman15/BMS_BLE-HA/issues/194)
+        generate_advertisement_data(  # Topband
+            local_name="ZM20210512010036�",
+            manufacturer_data={0: "\xfc\x45\xc3\xbc\xd6\xa8"},
+            service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
+            rssi=-48,
+        ),
+        "ective_bms",
+    ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/197)
         generate_advertisement_data(  # Creabest
             local_name="100R0002E3",
@@ -370,5 +392,13 @@ ADVERTISEMENTS: Final[list] = [
             rssi=-94,
         ),
         "abc_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/204)
+        generate_advertisement_data(  # 16S LiFePo 250A BMS
+            local_name="DL-40160901534C",
+            manufacturer_data={258: "04"},
+            rssi=-87,
+        ),
+        "daly_bms",
     ),
 ]

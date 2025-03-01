@@ -14,8 +14,11 @@
       "manufacturer_id": 770
     },
     {
-      "manufacturer_id": 260
+      "manufacturer_id": 258
     },
+    {
+      "manufacturer_id": 260
+    },    
     {
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
       "manufacturer_id": 2917
@@ -59,6 +62,10 @@
     {
       "manufacturer_id": 8856,
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "ECO-WORTHY*",
+      "manufacturer_id": 49844
     },
     {
       "local_name": "DP04S*",
@@ -117,6 +124,10 @@
     },
     {
       "local_name": "NWJ20*",
+      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "ZM20*",
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb"
     },
     {

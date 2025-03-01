@@ -59,7 +59,7 @@ class BMS(BaseBMS):
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             }
-            for pattern in ["$PFLAC*", "NWJ20*"]
+            for pattern in ["$PFLAC*", "NWJ20*", "ZM20*"]
         ]
 
     @staticmethod
@@ -87,6 +87,7 @@ class BMS(BaseBMS):
         return {
             ATTR_BATTERY_CHARGING,
             ATTR_CYCLE_CAP,
+            ATTR_CYCLE_CHRG,
             ATTR_DELTA_VOLTAGE,
             ATTR_POWER,
             ATTR_RUNTIME,
@@ -97,8 +98,8 @@ class BMS(BaseBMS):
     ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
 
-        data = data.strip(b"\x00")  # remove leading/trailing string end
-        if data.startswith(BMS._HEAD_RSP):  # check for beginning of frame
+        if (start := data.find(BMS._HEAD_RSP)) != -1:  # check for beginning of frame
+            data = data[start:]
             self._data.clear()
 
         self._data += data
@@ -109,9 +110,11 @@ class BMS(BaseBMS):
         if len(self._data) < BMS._INFO_LEN:
             return
 
+        self._data = self._data[: BMS._INFO_LEN]  # cut off exceeding data
+
         if not (
             self._data.startswith(BMS._HEAD_RSP)
-            and set(self._data.decode()[3:]).issubset(hexdigits)
+            and set(self._data.decode(errors="replace")[1:]).issubset(hexdigits)
         ):
             self._log.debug("incorrect frame coding: %s", self._data)
             self._data.clear()

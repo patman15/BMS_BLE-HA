@@ -128,7 +128,7 @@ class BMS(BaseBMS):
         # verify that data long enough
         if (
             len(self._data) < BMS.INFO_LEN and self._data.startswith(BMS.HEAD_RSP)
-        ) or len(self._data) < BMS.TYPE_POS:
+        ) or len(self._data) < BMS.TYPE_POS + 1:
             return
 
         # check that message type is expected
