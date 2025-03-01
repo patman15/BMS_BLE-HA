@@ -187,14 +187,17 @@ class BMS(BaseBMS):
         if self.name.startswith("TBA-"):
             return
 
-        pwd = int(self.name[-4:], 16)
-        await self._await_reply(
-            BMS._cmd_frame(
-                Cmd.UNLOCK,
-                bytes([(pwd >> 8) & 0xFF, pwd & 0xFF]),
-            ),
-            wait_for_notify=False,
-        )
+        try:
+            pwd = int(self.name[-4:], 16)
+            await self._await_reply(
+                BMS._cmd_frame(
+                    Cmd.UNLOCK,
+                    bytes([(pwd >> 8) & 0xFF, pwd & 0xFF]),
+                ),
+                wait_for_notify=False,
+            )
+        except ValueError:
+            self._log.warning("unable to unlock BMS")
 
     @staticmethod
     def _cell_voltages(data: bytearray, cells: int) -> dict[str, float]:
