@@ -39,9 +39,11 @@ class BMS(BaseBMS):
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
         super().__init__(__name__, ble_device, reconnect)
-        self._type: str = self.name[9] if len(self.name) >= 9 else "?"
-        self._key: int = sum(
-            CRYPT_SEQ[int(c, 16)] for c in (f"{int(self.name[10:]):0>4X}")
+        self._type: str = self.name[9] if len(self.name) >= 10 else "?"
+        self._key: int = (
+            sum(CRYPT_SEQ[int(c, 16)] for c in (f"{int(self.name[10:]):0>4X}"))
+            if self._type in "AB"
+            else 0
         ) + (5 if (self._type == "A") else 8)
         self._log.info(
             "%s type: %c, ID: %s, key: 0x%X",
@@ -169,9 +171,13 @@ class BMS(BaseBMS):
     def _ogt_response(self, resp: bytearray) -> tuple[bool, int, int]:
         """Descramble a response from the BMS."""
 
-        msg: Final[str] = bytearray(
-            (resp[x] ^ self._key) for x in range(len(resp))
-        ).decode(encoding="ascii")
+        try:
+            msg: Final[str] = bytearray(
+                (resp[x] ^ self._key) for x in range(len(resp))
+            ).decode(encoding="ascii")
+        except UnicodeDecodeError:
+            return False, 0, 0
+
         self._log.debug("response: %s", msg[:-2])
         # verify correct response
         if msg[4:7] == "Err" or msg[:4] != "+RD," or msg[-2:] != "\r\n":

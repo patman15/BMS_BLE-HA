@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from enum import IntEnum
+from string import hexdigits
 from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -60,8 +61,8 @@ class BMS(BaseBMS):
         return [  # Fliteboard, Electronix battery
             {"local_name": "libatt*", "manufacturer_id": 21320, "connectable": True},
             {"local_name": "LT-*", "manufacturer_id": 33384, "connectable": True},
-            {"local_name": "L-12V???AH-*", "connectable": True}, # Lithtech Energy
-            {"local_name": "LT-12V-*", "connectable": True}, # Lithtech Energy
+            {"local_name": "L-12V???AH-*", "connectable": True},  # Lithtech Energy
+            {"local_name": "LT-12V-*", "connectable": True},  # Lithtech Energy
         ]
 
     @staticmethod
@@ -118,8 +119,15 @@ class BMS(BaseBMS):
             data,
         )
 
+        exp_frame_len: Final[int] = (
+            int(self._data[7:11], 16)
+            if len(self._data) > 10
+            and all(chr(c) in hexdigits for c in self._data[7:11])
+            else 0xFFFF
+        )
+
         if self._data[0] != BMS._HEAD or (
-            self._data[-1] != BMS._TAIL and len(self._data) < int(self._data[7:11], 16)
+            self._data[-1] != BMS._TAIL and len(self._data) < exp_frame_len
         ):
             return
 
@@ -128,11 +136,16 @@ class BMS(BaseBMS):
             self._data.clear()
             return
 
-        if len(self._data) != int(self._data[7:11], 16):
+        if not all(chr(c) in hexdigits for c in self._data[1:-1]):
+            self._log.debug("incorrect frame encoding.")
+            self._data.clear()
+            return
+
+        if len(self._data) != exp_frame_len:
             self._log.debug(
                 "incorrect frame length %i != %i",
                 len(self._data),
-                int(self._data[7:11], 16),
+                exp_frame_len,
             )
             self._data.clear()
             return

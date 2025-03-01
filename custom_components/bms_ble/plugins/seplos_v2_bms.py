@@ -61,7 +61,7 @@ class BMS(BaseBMS):
         """Initialize BMS."""
         super().__init__(__name__, ble_device, reconnect)
         self._data_final: dict[int, bytearray] = {}
-        self._exp_len: int = 0
+        self._exp_len: int = self._MIN_LEN
 
     @staticmethod
     def matcher_dict_list() -> list[dict]:
@@ -160,7 +160,7 @@ class BMS(BaseBMS):
     async def _init_connection(self) -> None:
         """Initialize protocol state."""
         await super()._init_connection()
-        self._exp_len = 0
+        self._exp_len = BMS._MIN_LEN
 
     @staticmethod
     def _cmd(cmd: int, address: int = 0, data: bytearray = bytearray()) -> bytearray:

@@ -65,7 +65,7 @@ class BMS(BaseBMS):
                 "SP2?S*",
                 "GJ-*",  # accurat batteries
                 "SX1*",  # Supervolt v3
-                "DP04S*", # ECO-WORTHY, DCHOUSE
+                "DP04S*",  # ECO-WORTHY, DCHOUSE
                 "121?0*",  # Eleksol, Ultimatron
                 "12200*",
                 "12300*",
@@ -122,7 +122,10 @@ class BMS(BaseBMS):
         )
 
         # verify that data long enough
-        if len(self._data) < BMS.INFO_LEN + self._data[3]:
+        if (
+            len(self._data) < BMS.INFO_LEN
+            or len(self._data) < BMS.INFO_LEN + self._data[3]
+        ):
             return
 
         # check correct frame ending (0x77)
