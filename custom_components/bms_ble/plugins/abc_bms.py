@@ -34,7 +34,7 @@ class BMS(BaseBMS):
 
     BAT_TIMEOUT = 1
     _HEAD_CMD: Final[int] = 0xEE
-    _HEAD_RESP: Final[int] = 0xCC
+    _HEAD_RESP: Final[bytes] = b"\xCC"
     _INFO_LEN: Final[int] = 0x14
     _EXP_REPLY: Final[dict[int, list[int]]] = {  # wait for these replies
         0xC0: [0xF1],
@@ -121,7 +121,7 @@ class BMS(BaseBMS):
         """Handle the RX characteristics notify event (new data arrives)."""
         self._log.debug("RX BLE data: %s", data)
 
-        if data[0] != BMS._HEAD_RESP:
+        if not data.startswith(BMS._HEAD_RESP):
             self._log.debug("Incorrect frame start")
             return
 
