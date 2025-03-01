@@ -60,8 +60,8 @@ class BMS(BaseBMS):
         return [  # Fliteboard, Electronix battery
             {"local_name": "libatt*", "manufacturer_id": 21320, "connectable": True},
             {"local_name": "LT-*", "manufacturer_id": 33384, "connectable": True},
-            {"local_name": "L-12V???AH-*", "connectable": True}, # Lithtech Energy
-            {"local_name": "LT-12V-*", "connectable": True}, # Lithtech Energy
+            {"local_name": "L-12V???AH-*", "connectable": True},  # Lithtech Energy
+            {"local_name": "LT-12V-*", "connectable": True},  # Lithtech Energy
         ]
 
     @staticmethod
@@ -137,8 +137,7 @@ class BMS(BaseBMS):
             self._data.clear()
             return
 
-        crc: Final = BMS._crc(self._data[1:-3])
-        if crc != int(self._data[-3:-1], 16):
+        if (crc := BMS._crc(self._data[1:-3])) != int(self._data[-3:-1], 16):
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X", int(self._data[-3:-1], 16), crc
             )
