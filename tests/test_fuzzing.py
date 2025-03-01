@@ -13,7 +13,7 @@ from .conftest import MockBleakClient, MockRespChar
 
 
 @given(
-    data=st.binary(min_size=1, max_size=513)
+    data=st.binary(min_size=0, max_size=513)
 )  # ATT is not allowed larger than 512 bytes
 @settings(
     max_examples=1000, suppress_health_check=[HealthCheck.function_scoped_fixture]

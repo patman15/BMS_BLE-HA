@@ -110,8 +110,8 @@ class BMS(BaseBMS):
     ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
         if (
-            data[0] == BMS._HEAD
-            and len(data) > BMS._MIN_LEN
+            len(data) > BMS._MIN_LEN
+            and data[0] == BMS._HEAD
             and len(self._data) >= self._exp_len
         ):
             self._exp_len = BMS._MIN_LEN + int.from_bytes(data[5:7])

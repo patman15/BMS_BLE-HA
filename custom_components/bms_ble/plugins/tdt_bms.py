@@ -119,8 +119,8 @@ class BMS(BaseBMS):
         self._log.debug("RX BLE data: %s", data)
 
         if (
-            data[0] == BMS._HEAD
-            and len(data) > BMS._INFO_LEN
+            len(data) > BMS._INFO_LEN
+            and data[0] == BMS._HEAD
             and len(self._data) >= self._exp_len
         ):
             self._exp_len = BMS._INFO_LEN + int.from_bytes(data[6:8])
