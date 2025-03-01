@@ -5,7 +5,6 @@ from types import ModuleType
 
 from hypothesis import HealthCheck, given, settings, strategies as st
 
-# from custom_components.bms_ble.const import BMS_TYPES
 from custom_components.bms_ble.plugins.basebms import BaseBMS
 
 from .bluetooth import generate_ble_device
@@ -40,8 +39,9 @@ async def test_notification_handler(
     )  # required for _init_connection overloads, e.g. JK BMS
 
     await bms_instance._connect()
+    notify_handler = bms_instance._notification_handler  # type: ignore[attr-defined]
 
-    if iscoroutinefunction(bms_instance._notification_handler):  # type: ignore[attr-defined]
-        await bms_instance._notification_handler(MockRespChar, data)  # type: ignore[attr-defined]
+    if iscoroutinefunction(notify_handler):
+        await notify_handler(MockRespChar(None, lambda: 0), data)
     else:
-        bms_instance._notification_handler(MockRespChar, data)  # type: ignore[attr-defined]
+        notify_handler(MockRespChar(None, lambda: 0), data)
