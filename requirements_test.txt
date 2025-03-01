@@ -4,6 +4,7 @@ home-assistant-bluetooth
 habluetooth>=2.4.0
 aiousbwatcher==1.1.1
 bluetooth-adapters
+hypothesis>=6.127
 pytest>=8.3.4
 pytest-cov>=6.0.0
 pytest-socket>=0.7.0
