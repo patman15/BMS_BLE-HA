@@ -6,6 +6,7 @@ from types import ModuleType
 from hypothesis import HealthCheck, given, settings, strategies as st
 import pytest
 
+from custom_components.bms_ble.const import BMS_TYPES
 from custom_components.bms_ble.plugins.basebms import BaseBMS
 
 from .bluetooth import generate_ble_device
@@ -16,8 +17,9 @@ from .conftest import MockBleakClient, MockRespChar
     data=st.binary(min_size=0, max_size=513)
 )  # ATT is not allowed larger than 512 bytes
 @settings(
-    max_examples=1000, suppress_health_check=[HealthCheck.function_scoped_fixture]
+    max_examples=5000, suppress_health_check=[HealthCheck.function_scoped_fixture]
 )
+@pytest.mark.parametrize("plugin_fixture", BMS_TYPES, indirect=True)
 async def test_notification_handler(
     monkeypatch,
     pytestconfig: pytest.Config,

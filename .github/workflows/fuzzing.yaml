@@ -1,0 +1,26 @@
+name: Run fuzz tests
+
+on:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron:  '1 5 * * *'
+  
+jobs:
+  validate:
+    runs-on: "ubuntu-latest"
+    steps:
+        - name: "Checkout the repository" 
+          uses: "actions/checkout@v4"
+        
+        - name: "Set up Python"
+          uses: actions/setup-python@main
+          with:
+            python-version: "3.13"
+            cache: "pip"
+                    
+        - name: Install dependencies
+          run: pip install -r requirements_test.txt
+          
+        - name: Run fuzz tests
+          run: pytest tests/test_fuzzing.py --no-cov
