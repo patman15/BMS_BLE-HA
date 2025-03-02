@@ -26,7 +26,13 @@ async def test_notification_handler(
 ) -> None:
     """Test the notification handler."""
 
-    if pytestconfig.getoption("--cov") == ["custom_components.bms_ble"]:
+    # fuzzing can run from VScode (no coverage) or command line with option --no-cov
+    if {"vscode_pytest", "--cov=."}.issubset(
+        set(pytestconfig.invocation_params.args)
+    ) or (
+        "vscode_pytest" not in pytestconfig.invocation_params.args
+        and not pytestconfig.getoption("--no-cov")
+    ):
         pytest.skip("Skipping fuzzing tests due to coverage generation!")
 
     async def patch_init() -> None:
