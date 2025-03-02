@@ -16,7 +16,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Any number of batteries in parallel
 - Native Home Assistant integration (works with all [HA installation methods](https://www.home-assistant.io/installation/#advanced-installation-methods))
 - Readout of individual cell voltages to be able to judge battery health
-- 100% test coverage, extra fuzz-testing for security
+- 100% test coverage
 
 ### Supported Devices
 - CBT Power BMS, Creabest batteries
