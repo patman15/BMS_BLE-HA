@@ -19,6 +19,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - 100% test coverage plus fuzz tests for BLE data
 
 ### Supported Devices
+- ABC/SOK BMS
 - CBT Power BMS, Creabest batteries
 - D-powercore BMS (show up as `DXB-`&#x2026;), Fliteboard batteries (show up as `TBA-`&#x2026;)
 - Daly BMS (show up as `DL-`&#x2026;)
