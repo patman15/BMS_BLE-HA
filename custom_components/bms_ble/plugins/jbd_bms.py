@@ -134,8 +134,9 @@ class BMS(BaseBMS):
             self._log.debug("incorrect frame end (length: %i).", len(self._data))
             return
 
-        crc: Final[int] = BMS._crc(self._data[2 : frame_end - 2])
-        if int.from_bytes(self._data[frame_end - 2 : frame_end], "big") != crc:
+        if (crc := BMS._crc(self._data[2 : frame_end - 2])) != int.from_bytes(
+            self._data[frame_end - 2 : frame_end], "big"
+        ):
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",
                 int.from_bytes(self._data[frame_end - 2 : frame_end], "big"),

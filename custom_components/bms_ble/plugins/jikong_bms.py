@@ -151,8 +151,7 @@ class BMS(BaseBMS):
             self._log.debug("wrong data length (%i): %s", len(self._data), self._data)
             self._data = self._data[: BMS.INFO_LEN]
 
-        crc: Final[int] = crc_sum(self._data[:-1])
-        if self._data[-1] != crc:
+        if (crc := crc_sum(self._data[:-1])) != self._data[-1]:
             self._log.debug("invalid checksum 0x%X != 0x%X", self._data[-1], crc)
             return
 
