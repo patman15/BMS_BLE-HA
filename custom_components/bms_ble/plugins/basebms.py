@@ -324,6 +324,18 @@ def crc_xmodem(data: bytearray) -> int:
     return crc & 0xFFFF
 
 
+def crc8(data: bytearray) -> int:
+    """Calculate CRC-8/MAXIM-DOW."""
+    crc: int = 0x00  # Initialwert für CRC
+
+    for byte in data:
+        crc ^= byte
+        for _ in range(8):
+            crc = (crc >> 1) ^ 0x8C if crc & 0x1 else crc >> 1
+
+    return crc & 0xFF
+
+
 def crc_sum(frame: bytes) -> int:
     """Calculate frame CRC."""
     return sum(frame) & 0xFF

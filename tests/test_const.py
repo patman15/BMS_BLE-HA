@@ -11,6 +11,7 @@ async def test_critical_constants() -> None:
     assert (  # ensure that update interval is 30 seconds
         UPDATE_INTERVAL == 30
     ), "Update interval incorrect!"
+
     assert (
         len(BMS_TYPES)
         == sum(1 for _ in Path("custom_components/bms_ble/plugins/").glob("*_bms.py"))
