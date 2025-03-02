@@ -114,8 +114,9 @@ class BMS(BaseBMS):
             self._log.debug("response data is invalid")
             return
 
-        crc: Final = crc_modbus(data[:-2])
-        if crc != int.from_bytes(data[-2:], byteorder="little"):
+        if (crc := crc_modbus(data[:-2])) != int.from_bytes(
+            data[-2:], byteorder="little"
+        ):
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",
                 int.from_bytes(data[-2:], byteorder="little"),

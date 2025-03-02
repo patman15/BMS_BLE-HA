@@ -120,8 +120,9 @@ class BMS(BaseBMS):
             self._data.clear()
             return
 
-        crc: Final[int] = BMS._crc(self._data[1 : -BMS._CRC_LEN])
-        if crc != int(self._data[-BMS._CRC_LEN :], 16):
+        if (crc := BMS._crc(self._data[1 : -BMS._CRC_LEN])) != int(
+            self._data[-BMS._CRC_LEN :], 16
+        ):
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",
                 int(self._data[-BMS._CRC_LEN :], 16),
