@@ -94,7 +94,7 @@ class MockInvalidBleakClient(MockOGTBleakClient):
         if isinstance(char_specifier, str) and normalize_uuid_str(
             char_specifier
         ) == normalize_uuid_str("fff6"):
-            return bytearray(b"invalid_value")
+            return bytearray(b"invalid\xF0value")
 
         return bytearray()
 

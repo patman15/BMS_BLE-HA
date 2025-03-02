@@ -4,6 +4,7 @@ from asyncio import iscoroutinefunction
 from types import ModuleType
 
 from hypothesis import HealthCheck, given, settings, strategies as st
+import pytest
 
 from custom_components.bms_ble.plugins.basebms import BaseBMS
 
@@ -18,9 +19,15 @@ from .conftest import MockBleakClient, MockRespChar
     max_examples=1000, suppress_health_check=[HealthCheck.function_scoped_fixture]
 )
 async def test_notification_handler(
-    monkeypatch, plugin_fixture: ModuleType, data: bytearray
+    monkeypatch,
+    pytestconfig: pytest.Config,
+    plugin_fixture: ModuleType,
+    data: bytearray,
 ) -> None:
     """Test the notification handler."""
+
+    if pytestconfig.getoption("--cov") == ["custom_components.bms_ble"]:
+        pytest.skip("Skipping fuzzing tests due to coverage generation!")
 
     async def patch_init() -> None:
         return
