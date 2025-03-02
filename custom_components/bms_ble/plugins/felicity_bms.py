@@ -31,8 +31,8 @@ from .basebms import BaseBMS, BMSsample
 class BMS(BaseBMS):
     """Felicity battery class implementation."""
 
-    _HEAD: Final[int] = 0x7B  # {
-    _TAIL: Final[int] = 0x7D  # }
+    _HEAD: Final[bytes] = b"{"
+    _TAIL: Final[bytes] = b"}"
     _CMD_PRE: Final[bytes] = b"wifilocalMonitor:"  # CMD prefix
     _CMD_BI: Final[bytes] = b"get dev basice infor"
     _CMD_DT: Final[bytes] = b"get Date"
@@ -94,7 +94,7 @@ class BMS(BaseBMS):
     ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
 
-        if data[0] == BMS._HEAD:
+        if data.startswith(BMS._HEAD):
             self._data = bytearray()
 
         self._data += data
@@ -102,7 +102,7 @@ class BMS(BaseBMS):
             "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
-        if data[-1] != BMS._TAIL:
+        if not data.endswith(BMS._TAIL):
             return
 
         try:
