@@ -3,6 +3,7 @@
 from collections.abc import Awaitable, Buffer, Callable, Iterable
 import importlib
 import logging
+from types import ModuleType
 from typing import Any
 from uuid import UUID
 
@@ -162,18 +163,18 @@ def mock_config_v0_1(request, unique_id="cc:cc:cc:cc:cc:cc") -> MockConfigEntry:
 
 
 @pytest.fixture(params=[TimeoutError, BleakError, EOFError])
-def mock_coordinator_exception(request: pytest.FixtureRequest)-> Exception:
+def mock_coordinator_exception(request: pytest.FixtureRequest) -> Exception:
     """Return possible exceptions for mock BMS update function."""
     return request.param
 
 
 @pytest.fixture(params=[*BMS_TYPES, "dummy_bms"])
-def plugin_fixture(request: pytest.FixtureRequest) -> BaseBMS:
-    """Return instance of a BMS."""
+def plugin_fixture(request: pytest.FixtureRequest) -> ModuleType:
+    """Return module of a BMS."""
     return importlib.import_module(
         f"custom_components.bms_ble.plugins.{request.param}",
         package=__name__[: __name__.rfind(".")],
-    ).BMS
+    )
 
 
 @pytest.fixture(params=[False, True])
@@ -196,9 +197,7 @@ class Mock_BMS(BaseBMS):
         self, exc: Exception | None = None, ret_value: BMSsample | None = None
     ) -> None:  # , ble_device, reconnect: bool = False
         """Initialize BMS."""
-        super().__init__(
-            LOGGER.name, generate_ble_device(address=""), False
-        )
+        super().__init__(LOGGER.name, generate_ble_device(address=""), False)
         LOGGER.debug("%s init(), Test except: %s", self.device_id(), str(exc))
         self._exception: Exception | None = exc
         self._ret_value: BMSsample = (

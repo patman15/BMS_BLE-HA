@@ -199,6 +199,7 @@ async def test_invalid(monkeypatch) -> None:
         (b":009031001E0000001400080016F4x", "wrong EOI"),
         (b":009031001D0000001400080016F4~", "wrong length"),
         (b":009031001E00000002000A000AD9~", "wrong CRC"),
+        (b":009031001E000X001400080016F4~", "wrong encoding"),
     ],
     ids=lambda param: param[1],
 )

@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from enum import IntEnum
+from string import hexdigits
 from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -37,8 +38,8 @@ class BMS(BaseBMS):
     """Dummy battery class implementation."""
 
     _BT_MODULE_MSG: Final[bytes] = bytes([0x41, 0x54, 0x0D, 0x0A])  # BLE module message
-    _HEAD: Final[int] = 0x3A
-    _TAIL: Final[int] = 0x7E
+    _HEAD: Final[bytes] = b"\x3A"
+    _TAIL: Final[bytes] = b"\x7E"
     _MAX_CELLS: Final[int] = 16
     _FIELDS: Final[list[tuple[str, Cmd, int, int, Callable[[int], int | float]]]] = [
         (ATTR_CURRENT, Cmd.RT, 89, 8, lambda x: float((x >> 16) - (x & 0xFFFF)) / 100),
@@ -106,7 +107,7 @@ class BMS(BaseBMS):
                 return
             data = data[len(BMS._BT_MODULE_MSG) :]
 
-        if data[0] == BMS._HEAD:  # check for beginning of frame
+        if data.startswith(BMS._HEAD):  # check for beginning of frame
             self._data.clear()
 
         self._data += data
@@ -118,21 +119,33 @@ class BMS(BaseBMS):
             data,
         )
 
-        if self._data[0] != BMS._HEAD or (
-            self._data[-1] != BMS._TAIL and len(self._data) < int(self._data[7:11], 16)
+        exp_frame_len: Final[int] = (
+            int(self._data[7:11], 16)
+            if len(self._data) > 10
+            and all(chr(c) in hexdigits for c in self._data[7:11])
+            else 0xFFFF
+        )
+
+        if not self._data.startswith(BMS._HEAD) or (
+            not self._data.endswith(BMS._TAIL) and len(self._data) < exp_frame_len
         ):
             return
 
-        if self._data[-1] != BMS._TAIL:
+        if not self._data.endswith(BMS._TAIL):
             self._log.debug("incorrect EOF: %s", data)
             self._data.clear()
             return
 
-        if len(self._data) != int(self._data[7:11], 16):
+        if not all(chr(c) in hexdigits for c in self._data[1:-1]):
+            self._log.debug("incorrect frame encoding.")
+            self._data.clear()
+            return
+
+        if len(self._data) != exp_frame_len:
             self._log.debug(
                 "incorrect frame length %i != %i",
                 len(self._data),
-                int(self._data[7:11], 16),
+                exp_frame_len,
             )
             self._data.clear()
             return
