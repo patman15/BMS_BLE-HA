@@ -170,7 +170,7 @@ def mock_coordinator_exception(request: pytest.FixtureRequest) -> Exception:
 
 @pytest.fixture(params=[*BMS_TYPES, "dummy_bms"])
 def plugin_fixture(request: pytest.FixtureRequest) -> ModuleType:
-    """Return instance of a BMS."""
+    """Return module of a BMS."""
     return importlib.import_module(
         f"custom_components.bms_ble.plugins.{request.param}",
         package=__name__[: __name__.rfind(".")],
