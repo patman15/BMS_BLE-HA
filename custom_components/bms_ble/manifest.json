@@ -143,7 +143,15 @@
     {
       "service_uuid": "000003c1-0000-1000-8000-00805f9b34fb",
       "manufacturer_id": 21330
-    }
+    },
+    {
+      "local_name": "SOK-*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "ABC-*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    }    
   ],
   "codeowners": [
     "@patman15"
