@@ -147,13 +147,13 @@ class BMS(BaseBMS):
         self._log.debug("(%s): %s", "start" if page == 1 else "cnt.", data)
 
         if page == maxpg:
-            if int.from_bytes(self._data[-4:-2], byteorder="big") != BMS._crc(
-                self._data[3:-4]
+            if (crc := BMS._crc(self._data[3:-4])) != int.from_bytes(
+                self._data[-4:-2], byteorder="big"
             ):
                 self._log.debug(
                     "incorrect checksum: 0x%X != 0x%X",
                     int.from_bytes(self._data[-4:-2], byteorder="big"),
-                    self._crc(self._data[3:-4]),
+                    crc,
                 )
                 self._data = bytearray()
                 self._data_final = bytearray()  # reset invalid data

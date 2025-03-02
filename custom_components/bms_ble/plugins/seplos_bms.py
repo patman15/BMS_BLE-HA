@@ -158,8 +158,9 @@ class BMS(BaseBMS):
         if len(self._data) < self._pkglen:
             return
 
-        crc: Final[int] = crc_modbus(self._data[: self._pkglen - 2])
-        if int.from_bytes(self._data[self._pkglen - 2 : self._pkglen], "little") != crc:
+        if (crc := crc_modbus(self._data[: self._pkglen - 2])) != int.from_bytes(
+            self._data[self._pkglen - 2 : self._pkglen], "little"
+        ):
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",
                 int.from_bytes(self._data[self._pkglen - 2 : self._pkglen], "little"),

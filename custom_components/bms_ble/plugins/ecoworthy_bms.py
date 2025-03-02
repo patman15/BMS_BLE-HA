@@ -109,8 +109,7 @@ class BMS(BaseBMS):
             self._log.debug("Invalid frame type: 0x%X", data[0:1])
             return
 
-        crc: Final[int] = crc_modbus(data[:-2])
-        if int.from_bytes(data[-2:], "little") != crc:
+        if (crc := crc_modbus(data[:-2])) != int.from_bytes(data[-2:], "little"):
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",
                 int.from_bytes(data[-2:], "little"),

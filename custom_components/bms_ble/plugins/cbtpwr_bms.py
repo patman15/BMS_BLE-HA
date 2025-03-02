@@ -120,8 +120,9 @@ class BMS(BaseBMS):
             self._log.debug("incorrect frame start/end: %s", data)
             return
 
-        crc = crc_sum(data[len(BMS.HEAD) : len(data) + BMS.CRC_POS])
-        if data[BMS.CRC_POS] != crc:
+        if (crc := crc_sum(data[len(BMS.HEAD) : len(data) + BMS.CRC_POS])) != data[
+            BMS.CRC_POS
+        ]:
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",
                 data[len(data) + BMS.CRC_POS],
