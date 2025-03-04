@@ -401,4 +401,16 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "daly_bms",
     ),
+    (  # source pcap (https://github.com/patman15/BMS_BLE-HA/issues/186)
+        generate_advertisement_data(  # Epoch, BMS: RoyPow SPB22-TI04
+            local_name=" B12100A 220600016 ",
+            service_uuids=[
+                "0000ffe0-0000-1000-8000-00805f9b34fb",
+                "0000ffe7-0000-1000-8000-00805f9b34fb",
+            ],
+            manufacturer_data={424: "\x88\xa0\x12\x6c\x14\x39\x22\xb8"},
+            rssi=-87,
+        ),
+        "roypow_bms",
+    ),
 ]
