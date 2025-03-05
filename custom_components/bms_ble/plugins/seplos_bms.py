@@ -96,7 +96,7 @@ class BMS(BaseBMS):
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             }
-            for pattern in ["SP0*", "SP1*", "SP5*", "SP6*"]
+            for pattern in ("SP0*", "SP1*", "SP4*", "SP5*", "SP6*")
         ]
 
     @staticmethod
