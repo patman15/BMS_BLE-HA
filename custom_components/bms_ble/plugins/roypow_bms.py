@@ -11,8 +11,8 @@ from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
     ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
-    # ATTR_CYCLE_CAP,
-    # ATTR_CYCLE_CHRG,
+    ATTR_CYCLE_CAP,
+    ATTR_CYCLE_CHRG,
     ATTR_CYCLES,
     ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
@@ -41,7 +41,16 @@ class BMS(BaseBMS):
         (ATTR_VOLTAGE, 0x4, 47, 2, False, lambda x: float(x / 100)),
         (ATTR_CURRENT, 0x3, 7, 2, True, lambda x: float(x / 100)),
         (KEY_PROBLEM, 0x3, 9, 3, False, lambda x: x),
-        # (KEY_DESIGN_CAP, 0x4, 26, 2, False, lambda x: float(x / 100)),
+        (
+            ATTR_CYCLE_CHRG,
+            0x4,
+            24,
+            4,
+            False,
+            lambda x: float(
+                ((x & 0xFFFF0000) | (x & 0xFF00) >> 8 | (x & 0xFF) << 8) / 1000
+            ),
+        ),
         # (KEY_CELL_COUNT, 0x4, _CELL_POS, 2, False, lambda x: x),
         (KEY_TEMP_SENS, 0x3, 13, 1, False, lambda x: x),
         (ATTR_CYCLES, 0x4, 9, 2, False, lambda x: x),
@@ -89,6 +98,7 @@ class BMS(BaseBMS):
     def _calc_values() -> set[str]:
         return {
             ATTR_BATTERY_CHARGING,
+            ATTR_CYCLE_CAP,
             ATTR_DELTA_VOLTAGE,
             ATTR_POWER,
             ATTR_TEMPERATURE,
