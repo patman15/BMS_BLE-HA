@@ -51,7 +51,6 @@ class BMS(BaseBMS):
                 ((x & 0xFFFF0000) | (x & 0xFF00) >> 8 | (x & 0xFF) << 8) / 1000
             ),
         ),
-        # (KEY_CELL_COUNT, 0x4, _CELL_POS, 2, False, lambda x: x),
         (KEY_TEMP_SENS, 0x3, 13, 1, False, lambda x: x),
         (ATTR_CYCLES, 0x4, 9, 2, False, lambda x: x),
     ]
@@ -155,11 +154,9 @@ class BMS(BaseBMS):
         }
 
     @staticmethod
-    def _cell_voltages(data: bytearray | None) -> dict[str, float]:
+    def _cell_voltages(data: bytearray) -> dict[str, float]:
         """Return cell voltages from status message."""
-        if not data or len(data) < 13:
-            return {}
-        cells: Final[int] = (len(data) - 11) // 2
+        cells: Final[int] = max(0, (len(data) - 11) // 2)
         return {
             f"{KEY_CELL_VOLTAGE}{idx}": value / 1000
             for idx in range(cells)
@@ -193,14 +190,13 @@ class BMS(BaseBMS):
         """Update battery status information."""
 
         self._data_final.clear()
-        await self._await_reply(BMS._cmd(b"\xff\x02"))
-        await self._await_reply(BMS._cmd(b"\xff\x03"))
-        await self._await_reply(BMS._cmd(b"\xff\x04"))
+        for cmd in range(2, 5):
+            await self._await_reply(BMS._cmd(bytes([0xFF, cmd])))
 
         result: BMSsample = BMS._decode_data(self._data_final)
         return (
             result
-            | BMS._cell_voltages(self._data_final.get(0x2))
+            | BMS._cell_voltages(self._data_final.get(0x2, bytearray()))
             | BMS._temp_sensors(
                 self._data_final.get(0x3, bytearray()),
                 int(result.get(KEY_TEMP_SENS, 0)),
