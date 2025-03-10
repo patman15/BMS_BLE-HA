@@ -107,6 +107,14 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "seplos_bms",
     ),
+    ( # advmon (https://github.com/patman15/BMS_BLE-HA/issues/214)
+        generate_advertisement_data(
+            local_name="SP47B-A2410230006",
+            service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
+            rssi=-81,
+        ),
+        "seplos_bms",
+    ),
     (
         generate_advertisement_data(
             local_name="BP02",

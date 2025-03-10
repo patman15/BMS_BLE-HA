@@ -59,6 +59,7 @@ class BMS(BaseBMS):
         self._char_write_handle: int = -1
         self._bms_info: dict[str, str] = {}
         self._prot_offset: int = 0
+        self._sw_version: int = 0
         self._valid_reply: int = 0x02
 
     @staticmethod
@@ -237,13 +238,16 @@ class BMS(BaseBMS):
             for idx in range(cells)
         }
 
+    def _temp_pos(self) -> list[tuple[int, int]]:
+        sw_majv: Final[int] = int(self._bms_info.get("sw_version", "")[:2])
+        if sw_majv >= 14:
+            return [(0, 144), (1, 162), (2, 164), (3, 254), (4, 256), (5, 258)]
+        if sw_majv >= 11:
+            return [(0, 144), (1, 162), (2, 164), (3, 254)]
+        return [(0, 130), (1, 132), (2, 134)]
+
     @staticmethod
-    def _temp_sensors(data: bytearray, offs: int, mask: int) -> dict[str, float]:
-        temp_pos: Final[list[tuple[int, int]]] = (
-            [(0, 130), (1, 132), (2, 134)]
-            if offs
-            else [(0, 144), (1, 162), (2, 164), (3, 254), (4, 256), (5, 258)]
-        )
+    def _temp_sensors(data: bytearray, temp_pos: list[tuple[int,int]], mask: int) -> dict[str, float]:
         return {
             f"{KEY_TEMP_VALUE}{idx}": value / 10
             for idx, pos in temp_pos
@@ -297,7 +301,7 @@ class BMS(BaseBMS):
         data: BMSsample = self._decode_data(self._data_final, self._prot_offset)
         data.update(
             BMS._temp_sensors(
-                self._data_final, self._prot_offset, int(data.get(KEY_TEMP_SENS, 0))
+                self._data_final, self._temp_pos(), int(data.get(KEY_TEMP_SENS, 0))
             )
         )
         data.update(

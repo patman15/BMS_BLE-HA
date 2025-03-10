@@ -41,7 +41,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
 - LiTime, Power Queen, and Redodo batteries
 - Seplos v2 (show up as `BP0?`)
-- Seplos v3 (show up as `SP0`&#x2026;, `SP1`&#x2026;, `SP5`&#x2026;, or `SP6`&#x2026;)
+- Seplos v3 (show up as `SP[0,1,4-6]`&#x2026;)
 - RoyPow batteries
 - TDT BMS (show up as e.g., `XDZN`&#x2026;)
 
@@ -205,6 +205,6 @@ for helping with making the integration better.
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-399_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-402_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=Analytics&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
