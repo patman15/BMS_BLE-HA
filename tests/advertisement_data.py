@@ -421,4 +421,28 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "roypow_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/186)
+        generate_advertisement_data(
+            local_name="12-6C-14-39-28-1F",
+            rssi=-50,
+            manufacturer_data={2865: "88a0126c1439281f"},
+            service_uuids=[
+                "0000ffe0-0000-1000-8000-00805f9b34fb",
+                "0000fee7-0000-1000-8000-00805f9b34fb",
+            ],
+        ),
+        "roypow_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/186)
+        generate_advertisement_data(
+            local_name="C6-6C-15-08-A7-E9",
+            rssi=-66,
+            manufacturer_data={35579: "88a0c66c1508a7e9"},
+            service_uuids=[
+                "0000ffe0-0000-1000-8000-00805f9b34fb",
+                "0000fee7-0000-1000-8000-00805f9b34fb",
+            ],
+        ),
+        "roypow_bms",
+    ),
 ]
