@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 import asyncio
 import logging
 from statistics import fmean
-from typing import Final, Literal
+from typing import Final
 
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -62,14 +62,13 @@ class BaseBMS(metaclass=ABCMeta):
         self._ble_device: Final[BLEDevice] = ble_device
         self._reconnect: Final[bool] = reconnect
         self.name: Final[str] = self._ble_device.name or "undefined"
-        self._log: Final[logging.Logger] = logging.getLogger(logger_name)
-        if not self._log.filters:
-            self._log.addFilter(self._prefix_filter)
+        self._log: Final[logging.Logger] = logging.getLogger(
+            f"{logger_name.replace('.plugins', '')}:{self.name}:"
+            f"{self._ble_device.address[-5:].replace(':','')})"
+        )
 
         self._log.debug(
-            "initializing %s, BT address: %s",
-            self.device_id(),
-            ble_device.address,
+            "initializing %s, BT address: %s", self.device_id(), ble_device.address
         )
         self._client: BleakClient = BleakClient(
             self._ble_device,
@@ -78,13 +77,6 @@ class BaseBMS(metaclass=ABCMeta):
         )
         self._data: bytearray = bytearray()
         self._data_event: Final[asyncio.Event] = asyncio.Event()
-
-    def _prefix_filter(self, record: logging.LogRecord) -> Literal[True]:
-        """Add BMS name and 2 bytes of MAC as prefix to all messages."""
-        setattr(
-            record, "msg", f"{self.name}[{self._ble_device.address[-5:]}]: {record.msg}"
-        )
-        return True
 
     @staticmethod
     @abstractmethod
