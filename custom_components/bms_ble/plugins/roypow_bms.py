@@ -16,7 +16,7 @@ from custom_components.bms_ble.const import (
     ATTR_CYCLES,
     ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
-    # ATTR_RUNTIME,
+    ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
@@ -40,7 +40,14 @@ class BMS(BaseBMS):
     ] = [
         (ATTR_BATTERY_LEVEL, 0x4, 7, 1, False, lambda x: x),
         (ATTR_VOLTAGE, 0x4, 47, 2, False, lambda x: float(x / 100)),
-        (ATTR_CURRENT, 0x3, 7, 2, True, lambda x: float(x / 100)),
+        (
+            ATTR_CURRENT,
+            0x3,
+            6,
+            3,
+            False,
+            lambda x: float((x & 0xFFFF) * (-1 if (x >> 16) & 0x1 else 1) / 100),
+        ),
         (KEY_PROBLEM, 0x3, 9, 3, False, lambda x: x),
         (
             ATTR_CYCLE_CHRG,
@@ -52,6 +59,7 @@ class BMS(BaseBMS):
                 ((x & 0xFFFF0000) | (x & 0xFF00) >> 8 | (x & 0xFF) << 8) / 1000
             ),
         ),
+        (ATTR_RUNTIME, 0x4, 30, 2, False, lambda x: x * 60),
         (KEY_TEMP_SENS, 0x3, 13, 1, False, lambda x: x),
         (ATTR_CYCLES, 0x4, 9, 2, False, lambda x: x),
     ]
@@ -201,6 +209,11 @@ class BMS(BaseBMS):
             await self._await_reply(BMS._cmd(bytes([0xFF, cmd])))
 
         result: BMSsample = BMS._decode_data(self._data_final)
+
+        # remove remaining runtime if battery is charging
+        if result.get(ATTR_RUNTIME) == 0xFFFF * 60:
+            result.pop(ATTR_RUNTIME, None)
+
         return (
             result
             | BMS._cell_voltages(self._data_final.get(0x2, bytearray()))
