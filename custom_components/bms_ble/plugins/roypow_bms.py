@@ -124,7 +124,7 @@ class BMS(BaseBMS):
 
         if data.startswith(BMS._HEAD) and not self._data.startswith(BMS._HEAD):
             self._exp_len = data[len(BMS._HEAD)]
-            self._data = bytearray()
+            self._data.clear()
 
         self._data += data
         self._log.debug(
@@ -204,6 +204,7 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
+        self._data.clear()
         self._data_final.clear()
         for cmd in range(2, 5):
             await self._await_reply(BMS._cmd(bytes([0xFF, cmd])))
