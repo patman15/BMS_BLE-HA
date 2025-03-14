@@ -1,6 +1,8 @@
 """Test the RoyPow BMS implementation."""
+
 from asyncio import sleep
 from collections.abc import Buffer
+from copy import deepcopy
 from typing import Final
 from uuid import UUID
 
@@ -54,18 +56,18 @@ class MockRoyPowBleakClient(MockBleakClient):
     }
     RESP: Final[dict[int, bytearray]] = {
         0x02: bytearray(  # cell info
-            b"\xea\xd1\x01\x0f\xff\x02\x04\x04\x04\x0d\x2f\x0d\x2a\x0d\x29\x0d\x2c\xf6\xf5"
+            BT_MODULE_MSG  # add BT message in front
+            + b"\xea\xd1\x01\x0f\xff\x02\x04\x04\x04\x0d\x2f\x0d\x2a\x0d\x29\x0d\x2c\xf6\xf5"
         ),
-        0x03: bytearray( # +0.35A
+        0x03: bytearray(  # +0.35A
             b"\xea\xd1\x01\x1a\xff\x03\x32\x00\x23\x00\x00\x00\x00\x04\x3b\x3b\x3b\x3c\x00\x10"
             b"\x00\x00\x00\x0c\x07\x00\x00\x00\xef\xf5"
             + BT_MODULE_MSG  # BT message at the end
         ),
         0x04: bytearray(  # 13.5V, 96%, 98.2Ah/105.0Ah
-            BT_MODULE_MSG  # add BT message in front
-            + b"\xea\xd1\x01\x39\xff\x04\x01\x60\x02\x00\x02\x03\x00\x01\x04\x9a\x28\x05\x00\x01"
-            b"\x06\x9e\x24\x07\x00\x01\x08\x7f\x7d\x09\xff\xff\x0a\x04\xd4\x0b\x00\x16\x4a\x70\x0c"
-            b"\x25\x03\x17\x00\x51\x45\x05\x44\x0d\x2e\x0d\x29\x0d\x14\x4e\x00\x00\x00\x6f\xf5"
+            b"\xea\xd1\x01\x39\xff\x04\x01\x60\x02\x00\x02\x03\x00\x01\x04\x9a\x28\x05\x00\x01\x06"
+            b"\x9e\x24\x07\x00\x01\x08\x7f\x7d\x09\xff\xff\x0a\x04\xd4\x0b\x00\x16\x4a\x70\x0c\x25"
+            b"\x03\x17\x00\x51\x45\x05\x44\x0d\x2e\x0d\x29\x0d\x14\x4e\x00\x00\x00\x6f\xf5"
         ),
     }
 
@@ -108,8 +110,7 @@ async def test_update(monkeypatch, reconnect_fixture: bool) -> None:
     """Test RoyPow BMS data update."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockRoyPowBleakClient,
+        "custom_components.bms_ble.plugins.basebms.BleakClient", MockRoyPowBleakClient
     )
 
     bms = BMS(
@@ -124,6 +125,38 @@ async def test_update(monkeypatch, reconnect_fixture: bool) -> None:
     # query again to check already connected state
     result = await bms.async_update()
     assert bms._client and bms._client.is_connected is not reconnect_fixture
+
+    await bms.disconnect()
+
+
+async def test_update_dischrg(monkeypatch) -> None:
+    """Test RoyPow BMS data update."""
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.plugins.basebms.BleakClient", MockRoyPowBleakClient
+    )
+
+    negative_response: dict[int, bytearray] = deepcopy(MockRoyPowBleakClient.RESP)
+
+    negative_response[0x3][6] |= 0x1  # make current negative
+    negative_response[0x3][28] ^= 0x1  # patch CRC
+    negative_response[0x4][30] = 0x0  # make runtime 255
+    negative_response[0x4][-2] ^= 0xFF  # patch CRC
+
+    monkeypatch.setattr(
+        "tests.test_roypow_bms.MockRoyPowBleakClient.RESP", negative_response
+    )
+
+    bms = BMS(
+        generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73), False
+    )
+
+    assert await bms.async_update() == ref_value() | {
+        "battery_charging": False,
+        "current": -0.35,
+        "power": -4.718,
+        "runtime": 15300,
+    }
 
     await bms.disconnect()
 
