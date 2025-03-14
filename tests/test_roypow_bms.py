@@ -1,5 +1,5 @@
 """Test the RoyPow BMS implementation."""
-
+from asyncio import sleep
 from collections.abc import Buffer
 from typing import Final
 from uuid import UUID
@@ -14,6 +14,7 @@ from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
 BT_FRAME_SIZE = 20
+BT_MODULE_MSG: Final[bytes] = b"AT+STAT\r\n"  # AT cmd from BLE module
 
 
 def ref_value() -> BMSsample:
@@ -58,11 +59,13 @@ class MockRoyPowBleakClient(MockBleakClient):
         0x03: bytearray(
             b"\xea\xd1\x01\x1a\xff\x03\x32\x00\x23\x00\x00\x00\x00\x04\x3b\x3b\x3b\x3c\x00\x10"
             b"\x00\x00\x00\x0c\x07\x00\x00\x00\xef\xf5"
+            + BT_MODULE_MSG  # BT message at the end
         ),
         0x04: bytearray(  # 13.5V, 0A, 96%, 98.2Ah/105.0Ah
-            b"\xea\xd1\x01\x39\xff\x04\x01\x60\x02\x00\x02\x03\x00\x01\x04\x9a\x28\x05\x00\x01\x06"
-            b"\x9e\x24\x07\x00\x01\x08\x7f\x7d\x09\xff\xff\x0a\x04\xd4\x0b\x00\x16\x4a\x70\x0c\x25"
-            b"\x03\x17\x00\x51\x45\x05\x44\x0d\x2e\x0d\x29\x0d\x14\x4e\x00\x00\x00\x6f\xf5"
+            BT_MODULE_MSG  # add BT message in front
+            + b"\xea\xd1\x01\x39\xff\x04\x01\x60\x02\x00\x02\x03\x00\x01\x04\x9a\x28\x05\x00\x01"
+            b"\x06\x9e\x24\x07\x00\x01\x08\x7f\x7d\x09\xff\xff\x0a\x04\xd4\x0b\x00\x16\x4a\x70\x0c"
+            b"\x25\x03\x17\x00\x51\x45\x05\x44\x0d\x2e\x0d\x29\x0d\x14\x4e\x00\x00\x00\x6f\xf5"
         ),
     }
 
@@ -90,6 +93,9 @@ class MockRoyPowBleakClient(MockBleakClient):
         assert (
             self._notify_callback
         ), "write to characteristics but notification not enabled"
+
+        self._notify_callback("MockRoyPowBleakClient", BT_MODULE_MSG)
+        await sleep(0)
 
         resp: Final[bytearray] = self._response(char_specifier, data)
         for notify_data in [
