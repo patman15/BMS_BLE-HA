@@ -110,9 +110,8 @@ class BMS(BaseBMS):
 
         if data.startswith(BMS.BT_MODULE_MSG):
             self._log.debug("filtering AT cmd")
-            if len(data) == len(BMS.BT_MODULE_MSG):
+            if not (data := data.removeprefix(BMS.BT_MODULE_MSG)):
                 return
-            data = data[len(BMS.BT_MODULE_MSG) :]
 
         if (
             len(self._data) >= self.INFO_LEN
@@ -145,7 +144,7 @@ class BMS(BaseBMS):
         # trim AT\r\n message from the end
         if self._data.endswith(BMS.BT_MODULE_MSG):
             self._log.debug("trimming AT cmd")
-            self._data = self._data[: -len(BMS.BT_MODULE_MSG)]
+            self._data = self._data.removesuffix(BMS.BT_MODULE_MSG)
 
         # trim message in case oversized
         if len(self._data) > BMS.INFO_LEN:
@@ -247,7 +246,9 @@ class BMS(BaseBMS):
         return [(0, 130), (1, 132), (2, 134)]
 
     @staticmethod
-    def _temp_sensors(data: bytearray, temp_pos: list[tuple[int,int]], mask: int) -> dict[str, float]:
+    def _temp_sensors(
+        data: bytearray, temp_pos: list[tuple[int, int]], mask: int
+    ) -> dict[str, float]:
         return {
             f"{KEY_TEMP_VALUE}{idx}": value / 10
             for idx, pos in temp_pos
