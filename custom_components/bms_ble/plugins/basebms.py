@@ -63,7 +63,7 @@ class BaseBMS(metaclass=ABCMeta):
         self._reconnect: Final[bool] = reconnect
         self.name: Final[str] = self._ble_device.name or "undefined"
         self._log: Final[logging.Logger] = logging.getLogger(
-            f"{logger_name.replace('.plugins', '')}:{self.name}:"
+            f"{logger_name.replace('.plugins', '')}::{self.name}:"
             f"{self._ble_device.address[-5:].replace(':','')})"
         )
 
