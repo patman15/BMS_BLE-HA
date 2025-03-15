@@ -117,10 +117,9 @@ class BMS(BaseBMS):
         self, _sender: BleakGATTCharacteristic, data: bytearray
     ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
-        if data.startswith(BMS.BT_MODULE_MSG):
+        if not (data := data.removeprefix(BMS.BT_MODULE_MSG)):
             self._log.debug("filtering AT cmd")
-            if not (data := data[len(BMS.BT_MODULE_MSG) :]):
-                return
+            return
 
         if data.startswith(BMS._HEAD) and not self._data.startswith(BMS._HEAD):
             self._exp_len = data[len(BMS._HEAD)]
