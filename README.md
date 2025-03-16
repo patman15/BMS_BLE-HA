@@ -84,7 +84,6 @@ bad | 0 to 60  | -90 to low
 
 
 ## Installation
-### Automatic
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=patman15&repository=BMS_BLE-HA&category=Integration)
 
 BMS_BLE is a default repository in [HACS](https://hacs.xyz/). Please follow the [guidelines on how to use HACS](https://hacs.xyz/docs/use/) if you haven't installed it yet.
@@ -106,8 +105,11 @@ BMS_BLE is a default repository in [HACS](https://hacs.xyz/). Please follow the 
 <details><summary>Elektronicx, Lithtech batteries</summary>
 Bluetooth is turned off, when there is no current. Thus, device will get unavailble / cannot be added.
 </details>
-<details><summary>Seplos V2</summary>
+<details><summary>Seplos v2</summary>
 The internal Bluetooth adapter issues <code>AT</code> commands in regular intervals which can interfer with BMS messages causing them to be corrupted. This impacts data availability (<code>link quality</code>).
+</details>
+<details><summary>Daly BMS with WiFi, e.g. Bulltron</summary>
+The connection cannot be established. The reason is most likely a <a href="https://github.com/hbldh/bleak/issues/972#issuecomment-1235867382">violation of the Bluetooth specification</a>, that is rejected by the Linux BlueZ daemon. Please raise a <a href="https://github.com/patman15/BMS_BLE-HA/issues/new?template=support.yml">new issue</a> if you have further information or observations.
 </details>
     
 ## FAQ
