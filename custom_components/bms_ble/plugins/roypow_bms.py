@@ -33,7 +33,7 @@ class BMS(BaseBMS):
 
     _HEAD: Final[bytes] = b"\xea\xd1\x01"
     _TAIL: Final[int] = 0xF5
-    BT_MODULE_MSG: Final[bytes] = b"AT+STAT\r\n"  # AT cmd from BLE module
+    _BT_MODULE_MSG: Final[bytes] = b"AT+STAT\r\n"  # AT cmd from BLE module
     _MIN_LEN: Final[int] = len(_HEAD) + 1
     _FIELDS: Final[
         list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
@@ -117,7 +117,7 @@ class BMS(BaseBMS):
         self, _sender: BleakGATTCharacteristic, data: bytearray
     ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
-        if not (data := data.removeprefix(BMS.BT_MODULE_MSG)):
+        if not (data := data.removeprefix(BMS._BT_MODULE_MSG)):
             self._log.debug("filtering AT cmd")
             return
 

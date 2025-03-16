@@ -24,6 +24,7 @@ BINARY_SENSOR_TYPES: list[BinarySensorEntityDescription] = [
     BinarySensorEntityDescription(
         key=ATTR_PROBLEM,
         translation_key=ATTR_PROBLEM,
+        icon="mdi:battery-alert",
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),

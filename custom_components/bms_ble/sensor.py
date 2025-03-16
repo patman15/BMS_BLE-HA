@@ -88,6 +88,7 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
     SensorEntityDescription(
         key=ATTR_CYCLES,
         translation_key=ATTR_CYCLES,
+        icon="mdi:autorenew",
         name="Cycles",
         state_class=SensorStateClass.TOTAL_INCREASING,
     ),
@@ -104,6 +105,7 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
         translation_key=ATTR_RUNTIME,
         name="Runtime",
         native_unit_of_measurement=UnitOfTime.SECONDS,
+        suggested_unit_of_measurement=UnitOfTime.HOURS,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DURATION,
     ),

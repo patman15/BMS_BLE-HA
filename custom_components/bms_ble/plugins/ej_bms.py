@@ -38,8 +38,8 @@ class BMS(BaseBMS):
     """Dummy battery class implementation."""
 
     _BT_MODULE_MSG: Final[bytes] = bytes([0x41, 0x54, 0x0D, 0x0A])  # BLE module message
-    _HEAD: Final[bytes] = b"\x3A"
-    _TAIL: Final[bytes] = b"\x7E"
+    _HEAD: Final[bytes] = b"\x3a"
+    _TAIL: Final[bytes] = b"\x7e"
     _MAX_CELLS: Final[int] = 16
     _FIELDS: Final[list[tuple[str, Cmd, int, int, Callable[[int], int | float]]]] = [
         (ATTR_CURRENT, Cmd.RT, 89, 8, lambda x: float((x >> 16) - (x & 0xFFFF)) / 100),
@@ -103,9 +103,8 @@ class BMS(BaseBMS):
 
         if data.startswith(BMS._BT_MODULE_MSG):
             self._log.debug("filtering AT cmd")
-            if len(data) == len(BMS._BT_MODULE_MSG):
+            if not (data := data.removeprefix(BMS._BT_MODULE_MSG)):
                 return
-            data = data[len(BMS._BT_MODULE_MSG) :]
 
         if data.startswith(BMS._HEAD):  # check for beginning of frame
             self._data.clear()
