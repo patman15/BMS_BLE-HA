@@ -111,7 +111,7 @@ class BMS(BaseBMS):
         """Retrieve BMS data update."""
         self._log.debug("RX BLE data: %s", data)
 
-        # verify that data long enough
+        # verify that data is long enough
         if len(data) < BMS.MIN_FRAME or len(data) != BMS.MIN_FRAME + data[BMS.LEN_POS]:
             self._log.debug("incorrect frame length (%i): %s", len(data), data)
             return

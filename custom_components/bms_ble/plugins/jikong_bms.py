@@ -125,7 +125,7 @@ class BMS(BaseBMS):
             "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
-        # verify that data long enough
+        # verify that data is long enough
         if (
             len(self._data) < BMS.INFO_LEN and self._data.startswith(BMS.HEAD_RSP)
         ) or len(self._data) < BMS.TYPE_POS + 1:
