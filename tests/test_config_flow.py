@@ -21,11 +21,7 @@ from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er
 
 from .advertisement_data import ADVERTISEMENTS
-from .bluetooth import (
-    generate_advertisement_data,
-    generate_ble_device,
-    inject_bluetooth_service_info_bleak,
-)
+from .bluetooth import generate_ble_device, inject_bluetooth_service_info_bleak
 from .conftest import mock_config, mock_update_min
 
 
@@ -46,7 +42,7 @@ def bms_advertisement(request) -> BluetoothServiceInfoBleak:
         service_uuids=dev.service_uuids,
         manufacturer_data=dev.manufacturer_data,
         service_data=dev.service_data,
-        advertisement=generate_advertisement_data(**dev._asdict()),
+        advertisement=dev,
         source=SOURCE_BLUETOOTH,
         connectable=True,
         time=0,
@@ -306,7 +302,6 @@ async def test_no_migration(bms_fixture, hass: HomeAssistant) -> None:
     """Test that entries of correct version are kept."""
 
     cfg: MockConfigEntry = mock_config(bms=bms_fixture)
-    #monkeypatch.setattr(cfg, "minor_version", 1)
     cfg.add_to_hass(hass)
     hass.config_entries.async_update_entry(cfg, minor_version=1)
 
@@ -323,7 +318,6 @@ async def test_migrate_entry_future_version(bms_fixture, hass: HomeAssistant) ->
     """Test migrating entries from future version."""
 
     cfg: MockConfigEntry = mock_config(bms=bms_fixture)
-    # monkeypatch.setattr(cfg, "version", 999)
     cfg.add_to_hass(hass)
     hass.config_entries.async_update_entry(cfg, version=999)
 
@@ -338,8 +332,6 @@ async def test_migrate_invalid_v_0_1(bms_fixture, hass: HomeAssistant) -> None:
     """Test migrating an invalid entry in version 0.1."""
 
     cfg: MockConfigEntry = mock_config(bms=bms_fixture)
-    # monkeypatch.setattr(cfg, "version", 0)
-    # monkeypatch.setattr(cfg, "data", {"type": None})
     cfg.add_to_hass(hass)
     hass.config_entries.async_update_entry(cfg, version=0, data={"type": None})
 

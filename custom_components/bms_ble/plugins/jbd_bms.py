@@ -121,7 +121,7 @@ class BMS(BaseBMS):
             "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
-        # verify that data long enough
+        # verify that data is long enough
         if (
             len(self._data) < BMS.INFO_LEN
             or len(self._data) < BMS.INFO_LEN + self._data[3]

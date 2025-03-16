@@ -23,6 +23,7 @@ BMS_TYPES: Final[list[str]] = [
     "redodo_bms",
     "seplos_bms",
     "seplos_v2_bms",
+    "roypow_bms",
     "tdt_bms",
     "dpwrcore_bms",  # only name filter
     "felicity_bms",
