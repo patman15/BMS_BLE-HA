@@ -37,7 +37,7 @@ class Cmd(IntEnum):
 class BMS(BaseBMS):
     """Dummy battery class implementation."""
 
-    BT_MODULE_MSG: Final[bytes] = bytes([0x41, 0x54, 0x0D, 0x0A])  # BLE module message
+    _BT_MODULE_MSG: Final[bytes] = bytes([0x41, 0x54, 0x0D, 0x0A])  # BLE module message
     _HEAD: Final[bytes] = b"\x3a"
     _TAIL: Final[bytes] = b"\x7e"
     _MAX_CELLS: Final[int] = 16
@@ -101,9 +101,9 @@ class BMS(BaseBMS):
     ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
 
-        if data.startswith(BMS.BT_MODULE_MSG):
+        if data.startswith(BMS._BT_MODULE_MSG):
             self._log.debug("filtering AT cmd")
-            if not (data := data.removeprefix(BMS.BT_MODULE_MSG)):
+            if not (data := data.removeprefix(BMS._BT_MODULE_MSG)):
                 return
 
         if data.startswith(BMS._HEAD):  # check for beginning of frame

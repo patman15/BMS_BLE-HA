@@ -36,7 +36,7 @@ class BMS(BaseBMS):
 
     HEAD_RSP: Final = bytes([0x55, 0xAA, 0xEB, 0x90])  # header for responses
     HEAD_CMD: Final = bytes([0xAA, 0x55, 0x90, 0xEB])  # header for commands (endiness!)
-    BT_MODULE_MSG: Final = bytes([0x41, 0x54, 0x0D, 0x0A])  # AT\r\n from BLE module
+    _BT_MODULE_MSG: Final = bytes([0x41, 0x54, 0x0D, 0x0A])  # AT\r\n from BLE module
     TYPE_POS: Final[int] = 4  # frame type is right after the header
     INFO_LEN: Final[int] = 300
     _FIELDS: Final[list[tuple[str, int, int, bool, Callable[[int], int | float]]]] = (
@@ -108,9 +108,9 @@ class BMS(BaseBMS):
     ) -> None:
         """Retrieve BMS data update."""
 
-        if data.startswith(BMS.BT_MODULE_MSG):
+        if data.startswith(BMS._BT_MODULE_MSG):
             self._log.debug("filtering AT cmd")
-            if not (data := data.removeprefix(BMS.BT_MODULE_MSG)):
+            if not (data := data.removeprefix(BMS._BT_MODULE_MSG)):
                 return
 
         if (
@@ -142,9 +142,9 @@ class BMS(BaseBMS):
             return
 
         # trim AT\r\n message from the end
-        if self._data.endswith(BMS.BT_MODULE_MSG):
+        if self._data.endswith(BMS._BT_MODULE_MSG):
             self._log.debug("trimming AT cmd")
-            self._data = self._data.removesuffix(BMS.BT_MODULE_MSG)
+            self._data = self._data.removesuffix(BMS._BT_MODULE_MSG)
 
         # trim message in case oversized
         if len(self._data) > BMS.INFO_LEN:
