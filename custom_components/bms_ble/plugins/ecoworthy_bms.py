@@ -34,7 +34,7 @@ from .basebms import BaseBMS, BMSsample, crc_modbus
 class BMS(BaseBMS):
     """ECO-WORTHY battery class implementation."""
 
-    _HEAD: Final[tuple] = (b"\xA1", b"\xA2")
+    _HEAD: Final[tuple] = (b"\xa1", b"\xa2")
     _CELL_POS: Final[int] = 14
     _TEMP_POS: Final[int] = 80
     _FIELDS: Final[
@@ -106,7 +106,7 @@ class BMS(BaseBMS):
         self._log.debug("RX BLE data: %s", data)
 
         if not data.startswith(BMS._HEAD):
-            self._log.debug("Invalid frame type: 0x%X", data[0:1])
+            self._log.debug("invalid frame type: '%s'", data[0:1].hex())
             return
 
         if (crc := crc_modbus(data[:-2])) != int.from_bytes(data[-2:], "little"):
