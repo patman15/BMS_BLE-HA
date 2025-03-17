@@ -188,6 +188,7 @@ async def test_update_dischrg(monkeypatch) -> None:
             ),
             "wrong_CRC",
         ),
+        (bytearray(b"\x00\x00\x00\xf5"), "critical_length"),
     ],
     ids=lambda param: param[1],
 )
