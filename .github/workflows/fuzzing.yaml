@@ -23,4 +23,4 @@ jobs:
           run: pip install -r requirements_test.txt
           
         - name: Run fuzz tests
-          run: pytest tests/test_fuzzing.py --no-cov
+          run: pytest tests/test_fuzzing.py --no-cov --max-examples=50000
