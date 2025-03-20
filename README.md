@@ -171,6 +171,7 @@ Once pairing is done, the integration should automatically detect the BMS.
 ### If your device is not recognized
 
 1. Check that your BMS type is listed as [supported device](#supported-devices)
+1. If a name detection pattern is listed ("show up as"), make sure your device matches it.
 1. Make sure that no other device is connected to the BMS, e.g. app on your phone
 1. Check that your are running the [latest release](https://github.com//patman15/BMS_BLE-HA/releases) of the integration
 1. Open a [terminal to Home Assistant](https://www.home-assistant.io/common-tasks/supervised/#installing-and-using-the-ssh-add-on) and verify that your BMS is listed in the ouput of the command `bluetoothctl devices`.
