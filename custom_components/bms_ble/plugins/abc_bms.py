@@ -81,7 +81,7 @@ class BMS(BaseBMS):
                 "service_uuid": normalize_uuid_str("fff0"),
                 "connectable": True,
             }
-            for pattern in ("SOK-*", "ABC-*")  # "NB-*", "Hoover",
+            for pattern in ("ABC-*", "SOK-*")  # "NB-*", "Hoover",
         ]
 
     @staticmethod

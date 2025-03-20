@@ -19,18 +19,18 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - 100% test coverage plus fuzz tests for BLE data
 
 ### Supported Devices
-- ABC/SOK BMS
+- ABC/SOK BMS (sjow up as `ABC-`&#x2026;, `SOK-`&#x2026;)
 - CBT Power BMS, Creabest batteries
 - D-powercore BMS (show up as `DXB-`&#x2026;), Fliteboard batteries (show up as `TBA-`&#x2026;)
 - Daly BMS (show up as `DL-`&#x2026;)
-    - 100Balance BMS (show up as `JHB-`&#x2026;)
+    - 100Balance BMS
     - Bulltron batteries
-- E&J Technology BMS
+- E&J Technology BMS (show ups as `libatt`&#x2026;)
     - Elektronicx batteries (show up as `LT-`&#x2026;)
     - Lithtech batteries (show up as `LT-12V-`&#x2026; or `L-12V`&#x2026;)
     - Meritsun, Supervolt v1, Volthium batteries
-- ECO-WORTHY + BW02 adapter
-- Ective, Topband batteries
+- ECO-WORTHY + BW02 adapter (show up as `ECO-WORTHY`&#x2026;)
+- Ective, Topband batteries (show up as `$PFLAC`&#x2026;, `NWJ20`&#x2026;, `ZM20`&#x2026;)
 - Felicity ESS batteries (show up as `F10`&#x2026;)
 - JBD BMS, Jiabaida (show up as `SP..S`&#x2026;)
     - accurat batteries (show up as `GJ-`&#x2026;)
@@ -43,7 +43,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Seplos v2 (show up as `BP0?`)
 - Seplos v3 (show up as `SP[0,1,4-6]`&#x2026;)
 - RoyPow batteries
-- TDT BMS (show up as e.g., `XDZN`&#x2026;)
+- TDT BMS
 
 > [!TIP]
 > New device types can be easily added via the plugin architecture of this integration. See the [contribution guidelines](CONTRIBUTING.md) for details.
