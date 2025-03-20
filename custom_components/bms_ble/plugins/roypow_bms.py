@@ -130,6 +130,10 @@ class BMS(BaseBMS):
             "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
+        if not self._data.startswith(BMS._HEAD):
+            self._data.clear()
+            return
+
         # verify that data is long enough
         if len(self._data) < BMS._MIN_LEN + self._exp_len:
             return
