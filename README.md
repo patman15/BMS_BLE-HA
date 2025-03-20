@@ -32,7 +32,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - ECO-WORTHY + BW02 adapter
 - Ective, Topband batteries
 - Felicity ESS batteries (show up as `F10`&#x2026;)
-- JBD BMS, Jiabaida (show up as `SP..S`&#x2026;)
+- JBD BMS, Jiabaida (show up as `AP2.S`&#x2026;, `SP..S`&#x2026;)
     - accurat batteries (show up as `GJ-`&#x2026;)
     - DCHOUSE, ECO-WORTHY batteries (show up as `DP04S`&#x2026;)
     - Eleksol, Ultimatron batteries (show up as `12??0`&#x2026;)
