@@ -3,7 +3,7 @@
 import logging
 from typing import Final
 
-from homeassistant.const import (  # noqa: F401
+from homeassistant.const import (  # noqa: F401  # pylint: disable=unused-import
     ATTR_BATTERY_CHARGING,
     ATTR_BATTERY_LEVEL,
     ATTR_TEMPERATURE,
@@ -29,7 +29,7 @@ BMS_TYPES: Final[list[str]] = [
     "felicity_bms",
 ]  # available BMS types
 DOMAIN: Final[str] = "bms_ble"
-LOGGER: Final = logging.getLogger(__package__)
+LOGGER: Final[logging.Logger] = logging.getLogger(__package__)
 UPDATE_INTERVAL: Final[int] = 30  # [s]
 
 # attributes (do not change)
