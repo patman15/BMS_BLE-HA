@@ -65,4 +65,6 @@ def test_advertisements_unique() -> None:
                     connectable=True,
                 )
             )
-            assert supported == (bms_real == bms_test), f"{adv} {"incorrectly matches"if supported else "does not match"} {bms_test}!"
+            assert supported == (
+                bms_real == bms_test
+            ), f"{adv} {"incorrectly matches"if supported else "does not match"} {bms_test}!"
