@@ -185,7 +185,7 @@ class BMS(BaseBMS):
         raw_data: dict[int, bytearray] = {}
 
         # query real-time information and capacity
-        for cmd in [b":000250000E03~", b":001031000E05~"]:
+        for cmd in (b":000250000E03~", b":001031000E05~"):
             await self._await_reply(cmd)
             rsp: int = int(self._data_final[3:5], 16) & 0x7F
             raw_data[rsp] = self._data_final
