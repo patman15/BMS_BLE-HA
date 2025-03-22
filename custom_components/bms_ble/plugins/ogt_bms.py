@@ -128,8 +128,10 @@ class BMS(BaseBMS):
         return "fff6"
 
     @staticmethod
-    def _calc_values() -> set[str]:
-        return {ATTR_CYCLE_CAP, ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_DELTA_VOLTAGE}
+    def _calc_values() -> frozenset[str]:
+        return frozenset(
+            {ATTR_CYCLE_CAP, ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_DELTA_VOLTAGE}
+        )
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""

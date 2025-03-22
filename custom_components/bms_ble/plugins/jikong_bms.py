@@ -94,14 +94,16 @@ class BMS(BaseBMS):
         return "ffe1"
 
     @staticmethod
-    def _calc_values() -> set[str]:
-        return {
-            ATTR_POWER,
-            ATTR_BATTERY_CHARGING,
-            ATTR_CYCLE_CAP,
-            ATTR_RUNTIME,
-            ATTR_TEMPERATURE,
-        }
+    def _calc_values() -> frozenset[str]:
+        return frozenset(
+            {
+                ATTR_POWER,
+                ATTR_BATTERY_CHARGING,
+                ATTR_CYCLE_CAP,
+                ATTR_RUNTIME,
+                ATTR_TEMPERATURE,
+            }
+        )
 
     def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray

@@ -122,15 +122,15 @@ class BaseBMS(metaclass=ABCMeta):
         """Return 16-bit UUID of characteristic that provides write property."""
 
     @staticmethod
-    def _calc_values() -> set[str]:
+    def _calc_values() -> frozenset[str]:
         """Return values that the BMS cannot provide and need to be calculated.
 
         See calc_values() function for the required input to actually do so.
         """
-        return set()
+        return frozenset()
 
     @staticmethod
-    def _add_missing_values(data: BMSsample, values: set[str]) -> None:
+    def _add_missing_values(data: BMSsample, values: frozenset[str]) -> None:
         """Calculate missing BMS values from existing ones.
 
         data: data dictionary from BMS
