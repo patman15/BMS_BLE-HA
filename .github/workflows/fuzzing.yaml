@@ -22,7 +22,7 @@ jobs:
         - name: Install dependencies
           run: pip install -r requirements_test.txt
           
-        - name: Set Conditional Parameter
+        - name: Set Fuzzing Samples
           id: set-param
           run: |
             if [[ "${{ github.event_name }}" == "schedule" ]]; then
