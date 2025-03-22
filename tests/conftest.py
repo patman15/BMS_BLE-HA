@@ -7,6 +7,7 @@ from types import ModuleType
 from typing import Any
 from uuid import UUID
 
+from _pytest.config import Notset
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.descriptor import BleakGATTDescriptor
@@ -14,6 +15,7 @@ from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str, uuidstr_to_str
 from home_assistant_bluetooth import BluetoothServiceInfoBleak
+from hypothesis import HealthCheck, settings
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -35,25 +37,42 @@ from .bluetooth import generate_advertisement_data, generate_ble_device
 LOGGER: logging.Logger = logging.getLogger(__name__)
 
 
+def pytest_addoption(parser) -> None:
+    """Add custom command-line option for max_examples."""
+    parser.addoption(
+        "--max-examples",
+        action="store",
+        type=int,
+        default=1000,
+        help="Set the maximum number of examples for Hypothesis tests.",
+    )
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Configure pytest with custom settings."""
+    max_examples: int | Notset = config.getoption("--max-examples")
+    settings.register_profile(
+        "default",
+        max_examples=max_examples,
+        suppress_health_check=[HealthCheck.function_scoped_fixture],
+    )
+    settings.load_profile("default")
+
+
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(enable_custom_integrations: Any) -> None:
     """Auto add enable_custom_integrations."""
     return
 
 
-@pytest.fixture(autouse=True)
-def mock_bluetooth(enable_bluetooth) -> None:
-    """Auto mock bluetooth."""
-
-
 @pytest.fixture(params=[False, True])
-def bool_fixture(request):
+def bool_fixture(request) -> bool:
     """Return False, True for tests."""
     return request.param
 
 
 @pytest.fixture(params=[*BMS_TYPES, "dummy_bms"])
-def bms_fixture(request):
+def bms_fixture(request) -> str:
     """Return all possible BMS variants."""
     return request.param
 
@@ -273,7 +292,7 @@ class MockBleakClient(BleakClient):
         self._disconnect_callback: Callable[[BleakClient], None] | None = (
             disconnected_callback
         )
-        self._ble_device = address_or_ble_device
+        self._ble_device: BLEDevice = address_or_ble_device
 
     @property
     def address(self) -> str:

@@ -1,6 +1,7 @@
 """Module to support Offgridtec Smart Pro BMS."""
 
 from collections.abc import Callable
+from string import digits
 from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -39,7 +40,11 @@ class BMS(BaseBMS):
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
         super().__init__(__name__, ble_device, reconnect)
-        self._type: str = self.name[9] if len(self.name) >= 10 else "?"
+        self._type: str = (
+            self.name[9]
+            if len(self.name) >= 10 and set(self.name[10:]).issubset(digits)
+            else "?"
+        )
         self._key: int = (
             sum(CRYPT_SEQ[int(c, 16)] for c in (f"{int(self.name[10:]):0>4X}"))
             if self._type in "AB"

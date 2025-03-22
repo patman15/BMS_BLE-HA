@@ -22,5 +22,12 @@ jobs:
         - name: Install dependencies
           run: pip install -r requirements_test.txt
           
+        - name: Set Fuzzing Samples
+          id: set-param
+          run: |
+            if [[ "${{ github.event_name }}" == "schedule" ]]; then
+              echo "test_param='--max-examples=100000'" >> $GITHUB_ENV
+            fi
+      
         - name: Run fuzz tests
-          run: pytest tests/test_fuzzing.py --no-cov
+          run: pytest tests/test_fuzzing.py --no-cov ${{ env.test_param }}

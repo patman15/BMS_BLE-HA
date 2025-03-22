@@ -63,6 +63,7 @@ class BMS(BaseBMS):
                 "SP0?S*",
                 "SP1?S*",
                 "SP2?S*",
+                "AP2?S*",
                 "GJ-*",  # accurat batteries
                 "SX1*",  # Supervolt v3
                 "DP04S*",  # ECO-WORTHY, DCHOUSE
