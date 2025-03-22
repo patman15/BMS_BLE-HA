@@ -98,8 +98,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
 
         start: Final[float] = monotonic()
         try:
-            battery_info = await self._device.async_update()
-            if not battery_info:
+            if not (battery_info := await self._device.async_update()):
                 LOGGER.debug("%s: no valid data received", self.name)
                 raise UpdateFailed("no valid data received.")
         except TimeoutError as err:
