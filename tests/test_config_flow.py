@@ -50,6 +50,7 @@ def bms_advertisement(request) -> BluetoothServiceInfoBleak:
     )
 
 
+@pytest.mark.usefixtures("enable_bluetooth")
 async def test_bluetooth_discovery(
     hass: HomeAssistant, advertisement: BluetoothServiceInfoBleak
 ) -> None:
@@ -82,9 +83,9 @@ async def test_bluetooth_discovery(
     )
 
 
+@pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
 async def test_device_setup(
     monkeypatch,
-    patch_bleakclient: None,
     BTdiscovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
 ) -> None:
@@ -128,7 +129,7 @@ async def test_device_setup(
 
 
 async def test_device_not_supported(
-    BTdiscovery_notsupported, hass: HomeAssistant
+    BTdiscovery_notsupported: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
     """Test discovery via bluetooth with a invalid device."""
 
@@ -142,7 +143,9 @@ async def test_device_not_supported(
     assert result.get("reason") == "not_supported"
 
 
-async def test_invalid_plugin(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
+async def test_invalid_plugin(
+    monkeypatch, BTdiscovery: BluetoothServiceInfoBleak, hass: HomeAssistant
+) -> None:
     """Test discovery via bluetooth with a valid device but invalid plugin.
 
     assertion is handled by internal function
@@ -159,10 +162,10 @@ async def test_invalid_plugin(monkeypatch, BTdiscovery, hass: HomeAssistant) -> 
     assert result.get("reason") == "not_supported"
 
 
-async def test_already_configured(bms_fixture, hass: HomeAssistant) -> None:
+async def test_already_configured(bms_fixture: str, hass: HomeAssistant) -> None:
     """Test that same device cannot be added twice."""
 
-    cfg = mock_config(bms_fixture)
+    cfg: MockConfigEntry = mock_config(bms_fixture)
     cfg.add_to_hass(hass)
 
     await hass.config_entries.async_setup(cfg.entry_id)
@@ -180,14 +183,18 @@ async def test_already_configured(bms_fixture, hass: HomeAssistant) -> None:
     assert result.get("reason") == "already_configured"
 
 
+@pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
 async def test_async_setup_entry(
-    monkeypatch, patch_bleakclient, bms_fixture, BTdiscovery, hass: HomeAssistant
+    monkeypatch,
+    bms_fixture: str,
+    BTdiscovery: BluetoothServiceInfoBleak,
+    hass: HomeAssistant,
 ) -> None:
     """Test async_setup_entry with valid input."""
 
     inject_bluetooth_service_info_bleak(hass, BTdiscovery)
 
-    cfg = mock_config(bms=bms_fixture)
+    cfg: MockConfigEntry = mock_config(bms=bms_fixture)
     cfg.add_to_hass(hass)
 
     monkeypatch.setattr(
@@ -214,8 +221,9 @@ async def test_setup_entry_missing_unique_id(bms_fixture, hass: HomeAssistant) -
     assert cfg.state is ConfigEntryState.SETUP_ERROR
 
 
+@pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
 async def test_user_setup(
-    monkeypatch, patch_bleakclient, BTdiscovery, hass: HomeAssistant
+    monkeypatch, BTdiscovery: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
     """Check config flow for user adding previously discovered device."""
 
@@ -265,8 +273,9 @@ async def test_user_setup(
     assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 11
 
 
+@pytest.mark.usefixtures("enable_bluetooth")
 async def test_user_setup_invalid(
-    BTdiscovery_notsupported, hass: HomeAssistant
+    BTdiscovery_notsupported: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
     """Check config flow for user adding previously discovered invalid device."""
 
@@ -277,8 +286,9 @@ async def test_user_setup_invalid(
     assert result.get("type") == FlowResultType.ABORT
 
 
+@pytest.mark.usefixtures("enable_bluetooth")
 async def test_user_setup_double_configure(
-    monkeypatch, BTdiscovery, hass: HomeAssistant
+    monkeypatch, BTdiscovery: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
     """Check config flow for user adding previously already added device."""
 
@@ -298,7 +308,7 @@ async def test_user_setup_double_configure(
     assert result.get("type") == FlowResultType.ABORT
 
 
-async def test_no_migration(bms_fixture, hass: HomeAssistant) -> None:
+async def test_no_migration(bms_fixture: str, hass: HomeAssistant) -> None:
     """Test that entries of correct version are kept."""
 
     cfg: MockConfigEntry = mock_config(bms=bms_fixture)
@@ -314,7 +324,9 @@ async def test_no_migration(bms_fixture, hass: HomeAssistant) -> None:
     assert cfg.state is ConfigEntryState.SETUP_RETRY
 
 
-async def test_migrate_entry_future_version(bms_fixture, hass: HomeAssistant) -> None:
+async def test_migrate_entry_future_version(
+    bms_fixture: str, hass: HomeAssistant
+) -> None:
     """Test migrating entries from future version."""
 
     cfg: MockConfigEntry = mock_config(bms=bms_fixture)
@@ -328,7 +340,7 @@ async def test_migrate_entry_future_version(bms_fixture, hass: HomeAssistant) ->
     assert cfg.state is ConfigEntryState.MIGRATION_ERROR
 
 
-async def test_migrate_invalid_v_0_1(bms_fixture, hass: HomeAssistant) -> None:
+async def test_migrate_invalid_v_0_1(bms_fixture: str, hass: HomeAssistant) -> None:
     """Test migrating an invalid entry in version 0.1."""
 
     cfg: MockConfigEntry = mock_config(bms=bms_fixture)
@@ -342,8 +354,12 @@ async def test_migrate_invalid_v_0_1(bms_fixture, hass: HomeAssistant) -> None:
     assert cfg.state is ConfigEntryState.MIGRATION_ERROR
 
 
+@pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
 async def test_migrate_entry_from_v_0_1(
-    monkeypatch, patch_bleakclient, mock_config_v0_1, BTdiscovery, hass: HomeAssistant
+    monkeypatch,
+    mock_config_v0_1,
+    BTdiscovery: BluetoothServiceInfoBleak,
+    hass: HomeAssistant,
 ) -> None:
     """Test migrating entries from version 0.1."""
 

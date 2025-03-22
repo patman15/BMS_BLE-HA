@@ -65,11 +65,6 @@ def auto_enable_custom_integrations(enable_custom_integrations: Any) -> None:
     return
 
 
-@pytest.fixture(autouse=True)
-def mock_bluetooth(enable_bluetooth) -> None:
-    """Auto mock bluetooth."""
-
-
 @pytest.fixture(params=[False, True])
 def bool_fixture(request) -> bool:
     """Return False, True for tests."""
@@ -297,7 +292,7 @@ class MockBleakClient(BleakClient):
         self._disconnect_callback: Callable[[BleakClient], None] | None = (
             disconnected_callback
         )
-        self._ble_device = address_or_ble_device
+        self._ble_device: BLEDevice = address_or_ble_device
 
     @property
     def address(self) -> str:
