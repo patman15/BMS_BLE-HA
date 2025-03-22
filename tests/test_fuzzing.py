@@ -1,9 +1,10 @@
 """Test the BLE Battery Management System via fuzzing."""
 
 from asyncio import iscoroutinefunction
+from collections.abc import Callable
 from types import ModuleType
 
-from hypothesis import HealthCheck, given, settings, strategies as st
+from hypothesis import given, strategies as st
 import pytest
 
 from custom_components.bms_ble.const import BMS_TYPES
@@ -16,12 +17,9 @@ from .conftest import MockBleakClient, MockRespChar
 @given(
     data=st.binary(min_size=0, max_size=513)
 )  # ATT is not allowed larger than 512 bytes
-@settings(
-    max_examples=5000, suppress_health_check=[HealthCheck.function_scoped_fixture]
-)
 @pytest.mark.parametrize("plugin_fixture", BMS_TYPES, indirect=True)
 async def test_notification_handler(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     pytestconfig: pytest.Config,
     plugin_fixture: ModuleType,
     data: bytearray,
@@ -45,8 +43,8 @@ async def test_notification_handler(
         MockBleakClient,
     )
 
-    bms_instance: BaseBMS = plugin_fixture.BMS(
-        generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDev123", {"path": None}, -73)
+    bms_instance: BaseBMS = plugin_fixture.BMS(  # char 10 needs to be A|B for OGT
+        generate_ble_device("cc:cc:cc:cc:cc:cc", "MockFuzz-BLE", {"path": None}, -73)
     )
 
     monkeypatch.setattr(
@@ -54,7 +52,7 @@ async def test_notification_handler(
     )  # required for _init_connection overloads, e.g. JK BMS
 
     await bms_instance._connect()
-    notify_handler = bms_instance._notification_handler  # type: ignore[attr-defined]
+    notify_handler: Callable = bms_instance._notification_handler  # type: ignore[attr-defined]
 
     if iscoroutinefunction(notify_handler):
         await notify_handler(MockRespChar(None, lambda: 0), data)

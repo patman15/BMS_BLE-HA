@@ -2,7 +2,12 @@
 
 from datetime import timedelta
 
-from pytest_homeassistant_custom_component.common import async_fire_time_changed
+from habluetooth import BluetoothServiceInfoBleak
+import pytest
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 
 from custom_components.bms_ble.const import UPDATE_INTERVAL
 from homeassistant.config_entries import ConfigEntryState
@@ -14,16 +19,17 @@ from .bluetooth import inject_bluetooth_service_info_bleak
 from .conftest import mock_config
 
 
+@pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
 async def test_update(
-    monkeypatch, patch_bleakclient, BTdiscovery, hass: HomeAssistant
+    monkeypatch, BTdiscovery: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
     """Test binary sensor value updates through coordinator."""
 
-    async def patch_device(_self):
+    async def patch_async_update(_self):
         """Patch async ble device from address to return a given value."""
         return {"voltage": 17.0, "current": 0, "problem": True}
 
-    config = mock_config(bms="dummy_bms")
+    config: MockConfigEntry = mock_config(bms="dummy_bms")
     config.add_to_hass(hass)
 
     inject_bluetooth_service_info_bleak(hass, BTdiscovery)
@@ -39,7 +45,7 @@ async def test_update(
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.dummy_bms.BMS.async_update",
-        patch_device,
+        patch_async_update,
     )
 
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=UPDATE_INTERVAL))

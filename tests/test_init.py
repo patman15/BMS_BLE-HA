@@ -1,5 +1,8 @@
 """Test the BLE Battery Management System integration initialization."""
 
+from habluetooth import BluetoothServiceInfoBleak
+import pytest
+
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 
@@ -7,8 +10,12 @@ from .bluetooth import inject_bluetooth_service_info_bleak
 from .conftest import mock_config, mock_update_exc, mock_update_min
 
 
+@pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
 async def test_init_fail(
-    monkeypatch, patch_bleakclient, bms_fixture, BTdiscovery, hass: HomeAssistant
+    monkeypatch,
+    bms_fixture,
+    BTdiscovery: BluetoothServiceInfoBleak,
+    hass: HomeAssistant,
 ) -> None:
     """Test entries are unloaded correctly."""
 
@@ -51,12 +58,12 @@ async def test_init_fail(
     ), "Failure: config entry generated sensors."
 
 
+@pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
 async def test_unload_entry(
     monkeypatch,
-    patch_bleakclient,
-    bms_fixture,
-    bool_fixture,
-    BTdiscovery,
+    bms_fixture: str,
+    bool_fixture: bool,
+    BTdiscovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
 ) -> None:
     """Test entries are unloaded correctly."""
@@ -103,7 +110,7 @@ async def test_unload_entry(
     assert await hass.config_entries.async_remove(cfg.entry_id)
     await hass.async_block_till_done(wait_background_tasks=True)
 
-    assert ( # shutdown is only called if entry unload succeeded
+    assert (  # shutdown is only called if entry unload succeeded
         trace_fct["shutdown_called"] or unload_fail
     ), "Failed to call coordinator async_shutdown()."
     assert (
