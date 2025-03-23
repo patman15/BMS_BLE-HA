@@ -116,6 +116,9 @@ The connection cannot be established. The reason is most likely a <a href="https
 ### My sensors show unknown/unavailable at startup!
 The polling interval is 30 seconds. So at startup it takes a few minutes to detect the battery and query the sensors. Then data will be available.
 
+### Can I set a custom polling interval?
+Yes, but I strongly discourage that for stability reasons. If you still want to do so, please see the default way to define a [custom interval](https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval) by Home Assistant. Note that Bluetooth discoveries can take up to a minute in worst case. Thus, please expect side effects, when changing the default of 30 seconds!
+
 ### Can I have the runtime in human readable format (using days)?
 Yes, you can use a [template sensor](https://my.home-assistant.io/redirect/config_flow_start?domain=template) or a card to show templates, e.g. [Mushroom template card](https://github.com/piitaya/lovelace-mushroom) with the following template:<br>
 `{{ timedelta(seconds=int(states("sensor.smartbat_..._runtime"), 0)) }}` results in e,g, `4 days, 4:20:00`
