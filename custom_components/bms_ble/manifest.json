@@ -187,6 +187,7 @@
   "loggers": [
     "bleak_retry_connector"
   ],
+  "quality_scale": "bronze",
   "requirements": [],
   "version": "1.14.0"
 }
