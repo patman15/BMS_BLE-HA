@@ -191,7 +191,7 @@ Once pairing is done, the integration should automatically detect the BMS.
 - [open a bug](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=Bug&projects=&template=bug.yml) if you think the behaviour you see is caused by the integration, including a good description of what happened, your expectations, and attach the log.
 
 ## Outlook
-- Clean-up of translations
+- Improvements to fulfill the [Home Assistant quality scale](https://www.home-assistant.io/docs/quality_scale/)
 - Add option to only have temporary connections (lowers reliability, but helps running more devices via [ESPHome Bluetooth proxy][btproxy-url])
 - Add further battery types on [request](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.yml)
 
