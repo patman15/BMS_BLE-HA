@@ -98,27 +98,25 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
 
         start: Final[float] = monotonic()
         try:
-            if not (battery_info := await self._device.async_update()):
+            if not (bms_data := await self._device.async_update()):
                 LOGGER.debug("%s: no valid data received", self.name)
                 raise UpdateFailed("no valid data received.")
         except TimeoutError as err:
             LOGGER.debug("%s: device communication timed out", self.name)
             raise TimeoutError("device communication timed out") from err
         except (BleakError, EOFError) as err:
-            LOGGER.debug(
-                "%s: device communicating failed: %s (%s)",
-                self.name,
-                err,
-                type(err).__name__,
+            basemsg: Final[str] = "device communication failed" + (
+                f", check signal strength ({self.rssi} dBm)"
+                if self.rssi and self.rssi <= -80
+                else ""
             )
-            raise UpdateFailed(
-                f"device communicating failed: {err!s} ({type(err).__name__})"
-            ) from err
+            LOGGER.debug("%s: %s: %s (%s)", self.name, basemsg, err, type(err).__name__)
+            raise UpdateFailed(f"{basemsg}: {err!s} ({type(err).__name__})") from err
         finally:
             self._link_q.extend(
                 [False] * (1 + int((monotonic() - start) / UPDATE_INTERVAL))
             )
 
         self._link_q[-1] = True  # set success
-        LOGGER.debug("%s: BMS data sample %s", self.name, battery_info)
-        return battery_info
+        LOGGER.debug("%s: BMS data sample %s", self.name, bms_data)
+        return bms_data
