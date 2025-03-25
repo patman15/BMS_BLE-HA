@@ -14,7 +14,7 @@ from bleak.backends.descriptor import BleakGATTDescriptor
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str, uuidstr_to_str
-from home_assistant_bluetooth import BluetoothServiceInfoBleak
+from home_assistant_bluetooth import SOURCE_LOCAL, BluetoothServiceInfoBleak
 from hypothesis import HealthCheck, settings
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -30,7 +30,6 @@ from custom_components.bms_ble.const import (
     KEY_TEMP_VALUE,
 )
 from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
-from homeassistant.config_entries import SOURCE_BLUETOOTH
 
 from .bluetooth import generate_advertisement_data, generate_ble_device
 
@@ -124,7 +123,7 @@ def BTdiscovery() -> BluetoothServiceInfoBleak:
             local_name="SmartBat-B12345",
             service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
         ),
-        source=SOURCE_BLUETOOTH,
+        source=SOURCE_LOCAL,
         connectable=True,
         time=0,
         tx_power=-76,
@@ -156,7 +155,9 @@ def BTdiscovery_notsupported():
     )
 
 
-def mock_config(bms: str, unique_id: str | None = "cc:cc:cc:cc:cc:cc"):
+def mock_config(
+    bms: str, unique_id: str | None = "cc:cc:cc:cc:cc:cc"
+) -> MockConfigEntry:
     """Return a Mock of the HA entity config."""
     return MockConfigEntry(
         domain=DOMAIN,
@@ -216,7 +217,9 @@ class Mock_BMS(BaseBMS):
         self, exc: Exception | None = None, ret_value: BMSsample | None = None
     ) -> None:  # , ble_device, reconnect: bool = False
         """Initialize BMS."""
-        super().__init__(LOGGER.name, generate_ble_device(address=""), False)
+        super().__init__(
+            LOGGER.name, generate_ble_device(address="", details={"path": None}), False
+        )
         LOGGER.debug("%s init(), Test except: %s", self.device_id(), str(exc))
         self._exception: Exception | None = exc
         self._ret_value: BMSsample = (

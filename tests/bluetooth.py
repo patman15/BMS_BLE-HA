@@ -88,7 +88,7 @@ def inject_advertisement_with_time_and_source_connectable(
         )
     )
 
-# NOTE: you cannot init BleakCLient from this information!
+
 def inject_bluetooth_service_info_bleak(
     hass: HomeAssistant, info: BluetoothServiceInfoBleak
 ) -> None:
@@ -99,6 +99,7 @@ def inject_bluetooth_service_info_bleak(
         service_data=info.service_data,
         service_uuids=info.service_uuids,
         rssi=info.rssi,
+        tx_power=info.tx_power,  # fixed init
     )
     device = generate_ble_device(  # type: ignore[no-untyped-call]
         address=info.address,
