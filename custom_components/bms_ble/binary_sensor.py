@@ -15,6 +15,8 @@ from . import BTBmsConfigEntry
 from .const import ATTR_PROBLEM, DOMAIN
 from .coordinator import BTBmsCoordinator
 
+PARALLEL_UPDATES = 0
+
 BINARY_SENSOR_TYPES: list[BinarySensorEntityDescription] = [
     BinarySensorEntityDescription(
         key=ATTR_BATTERY_CHARGING,
@@ -24,7 +26,6 @@ BINARY_SENSOR_TYPES: list[BinarySensorEntityDescription] = [
     BinarySensorEntityDescription(
         key=ATTR_PROBLEM,
         translation_key=ATTR_PROBLEM,
-        icon="mdi:battery-alert",
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),

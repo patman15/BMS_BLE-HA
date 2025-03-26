@@ -94,19 +94,43 @@ def bms_data_fixture(request) -> BMSsample:
 
 
 @pytest.fixture
-def patch_bleakclient(monkeypatch) -> None:
+def patch_bms_timeout(monkeypatch):
+    """Fixture to patch BMS.TIMEOUT for different BMS classes."""
+
+    def _patch_timeout(bms_class: str, timeout: float = 0.1) -> None:
+        monkeypatch.setattr(
+            f"custom_components.bms_ble.plugins.{bms_class}.BMS.TIMEOUT", timeout
+        )
+
+    return _patch_timeout
+
+
+@pytest.fixture
+def patch_default_bleak_client(monkeypatch) -> None:
     """Patch BleakClient to a mock as BT is not available.
 
     required because BTdiscovery cannot be used to generate a BleakClient in async_setup()
     """
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockBleakClient,
+        "custom_components.bms_ble.plugins.basebms.BleakClient", MockBleakClient
     )
 
 
 @pytest.fixture
-def BTdiscovery() -> BluetoothServiceInfoBleak:
+def patch_bleak_client(monkeypatch):
+    """Fixture to patch BleakClient with a given MockClient."""
+
+    def _patch(mock_client=MockBleakClient) -> None:
+        monkeypatch.setattr(
+            "custom_components.bms_ble.plugins.basebms.BleakClient",
+            mock_client,
+        )
+
+    return _patch
+
+
+@pytest.fixture
+def bt_discovery() -> BluetoothServiceInfoBleak:
     """Return a valid Bluetooth object for testing."""
     return BluetoothServiceInfoBleak(
         name="SmartBat-B12345",
@@ -132,7 +156,7 @@ def BTdiscovery() -> BluetoothServiceInfoBleak:
 
 # use inject_bluetooth_service_info
 @pytest.fixture
-def BTdiscovery_notsupported():
+def bt_discovery_notsupported() -> BluetoothServiceInfoBleak:
     """Return a Bluetooth object that describes a not supported device."""
     return BluetoothServiceInfoBleak(
         name="random",  # not supported name
@@ -210,7 +234,7 @@ def ogt_bms_fixture(request) -> str:
     return request.param
 
 
-class Mock_BMS(BaseBMS):
+class MockBMS(BaseBMS):
     """Mock Battery Management System."""
 
     def __init__(
@@ -331,7 +355,7 @@ class MockBleakClient(BleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # type: ignore[implicit-optional] # noqa: RUF013 # same as upstream
+        response: bool = None,  # noqa: RUF013 # same as upstream
     ) -> None:
         """Mock write GATT characteristics."""
         LOGGER.debug(

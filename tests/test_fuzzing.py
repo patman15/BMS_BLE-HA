@@ -20,6 +20,7 @@ from .conftest import MockBleakClient, MockRespChar
 @pytest.mark.parametrize("plugin_fixture", BMS_TYPES, indirect=True)
 async def test_notification_handler(
     monkeypatch: pytest.MonkeyPatch,
+    patch_bleak_client,
     pytestconfig: pytest.Config,
     plugin_fixture: ModuleType,
     data: bytearray,
@@ -38,10 +39,7 @@ async def test_notification_handler(
     async def patch_init() -> None:
         return
 
-    monkeypatch.setattr(  # patch BleakClient to allow write calls in handler
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockBleakClient,
-    )
+    patch_bleak_client(MockBleakClient)
 
     bms_instance: BaseBMS = plugin_fixture.BMS(  # char 10 needs to be A|B for OGT
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockFuzz-BLE", {"path": None}, -73)

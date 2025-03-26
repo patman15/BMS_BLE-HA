@@ -15,7 +15,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 
 from .bluetooth import inject_bluetooth_service_info_bleak
-from .conftest import Mock_BMS, MockBleakClient, mock_config
+from .conftest import MockBleakClient, MockBMS, mock_config
 
 DEVICE: dict[str, Any] = {
     "connections": {("bluetooth", "CC:8D:A2:1F:70:F1")},
@@ -34,7 +34,7 @@ DEVICE: dict[str, Any] = {
 @pytest.mark.usefixtures("enable_bluetooth")
 async def test_diagnostics(
     monkeypatch: pytest.MonkeyPatch,
-    BTdiscovery: BluetoothServiceInfoBleak,
+    bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
 ) -> None:
     """Home Assistant device diagnostic download."""
@@ -42,7 +42,7 @@ async def test_diagnostics(
     ce: MockConfigEntry = mock_config(bms="dummy")
     config_entry: ConfigEntry[BTBmsCoordinator] = ce
     ce.runtime_data = BTBmsCoordinator(
-        hass, BTdiscovery.device, Mock_BMS(), config_entry
+        hass, bt_discovery.device, MockBMS(), config_entry
     )
     ce.add_to_hass(hass)
 
@@ -60,14 +60,14 @@ async def test_diagnostics(
         "custom_components.bms_ble.plugins.basebms.BleakClient", MockBleakClient
     )
 
-    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
     await ce.runtime_data.async_refresh()
 
     diag_data: dict[str, Any] = await async_get_device_diagnostics(
         hass, config_entry, device
     )
 
-    assert str(diag_data["adv_data"]) == str(BTdiscovery)
+    assert str(diag_data["adv_data"]) == str(bt_discovery)
     assert diag_data["bms_data"] == {
         "current": 1.7,
         "cycle_charge": 19,

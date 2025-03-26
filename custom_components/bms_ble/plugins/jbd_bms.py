@@ -59,7 +59,7 @@ class BMS(BaseBMS):
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             }
-            for pattern in [
+            for pattern in (
                 "SP0?S*",
                 "SP1?S*",
                 "SP2?S*",
@@ -70,7 +70,7 @@ class BMS(BaseBMS):
                 "121?0*",  # Eleksol, Ultimatron
                 "12200*",
                 "12300*",
-            ]
+            )
         ]
 
     @staticmethod
@@ -94,15 +94,17 @@ class BMS(BaseBMS):
         return "ff02"
 
     @staticmethod
-    def _calc_values() -> set[str]:
-        return {
-            ATTR_POWER,
-            ATTR_BATTERY_CHARGING,
-            ATTR_CYCLE_CAP,
-            ATTR_RUNTIME,
-            ATTR_DELTA_VOLTAGE,
-            ATTR_TEMPERATURE,
-        }
+    def _calc_values() -> frozenset[str]:
+        return frozenset(
+            {
+                ATTR_POWER,
+                ATTR_BATTERY_CHARGING,
+                ATTR_CYCLE_CAP,
+                ATTR_RUNTIME,
+                ATTR_DELTA_VOLTAGE,
+                ATTR_TEMPERATURE,
+            }
+        )
 
     def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
@@ -195,10 +197,10 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         data: BMSsample = {}
-        for cmd, exp_len, dec_fct in [
+        for cmd, exp_len, dec_fct in (
             (BMS._cmd(b"\x03"), BMS.BASIC_INFO, BMS._decode_data),
             (BMS._cmd(b"\x04"), 0, BMS._cell_voltages),
-        ]:
+        ):
             await self._await_reply(cmd)
             if (
                 len(self._data_final) != BMS.INFO_LEN + self._data_final[3]
