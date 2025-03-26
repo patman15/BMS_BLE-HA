@@ -197,12 +197,12 @@ def response(request) -> bytearray:
     return request.param[0]
 
 
-async def test_invalid_response(monkeypatch, wrong_response: bytearray) -> None:
+async def test_invalid_response(
+    monkeypatch, patch_bms_timeout, wrong_response: bytearray
+) -> None:
     """Test data up date with BMS returning invalid data."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.roypow_bms.BMS.TIMEOUT", 0.1
-    )
+    patch_bms_timeout("roypow_bms")
 
     monkeypatch.setattr(
         "tests.test_roypow_bms.MockRoyPowBleakClient.RESP",

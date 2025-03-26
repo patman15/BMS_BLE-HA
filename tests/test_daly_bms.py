@@ -17,9 +17,9 @@ from .conftest import MockBleakClient
 class MockDalyBleakClient(MockBleakClient):
     """Emulate a Daly BMS BleakClient."""
 
-    HEAD_READ = b"\xD2\x03"
-    CMD_INFO = b"\x00\x00\x00\x3E\xD7\xB9"
-    MOS_INFO = b"\x00\x3E\x00\x09\xF7\xA3"
+    HEAD_READ = b"\xd2\x03"
+    CMD_INFO = b"\x00\x00\x00\x3e\xd7\xb9"
+    MOS_INFO = b"\x00\x3e\x00\x09\xf7\xa3"
     MOS_AVAIL: bool = True
 
     def _response(
@@ -192,13 +192,10 @@ def response(request):
     return request.param[0]
 
 
-async def test_invalid_response(monkeypatch, wrong_response) -> None:
+async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) -> None:
     """Test data update with BMS returning invalid data."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.daly_bms.BMS.TIMEOUT",
-        0.1,
-    )
+    patch_bms_timeout("daly_bms")
 
     monkeypatch.setattr(
         "tests.test_daly_bms.MockDalyBleakClient._response",
@@ -244,7 +241,7 @@ async def test_invalid_response(monkeypatch, wrong_response) -> None:
                 b"\x00\x00\x00\x00\x00\x00\x00\x00\x3c\x00\x3d\x00\x3e\x00\x3f\x00\x00\x00\x00\x00"
                 b"\x00\x00\x00\x00\x8c\x75\x4e\x03\x84\x10\x3d\x10\x1f\x00\x00\x00\x00\x00\x00\x0d"
                 b"\x80\x00\x04\x00\x04\x00\x39\x00\x01\x00\x00\x00\x01\x10\x2e\x01\x41\x00\x2a\x80"
-                b"\x00\x00\x00\x00\x00\x00\x00\xA8\xBF"
+                b"\x00\x00\x00\x00\x00\x00\x00\xa8\xbf"
             ),
             "last_bit",
         ),

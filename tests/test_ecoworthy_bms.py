@@ -183,12 +183,10 @@ async def test_tx_notimplemented(monkeypatch) -> None:
         _ret: str = bms.uuid_tx()
 
 
-async def test_invalid_response(monkeypatch, wrong_response) -> None:
+async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) -> None:
     """Test data up date with BMS returning invalid data."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.ecoworthy_bms.BMS.TIMEOUT", 0.2
-    )
+    patch_bms_timeout("ecoworthy_bms")
 
     monkeypatch.setattr(
         "tests.test_ecoworthy_bms.MockECOWBleakClient.RESP",

@@ -607,10 +607,10 @@ async def test_stream_update(monkeypatch, protocol_type, reconnect_fixture) -> N
     await bms.disconnect()
 
 
-async def test_invalid_response(monkeypatch) -> None:
+async def test_invalid_response(monkeypatch, patch_bms_timeout) -> None:
     """Test data update with BMS returning invalid data."""
 
-    monkeypatch.setattr("custom_components.bms_ble.plugins.jikong_bms.BMS.TIMEOUT", 0.1)
+    patch_bms_timeout("jikong_bms")
 
     # return type 0x03 (first requested message) with incorrect CRC
     monkeypatch.setattr(
@@ -632,13 +632,10 @@ async def test_invalid_response(monkeypatch) -> None:
     await bms.disconnect()
 
 
-async def test_invalid_frame_type(monkeypatch) -> None:
+async def test_invalid_frame_type(monkeypatch, patch_bms_timeout) -> None:
     """Test data update with BMS returning invalid data."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.jikong_bms.BMS.TIMEOUT",
-        0.1,
-    )
+    patch_bms_timeout("jikong_bms")
 
     monkeypatch.setattr(
         "tests.test_jikong_bms.MockInvalidBleakClient._response",
@@ -701,10 +698,10 @@ async def test_invalid_device(monkeypatch) -> None:
     await bms.disconnect()
 
 
-async def test_non_stale_data(monkeypatch) -> None:
+async def test_non_stale_data(monkeypatch, patch_bms_timeout) -> None:
     """Test if BMS class is reset if connection is reset."""
 
-    monkeypatch.setattr("custom_components.bms_ble.plugins.jikong_bms.BMS.TIMEOUT", 0.1)
+    patch_bms_timeout("jikong_bms")
 
     monkeypatch.setattr(
         "tests.test_jikong_bms.MockJikongBleakClient._FRAME", _PROTO_DEFS["JK02_32S"]

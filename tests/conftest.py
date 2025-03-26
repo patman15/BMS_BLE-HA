@@ -95,6 +95,18 @@ def bms_data_fixture(request) -> BMSsample:
 
 
 @pytest.fixture
+def patch_bms_timeout(monkeypatch):
+    """Fixture to patch BMS.TIMEOUT for different BMS classes."""
+
+    def _patch_timeout(bms_class: str, timeout: float = 0.1) -> None:
+        monkeypatch.setattr(
+            f"custom_components.bms_ble.plugins.{bms_class}.BMS.TIMEOUT", timeout
+        )
+
+    return _patch_timeout
+
+
+@pytest.fixture
 def patch_bleakclient(monkeypatch) -> None:
     """Patch BleakClient to a mock as BT is not available.
 

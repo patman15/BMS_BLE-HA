@@ -294,10 +294,10 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
     await bms.disconnect()
 
 
-async def test_wrong_crc(monkeypatch) -> None:
+async def test_wrong_crc(monkeypatch, patch_bms_timeout) -> None:
     """Test data update with BMS returning invalid data (wrong CRC)."""
 
-    monkeypatch.setattr("custom_components.bms_ble.plugins.seplos_bms.BMS.TIMEOUT", 0.1)
+    patch_bms_timeout("seplos_bms")
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.basebms.BleakClient", MockWrongCRCBleakClient
@@ -314,9 +314,10 @@ async def test_wrong_crc(monkeypatch) -> None:
     await bms.disconnect()
 
 
-async def test_error_response(monkeypatch) -> None:
+async def test_error_response(monkeypatch, patch_bms_timeout) -> None:
     """Test data update with BMS returning error message."""
-    monkeypatch.setattr("custom_components.bms_ble.plugins.seplos_bms.BMS.TIMEOUT", 0.1)
+
+    patch_bms_timeout("seplos_bms")
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.basebms.BleakClient", MockErrRespBleakClient
@@ -348,10 +349,10 @@ async def test_oversized_response(monkeypatch) -> None:
     await bms.disconnect()
 
 
-async def test_invalid_message(monkeypatch) -> None:
+async def test_invalid_message(monkeypatch, patch_bms_timeout) -> None:
     """Test data update with BMS returning error message."""
 
-    monkeypatch.setattr("custom_components.bms_ble.plugins.seplos_bms.BMS.TIMEOUT", 0.1)
+    patch_bms_timeout("seplos_bms")
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.basebms.BleakClient",

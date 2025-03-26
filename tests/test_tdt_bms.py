@@ -237,12 +237,12 @@ async def test_update_4s_4t(monkeypatch, reconnect_fixture) -> None:
 @pytest.fixture(
     name="wrong_response",
     params=[
-        (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xA1\x18\x00", "invalid frame end"),
-        (b"\x7e\x10\x01\x03\x00\x8c\x00\x01\x00\xAD\x19\x0D", "invalid version"),
-        (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xA1\x00\x0D", "invalid CRC"),
-        (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xA1\x18\x0D\x00", "oversized frame"),
-        (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xA1\x0D", "undersized frame"),
-        (b"\x7e\x00\x01\x03\x01\x8c\x00\x01\x00\x61\x25\x0D", "error response"),
+        (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xa1\x18\x00", "invalid frame end"),
+        (b"\x7e\x10\x01\x03\x00\x8c\x00\x01\x00\xad\x19\x0d", "invalid version"),
+        (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xa1\x00\x0d", "invalid CRC"),
+        (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xa1\x18\x0d\x00", "oversized frame"),
+        (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xa1\x0d", "undersized frame"),
+        (b"\x7e\x00\x01\x03\x01\x8c\x00\x01\x00\x61\x25\x0d", "error response"),
     ],
     ids=lambda param: param[1],
 )
@@ -251,13 +251,10 @@ def response(request):
     return request.param[0]
 
 
-async def test_invalid_response(monkeypatch, wrong_response) -> None:
+async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) -> None:
     """Test data up date with BMS returning invalid data."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.tdt_bms.BMS.TIMEOUT",
-        0.1,
-    )
+    patch_bms_timeout("tdt_bms")
 
     monkeypatch.setattr(
         "tests.test_tdt_bms.MockTDTBleakClient._response",

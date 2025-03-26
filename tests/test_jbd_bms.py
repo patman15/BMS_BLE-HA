@@ -158,10 +158,10 @@ def response(request) -> bytearray:
     return request.param[0]
 
 
-async def test_invalid_response(monkeypatch, wrong_response) -> None:
+async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) -> None:
     """Test data update with BMS returning invalid data (wrong CRC)."""
 
-    monkeypatch.setattr("custom_components.bms_ble.plugins.jbd_bms.BMS.TIMEOUT", 0.1)
+    patch_bms_timeout("jbd_bms")
 
     monkeypatch.setattr(
         "tests.test_jbd_bms.MockJBDBleakClient._response",
