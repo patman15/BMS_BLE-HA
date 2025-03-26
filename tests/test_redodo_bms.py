@@ -67,7 +67,7 @@ class MockRedodoBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # type: ignore[implicit-optional] # noqa: RUF013 # same as upstream
+        response: bool = None,  # noqa: RUF013 # same as upstream
     ) -> None:
         """Issue write command to GATT."""
         await super().write_gatt_char(char_specifier, data, response)
@@ -138,7 +138,7 @@ async def test_update(patch_bleak_client, reconnect_fixture) -> None:
     ],
     ids=lambda param: param[1],
 )
-def response(request):
+def fix_response(request):
     """Return faulty response frame."""
     return request.param[0]
 

@@ -48,7 +48,8 @@ class MockDalyBleakClient(MockBleakClient):
             if not self.MOS_AVAIL:
                 raise TimeoutError
             return bytearray(
-                b"\xd2\x03\x12\x00\x00\x00\x00\x75\x30\x00\x00\x00\x4e\xff\xff\xff\xff\xff\xff\xff\xff\x0b\x4e"
+                b"\xd2\x03\x12\x00\x00\x00\x00\x75\x30\x00\x00\x00\x4e\xff\xff\xff\xff\xff\xff\xff"
+                b"\xff\x0b\x4e"
             )
 
         return bytearray()
@@ -57,7 +58,7 @@ class MockDalyBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # type: ignore[implicit-optional] # noqa: RUF013 # same as upstream
+        response: bool = None,  # noqa: RUF013 # same as upstream
     ) -> None:
         """Issue write command to GATT."""
         await super().write_gatt_char(char_specifier, data, response)
@@ -184,7 +185,7 @@ async def test_too_short_frame(patch_bleak_client) -> None:
     ],
     ids=lambda param: param[1],
 )
-def response(request):
+def fix_response(request) -> tuple[bytearray, str]:
     """Return faulty response frame."""
     return request.param[0]
 

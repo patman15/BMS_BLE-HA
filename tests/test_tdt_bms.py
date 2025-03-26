@@ -237,7 +237,7 @@ async def test_update_4s_4t(monkeypatch, patch_bleak_client, reconnect_fixture) 
     ],
     ids=lambda param: param[1],
 )
-def response(request):
+def fix_response(request):
     """Return faulty response frame."""
     return request.param[0]
 

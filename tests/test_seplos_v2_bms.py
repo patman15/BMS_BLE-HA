@@ -156,7 +156,7 @@ async def test_update(patch_bleak_client, reconnect_fixture) -> None:
     ],
     ids=lambda param: param[1],
 )
-def response(request):
+def fix_response(request):
     """Return faulty response frame."""
     return request.param[0]
 

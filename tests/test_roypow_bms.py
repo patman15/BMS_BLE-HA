@@ -186,7 +186,7 @@ async def test_update_dischrg(monkeypatch, patch_bleak_client) -> None:
     ],
     ids=lambda param: param[1],
 )
-def response(request) -> bytearray:
+def fix_response(request) -> bytearray:
     """Return faulty response frame."""
     return request.param[0]
 
