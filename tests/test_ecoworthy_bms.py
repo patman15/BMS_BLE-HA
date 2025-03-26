@@ -187,7 +187,7 @@ async def test_invalid_response(monkeypatch, wrong_response) -> None:
     """Test data up date with BMS returning invalid data."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.ecoworthy_bms.BMS.BAT_TIMEOUT", 0.2
+        "custom_components.bms_ble.plugins.ecoworthy_bms.BMS.TIMEOUT", 0.2
     )
 
     monkeypatch.setattr(

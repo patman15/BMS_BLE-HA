@@ -32,7 +32,7 @@ from .basebms import BaseBMS, BMSsample, crc8
 class BMS(BaseBMS):
     """ABC battery class implementation."""
 
-    BAT_TIMEOUT = 1
+    TIMEOUT = 1
     _HEAD_CMD: Final[int] = 0xEE
     _HEAD_RESP: Final[bytes] = b"\xCC"
     _INFO_LEN: Final[int] = 0x14

@@ -197,7 +197,7 @@ async def test_invalid_response(monkeypatch) -> None:
     """Test data update with BMS returning invalid data."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.cbtpwr_bms.BMS.BAT_TIMEOUT", 0.1
+        "custom_components.bms_ble.plugins.cbtpwr_bms.BMS.TIMEOUT", 0.1
     )
 
     monkeypatch.setattr(
@@ -222,7 +222,7 @@ async def test_partly_base_data(monkeypatch) -> None:
     """Test data update with BMS returning invalid data."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.cbtpwr_bms.BMS.BAT_TIMEOUT", 0.1
+        "custom_components.bms_ble.plugins.cbtpwr_bms.BMS.TIMEOUT", 0.1
     )
 
     monkeypatch.setattr(
@@ -248,7 +248,7 @@ async def test_all_cell_voltages(monkeypatch) -> None:
     """Test data update with BMS returning invalid data."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.cbtpwr_bms.BMS.BAT_TIMEOUT", 0.1
+        "custom_components.bms_ble.plugins.cbtpwr_bms.BMS.TIMEOUT", 0.1
     )
 
     monkeypatch.setattr(

@@ -163,7 +163,7 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
-        await asyncio.wait_for(self._wait_event(), timeout=self.BAT_TIMEOUT)
+        await asyncio.wait_for(self._wait_event(), timeout=self.TIMEOUT)
         return {
             key: func(BMS._conv_int(self._data_final[idx : idx + size], sign))
             for key, idx, size, sign, func in BMS._FIELDS

@@ -20,8 +20,8 @@ class MockJBDBleakClient(MockBleakClient):
     """Emulate a JBD BMS BleakClient."""
 
     HEAD_CMD = 0xDD
-    CMD_INFO = bytearray(b"\xA5\x03")
-    CMD_CELL = bytearray(b"\xA5\x04")
+    CMD_INFO = bytearray(b"\xa5\x03")
+    CMD_CELL = bytearray(b"\xa5\x04")
 
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
@@ -34,8 +34,8 @@ class MockJBDBleakClient(MockBleakClient):
         ):
             if bytearray(data)[1:3] == self.CMD_INFO:
                 return bytearray(
-                    b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
-                    b"\x00\x00\x00\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x84\x77"
+                    b"\xdd\x03\x00\x1d\x06\x18\xfe\xe1\x01\xf2\x01\xf4\x00\x2a\x2c\x7c\x00\x00\x00"
+                    b"\x00\x00\x00\x80\x64\x03\x04\x03\x0b\x8b\x0b\x8a\x0b\x84\xf8\x84\x77"
                 )  # {'voltage': 15.6, 'current': -2.87, 'battery_level': 100, 'cycle_charge': 4.98, 'cycles': 42, 'temperature': 22.133333333333347}
             if bytearray(data)[1:3] == self.CMD_CELL:
                 return bytearray(
@@ -76,8 +76,8 @@ class MockOversizedBleakClient(MockJBDBleakClient):
         ):
             if bytearray(data)[1:3] == self.CMD_INFO:
                 return bytearray(
-                    b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
-                    b"\x00\x00\x00\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x84\x77"
+                    b"\xdd\x03\x00\x1d\x06\x18\xfe\xe1\x01\xf2\x01\xf4\x00\x2a\x2c\x7c\x00\x00\x00"
+                    b"\x00\x00\x00\x80\x64\x03\x04\x03\x0b\x8b\x0b\x8a\x0b\x84\xf8\x84\x77"
                     b"\00\00\00\00\00\00"  # oversized response
                 )  # {'voltage': 15.6, 'current': -2.87, 'battery_level': 100, 'cycle_charge': 4.98, 'cycles': 42, 'temperature': 22.133333333333347}
             if bytearray(data)[1:3] == self.CMD_CELL:
@@ -144,8 +144,8 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
     params=[
         (
             bytearray(
-                b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
-                b"\x00\x00\x00\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x84\xdd"
+                b"\xdd\x03\x00\x1d\x06\x18\xfe\xe1\x01\xf2\x01\xf4\x00\x2a\x2c\x7c\x00\x00\x00"
+                b"\x00\x00\x00\x80\x64\x03\x04\x03\x0b\x8b\x0b\x8a\x0b\x84\xf8\x84\xdd"
             ),
             "wrong end",
         ),
@@ -161,10 +161,7 @@ def response(request) -> bytearray:
 async def test_invalid_response(monkeypatch, wrong_response) -> None:
     """Test data update with BMS returning invalid data (wrong CRC)."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.jbd_bms.BMS.BAT_TIMEOUT",
-        0.1,
-    )
+    monkeypatch.setattr("custom_components.bms_ble.plugins.jbd_bms.BMS.TIMEOUT", 0.1)
 
     monkeypatch.setattr(
         "tests.test_jbd_bms.MockJBDBleakClient._response",
@@ -228,15 +225,15 @@ async def test_oversized_response(monkeypatch) -> None:
     params=[
         (
             bytearray(
-                b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
-                b"\x00\x00\x01\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x83\x77"
+                b"\xdd\x03\x00\x1d\x06\x18\xfe\xe1\x01\xf2\x01\xf4\x00\x2a\x2c\x7c\x00\x00\x00"
+                b"\x00\x00\x01\x80\x64\x03\x04\x03\x0b\x8b\x0b\x8a\x0b\x84\xf8\x83\x77"
             ),
             "first_bit",
         ),
         (
             bytearray(
-                b"\xdd\x03\x00\x1D\x06\x18\xFE\xE1\x01\xF2\x01\xF4\x00\x2A\x2C\x7C\x00\x00\x00"
-                b"\x00\x80\x00\x80\x64\x03\x04\x03\x0B\x8B\x0B\x8A\x0B\x84\xf8\x04\x77"
+                b"\xdd\x03\x00\x1d\x06\x18\xfe\xe1\x01\xf2\x01\xf4\x00\x2a\x2c\x7c\x00\x00\x00"
+                b"\x00\x80\x00\x80\x64\x03\x04\x03\x0b\x8b\x0b\x8a\x0b\x84\xf8\x04\x77"
             ),
             "last_bit",
         ),

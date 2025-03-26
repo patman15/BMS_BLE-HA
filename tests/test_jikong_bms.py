@@ -264,7 +264,7 @@ def proto(request: pytest.FixtureRequest) -> str:
 class MockJikongBleakClient(MockBleakClient):
     """Emulate a Jikong BMS BleakClient."""
 
-    HEAD_CMD: Final = bytearray(b"\xAA\x55\x90\xEB")
+    HEAD_CMD: Final = bytearray(b"\xaa\x55\x90\xeb")
     CMD_INFO: Final = bytearray(b"\x96")
     DEV_INFO: Final = bytearray(b"\x97")
     _FRAME: dict[str, bytearray] = {}
@@ -547,7 +547,7 @@ async def test_hide_temp_sensors(monkeypatch, protocol_type) -> None:
         temp12_hide["cell"][182:184] = bytearray(b"\x03\x00")
         temp12_hide["cell"][132:134] = bytearray(b"\x30\xf8")  # -200.0
     else:
-        temp12_hide["cell"][214:216] = bytearray(b"\xFB\x00")
+        temp12_hide["cell"][214:216] = bytearray(b"\xfb\x00")
         temp12_hide["cell"][162:164] = bytearray(b"\x30\xf8")  # -200.0
     # recalculate CRC
     temp12_hide["cell"][-1] = crc_sum(temp12_hide["cell"][:-1])
@@ -610,9 +610,7 @@ async def test_stream_update(monkeypatch, protocol_type, reconnect_fixture) -> N
 async def test_invalid_response(monkeypatch) -> None:
     """Test data update with BMS returning invalid data."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.jikong_bms.BMS.BAT_TIMEOUT", 0.1
-    )
+    monkeypatch.setattr("custom_components.bms_ble.plugins.jikong_bms.BMS.TIMEOUT", 0.1)
 
     # return type 0x03 (first requested message) with incorrect CRC
     monkeypatch.setattr(
@@ -638,7 +636,7 @@ async def test_invalid_frame_type(monkeypatch) -> None:
     """Test data update with BMS returning invalid data."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.jikong_bms.BMS.BAT_TIMEOUT",
+        "custom_components.bms_ble.plugins.jikong_bms.BMS.TIMEOUT",
         0.1,
     )
 
@@ -706,10 +704,7 @@ async def test_invalid_device(monkeypatch) -> None:
 async def test_non_stale_data(monkeypatch) -> None:
     """Test if BMS class is reset if connection is reset."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.jikong_bms.BMS.BAT_TIMEOUT",
-        0.1,
-    )
+    monkeypatch.setattr("custom_components.bms_ble.plugins.jikong_bms.BMS.TIMEOUT", 0.1)
 
     monkeypatch.setattr(
         "tests.test_jikong_bms.MockJikongBleakClient._FRAME", _PROTO_DEFS["JK02_32S"]
