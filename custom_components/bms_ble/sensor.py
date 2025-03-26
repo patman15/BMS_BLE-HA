@@ -45,6 +45,8 @@ from .const import (
 )
 from .coordinator import BTBmsCoordinator
 
+PARALLEL_UPDATES = 0
+
 SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
     SensorEntityDescription(
         key=ATTR_VOLTAGE,
@@ -188,8 +190,7 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
             return {ATTR_CELL_VOLTAGES: self._get_attr_list(KEY_CELL_VOLTAGE)}
         # add individual temperature values to temperature sensor
         if sensor_key == ATTR_TEMPERATURE:
-            temp_sensors: Final = self._get_attr_list(KEY_TEMP_VALUE)
-            if temp_sensors:
+            if temp_sensors:= self._get_attr_list(KEY_TEMP_VALUE):
                 return {ATTR_TEMP_SENSORS: temp_sensors}
             if temp := self.coordinator.data.get(ATTR_TEMPERATURE):
                 return {ATTR_TEMP_SENSORS: [temp]}

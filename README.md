@@ -7,7 +7,7 @@
 
 This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). After installation, no configuration is required. You can use the [ESPHome Bluetooth proxy][btproxy-url] to extend the bluetooth coverage range. By using standard dashboard cards, it is easy to visualize the current state of remote batteries.
 
-![dashboard](https://github.com/user-attachments/assets/e62024f2-f5fa-4cbe-ac93-8cc62846e663)
+![dashboard](https://github.com/user-attachments/assets/45fbba89-6e80-4f5a-a6a2-f589c4eedaf2)
 
 ## Features
 - Zero configuration
@@ -84,12 +84,11 @@ bad | 0 to 60  | -90 to low
 
 
 ## Installation
+BMS_BLE is a default repository in [HACS](https://hacs.xyz/). Please follow the [guidelines on how to use HACS](https://hacs.xyz/docs/use/) if you haven't installed it yet. To add the integration to your Home Assistant instance, use this My button:
+
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=patman15&repository=BMS_BLE-HA&category=Integration)
 
-BMS_BLE is a default repository in [HACS](https://hacs.xyz/). Please follow the [guidelines on how to use HACS](https://hacs.xyz/docs/use/) if you haven't installed it yet.
-
-### Manual
-<details><summary>Individual Steps</summary>
+<details><summary>Manual installation steps</summary>
 
 1. Using the tool of choice open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
 1. If you do not have a `custom_components` directory (folder) there, you need to create it.
@@ -97,7 +96,16 @@ BMS_BLE is a default repository in [HACS](https://hacs.xyz/). Please follow the 
 1. Download _all_ the files from the `custom_components/bms_ble/` directory (folder) in this repository.
 1. Place the files you downloaded in the new directory (folder) you created.
 1. Restart Home Assistant
-1. In the HA UI go to "Configuration" -> "Integrations" click "+" and [search](https://my.home-assistant.io/redirect/config_flow_start/?domain=bms_ble) for "BLE Battery Management"
+1. In the HA UI go to <a href="https://my.home-assistant.io/redirect/integrations">Configuration > Integrations</a> click <a href="https://my.home-assistant.io/redirect/config_flow_start?domain=bms_ble">+ Add Integration</a> and [search](https://my.home-assistant.io/redirect/config_flow_start/?domain=bms_ble) for "BLE Battery Management"
+</details>
+
+## Removing the Integration
+This integration follows standard integration removal. No extra steps are required.
+<details><summary>To remove an integration instance from Home Assistant</summary>
+
+1. Go to <a href="https://my.home-assistant.io/redirect/integrations">Settings > Devices & services</a> and select the integration card.
+1. From the list of devices, select the integration instance you want to remove.
+1. Next to the entry, select the three-dot menu. Then, select Delete.
 </details>
 
 ## Known Issues
