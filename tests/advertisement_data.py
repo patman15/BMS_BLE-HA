@@ -447,7 +447,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/226)
         generate_advertisement_data(  # A4:C1:37:42:3E:D9
-            local_name="AP21S002-l21s",  # not 100% sure
+            local_name="AP21S002-L21S",
             rssi=-84,
             manufacturer_data={16089: "4237c1a4"},  # MAC address, wrong
             service_uuids=[
@@ -455,5 +455,15 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             ],
         ),
         "jbd_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/231)
+        generate_advertisement_data(
+            local_name="CSY012405290042",
+            rssi=-78,
+            service_uuids=[
+                "0000fff0-0000-1000-8000-00805f9b34fb",
+            ],
+        ),
+        "seplos_bms",
     ),
 ]
