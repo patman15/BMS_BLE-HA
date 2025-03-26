@@ -515,9 +515,7 @@ class MockOversizedBleakClient(MockJikongBleakClient):
 async def test_update(monkeypatch, protocol_type, reconnect_fixture) -> None:
     """Test Jikong BMS data update."""
 
-    monkeypatch.setattr(
-        "tests.test_jikong_bms.MockJikongBleakClient._FRAME", _PROTO_DEFS[protocol_type]
-    )
+    monkeypatch.setattr(MockJikongBleakClient, "_FRAME", _PROTO_DEFS[protocol_type])
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.basebms.BleakClient", MockJikongBleakClient
@@ -552,9 +550,7 @@ async def test_hide_temp_sensors(monkeypatch, protocol_type) -> None:
     # recalculate CRC
     temp12_hide["cell"][-1] = crc_sum(temp12_hide["cell"][:-1])
 
-    monkeypatch.setattr(
-        "tests.test_jikong_bms.MockJikongBleakClient._FRAME", temp12_hide
-    )
+    monkeypatch.setattr(MockJikongBleakClient, "_FRAME", temp12_hide)
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.basebms.BleakClient", MockJikongBleakClient
@@ -581,9 +577,7 @@ async def test_hide_temp_sensors(monkeypatch, protocol_type) -> None:
 async def test_stream_update(monkeypatch, protocol_type, reconnect_fixture) -> None:
     """Test Jikong BMS data update."""
 
-    monkeypatch.setattr(
-        "tests.test_jikong_bms.MockStreamBleakClient._FRAME", _PROTO_DEFS[protocol_type]
-    )
+    monkeypatch.setattr(MockStreamBleakClient, "_FRAME", _PROTO_DEFS[protocol_type])
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.basebms.BleakClient", MockStreamBleakClient
@@ -614,7 +608,8 @@ async def test_invalid_response(monkeypatch, patch_bms_timeout) -> None:
 
     # return type 0x03 (first requested message) with incorrect CRC
     monkeypatch.setattr(
-        "tests.test_jikong_bms.MockInvalidBleakClient._response",
+        MockInvalidBleakClient,
+        "_response",
         lambda _s, _c, _d: bytearray(b"\x55\xaa\xeb\x90\x03") + bytearray(295),
     )
 
@@ -638,7 +633,8 @@ async def test_invalid_frame_type(monkeypatch, patch_bms_timeout) -> None:
     patch_bms_timeout("jikong_bms")
 
     monkeypatch.setattr(
-        "tests.test_jikong_bms.MockInvalidBleakClient._response",
+        MockInvalidBleakClient,
+        "_response",
         lambda _s, _c, _d: bytearray(b"\x55\xaa\xeb\x90\x05")
         + bytearray(295),  # invalid frame type (0x5)
     )
@@ -660,10 +656,7 @@ async def test_invalid_frame_type(monkeypatch, patch_bms_timeout) -> None:
 async def test_oversized_response(monkeypatch, protocol_type) -> None:
     """Test data update with BMS returning oversized data, result shall still be ok."""
 
-    monkeypatch.setattr(
-        "tests.test_jikong_bms.MockOversizedBleakClient._FRAME",
-        _PROTO_DEFS[protocol_type],
-    )
+    monkeypatch.setattr(MockOversizedBleakClient, "_FRAME", _PROTO_DEFS[protocol_type])
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.basebms.BleakClient",
@@ -703,13 +696,12 @@ async def test_non_stale_data(monkeypatch, patch_bms_timeout) -> None:
 
     patch_bms_timeout("jikong_bms")
 
-    monkeypatch.setattr(
-        "tests.test_jikong_bms.MockJikongBleakClient._FRAME", _PROTO_DEFS["JK02_32S"]
-    )
+    monkeypatch.setattr(MockJikongBleakClient, "_FRAME", _PROTO_DEFS["JK02_32S"])
 
     orig_response = MockJikongBleakClient._response
     monkeypatch.setattr(
-        "tests.test_jikong_bms.MockJikongBleakClient._response",
+        MockJikongBleakClient,
+        "_response",
         lambda _s, _c, _d: bytearray(b"\x55\xaa\xeb\x90\x05")
         + bytearray(10),  # invalid frame type (0x5)
     )
@@ -728,9 +720,7 @@ async def test_non_stale_data(monkeypatch, patch_bms_timeout) -> None:
     await bms.disconnect()
 
     # restore working BMS responses and run a test again to see if stale data is kept
-    monkeypatch.setattr(
-        "tests.test_jikong_bms.MockJikongBleakClient._response", orig_response
-    )
+    monkeypatch.setattr(MockJikongBleakClient, "_response", orig_response)
 
     assert await bms.async_update() == _RESULT_DEFS["JK02_32S"]
 
@@ -766,10 +756,7 @@ async def test_problem_response(
         136 if protocol_type == "JK02_24S" else 166,
     )
 
-    monkeypatch.setattr(
-        "tests.test_jikong_bms.MockJikongBleakClient._FRAME",
-        protocol_def[protocol_type],
-    )
+    monkeypatch.setattr(MockJikongBleakClient, "_FRAME", protocol_def[protocol_type])
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.basebms.BleakClient", MockJikongBleakClient

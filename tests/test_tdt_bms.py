@@ -209,10 +209,7 @@ async def test_update_4s_4t(monkeypatch, reconnect_fixture) -> None:
         ),
     }
 
-    monkeypatch.setattr(
-        "tests.test_tdt_bms.MockTDTBleakClient.RESP",
-        resp_4s4t,
-    )
+    monkeypatch.setattr(MockTDTBleakClient, "RESP", resp_4s4t)
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.basebms.BleakClient",
@@ -257,8 +254,7 @@ async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) 
     patch_bms_timeout("tdt_bms")
 
     monkeypatch.setattr(
-        "tests.test_tdt_bms.MockTDTBleakClient._response",
-        lambda _s, _c, _d: wrong_response,
+        MockTDTBleakClient, "_response", lambda _s, _c, _d: wrong_response
     )
 
     monkeypatch.setattr(
@@ -288,7 +284,8 @@ async def test_init_fail(monkeypatch, bool_fixture) -> None:
         raise BleakDeviceNotFoundError("MockTDTBleakClient")
 
     monkeypatch.setattr(
-        "tests.test_tdt_bms.MockTDTBleakClient.read_gatt_char",
+        MockTDTBleakClient,
+        "read_gatt_char",
         throw_response if throw_exception else error_repsonse,
     )
 
@@ -384,10 +381,7 @@ def prb_response(request) -> list[tuple[dict[int, bytearray], str]]:
 async def test_problem_response(monkeypatch, problem_response) -> None:
     """Test data update with BMS returning error flags."""
 
-    monkeypatch.setattr(
-        "tests.test_tdt_bms.MockTDTBleakClient.RESP",
-        problem_response[0],
-    )
+    monkeypatch.setattr(MockTDTBleakClient, "RESP", problem_response[0])
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.basebms.BleakClient",

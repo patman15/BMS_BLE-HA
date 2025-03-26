@@ -380,9 +380,7 @@ async def test_problem_response(monkeypatch) -> None:
         b"\x00\x01\x0a\x01\xff\xff\xff\xff\xff\xff\xff\x03\xff\xcb\x45"
     )
 
-    monkeypatch.setattr(
-        "tests.test_seplos_bms.MockSeplosBleakClient.RESP", problem_resp
-    )
+    monkeypatch.setattr(MockSeplosBleakClient, "RESP", problem_resp)
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.basebms.BleakClient", MockSeplosBleakClient

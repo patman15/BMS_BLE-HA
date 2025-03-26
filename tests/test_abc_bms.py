@@ -148,7 +148,7 @@ async def test_update(monkeypatch, reconnect_fixture: bool) -> None:
             "wrong_SOF",
         ),
         (
-            b"\xcc\xfe\xa2\x6b\x00\x00\x00\x00\xa0\x86\x01\x40\x9e\x01\x07\x00\x63\x00\x00\x4F",
+            b"\xcc\xfe\xa2\x6b\x00\x00\x00\x00\xa0\x86\x01\x40\x9e\x01\x07\x00\x63\x00\x00\x4f",
             "wrong_CMD",
         ),
         (
@@ -163,13 +163,16 @@ def response(request) -> bytearray:
     return bytearray(request.param[0])
 
 
-async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response: bytearray) -> None:
+async def test_invalid_response(
+    monkeypatch, patch_bms_timeout, wrong_response: bytearray
+) -> None:
     """Test data up date with BMS returning invalid data."""
 
     patch_bms_timeout("abc_bms")
 
     monkeypatch.setattr(
-        "tests.test_abc_bms.MockABCBleakClient.RESP",
+        MockABCBleakClient,
+        "RESP",
         MockABCBleakClient.RESP | {0xF0: wrong_response},
     )
 
@@ -213,7 +216,8 @@ async def test_problem_response(
     """Test data update with BMS returning error flags."""
 
     monkeypatch.setattr(
-        "tests.test_abc_bms.MockABCBleakClient.RESP",
+        MockABCBleakClient,
+        "RESP",
         MockABCBleakClient.RESP | {0xF9: bytearray(problem_response[0])},
     )
 

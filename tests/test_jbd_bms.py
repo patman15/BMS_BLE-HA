@@ -164,8 +164,7 @@ async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) 
     patch_bms_timeout("jbd_bms")
 
     monkeypatch.setattr(
-        "tests.test_jbd_bms.MockJBDBleakClient._response",
-        lambda _s, _c, _d: wrong_response,
+        MockJBDBleakClient, "_response", lambda _s, _c, _d: wrong_response
     )
 
     monkeypatch.setattr(
@@ -268,7 +267,7 @@ async def test_problem_response(monkeypatch, problem_response) -> None:
 
         return bytearray()
 
-    monkeypatch.setattr("tests.test_jbd_bms.MockJBDBleakClient._response", _response)
+    monkeypatch.setattr(MockJBDBleakClient, "_response", _response)
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.basebms.BleakClient", MockJBDBleakClient

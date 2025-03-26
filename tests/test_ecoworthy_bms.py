@@ -189,7 +189,8 @@ async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) 
     patch_bms_timeout("ecoworthy_bms")
 
     monkeypatch.setattr(
-        "tests.test_ecoworthy_bms.MockECOWBleakClient.RESP",
+        MockECOWBleakClient,
+        "RESP",
         {0xA1: wrong_response, 0xA2: MockECOWBleakClient.RESP[0xA2]},
     )
 
@@ -241,7 +242,8 @@ async def test_problem_response(monkeypatch, problem_response) -> None:
     """Test data update with BMS returning error flags."""
 
     monkeypatch.setattr(
-        "tests.test_ecoworthy_bms.MockECOWBleakClient.RESP",
+        MockECOWBleakClient,
+        "RESP",
         {0xA1: problem_response[0], 0xA2: MockECOWBleakClient.RESP[0xA2]},
     )
 

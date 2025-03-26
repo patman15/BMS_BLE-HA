@@ -159,9 +159,7 @@ async def test_problem_response(monkeypatch) -> None:
         "custom_components.bms_ble.plugins.basebms.BleakClient", MockFelicityBleakClient
     )
 
-    monkeypatch.setattr(
-        "tests.test_felicity_bms.MockFelicityBleakClient.RESP", prb_resp
-    )
+    monkeypatch.setattr(MockFelicityBleakClient, "RESP", prb_resp)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73), False
@@ -195,8 +193,7 @@ async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) 
     patch_bms_timeout("felicity_bms")
 
     monkeypatch.setattr(
-        "tests.test_felicity_bms.MockFelicityBleakClient._response",
-        lambda _s, _c_, d: wrong_response,
+        MockFelicityBleakClient, "_response", lambda _s, _c_, d: wrong_response
     )
 
     monkeypatch.setattr(

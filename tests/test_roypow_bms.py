@@ -143,9 +143,7 @@ async def test_update_dischrg(monkeypatch) -> None:
     negative_response[0x4][30] = 0x0  # make runtime 255
     negative_response[0x4][-2] ^= 0xFF  # patch CRC
 
-    monkeypatch.setattr(
-        "tests.test_roypow_bms.MockRoyPowBleakClient.RESP", negative_response
-    )
+    monkeypatch.setattr(MockRoyPowBleakClient, "RESP", negative_response)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73), False
@@ -205,7 +203,8 @@ async def test_invalid_response(
     patch_bms_timeout("roypow_bms")
 
     monkeypatch.setattr(
-        "tests.test_roypow_bms.MockRoyPowBleakClient.RESP",
+        MockRoyPowBleakClient,
+        "RESP",
         MockRoyPowBleakClient.RESP | {0x2: wrong_response},
     )
 
@@ -255,7 +254,8 @@ async def test_problem_response(
     """Test data update with BMS returning error flags."""
 
     monkeypatch.setattr(
-        "tests.test_roypow_bms.MockRoyPowBleakClient.RESP",
+        MockRoyPowBleakClient,
+        "RESP",
         MockRoyPowBleakClient.RESP | {0x3: problem_response[0]},
     )
 

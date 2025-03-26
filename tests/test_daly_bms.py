@@ -92,7 +92,7 @@ async def test_update(monkeypatch, bool_fixture, reconnect_fixture) -> None:
     """Test Daly BMS data update."""
 
     monkeypatch.setattr(  # patch recoginiation of MOS request to fail
-        "tests.test_daly_bms.MockDalyBleakClient.MOS_AVAIL", bool_fixture
+        MockDalyBleakClient, "MOS_AVAIL", bool_fixture
     )
 
     monkeypatch.setattr(
@@ -198,8 +198,7 @@ async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) 
     patch_bms_timeout("daly_bms")
 
     monkeypatch.setattr(
-        "tests.test_daly_bms.MockDalyBleakClient._response",
-        lambda _s, _c, _d: wrong_response,
+        MockDalyBleakClient, "_response", lambda _s, _c, _d: wrong_response
     )
 
     monkeypatch.setattr(
@@ -259,8 +258,7 @@ async def test_problem_response(
     """Test data update with BMS returning error flags."""
 
     monkeypatch.setattr(
-        "tests.test_daly_bms.MockDalyBleakClient._response",
-        lambda _s, _c, _d: problem_response[0],
+        MockDalyBleakClient, "_response", lambda _s, _c, _d: problem_response[0]
     )
 
     monkeypatch.setattr(

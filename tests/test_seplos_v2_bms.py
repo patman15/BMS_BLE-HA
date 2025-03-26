@@ -170,8 +170,7 @@ async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) 
     patch_bms_timeout("seplos_v2_bms")
 
     monkeypatch.setattr(
-        "tests.test_seplos_v2_bms.MockSeplosv2BleakClient._response",
-        lambda _s, _c, _d: wrong_response,
+        MockSeplosv2BleakClient, "_response", lambda _s, _c, _d: wrong_response
     )
 
     monkeypatch.setattr(
@@ -230,9 +229,7 @@ async def test_problem_response(monkeypatch) -> None:
 
         return bytearray()
 
-    monkeypatch.setattr(
-        "tests.test_seplos_v2_bms.MockSeplosv2BleakClient._response", prb_response
-    )
+    monkeypatch.setattr(MockSeplosv2BleakClient, "_response", prb_response)
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.basebms.BleakClient", MockSeplosv2BleakClient

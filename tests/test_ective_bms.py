@@ -175,10 +175,7 @@ async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) 
 
     patch_bms_timeout("ective_bms")
 
-    monkeypatch.setattr(
-        "tests.test_ective_bms.MockEctiveBleakClient._response",
-        lambda _s: wrong_response,
-    )
+    monkeypatch.setattr(MockEctiveBleakClient, "_response", lambda _s: wrong_response)
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.basebms.BleakClient",
@@ -236,8 +233,7 @@ async def test_problem_response(monkeypatch, problem_response) -> None:
     """Test data update with BMS returning error flags."""
 
     monkeypatch.setattr(
-        "tests.test_ective_bms.MockEctiveBleakClient._response",
-        lambda _s: problem_response[0],
+        MockEctiveBleakClient, "_response", lambda _s: problem_response[0]
     )
 
     monkeypatch.setattr(

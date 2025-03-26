@@ -317,7 +317,7 @@ async def test_problem_response(
     """Test data update with BMS returning error flags."""
 
     monkeypatch.setattr(  # patch response dictionary to only problem reports (no other data)
-        "tests.test_cbtpwr_bms.MockCBTpwrBleakClient.RESP", problem_response
+        MockCBTpwrBleakClient, "RESP", problem_response
     )
 
     monkeypatch.setattr(

@@ -214,8 +214,7 @@ async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) 
     patch_bms_timeout("ej_bms")
 
     monkeypatch.setattr(
-        "tests.test_ej_bms.MockEJBleakClient._response",
-        lambda _s, _c, _d: wrong_response,
+        MockEJBleakClient, "_response", lambda _s, _c, _d: wrong_response
     )
 
     monkeypatch.setattr(
@@ -262,8 +261,7 @@ async def test_problem_response(monkeypatch, problem_response) -> None:
     """Test data update with BMS returning error flags."""
 
     monkeypatch.setattr(
-        "tests.test_ej_bms.MockEJBleakClient._response",
-        lambda _s, _c, _d: problem_response[0],
+        MockEJBleakClient, "_response", lambda _s, _c, _d: problem_response[0]
     )
 
     monkeypatch.setattr(
