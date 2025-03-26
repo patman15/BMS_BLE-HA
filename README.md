@@ -19,7 +19,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - 100% test coverage plus fuzz tests for BLE data
 
 ### Supported Devices
-- ABC/SOK BMS (sjow up as `ABC-`&#x2026;, `SOK-`&#x2026;)
+- ABC/SOK BMS (show up as `ABC-`&#x2026;, `SOK-`&#x2026;)
 - CBT Power BMS, Creabest batteries
 - D-powercore BMS (show up as `DXB-`&#x2026;), Fliteboard batteries (show up as `TBA-`&#x2026;)
 - Daly BMS (show up as `DL-`&#x2026;)
@@ -211,6 +211,6 @@ for helping with making the integration better.
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-419_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-423_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=Analytics&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
