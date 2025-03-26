@@ -125,13 +125,10 @@ class MockFelicityBleakClient(MockBleakClient):
             self._notify_callback("MockFelicityBleakClient", notify_data)
 
 
-async def test_update(monkeypatch, reconnect_fixture) -> None:
+async def test_update(patch_bleak_client,reconnect_fixture) -> None:
     """Test Felicity BMS data update."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockFelicityBleakClient,
-    )
+    patch_bleak_client(MockFelicityBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
@@ -149,15 +146,13 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
     await bms.disconnect()
 
 
-async def test_problem_response(monkeypatch) -> None:
+async def test_problem_response(monkeypatch, patch_bleak_client) -> None:
     """Test Felicity BMS data update with problem response."""
 
     prb_resp: dict[str, bytearray] = RESP_VALUE.copy()
     prb_resp["rt"][146:166] = b'"Bfault":1,"Bwarn":10'  # patch problem codes
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockFelicityBleakClient
-    )
+    patch_bleak_client(MockFelicityBleakClient)
 
     monkeypatch.setattr(MockFelicityBleakClient, "RESP", prb_resp)
 
@@ -187,19 +182,16 @@ def response(request):
     return request.param[0]
 
 
-async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) -> None:
+async def test_invalid_response(
+    monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response
+) -> None:
     """Test data up date with BMS returning invalid data."""
 
     patch_bms_timeout("felicity_bms")
-
     monkeypatch.setattr(
         MockFelicityBleakClient, "_response", lambda _s, _c_, d: wrong_response
     )
-
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockFelicityBleakClient,
-    )
+    patch_bleak_client(MockFelicityBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 

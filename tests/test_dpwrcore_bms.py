@@ -150,13 +150,10 @@ class MockProblemBleakClient(MockDPwrcoreBleakClient):
         return super()._response(char_specifier, data)
 
 
-async def test_update(monkeypatch, dev_name, reconnect_fixture) -> None:
+async def test_update(patch_bleak_client, dev_name, reconnect_fixture) -> None:
     """Test D-pwercore BMS data update."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockDPwrcoreBleakClient,
-    )
+    patch_bleak_client(MockDPwrcoreBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", dev_name, None, -73),
@@ -202,15 +199,11 @@ async def test_update(monkeypatch, dev_name, reconnect_fixture) -> None:
     await bms.disconnect()
 
 
-async def test_invalid_response(monkeypatch, patch_bms_timeout, dev_name) -> None:
+async def test_invalid_response(patch_bleak_client, patch_bms_timeout, dev_name) -> None:
     """Test data update with BMS returning invalid data."""
 
     patch_bms_timeout("dpwrcore_bms")
-
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockInvalidBleakClient,
-    )
+    patch_bleak_client(MockInvalidBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", dev_name, None, -73))
 
@@ -223,15 +216,11 @@ async def test_invalid_response(monkeypatch, patch_bms_timeout, dev_name) -> Non
     await bms.disconnect()
 
 
-async def test_wrong_crc(monkeypatch, patch_bms_timeout, dev_name) -> None:
+async def test_wrong_crc(patch_bleak_client, patch_bms_timeout, dev_name) -> None:
     """Test data update with BMS returning invalid data."""
 
     patch_bms_timeout("dpwrcore_bms")
-
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockWrongCRCBleakClient,
-    )
+    patch_bleak_client(MockWrongCRCBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", dev_name, None, -73))
 
@@ -244,13 +233,10 @@ async def test_wrong_crc(monkeypatch, patch_bms_timeout, dev_name) -> None:
     await bms.disconnect()
 
 
-async def test_problem_response(monkeypatch, dev_name) -> None:
+async def test_problem_response(patch_bleak_client, dev_name) -> None:
     """Test D-pwercore BMS data update."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockProblemBleakClient,
-    )
+    patch_bleak_client(MockProblemBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", dev_name, None, -73), False)
 

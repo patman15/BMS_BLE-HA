@@ -83,7 +83,7 @@ async def test_bluetooth_discovery(
     )
 
 
-@pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_device_setup(
     monkeypatch,
     bt_discovery: BluetoothServiceInfoBleak,
@@ -183,7 +183,7 @@ async def test_already_configured(bms_fixture: str, hass: HomeAssistant) -> None
     assert result.get("reason") == "already_configured"
 
 
-@pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_async_setup_entry(
     monkeypatch,
     bms_fixture: str,
@@ -221,7 +221,7 @@ async def test_setup_entry_missing_unique_id(bms_fixture, hass: HomeAssistant) -
     assert cfg.state is ConfigEntryState.SETUP_ERROR
 
 
-@pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_user_setup(
     monkeypatch, bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
@@ -354,7 +354,7 @@ async def test_migrate_invalid_v_0_1(bms_fixture: str, hass: HomeAssistant) -> N
     assert cfg.state is ConfigEntryState.MIGRATION_ERROR
 
 
-@pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_migrate_entry_from_v_0_1(
     monkeypatch,
     mock_config_v0_1,

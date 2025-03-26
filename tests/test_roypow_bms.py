@@ -106,12 +106,10 @@ class MockRoyPowBleakClient(MockBleakClient):
             self._notify_callback("MockRoyPowBleakClient", notify_data)
 
 
-async def test_update(monkeypatch, reconnect_fixture: bool) -> None:
+async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
     """Test RoyPow BMS data update."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockRoyPowBleakClient
-    )
+    patch_bleak_client(MockRoyPowBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
@@ -129,12 +127,10 @@ async def test_update(monkeypatch, reconnect_fixture: bool) -> None:
     await bms.disconnect()
 
 
-async def test_update_dischrg(monkeypatch) -> None:
+async def test_update_dischrg(monkeypatch, patch_bleak_client) -> None:
     """Test RoyPow BMS data update."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockRoyPowBleakClient
-    )
+    patch_bleak_client(MockRoyPowBleakClient)
 
     negative_response: dict[int, bytearray] = deepcopy(MockRoyPowBleakClient.RESP)
 
@@ -196,7 +192,7 @@ def response(request) -> bytearray:
 
 
 async def test_invalid_response(
-    monkeypatch, patch_bms_timeout, wrong_response: bytearray
+    monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response: bytearray
 ) -> None:
     """Test data up date with BMS returning invalid data."""
 
@@ -208,10 +204,7 @@ async def test_invalid_response(
         MockRoyPowBleakClient.RESP | {0x2: wrong_response},
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockRoyPowBleakClient,
-    )
+    patch_bleak_client(MockRoyPowBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
@@ -249,7 +242,7 @@ def prb_response(request):
 
 
 async def test_problem_response(
-    monkeypatch, problem_response: tuple[bytearray, str]
+    monkeypatch, patch_bleak_client, problem_response: tuple[bytearray, str]
 ) -> None:
     """Test data update with BMS returning error flags."""
 
@@ -259,10 +252,7 @@ async def test_problem_response(
         MockRoyPowBleakClient.RESP | {0x3: problem_response[0]},
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockRoyPowBleakClient,
-    )
+    patch_bleak_client(MockRoyPowBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 

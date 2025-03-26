@@ -90,12 +90,10 @@ class MockABCBleakClient(MockBleakClient):
             await asyncio.sleep(0)
 
 
-async def test_update(monkeypatch, reconnect_fixture: bool) -> None:
+async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
     """Test ABC BMS data update."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockABCBleakClient
-    )
+    patch_bleak_client(MockABCBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73),
@@ -164,7 +162,7 @@ def response(request) -> bytearray:
 
 
 async def test_invalid_response(
-    monkeypatch, patch_bms_timeout, wrong_response: bytearray
+    monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response: bytearray
 ) -> None:
     """Test data up date with BMS returning invalid data."""
 
@@ -176,10 +174,7 @@ async def test_invalid_response(
         MockABCBleakClient.RESP | {0xF0: wrong_response},
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockABCBleakClient,
-    )
+    patch_bleak_client(MockABCBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
@@ -211,7 +206,7 @@ def prb_response(request) -> tuple[bytearray, str]:
 
 
 async def test_problem_response(
-    monkeypatch, problem_response: tuple[bytearray, str]
+    monkeypatch, patch_bleak_client, problem_response: tuple[bytearray, str]
 ) -> None:
     """Test data update with BMS returning error flags."""
 
@@ -221,9 +216,7 @@ async def test_problem_response(
         MockABCBleakClient.RESP | {0xF9: bytearray(problem_response[0])},
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockABCBleakClient
-    )
+    patch_bleak_client(MockABCBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 

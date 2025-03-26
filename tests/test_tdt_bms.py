@@ -169,13 +169,10 @@ class MockTDTBleakClient(MockBleakClient):
         return bytearray(int.to_bytes(self._char_fffa, 1, "big"))
 
 
-async def test_update_16s_6t(monkeypatch, reconnect_fixture) -> None:
+async def test_update_16s_6t(patch_bleak_client, reconnect_fixture) -> None:
     """Test TDT BMS data update."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockTDTBleakClient,
-    )
+    patch_bleak_client(MockTDTBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
@@ -193,7 +190,7 @@ async def test_update_16s_6t(monkeypatch, reconnect_fixture) -> None:
     await bms.disconnect()
 
 
-async def test_update_4s_4t(monkeypatch, reconnect_fixture) -> None:
+async def test_update_4s_4t(monkeypatch, patch_bleak_client, reconnect_fixture) -> None:
     """Test TDT BMS data update."""
 
     resp_4s4t: Final[dict[int, bytearray]] = {
@@ -211,10 +208,7 @@ async def test_update_4s_4t(monkeypatch, reconnect_fixture) -> None:
 
     monkeypatch.setattr(MockTDTBleakClient, "RESP", resp_4s4t)
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockTDTBleakClient,
-    )
+    patch_bleak_client(MockTDTBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
@@ -248,7 +242,7 @@ def response(request):
     return request.param[0]
 
 
-async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) -> None:
+async def test_invalid_response(monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response) -> None:
     """Test data up date with BMS returning invalid data."""
 
     patch_bms_timeout("tdt_bms")
@@ -257,10 +251,7 @@ async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) 
         MockTDTBleakClient, "_response", lambda _s, _c, _d: wrong_response
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockTDTBleakClient,
-    )
+    patch_bleak_client(MockTDTBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
@@ -272,7 +263,7 @@ async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) 
     await bms.disconnect()
 
 
-async def test_init_fail(monkeypatch, bool_fixture) -> None:
+async def test_init_fail(monkeypatch, patch_bleak_client, bool_fixture) -> None:
     """Test that failing to initialize simply continues and tries to read data."""
 
     throw_exception: bool = bool_fixture
@@ -289,10 +280,7 @@ async def test_init_fail(monkeypatch, bool_fixture) -> None:
         throw_response if throw_exception else error_repsonse,
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockTDTBleakClient,
-    )
+    patch_bleak_client(MockTDTBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
@@ -378,15 +366,12 @@ def prb_response(request) -> list[tuple[dict[int, bytearray], str]]:
     return request.param
 
 
-async def test_problem_response(monkeypatch, problem_response) -> None:
+async def test_problem_response(monkeypatch, patch_bleak_client, problem_response) -> None:
     """Test data update with BMS returning error flags."""
 
     monkeypatch.setattr(MockTDTBleakClient, "RESP", problem_response[0])
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockTDTBleakClient,
-    )
+    patch_bleak_client(MockTDTBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73), False

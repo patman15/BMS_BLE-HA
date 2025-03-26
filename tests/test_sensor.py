@@ -33,7 +33,7 @@ from .bluetooth import inject_bluetooth_service_info_bleak
 from .conftest import mock_config
 
 
-@pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_update(
     monkeypatch,
     bt_discovery: BluetoothServiceInfoBleak,

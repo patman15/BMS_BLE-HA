@@ -88,16 +88,16 @@ class MockInvalidBleakClient(MockDalyBleakClient):
         raise BleakError
 
 
-async def test_update(monkeypatch, bool_fixture, reconnect_fixture) -> None:
+async def test_update(
+    monkeypatch, patch_bleak_client, bool_fixture, reconnect_fixture
+) -> None:
     """Test Daly BMS data update."""
 
     monkeypatch.setattr(  # patch recoginiation of MOS request to fail
         MockDalyBleakClient, "MOS_AVAIL", bool_fixture
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockDalyBleakClient
-    )
+    patch_bleak_client(MockDalyBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
@@ -152,13 +152,10 @@ async def test_update(monkeypatch, bool_fixture, reconnect_fixture) -> None:
     await bms.disconnect()
 
 
-async def test_too_short_frame(monkeypatch) -> None:
+async def test_too_short_frame(patch_bleak_client) -> None:
     """Test data update with BMS returning valid but too short data."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockInvalidBleakClient,
-    )
+    patch_bleak_client(MockInvalidBleakClient)
 
     bms: BMS = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
@@ -192,7 +189,9 @@ def response(request):
     return request.param[0]
 
 
-async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) -> None:
+async def test_invalid_response(
+    monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response
+) -> None:
     """Test data update with BMS returning invalid data."""
 
     patch_bms_timeout("daly_bms")
@@ -201,10 +200,7 @@ async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) 
         MockDalyBleakClient, "_response", lambda _s, _c, _d: wrong_response
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockDalyBleakClient,
-    )
+    patch_bleak_client(MockDalyBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
@@ -253,7 +249,7 @@ def prb_response(request):
 
 
 async def test_problem_response(
-    monkeypatch, problem_response: tuple[bytearray, str]
+    monkeypatch, patch_bleak_client, problem_response: tuple[bytearray, str]
 ) -> None:
     """Test data update with BMS returning error flags."""
 
@@ -261,10 +257,7 @@ async def test_problem_response(
         MockDalyBleakClient, "_response", lambda _s, _c, _d: problem_response[0]
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockDalyBleakClient,
-    )
+    patch_bleak_client(MockDalyBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 

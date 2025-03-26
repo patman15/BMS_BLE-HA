@@ -62,7 +62,7 @@ class MockCBTpwrBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # type: ignore[implicit-optional] # noqa: RUF013 # same as upstream
+        response: bool = None,  # noqa: RUF013 # same as upstream
     ) -> None:
         """Issue write command to GATT."""
         await super().write_gatt_char(char_specifier, data, response)
@@ -150,12 +150,10 @@ class MockAllCellsBleakClient(MockCBTpwrBleakClient):
         return self.RESP.get(cmd, bytearray())
 
 
-async def test_update(monkeypatch, reconnect_fixture: bool) -> None:
+async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
     """Test CBT power BMS data update."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockCBTpwrBleakClient
-    )
+    patch_bleak_client(MockCBTpwrBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73),
@@ -193,14 +191,11 @@ async def test_update(monkeypatch, reconnect_fixture: bool) -> None:
     await bms.disconnect()
 
 
-async def test_invalid_response(monkeypatch, patch_bms_timeout) -> None:
+async def test_invalid_response(patch_bleak_client, patch_bms_timeout) -> None:
     """Test data update with BMS returning invalid data."""
 
     patch_bms_timeout("cbtpwr_bms")
-
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockInvalidBleakClient
-    )
+    patch_bleak_client(MockInvalidBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
@@ -216,15 +211,11 @@ async def test_invalid_response(monkeypatch, patch_bms_timeout) -> None:
     await bms.disconnect()
 
 
-async def test_partly_base_data(monkeypatch, patch_bms_timeout) -> None:
+async def test_partly_base_data(patch_bleak_client, patch_bms_timeout) -> None:
     """Test data update with BMS returning invalid data."""
 
     patch_bms_timeout("cbtpwr_bms")
-
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockPartBaseDatBleakClient,
-    )
+    patch_bleak_client(MockPartBaseDatBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
@@ -240,14 +231,11 @@ async def test_partly_base_data(monkeypatch, patch_bms_timeout) -> None:
     await bms.disconnect()
 
 
-async def test_all_cell_voltages(monkeypatch, patch_bms_timeout) -> None:
+async def test_all_cell_voltages(patch_bleak_client, patch_bms_timeout) -> None:
     """Test data update with BMS returning invalid data."""
 
     patch_bms_timeout("cbtpwr_bms")
-
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockAllCellsBleakClient
-    )
+    patch_bleak_client(MockAllCellsBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
@@ -312,7 +300,7 @@ def prb_response(request) -> dict[int, bytearray]:
 
 
 async def test_problem_response(
-    monkeypatch, problem_response: dict[int, bytearray]
+    monkeypatch, patch_bleak_client, problem_response: dict[int, bytearray]
 ) -> None:
     """Test data update with BMS returning error flags."""
 
@@ -320,9 +308,7 @@ async def test_problem_response(
         MockCBTpwrBleakClient, "RESP", problem_response
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockCBTpwrBleakClient
-    )
+    patch_bleak_client(MockCBTpwrBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 

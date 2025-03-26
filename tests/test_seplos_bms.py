@@ -273,12 +273,10 @@ class MockOversizedBleakClient(MockSeplosBleakClient):
             self._notify_callback("MockOversizedBleakClient", notify_data)
 
 
-async def test_update(monkeypatch, reconnect_fixture) -> None:
+async def test_update(patch_bleak_client, reconnect_fixture) -> None:
     """Test Seplos BMS data update."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockSeplosBleakClient
-    )
+    patch_bleak_client(MockSeplosBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
@@ -294,14 +292,12 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
     await bms.disconnect()
 
 
-async def test_wrong_crc(monkeypatch, patch_bms_timeout) -> None:
+async def test_wrong_crc(patch_bleak_client, patch_bms_timeout) -> None:
     """Test data update with BMS returning invalid data (wrong CRC)."""
 
     patch_bms_timeout("seplos_bms")
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockWrongCRCBleakClient
-    )
+    patch_bleak_client(MockWrongCRCBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
@@ -314,14 +310,12 @@ async def test_wrong_crc(monkeypatch, patch_bms_timeout) -> None:
     await bms.disconnect()
 
 
-async def test_error_response(monkeypatch, patch_bms_timeout) -> None:
+async def test_error_response(patch_bleak_client, patch_bms_timeout) -> None:
     """Test data update with BMS returning error message."""
 
     patch_bms_timeout("seplos_bms")
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockErrRespBleakClient
-    )
+    patch_bleak_client(MockErrRespBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
@@ -334,13 +328,10 @@ async def test_error_response(monkeypatch, patch_bms_timeout) -> None:
     await bms.disconnect()
 
 
-async def test_oversized_response(monkeypatch) -> None:
+async def test_oversized_response(patch_bleak_client) -> None:
     """Test data update with BMS returning oversized data, result shall still be ok."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockOversizedBleakClient,
-    )
+    patch_bleak_client(MockOversizedBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
@@ -349,15 +340,11 @@ async def test_oversized_response(monkeypatch) -> None:
     await bms.disconnect()
 
 
-async def test_invalid_message(monkeypatch, patch_bms_timeout) -> None:
+async def test_invalid_message(patch_bleak_client, patch_bms_timeout) -> None:
     """Test data update with BMS returning error message."""
 
     patch_bms_timeout("seplos_bms")
-
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockInvalidMessageBleakClient,
-    )
+    patch_bleak_client(MockInvalidMessageBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
@@ -372,7 +359,7 @@ async def test_invalid_message(monkeypatch, patch_bms_timeout) -> None:
 
 # Alaramflags used: TB02, TB03, TB05, TB06, TB15
 #          skipped: TB09, TB04, TB16, TB07, TB08
-async def test_problem_response(monkeypatch) -> None:
+async def test_problem_response(monkeypatch, patch_bleak_client) -> None:
     """Test data update with BMS returning invalid data (wrong CRC)."""
 
     problem_resp: dict[str, bytearray] = MockSeplosBleakClient.RESP.copy()
@@ -382,9 +369,7 @@ async def test_problem_response(monkeypatch) -> None:
 
     monkeypatch.setattr(MockSeplosBleakClient, "RESP", problem_resp)
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockSeplosBleakClient
-    )
+    patch_bleak_client(MockSeplosBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 

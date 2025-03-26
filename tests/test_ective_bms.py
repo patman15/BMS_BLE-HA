@@ -58,13 +58,10 @@ class MockEctiveBleakClient(MockBleakClient):
         self._send_info()
 
 
-async def test_update(monkeypatch, reconnect_fixture) -> None:
+async def test_update(patch_bleak_client, reconnect_fixture) -> None:
     """Test Ective BMS data update."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockEctiveBleakClient,
-    )
+    patch_bleak_client(MockEctiveBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73),
@@ -100,12 +97,10 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
     await bms.disconnect()
 
 
-async def test_tx_notimplemented(monkeypatch) -> None:
+async def test_tx_notimplemented(patch_bleak_client) -> None:
     """Test Ective BMS uuid_tx not implemented for coverage."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockEctiveBleakClient
-    )
+    patch_bleak_client(MockEctiveBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73), False
@@ -170,17 +165,14 @@ def response(request) -> bytearray:
     return request.param[0]
 
 
-async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) -> None:
+async def test_invalid_response(
+    monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response
+) -> None:
     """Test data up date with BMS returning invalid data."""
 
     patch_bms_timeout("ective_bms")
-
     monkeypatch.setattr(MockEctiveBleakClient, "_response", lambda _s: wrong_response)
-
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockEctiveBleakClient,
-    )
+    patch_bleak_client(MockEctiveBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
@@ -229,17 +221,16 @@ def prb_response(request):
     return request.param
 
 
-async def test_problem_response(monkeypatch, problem_response) -> None:
+async def test_problem_response(
+    monkeypatch, patch_bleak_client, problem_response
+) -> None:
     """Test data update with BMS returning error flags."""
 
     monkeypatch.setattr(
         MockEctiveBleakClient, "_response", lambda _s: problem_response[0]
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockEctiveBleakClient,
-    )
+    patch_bleak_client(MockEctiveBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 

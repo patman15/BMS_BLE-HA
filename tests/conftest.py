@@ -107,15 +107,27 @@ def patch_bms_timeout(monkeypatch):
 
 
 @pytest.fixture
-def patch_bleakclient(monkeypatch) -> None:
+def patch_default_bleak_client(monkeypatch) -> None:
     """Patch BleakClient to a mock as BT is not available.
 
     required because BTdiscovery cannot be used to generate a BleakClient in async_setup()
     """
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockBleakClient,
+        "custom_components.bms_ble.plugins.basebms.BleakClient", MockBleakClient
     )
+
+
+@pytest.fixture
+def patch_bleak_client(monkeypatch):
+    """Fixture to patch BleakClient with a given MockClient."""
+
+    def _patch(mock_client=MockBleakClient) -> None:
+        monkeypatch.setattr(
+            "custom_components.bms_ble.plugins.basebms.BleakClient",
+            mock_client,
+        )
+
+    return _patch
 
 
 @pytest.fixture
@@ -168,7 +180,9 @@ def bt_discovery_notsupported() -> BluetoothServiceInfoBleak:
     )
 
 
-def mock_config(bms: str, unique_id: str | None = "cc:cc:cc:cc:cc:cc") -> MockConfigEntry:
+def mock_config(
+    bms: str, unique_id: str | None = "cc:cc:cc:cc:cc:cc"
+) -> MockConfigEntry:
     """Return a Mock of the HA entity config."""
     return MockConfigEntry(
         domain=DOMAIN,

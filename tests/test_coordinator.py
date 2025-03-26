@@ -17,7 +17,7 @@ from .bluetooth import inject_bluetooth_service_info_bleak
 from .conftest import MockBMS, mock_config
 
 
-@pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_update(
     monkeypatch,
     bool_fixture: bool,
@@ -70,7 +70,7 @@ async def test_update(
     await coordinator.async_shutdown()
 
 
-@pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_nodata(
     bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
@@ -93,7 +93,7 @@ async def test_nodata(
     assert coordinator.link_quality == 0
 
 
-@pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_update_exception(
     bt_discovery: BluetoothServiceInfoBleak,
     mock_coordinator_exception,

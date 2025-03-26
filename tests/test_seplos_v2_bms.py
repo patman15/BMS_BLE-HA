@@ -123,13 +123,10 @@ class MockSeplosv2BleakClient(MockBleakClient):
             self._notify_callback("MockSeplosv2BleakClient", notify_data)
 
 
-async def test_update(monkeypatch, reconnect_fixture) -> None:
+async def test_update(patch_bleak_client, reconnect_fixture) -> None:
     """Test Seplos V2 BMS data update."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockSeplosv2BleakClient,
-    )
+    patch_bleak_client(MockSeplosv2BleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
@@ -164,7 +161,7 @@ def response(request):
     return request.param[0]
 
 
-async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) -> None:
+async def test_invalid_response(monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response) -> None:
     """Test data up date with BMS returning invalid data."""
 
     patch_bms_timeout("seplos_v2_bms")
@@ -173,10 +170,7 @@ async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) 
         MockSeplosv2BleakClient, "_response", lambda _s, _c, _d: wrong_response
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockSeplosv2BleakClient,
-    )
+    patch_bleak_client(MockSeplosv2BleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
@@ -189,7 +183,7 @@ async def test_invalid_response(monkeypatch, patch_bms_timeout, wrong_response) 
 
 
 # Alarm flags: Events 1-6, excluding 7-8
-async def test_problem_response(monkeypatch) -> None:
+async def test_problem_response(monkeypatch, patch_bleak_client) -> None:
     """Test data update with BMS returning invalid data (wrong CRC)."""
 
     def prb_response(
@@ -231,9 +225,7 @@ async def test_problem_response(monkeypatch) -> None:
 
     monkeypatch.setattr(MockSeplosv2BleakClient, "_response", prb_response)
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockSeplosv2BleakClient
-    )
+    patch_bleak_client(MockSeplosv2BleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 

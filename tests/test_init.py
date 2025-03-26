@@ -10,7 +10,7 @@ from .bluetooth import inject_bluetooth_service_info_bleak
 from .conftest import mock_config, mock_update_exc, mock_update_min
 
 
-@pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_init_fail(
     monkeypatch,
     bms_fixture,
@@ -58,7 +58,7 @@ async def test_init_fail(
     ), "Failure: config entry generated sensors."
 
 
-@pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_unload_entry(
     monkeypatch,
     bms_fixture: str,
