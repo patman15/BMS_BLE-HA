@@ -40,7 +40,7 @@ type BMSsample = dict[str, int | float | bool]
 class BaseBMS(metaclass=ABCMeta):
     """Base class for battery management system."""
 
-    BAT_TIMEOUT = 10
+    TIMEOUT = 10
     MAX_CELL_VOLTAGE: Final[float] = 5.906  # max cell potential
 
     def __init__(
@@ -259,7 +259,7 @@ class BaseBMS(metaclass=ABCMeta):
         self._data_event.clear()  # clear event before requesting new data
         await self._client.write_gatt_char(char or self.uuid_tx(), data)
         if wait_for_notify:
-            await asyncio.wait_for(self._wait_event(), timeout=self.BAT_TIMEOUT)
+            await asyncio.wait_for(self._wait_event(), timeout=self.TIMEOUT)
 
     async def disconnect(self) -> None:
         """Disconnect the BMS, includes stoping notifications."""

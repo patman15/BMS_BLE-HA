@@ -19,9 +19,9 @@ from .bluetooth import inject_bluetooth_service_info_bleak
 from .conftest import mock_config
 
 
-@pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_update(
-    monkeypatch, BTdiscovery: BluetoothServiceInfoBleak, hass: HomeAssistant
+    monkeypatch, bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
     """Test binary sensor value updates through coordinator."""
 
@@ -32,7 +32,7 @@ async def test_update(
     config: MockConfigEntry = mock_config(bms="dummy_bms")
     config.add_to_hass(hass)
 
-    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
     assert await hass.config_entries.async_setup(config.entry_id)
     await hass.async_block_till_done()

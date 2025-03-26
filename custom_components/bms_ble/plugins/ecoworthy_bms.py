@@ -168,7 +168,7 @@ class BMS(BaseBMS):
 
         self._data_final.clear()
         self._data_event.clear()  # clear event to ensure new data is acquired
-        await asyncio.wait_for(self._wait_event(), timeout=self.BAT_TIMEOUT)
+        await asyncio.wait_for(self._wait_event(), timeout=self.TIMEOUT)
 
         result: BMSsample = BMS._decode_data(self._data_final)
 

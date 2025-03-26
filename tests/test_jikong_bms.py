@@ -264,7 +264,7 @@ def proto(request: pytest.FixtureRequest) -> str:
 class MockJikongBleakClient(MockBleakClient):
     """Emulate a Jikong BMS BleakClient."""
 
-    HEAD_CMD: Final = bytearray(b"\xAA\x55\x90\xEB")
+    HEAD_CMD: Final = bytearray(b"\xaa\x55\x90\xeb")
     CMD_INFO: Final = bytearray(b"\x96")
     DEV_INFO: Final = bytearray(b"\x97")
     _FRAME: dict[str, bytearray] = {}
@@ -297,7 +297,7 @@ class MockJikongBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # type: ignore[implicit-optional] # noqa: RUF013 # same as upstream
+        response: bool = None,  # noqa: RUF013 # same as upstream
     ) -> None:
         """Issue write command to GATT."""
 
@@ -459,7 +459,7 @@ class MockStreamBleakClient(MockJikongBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # type: ignore[implicit-optional] # noqa: RUF013 # same as upstream
+        response: bool = None,  # noqa: RUF013 # same as upstream
     ) -> None:
         """Issue write command to GATT."""
 
@@ -512,16 +512,12 @@ class MockOversizedBleakClient(MockJikongBleakClient):
 
 
 @pytest.mark.asyncio
-async def test_update(monkeypatch, protocol_type, reconnect_fixture) -> None:
+async def test_update(monkeypatch, patch_bleak_client, protocol_type, reconnect_fixture) -> None:
     """Test Jikong BMS data update."""
 
-    monkeypatch.setattr(
-        "tests.test_jikong_bms.MockJikongBleakClient._FRAME", _PROTO_DEFS[protocol_type]
-    )
+    monkeypatch.setattr(MockJikongBleakClient, "_FRAME", _PROTO_DEFS[protocol_type])
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockJikongBleakClient
-    )
+    patch_bleak_client(MockJikongBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
@@ -537,7 +533,7 @@ async def test_update(monkeypatch, protocol_type, reconnect_fixture) -> None:
     await bms.disconnect()
 
 
-async def test_hide_temp_sensors(monkeypatch, protocol_type) -> None:
+async def test_hide_temp_sensors(monkeypatch, patch_bleak_client, protocol_type) -> None:
     """Test Jikong BMS data update with not connected temperature sensors."""
 
     temp12_hide: dict[str, bytearray] = deepcopy(_PROTO_DEFS[protocol_type])
@@ -547,18 +543,14 @@ async def test_hide_temp_sensors(monkeypatch, protocol_type) -> None:
         temp12_hide["cell"][182:184] = bytearray(b"\x03\x00")
         temp12_hide["cell"][132:134] = bytearray(b"\x30\xf8")  # -200.0
     else:
-        temp12_hide["cell"][214:216] = bytearray(b"\xFB\x00")
+        temp12_hide["cell"][214:216] = bytearray(b"\xfb\x00")
         temp12_hide["cell"][162:164] = bytearray(b"\x30\xf8")  # -200.0
     # recalculate CRC
     temp12_hide["cell"][-1] = crc_sum(temp12_hide["cell"][:-1])
 
-    monkeypatch.setattr(
-        "tests.test_jikong_bms.MockJikongBleakClient._FRAME", temp12_hide
-    )
+    monkeypatch.setattr(MockJikongBleakClient, "_FRAME", temp12_hide)
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockJikongBleakClient
-    )
+    patch_bleak_client(MockJikongBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
@@ -578,17 +570,11 @@ async def test_hide_temp_sensors(monkeypatch, protocol_type) -> None:
     await bms.disconnect()
 
 
-async def test_stream_update(monkeypatch, protocol_type, reconnect_fixture) -> None:
+async def test_stream_update(monkeypatch, patch_bleak_client, protocol_type, reconnect_fixture) -> None:
     """Test Jikong BMS data update."""
 
-    monkeypatch.setattr(
-        "tests.test_jikong_bms.MockStreamBleakClient._FRAME", _PROTO_DEFS[protocol_type]
-    )
-
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockStreamBleakClient
-    )
-
+    monkeypatch.setattr(MockStreamBleakClient, "_FRAME", _PROTO_DEFS[protocol_type])
+    patch_bleak_client(MockStreamBleakClient)
     monkeypatch.setattr(  # mock that response has already been received
         "custom_components.bms_ble.plugins.basebms.asyncio.Event.is_set", lambda _: True
     )
@@ -607,22 +593,19 @@ async def test_stream_update(monkeypatch, protocol_type, reconnect_fixture) -> N
     await bms.disconnect()
 
 
-async def test_invalid_response(monkeypatch) -> None:
+async def test_invalid_response(monkeypatch, patch_bleak_client, patch_bms_timeout) -> None:
     """Test data update with BMS returning invalid data."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.jikong_bms.BMS.BAT_TIMEOUT", 0.1
-    )
+    patch_bms_timeout("jikong_bms")
 
     # return type 0x03 (first requested message) with incorrect CRC
     monkeypatch.setattr(
-        "tests.test_jikong_bms.MockInvalidBleakClient._response",
+        MockInvalidBleakClient,
+        "_response",
         lambda _s, _c, _d: bytearray(b"\x55\xaa\xeb\x90\x03") + bytearray(295),
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockInvalidBleakClient
-    )
+    patch_bleak_client(MockInvalidBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
@@ -634,23 +617,19 @@ async def test_invalid_response(monkeypatch) -> None:
     await bms.disconnect()
 
 
-async def test_invalid_frame_type(monkeypatch) -> None:
+async def test_invalid_frame_type(monkeypatch, patch_bleak_client, patch_bms_timeout) -> None:
     """Test data update with BMS returning invalid data."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.jikong_bms.BMS.BAT_TIMEOUT",
-        0.1,
-    )
+    patch_bms_timeout("jikong_bms")
 
     monkeypatch.setattr(
-        "tests.test_jikong_bms.MockInvalidBleakClient._response",
+        MockInvalidBleakClient,
+        "_response",
         lambda _s, _c, _d: bytearray(b"\x55\xaa\xeb\x90\x05")
         + bytearray(295),  # invalid frame type (0x5)
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockInvalidBleakClient
-    )
+    patch_bleak_client(MockInvalidBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
@@ -662,18 +641,12 @@ async def test_invalid_frame_type(monkeypatch) -> None:
     await bms.disconnect()
 
 
-async def test_oversized_response(monkeypatch, protocol_type) -> None:
+async def test_oversized_response(monkeypatch, patch_bleak_client, protocol_type) -> None:
     """Test data update with BMS returning oversized data, result shall still be ok."""
 
-    monkeypatch.setattr(
-        "tests.test_jikong_bms.MockOversizedBleakClient._FRAME",
-        _PROTO_DEFS[protocol_type],
-    )
+    monkeypatch.setattr(MockOversizedBleakClient, "_FRAME", _PROTO_DEFS[protocol_type])
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockOversizedBleakClient,
-    )
+    patch_bleak_client(MockOversizedBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
@@ -682,12 +655,10 @@ async def test_oversized_response(monkeypatch, protocol_type) -> None:
     await bms.disconnect()
 
 
-async def test_invalid_device(monkeypatch) -> None:
+async def test_invalid_device(patch_bleak_client) -> None:
     """Test data update with BMS returning invalid data."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockWrongBleakClient
-    )
+    patch_bleak_client(MockWrongBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
@@ -703,28 +674,22 @@ async def test_invalid_device(monkeypatch) -> None:
     await bms.disconnect()
 
 
-async def test_non_stale_data(monkeypatch) -> None:
+async def test_non_stale_data(monkeypatch, patch_bleak_client, patch_bms_timeout) -> None:
     """Test if BMS class is reset if connection is reset."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.jikong_bms.BMS.BAT_TIMEOUT",
-        0.1,
-    )
+    patch_bms_timeout("jikong_bms")
 
-    monkeypatch.setattr(
-        "tests.test_jikong_bms.MockJikongBleakClient._FRAME", _PROTO_DEFS["JK02_32S"]
-    )
+    monkeypatch.setattr(MockJikongBleakClient, "_FRAME", _PROTO_DEFS["JK02_32S"])
 
     orig_response = MockJikongBleakClient._response
     monkeypatch.setattr(
-        "tests.test_jikong_bms.MockJikongBleakClient._response",
+        MockJikongBleakClient,
+        "_response",
         lambda _s, _c, _d: bytearray(b"\x55\xaa\xeb\x90\x05")
         + bytearray(10),  # invalid frame type (0x5)
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockJikongBleakClient
-    )
+    patch_bleak_client(MockJikongBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
@@ -736,9 +701,7 @@ async def test_non_stale_data(monkeypatch) -> None:
     await bms.disconnect()
 
     # restore working BMS responses and run a test again to see if stale data is kept
-    monkeypatch.setattr(
-        "tests.test_jikong_bms.MockJikongBleakClient._response", orig_response
-    )
+    monkeypatch.setattr(MockJikongBleakClient, "_response", orig_response)
 
     assert await bms.async_update() == _RESULT_DEFS["JK02_32S"]
 
@@ -757,7 +720,7 @@ def prb_response(request) -> bytearray:
 
 
 async def test_problem_response(
-    monkeypatch, protocol_type: str, problem_response
+    monkeypatch, patch_bleak_client, protocol_type: str, problem_response
 ) -> None:
     """Test data update with BMS returning system problem flags."""
 
@@ -774,14 +737,9 @@ async def test_problem_response(
         136 if protocol_type == "JK02_24S" else 166,
     )
 
-    monkeypatch.setattr(
-        "tests.test_jikong_bms.MockJikongBleakClient._FRAME",
-        protocol_def[protocol_type],
-    )
+    monkeypatch.setattr(MockJikongBleakClient, "_FRAME", protocol_def[protocol_type])
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockJikongBleakClient
-    )
+    patch_bleak_client(MockJikongBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73), False

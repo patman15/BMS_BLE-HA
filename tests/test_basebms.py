@@ -26,16 +26,18 @@ def test_calc_missing_values(bms_data_fixture: BMSsample) -> None:
     bms_data = ref = bms_data_fixture
     BaseBMS._add_missing_values(
         bms_data,
-        {
-            ATTR_BATTERY_CHARGING,
-            ATTR_CYCLE_CAP,
-            ATTR_POWER,
-            ATTR_RUNTIME,
-            ATTR_DELTA_VOLTAGE,
-            ATTR_TEMPERATURE,
-            ATTR_VOLTAGE,  # check that not overwritten
-            "invalid",
-        },
+        frozenset(
+            {
+                ATTR_BATTERY_CHARGING,
+                ATTR_CYCLE_CAP,
+                ATTR_POWER,
+                ATTR_RUNTIME,
+                ATTR_DELTA_VOLTAGE,
+                ATTR_TEMPERATURE,
+                ATTR_VOLTAGE,  # check that not overwritten
+                "invalid",
+            }
+        ),
     )
     ref: BMSsample = ref | {
         ATTR_CYCLE_CAP: 238,
@@ -58,14 +60,14 @@ def test_calc_missing_values(bms_data_fixture: BMSsample) -> None:
 def test_calc_voltage() -> None:
     """Check if missing data is correctly calculated."""
     bms_data = ref = {f"{KEY_CELL_VOLTAGE}0": 3.456, f"{KEY_CELL_VOLTAGE}1": 3.567}
-    BaseBMS._add_missing_values(bms_data, {ATTR_VOLTAGE})
+    BaseBMS._add_missing_values(bms_data, frozenset({ATTR_VOLTAGE}))
     assert bms_data == ref | {ATTR_VOLTAGE: 7.023}
 
 
 def test_calc_cycle_chrg() -> None:
     """Check if missing data is correctly calculated."""
     bms_data = ref = {ATTR_BATTERY_LEVEL: 73, KEY_DESIGN_CAP: 125.0}
-    BaseBMS._add_missing_values(bms_data, {ATTR_CYCLE_CHRG})
+    BaseBMS._add_missing_values(bms_data, frozenset({ATTR_CYCLE_CHRG}))
     assert bms_data == ref | {ATTR_CYCLE_CHRG: 91.25}
 
 
@@ -92,6 +94,6 @@ def test_problems(problem_samples: BMSsample) -> None:
     """Check if missing data is correctly calculated."""
     bms_data: BMSsample = problem_samples
 
-    BaseBMS._add_missing_values(bms_data, {ATTR_RUNTIME})
+    BaseBMS._add_missing_values(bms_data, frozenset({ATTR_RUNTIME}))
 
     assert bms_data == problem_samples | {"problem": True}

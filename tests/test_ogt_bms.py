@@ -73,7 +73,7 @@ class MockOGTBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # type: ignore[implicit-optional] # noqa: RUF013 # same as upstream
+        response: bool = None,  # noqa: RUF013 # same as upstream
     ) -> None:
         """Issue write command to GATT."""
         # await super().write_gatt_char(char_specifier, data, response)
@@ -94,7 +94,7 @@ class MockInvalidBleakClient(MockOGTBleakClient):
         if isinstance(char_specifier, str) and normalize_uuid_str(
             char_specifier
         ) == normalize_uuid_str("fff6"):
-            return bytearray(b"invalid\xF0value")
+            return bytearray(b"invalid\xf0value")
 
         return bytearray()
 
@@ -102,7 +102,7 @@ class MockInvalidBleakClient(MockOGTBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # type: ignore[implicit-optional] # noqa: RUF013 # same as upstream
+        response: bool = None,  # noqa: RUF013 # same as upstream
     ) -> None:
         """Issue write command to GATT."""
         # await super().write_gatt_char(char_specifier, data, response)
@@ -118,13 +118,10 @@ class MockInvalidBleakClient(MockOGTBleakClient):
         raise BleakError
 
 
-async def test_update(monkeypatch, ogt_bms_fixture, reconnect_fixture) -> None:
+async def test_update(patch_bleak_client, ogt_bms_fixture, reconnect_fixture) -> None:
     """Test OGT BMS data update."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockOGTBleakClient,
-    )
+    patch_bleak_client(MockOGTBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", ogt_bms_fixture, None, -73),
@@ -168,13 +165,10 @@ async def test_update(monkeypatch, ogt_bms_fixture, reconnect_fixture) -> None:
     await bms.disconnect()
 
 
-async def test_invalid_response(monkeypatch) -> None:
+async def test_invalid_response(patch_bleak_client) -> None:
     """Test data update with BMS returning invalid data and read timeout."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockInvalidBleakClient,
-    )
+    patch_bleak_client(MockInvalidBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "SmartBat-A12345", None, -73))
 
@@ -184,13 +178,10 @@ async def test_invalid_response(monkeypatch) -> None:
     await bms.disconnect()
 
 
-async def test_invalid_bms_type(monkeypatch) -> None:
+async def test_invalid_bms_type(patch_bleak_client) -> None:
     """Test BMS with invalid type 'C'."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockOGTBleakClient,
-    )
+    patch_bleak_client(MockOGTBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "SmartBat-C12294", None, -73))
 
