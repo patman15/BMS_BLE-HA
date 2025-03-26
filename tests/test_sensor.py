@@ -36,7 +36,7 @@ from .conftest import mock_config
 @pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
 async def test_update(
     monkeypatch,
-    BTdiscovery: BluetoothServiceInfoBleak,
+    bt_discovery: BluetoothServiceInfoBleak,
     bool_fixture,
     hass: HomeAssistant,
 ) -> None:
@@ -80,7 +80,7 @@ async def test_update(
     config: MockConfigEntry = mock_config(bms="dummy_bms")
     config.add_to_hass(hass)
 
-    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
     assert await hass.config_entries.async_setup(config.entry_id)
     await hass.async_block_till_done(wait_background_tasks=True)

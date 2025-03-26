@@ -119,7 +119,7 @@ def patch_bleakclient(monkeypatch) -> None:
 
 
 @pytest.fixture
-def BTdiscovery() -> BluetoothServiceInfoBleak:
+def bt_discovery() -> BluetoothServiceInfoBleak:
     """Return a valid Bluetooth object for testing."""
     return BluetoothServiceInfoBleak(
         name="SmartBat-B12345",
@@ -145,7 +145,7 @@ def BTdiscovery() -> BluetoothServiceInfoBleak:
 
 # use inject_bluetooth_service_info
 @pytest.fixture
-def BTdiscovery_notsupported():
+def bt_discovery_notsupported() -> BluetoothServiceInfoBleak:
     """Return a Bluetooth object that describes a not supported device."""
     return BluetoothServiceInfoBleak(
         name="random",  # not supported name
@@ -168,7 +168,7 @@ def BTdiscovery_notsupported():
     )
 
 
-def mock_config(bms: str, unique_id: str | None = "cc:cc:cc:cc:cc:cc"):
+def mock_config(bms: str, unique_id: str | None = "cc:cc:cc:cc:cc:cc") -> MockConfigEntry:
     """Return a Mock of the HA entity config."""
     return MockConfigEntry(
         domain=DOMAIN,
@@ -221,7 +221,7 @@ def ogt_bms_fixture(request) -> str:
     return request.param
 
 
-class Mock_BMS(BaseBMS):
+class MockBMS(BaseBMS):
     """Mock Battery Management System."""
 
     def __init__(

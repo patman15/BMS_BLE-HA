@@ -14,14 +14,14 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from .bluetooth import inject_bluetooth_service_info_bleak
-from .conftest import Mock_BMS, mock_config
+from .conftest import MockBMS, mock_config
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
 async def test_update(
     monkeypatch,
     bool_fixture: bool,
-    BTdiscovery: BluetoothServiceInfoBleak,
+    bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
 ) -> None:
     """Test setting up creates the sensors."""
@@ -40,10 +40,10 @@ async def test_update(
         )
 
     coordinator = BTBmsCoordinator(
-        hass, BTdiscovery.device, Mock_BMS(), mock_config(bms="update")
+        hass, bt_discovery.device, MockBMS(), mock_config(bms="update")
     )
 
-    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
     await coordinator.async_refresh()
     result = coordinator.data
@@ -59,8 +59,8 @@ async def test_update(
     assert coordinator.link_quality == 50
 
     # second update (modify rssi, and check link quality again)
-    BTdiscovery.rssi = -85
-    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
+    bt_discovery.rssi = -85
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
     await coordinator.async_refresh()
     result = coordinator.data
 
@@ -72,15 +72,15 @@ async def test_update(
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
 async def test_nodata(
-    BTdiscovery: BluetoothServiceInfoBleak, hass: HomeAssistant
+    bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
     """Test if coordinator raises exception in case no data, e.g. invalid CRC, is returned."""
 
     coordinator = BTBmsCoordinator(
-        hass, BTdiscovery.device, Mock_BMS(ret_value={}), mock_config(bms="nodata")
+        hass, bt_discovery.device, MockBMS(ret_value={}), mock_config(bms="nodata")
     )
 
-    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
     await coordinator.async_refresh()
     result = coordinator.data
@@ -95,7 +95,7 @@ async def test_nodata(
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
 async def test_update_exception(
-    BTdiscovery: BluetoothServiceInfoBleak,
+    bt_discovery: BluetoothServiceInfoBleak,
     mock_coordinator_exception,
     hass: HomeAssistant,
 ) -> None:
@@ -103,8 +103,8 @@ async def test_update_exception(
 
     coordinator = BTBmsCoordinator(
         hass,
-        BTdiscovery.device,
-        Mock_BMS(mock_coordinator_exception),
+        bt_discovery.device,
+        MockBMS(mock_coordinator_exception),
         mock_config(bms="update_exception"),
     )
 
