@@ -45,6 +45,8 @@ from .const import (
 )
 from .coordinator import BTBmsCoordinator
 
+PARALLEL_UPDATES = 0
+
 SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
     SensorEntityDescription(
         key=ATTR_VOLTAGE,
