@@ -103,14 +103,16 @@ class BMS(BaseBMS):
         return "fff3"
 
     @staticmethod
-    def _calc_values() -> set[str]:
-        return {
-            ATTR_BATTERY_CHARGING,
-            ATTR_CYCLE_CAP,
-            ATTR_DELTA_VOLTAGE,
-            ATTR_POWER,
-            ATTR_RUNTIME,
-        }
+    def _calc_values() -> frozenset[str]:
+        return frozenset(
+            {
+                ATTR_BATTERY_CHARGING,
+                ATTR_CYCLE_CAP,
+                ATTR_DELTA_VOLTAGE,
+                ATTR_POWER,
+                ATTR_RUNTIME,
+            }
+        )
 
     async def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
@@ -211,7 +213,7 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         data: BMSsample = {}
-        for request in [Cmd.LEGINFO1, Cmd.LEGINFO2, Cmd.CELLVOLT]:
+        for request in (Cmd.LEGINFO1, Cmd.LEGINFO2, Cmd.CELLVOLT):
             await self._await_reply(self._cmd_frame(request, b""))
 
             data |= {

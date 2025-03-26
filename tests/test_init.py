@@ -10,11 +10,11 @@ from .bluetooth import inject_bluetooth_service_info_bleak
 from .conftest import mock_config, mock_update_exc, mock_update_min
 
 
-@pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_init_fail(
     monkeypatch,
     bms_fixture,
-    BTdiscovery: BluetoothServiceInfoBleak,
+    bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
 ) -> None:
     """Test entries are unloaded correctly."""
@@ -34,7 +34,7 @@ async def test_init_fail(
         mock_coord_shutdown,
     )
 
-    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
     cfg = mock_config(bms=bms_fixture)
     cfg.add_to_hass(hass)
@@ -58,19 +58,19 @@ async def test_init_fail(
     ), "Failure: config entry generated sensors."
 
 
-@pytest.mark.usefixtures("enable_bluetooth", "patch_bleakclient")
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_unload_entry(
     monkeypatch,
     bms_fixture: str,
     bool_fixture: bool,
-    BTdiscovery: BluetoothServiceInfoBleak,
+    bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
 ) -> None:
     """Test entries are unloaded correctly."""
     unload_fail: bool = bool_fixture
 
     # first load entry (see test_async_setup_entry)
-    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
     cfg = mock_config(bms=bms_fixture)
     cfg.add_to_hass(hass)

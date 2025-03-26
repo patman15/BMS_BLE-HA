@@ -67,7 +67,7 @@ class MockRedodoBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # type: ignore[implicit-optional] # noqa: RUF013 # same as upstream
+        response: bool = None,  # noqa: RUF013 # same as upstream
     ) -> None:
         """Issue write command to GATT."""
         await super().write_gatt_char(char_specifier, data, response)
@@ -77,13 +77,10 @@ class MockRedodoBleakClient(MockBleakClient):
         )
 
 
-async def test_update(monkeypatch, reconnect_fixture) -> None:
+async def test_update(patch_bleak_client, reconnect_fixture) -> None:
     """Test Redodo technology BMS data update."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockRedodoBleakClient,
-    )
+    patch_bleak_client(MockRedodoBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73),
@@ -141,28 +138,21 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
     ],
     ids=lambda param: param[1],
 )
-def response(request):
+def fix_response(request):
     """Return faulty response frame."""
     return request.param[0]
 
 
-async def test_invalid_response(monkeypatch, wrong_response) -> None:
+async def test_invalid_response(monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response) -> None:
     """Test data up date with BMS returning invalid data."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.redodo_bms.BMS.BAT_TIMEOUT",
-        0.1,
-    )
+    patch_bms_timeout("redodo_bms")
 
     monkeypatch.setattr(
-        "tests.test_redodo_bms.MockRedodoBleakClient._response",
-        lambda _s, _c, _d: wrong_response,
+        MockRedodoBleakClient, "_response", lambda _s, _c, _d: wrong_response
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockRedodoBleakClient,
-    )
+    patch_bleak_client(MockRedodoBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
@@ -207,18 +197,14 @@ def prb_response(request):
     return request.param
 
 
-async def test_problem_response(monkeypatch, problem_response) -> None:
+async def test_problem_response(monkeypatch, patch_bleak_client, problem_response) -> None:
     """Test data up date with BMS returning protection flags."""
 
     monkeypatch.setattr(
-        "tests.test_redodo_bms.MockRedodoBleakClient._response",
-        lambda _s, _c, _d: problem_response[0],
+        MockRedodoBleakClient, "_response", lambda _s, _c, _d: problem_response[0]
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockRedodoBleakClient,
-    )
+    patch_bleak_client(MockRedodoBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 

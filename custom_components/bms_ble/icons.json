@@ -1,0 +1,29 @@
+{
+    "entity": {
+        "binary_sensor": {
+            "problem": {
+                "default": "mdi:battery-check",
+                "state": {
+                    "on": "mdi:battery-alert"
+                }
+            }
+        },
+        "sensor": {
+            "current": {
+                "default": "mdi:current-dc"
+            },
+            "cycles": {
+                "default": "mdi:autorenew"
+            },
+            "delta_voltage": {
+                "default": "mdi:battery-sync"
+            },
+            "link_quality": {
+                "default": "mdi:link"
+            },
+            "rssi": {
+                "default": "mdi:bluetooth-connect"
+            }
+        }
+    }
+}
