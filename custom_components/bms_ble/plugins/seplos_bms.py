@@ -54,7 +54,7 @@ class BMS(BaseBMS):
     _FIELDS: Final[
         list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
     ] = [
-        (ATTR_TEMPERATURE, EIB_LEN, 20, 2, False, lambda x: float(x / 10)),
+        (ATTR_TEMPERATURE, EIB_LEN, 20, 2, True, lambda x: float(x / 10)),  # avg. ctemp
         (ATTR_VOLTAGE, EIA_LEN, 0, 4, False, lambda x: float(BMS._swap32(x) / 100)),
         (
             ATTR_CURRENT,
