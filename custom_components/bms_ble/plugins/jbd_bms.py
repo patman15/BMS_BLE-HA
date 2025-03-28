@@ -71,6 +71,12 @@ class BMS(BaseBMS):
                 "12200*",
                 "12300*",
             )
+        ] + [
+            {  # SBL
+                "service_uuid": BMS.uuid_services()[0],
+                "manufacturer_id": 123,
+                "connectable": True,
+            }
         ]
 
     @staticmethod

@@ -466,4 +466,13 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "seplos_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/236)
+        generate_advertisement_data(
+            local_name="SBL-12330BLH1-242055",
+            rssi=-84,
+            manufacturer_data={123: "02ffff7d"},
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+        ),
+        "jbd_bms",
+    ),
 ]
