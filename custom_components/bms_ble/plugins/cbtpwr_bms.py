@@ -31,7 +31,6 @@ from .basebms import BaseBMS, BMSsample, crc_sum
 class BMS(BaseBMS):
     """CBT Power Smart BMS class implementation."""
 
-    TIMEOUT = 1
     HEAD: Final[bytes] = bytes([0xAA, 0x55])
     TAIL_RX: Final[bytes] = bytes([0x0D, 0x0A])
     TAIL_TX: Final[bytes] = bytes([0x0A, 0x0D])
@@ -140,11 +139,10 @@ class BMS(BaseBMS):
         """Assemble a CBT Power BMS command."""
         value = [] if value is None else value
         assert len(value) <= 255
-        frame = bytes([*BMS.HEAD, cmd[0]])
-        frame += bytes([len(value), *value])
-        frame += bytes([crc_sum(frame[len(BMS.HEAD) :])])
-        frame += bytes([*BMS.TAIL_TX])
-        return frame
+        frame = bytearray([*BMS.HEAD, cmd[0], len(value), *value])
+        frame.append(crc_sum(frame[len(BMS.HEAD) :]))
+        frame.extend(BMS.TAIL_TX)
+        return bytes(frame)
 
     @staticmethod
     def _cell_voltages(data: bytearray) -> dict[str, float]:

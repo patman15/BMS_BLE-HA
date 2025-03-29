@@ -209,11 +209,11 @@ class BMS(BaseBMS):
         """Assemble a Jikong BMS command."""
         value = [] if value is None else value
         assert len(value) <= 13
-        frame = bytes([*BMS.HEAD_CMD, cmd[0]])
-        frame += bytes([len(value), *value])
-        frame += bytes([0] * (13 - len(value)))
-        frame += bytes([crc_sum(frame)])
-        return frame
+        frame: bytearray = bytearray(
+            [*BMS.HEAD_CMD, cmd[0], len(value), *value]
+        ) + bytearray(13 - len(value))
+        frame.append(crc_sum(frame))
+        return bytes(frame)
 
     @staticmethod
     def _dec_devinfo(data: bytearray) -> dict[str, str]:

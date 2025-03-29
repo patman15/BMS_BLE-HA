@@ -14,6 +14,31 @@ from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
 
+def ref_value() -> BMSsample:
+    """Return reference value for mock CBT power BMS."""
+    return {
+        "voltage": 13.4,
+        "current": -3.14,
+        "battery_level": 100,
+        "cycles": 3,
+        "cycle_charge": 40.0,
+        "cell#0": 3.339,
+        "cell#1": 3.339,
+        "cell#2": 3.338,
+        "cell#3": 3.338,
+        "cell#4": 2.317,
+        "delta_voltage": 1.022,
+        "temperature": -2,
+        "cycle_capacity": 536.0,
+        "design_capacity": 40,
+        "power": -42.076,
+        "runtime": 22608,
+        "battery_charging": False,
+        "problem": False,
+        "problem_code": 0,
+    }
+
+
 class MockCBTpwrBleakClient(MockBleakClient):
     """Emulate a CBT power BMS BleakClient."""
 
@@ -162,27 +187,7 @@ async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
 
     result = await bms.async_update()
 
-    assert result == {
-        "voltage": 13.4,
-        "current": -3.14,
-        "battery_level": 100,
-        "cycles": 3,
-        "cycle_charge": 40.0,
-        "cell#0": 3.339,
-        "cell#1": 3.339,
-        "cell#2": 3.338,
-        "cell#3": 3.338,
-        "cell#4": 2.317,
-        "delta_voltage": 1.022,
-        "temperature": -2,
-        "cycle_capacity": 536.0,
-        "design_capacity": 40,
-        "power": -42.076,
-        "runtime": 22608,
-        "battery_charging": False,
-        "problem": False,
-        "problem_code": 0,
-    }
+    assert result == ref_value()
 
     # query again to check already connected state
     result = await bms.async_update()
@@ -294,18 +299,18 @@ async def test_all_cell_voltages(patch_bleak_client, patch_bms_timeout) -> None:
     ],
     ids=lambda param: param[1],
 )
-def prb_response(request) -> dict[int, bytearray]:
+def prb_response(request) -> tuple[dict[int, bytearray], str]:
     """Return faulty response frame."""
-    return request.param[0]
+    return request.param
 
 
 async def test_problem_response(
-    monkeypatch, patch_bleak_client, problem_response: dict[int, bytearray]
+    monkeypatch, patch_bleak_client, problem_response: tuple[dict[int, bytearray], str]
 ) -> None:
     """Test data update with BMS returning error flags."""
 
     monkeypatch.setattr(  # patch response dictionary to only problem reports (no other data)
-        MockCBTpwrBleakClient, "RESP", problem_response
+        MockCBTpwrBleakClient, "RESP", MockCBTpwrBleakClient.RESP | problem_response[0]
     )
 
     patch_bleak_client(MockCBTpwrBleakClient)
@@ -313,6 +318,9 @@ async def test_problem_response(
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
     result: BMSsample = await bms.async_update()
-    assert result.get("problem", False)  # expect a problem report
+    assert result == ref_value() | {
+        "problem": True,
+        "problem_code": 1 << (0 if problem_response[1] == "first_bit" else 31),
+    }
 
     await bms.disconnect()

@@ -40,7 +40,7 @@ type BMSsample = dict[str, int | float | bool]
 class BaseBMS(metaclass=ABCMeta):
     """Base class for battery management system."""
 
-    TIMEOUT = 10
+    TIMEOUT = 2.5
     MAX_CELL_VOLTAGE: Final[float] = 5.906  # max cell potential
 
     def __init__(
@@ -52,9 +52,11 @@ class BaseBMS(metaclass=ABCMeta):
         """Intialize the BMS.
 
         logger_name: name of the logger for the BMS instance (usually file name)
-        notification_handler: the callback used for notifications from 'uuid_rx()' characteristics
         ble_device: the Bleak device to connect to
         reconnect: if true, the connection will be closed after each update
+
+        notification_handler: the callback used for notifications from 'uuid_rx()' characteristics
+            Not defined as abstract, as it can be both, a normal or async function
         """
         assert (
             getattr(self, "_notification_handler", None) is not None
@@ -328,6 +330,6 @@ def crc8(data: bytearray) -> int:
     return crc & 0xFF
 
 
-def crc_sum(frame: bytes) -> int:
+def crc_sum(frame: bytearray) -> int:
     """Calculate frame CRC."""
     return sum(frame) & 0xFF

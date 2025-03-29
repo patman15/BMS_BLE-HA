@@ -32,9 +32,8 @@ from .basebms import BaseBMS, BMSsample, crc8
 class BMS(BaseBMS):
     """ABC battery class implementation."""
 
-    TIMEOUT = 1
     _HEAD_CMD: Final[int] = 0xEE
-    _HEAD_RESP: Final[bytes] = b"\xCC"
+    _HEAD_RESP: Final[bytes] = b"\xcc"
     _INFO_LEN: Final[int] = 0x14
     _EXP_REPLY: Final[dict[int, list[int]]] = {  # wait for these replies
         0xC0: [0xF1],
@@ -151,8 +150,8 @@ class BMS(BaseBMS):
     def _cmd(cmd: bytes) -> bytes:
         """Assemble a ABC BMS command."""
         frame = bytearray([BMS._HEAD_CMD, cmd[0], 0x00, 0x00, 0x00])
-        frame += bytes([crc8(frame)])
-        return frame
+        frame.append(crc8(frame))
+        return bytes(frame)
 
     @staticmethod
     def _cell_voltages(data: bytearray) -> dict[str, float]:

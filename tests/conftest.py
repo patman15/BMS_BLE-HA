@@ -221,7 +221,7 @@ def plugin_fixture(request: pytest.FixtureRequest) -> ModuleType:
     )
 
 
-@pytest.fixture(params=[False, True])
+@pytest.fixture(params=[False, True], ids=["persist", "reconnect"])
 def reconnect_fixture(request: pytest.FixtureRequest) -> bool:
     """Return False, True for reconnect test."""
     return request.param

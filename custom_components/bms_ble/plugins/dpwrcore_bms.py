@@ -130,7 +130,7 @@ class BMS(BaseBMS):
 
         # acknowledge received frame
         await self._await_reply(
-            bytearray([data[0] | 0x80]) + data[1:], wait_for_notify=False
+            bytes([data[0] | 0x80]) + data[1:], wait_for_notify=False
         )
 
         size: Final[int] = int(data[0])
@@ -161,22 +161,22 @@ class BMS(BaseBMS):
             self._data_event.set()
 
     @staticmethod
-    def _crc(data: bytes) -> int:
+    def _crc(data: bytearray) -> int:
         return sum(data) + 8
 
     @staticmethod
     def _cmd_frame(cmd: Cmd, data: bytes) -> bytes:
-        frame: bytes = bytes([cmd.value, 0x00, 0x00]) + data
+        frame: bytearray = bytearray([cmd.value, 0x00, 0x00]) + data
         checksum: Final[int] = BMS._crc(frame)
         frame = (
-            bytes([0x3A, 0x03, 0x05])
+            bytearray([0x3A, 0x03, 0x05])
             + frame
             + bytes([(checksum >> 8) & 0xFF, checksum & 0xFF, 0x0D, 0x0A])
         )
-        frame = bytes([len(frame) + 2, 0x11]) + frame
+        frame = bytearray([len(frame) + 2, 0x11]) + frame
         frame += bytes(BMS._PAGE_LEN - len(frame))
 
-        return frame
+        return bytes(frame)
 
     async def _init_connection(self) -> None:
         """Connect to the BMS and setup notification if not connected."""

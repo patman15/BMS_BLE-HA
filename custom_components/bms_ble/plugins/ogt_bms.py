@@ -32,7 +32,6 @@ CRYPT_SEQ: Final[list[int]] = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
 class BMS(BaseBMS):
     """Offgridtec LiFePO4 Smart Pro type A and type B battery class implementation."""
 
-    TIMEOUT = 1
     IDX_NAME: Final = 0
     IDX_LEN: Final = 1
     IDX_FCT: Final = 2
@@ -205,4 +204,4 @@ class BMS(BaseBMS):
         )
         self._log.debug("command: %s", cmd)
 
-        return bytearray(ord(cmd[i]) ^ self._key for i in range(len(cmd)))
+        return bytes(ord(cmd[i]) ^ self._key for i in range(len(cmd)))
