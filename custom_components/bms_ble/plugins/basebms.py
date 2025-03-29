@@ -40,7 +40,7 @@ type BMSsample = dict[str, int | float | bool]
 class BaseBMS(metaclass=ABCMeta):
     """Base class for battery management system."""
 
-    TIMEOUT = 10
+    TIMEOUT = 2.5
     MAX_CELL_VOLTAGE: Final[float] = 5.906  # max cell potential
 
     def __init__(
