@@ -74,7 +74,6 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
     SensorEntityDescription(
         key=ATTR_CURRENT,
         translation_key=ATTR_CURRENT,
-        icon="mdi:current-dc",
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.CURRENT,
@@ -90,7 +89,6 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
     SensorEntityDescription(
         key=ATTR_CYCLES,
         translation_key=ATTR_CYCLES,
-        icon="mdi:autorenew",
         name="Cycles",
         state_class=SensorStateClass.TOTAL_INCREASING,
     ),
@@ -115,7 +113,6 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
         key=ATTR_DELTA_VOLTAGE,
         translation_key=ATTR_DELTA_VOLTAGE,
         name="Delta voltage",
-        icon="mdi:battery-sync",
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
@@ -125,7 +122,6 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
     SensorEntityDescription(
         key=ATTR_RSSI,
         translation_key=ATTR_RSSI,
-        icon="mdi:bluetooth-connect",
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
@@ -136,7 +132,6 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
         key=ATTR_LQ,
         translation_key=ATTR_LQ,
         name="Link quality",
-        icon="mdi:link",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
