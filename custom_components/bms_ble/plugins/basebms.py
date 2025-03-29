@@ -52,9 +52,11 @@ class BaseBMS(metaclass=ABCMeta):
         """Intialize the BMS.
 
         logger_name: name of the logger for the BMS instance (usually file name)
-        notification_handler: the callback used for notifications from 'uuid_rx()' characteristics
         ble_device: the Bleak device to connect to
         reconnect: if true, the connection will be closed after each update
+
+        notification_handler: the callback used for notifications from 'uuid_rx()' characteristics
+            Not defined as abstract, as it can be both, a normal or async function
         """
         assert (
             getattr(self, "_notification_handler", None) is not None
