@@ -330,6 +330,6 @@ def crc8(data: bytearray) -> int:
     return crc & 0xFF
 
 
-def crc_sum(frame: bytes) -> int:
+def crc_sum(frame: bytearray) -> int:
     """Calculate frame CRC."""
     return sum(frame) & 0xFF

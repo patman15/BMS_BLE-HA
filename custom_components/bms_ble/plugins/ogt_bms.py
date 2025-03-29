@@ -204,4 +204,4 @@ class BMS(BaseBMS):
         )
         self._log.debug("command: %s", cmd)
 
-        return bytearray(ord(cmd[i]) ^ self._key for i in range(len(cmd)))
+        return bytes(ord(cmd[i]) ^ self._key for i in range(len(cmd)))
