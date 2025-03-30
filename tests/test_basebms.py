@@ -23,7 +23,9 @@ from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 
 def test_calc_missing_values(bms_data_fixture: BMSsample) -> None:
     """Check if missing data is correctly calculated."""
-    bms_data = ref = bms_data_fixture
+    bms_data: BMSsample = bms_data_fixture
+    ref: BMSsample = bms_data_fixture
+
     BaseBMS._add_missing_values(
         bms_data,
         frozenset(
@@ -39,7 +41,7 @@ def test_calc_missing_values(bms_data_fixture: BMSsample) -> None:
             }
         ),
     )
-    ref: BMSsample = ref | {
+    ref = ref | {
         ATTR_CYCLE_CAP: 238,
         ATTR_DELTA_VOLTAGE: 0.111,
         ATTR_POWER: (
