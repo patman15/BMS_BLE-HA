@@ -259,7 +259,7 @@ class BaseBMS(metaclass=ABCMeta):
 
         self._log.debug("TX BLE data: %s", data.hex(" "))
         self._data_event.clear()  # clear event before requesting new data
-        await self._client.write_gatt_char(char or self.uuid_tx(), data)
+        await self._client.write_gatt_char(char or self.uuid_tx(), data, response=False)
         if wait_for_notify:
             await asyncio.wait_for(self._wait_event(), timeout=self.TIMEOUT)
 
