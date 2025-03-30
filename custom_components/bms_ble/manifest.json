@@ -18,7 +18,7 @@
     },
     {
       "manufacturer_id": 260
-    },    
+    },
     {
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
       "manufacturer_id": 2917
@@ -38,7 +38,7 @@
     {
       "local_name": "AP2?S*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },    
+    },
     {
       "local_name": "GJ-*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
@@ -57,6 +57,10 @@
     },
     {
       "local_name": "12300*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "manufacturer_id": 123,
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
@@ -86,7 +90,7 @@
     {
       "local_name": "SP4*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },    
+    },
     {
       "local_name": "SP5*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
@@ -98,7 +102,7 @@
     {
       "local_name": "CSY*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },    
+    },
     {
       "local_name": "TBA-*"
     },
