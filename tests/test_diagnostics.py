@@ -78,6 +78,7 @@ async def test_diagnostics(
         "link_quality": 50,
         "rssi": -61,
     }
+    assert diag_data["adapter_data"] == "unavailable"
     assert diag_data["device_data"]["config_entries"] == [config_entry.entry_id]
     assert diag_data["device_data"]["id"] == "**REDACTED**"
     assert diag_data["device_data"]["name"] == DEVICE["name"]
