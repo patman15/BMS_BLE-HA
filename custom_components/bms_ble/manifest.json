@@ -64,6 +64,10 @@
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
+      "manufacturer_id": 49572,
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },    
+    {
       "manufacturer_id": 6226,
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },

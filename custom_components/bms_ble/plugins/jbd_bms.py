@@ -72,11 +72,12 @@ class BMS(BaseBMS):
                 "12300*",
             )
         ] + [
-            {  # SBL
+            {
                 "service_uuid": BMS.uuid_services()[0],
-                "manufacturer_id": 123,
+                "manufacturer_id": m_id,
                 "connectable": True,
-            }
+            }  # SBL, EPOCH batteries 12.8V 460Ah - 12460A-H
+            for m_id in (0x7B, 0xC1A4)
         ]
 
     @staticmethod
