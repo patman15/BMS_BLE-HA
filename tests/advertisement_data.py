@@ -475,4 +475,16 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "jbd_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/240)
+        generate_advertisement_data(  # Creabest
+            local_name="VB024000390",
+            rssi=-73,
+            manufacturer_data={16963: "545e0211f82e0ca88942"},
+            service_uuids=[
+                "0000fff0-0000-1000-8000-00805f9b34fb",
+                "0000ffb0-0000-1000-8000-00805f9b34fb",
+            ],
+        ),
+        "cbtpwr_bms",
+    ),
 ]

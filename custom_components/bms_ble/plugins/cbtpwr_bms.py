@@ -62,16 +62,18 @@ class BMS(BaseBMS):
         """Provide BluetoothMatcher definition."""
         return [
             {"service_uuid": BMS.uuid_services()[0], "connectable": True},
-            {  # Creabest
-                "service_uuid": normalize_uuid_str("fff0"),
-                "manufacturer_id": 0,
-                "connectable": True,
-            },
             {
                 "service_uuid": normalize_uuid_str("03c1"),
                 "manufacturer_id": 0x5352,
                 "connectable": True,
             },
+        ] + [
+            {  # Creabest
+                "service_uuid": normalize_uuid_str("fff0"),
+                "manufacturer_id": m_id,
+                "connectable": True,
+            }
+            for m_id in (0, 16963)
         ]
 
     @staticmethod
