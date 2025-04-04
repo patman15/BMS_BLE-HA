@@ -158,17 +158,16 @@ class BMS(BaseBMS):
         self._data_event.set()
 
     @staticmethod
-    def _crc(frame: bytes) -> int:
+    def _crc(frame: bytearray) -> int:
         """Calculate JBD frame CRC."""
         return 0x10000 - sum(frame)
 
     @staticmethod
     def _cmd(cmd: bytes) -> bytes:
         """Assemble a JBD BMS command."""
-        frame = bytes([*BMS.HEAD_CMD, cmd[0], 0x00])
-        frame += BMS._crc(frame[2:4]).to_bytes(2, "big")
-        frame += bytes([0x77])
-        return frame
+        frame = bytearray([*BMS.HEAD_CMD, cmd[0], 0x00])
+        frame += BMS._crc(frame[2:4]).to_bytes(2, "big") + bytes([0x77])
+        return bytes(frame)
 
     @staticmethod
     def _decode_data(data: bytearray) -> dict[str, int | float]:
