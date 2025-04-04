@@ -159,7 +159,7 @@ class BMS(BaseBMS):
             return
 
         self._log.debug(
-            "address: 0x%X, commnad 0x%X, version: 0x%X, length: 0x%X",
+            "address: 0x%X, command 0x%X, version: 0x%X, length: 0x%X",
             int(self._data[1:3], 16),
             int(self._data[3:5], 16) & 0x7F,
             int(self._data[5:7], 16),
