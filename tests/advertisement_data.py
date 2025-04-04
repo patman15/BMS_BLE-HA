@@ -475,4 +475,13 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "jbd_bms",
     ),
+    (  # source BTctl (https://github.com/patman15/BMS_BLE-HA/issues/242)
+        generate_advertisement_data(
+            local_name="PKT2201PB121000084",
+            rssi=-46,
+            manufacturer_data={30669: "\xe4\x38\xc1\xa4"},  # MAC address, wrong
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+        ),
+        "jbd_bms",
+    ),
 ]
