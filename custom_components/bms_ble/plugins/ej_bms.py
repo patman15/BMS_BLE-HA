@@ -114,10 +114,7 @@ class BMS(BaseBMS):
         self._data += data
 
         self._log.debug(
-            "%s: RX BLE data (%s): %s",
-            self._ble_device.name,
-            "start" if data == self._data else "cnt.",
-            data,
+            "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
         exp_frame_len: Final[int] = (
