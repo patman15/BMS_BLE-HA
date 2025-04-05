@@ -62,9 +62,10 @@ class BMS(BaseBMS):
         return [
             {
                 "local_name": "ECO-WORTHY*",
-                "manufacturer_id": 0xC2B4,
+                "manufacturer_id": m_id,
                 "connectable": True,
             }
+            for m_id in (0xBB28, 0xC2B4)
         ]
 
     @staticmethod
