@@ -31,7 +31,7 @@ async def async_get_device_diagnostics(
         )
     ):
         adapter_info = (
-            f"name: {adapter.name}, {adapter.manufacturer} ({adapter.model}/"
+            f"{adapter.name}, {adapter.manufacturer} ({adapter.model}/"
             f"{adapter.model_id}): {adapter.hw_version}, {adapter.sw_version}"
         )
 
