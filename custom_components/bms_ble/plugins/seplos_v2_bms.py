@@ -164,16 +164,15 @@ class BMS(BaseBMS):
         self._exp_len = BMS._MIN_LEN
 
     @staticmethod
-    def _cmd(cmd: int, address: int = 0, data: bytearray = bytearray()) -> bytearray:
+    def _cmd(cmd: int, address: int = 0, data: bytearray = bytearray()) -> bytes:
         """Assemble a Seplos V2 BMS command."""
         assert cmd in (0x47, 0x51, 0x61, 0x62, 0x04)  # allow only read commands
         frame = bytearray(
             [BMS._HEAD, BMS._CMD_VER, address, 0x46, cmd]
         )  # fixed version
         frame += len(data).to_bytes(2, "big", signed=False) + data
-        frame += bytearray(int.to_bytes(crc_xmodem(frame[1:]), 2, byteorder="big"))
-        frame += bytearray([BMS._TAIL])
-        return frame
+        frame += int.to_bytes(crc_xmodem(frame[1:]), 2, byteorder="big") + bytes([BMS._TAIL])
+        return bytes(frame)
 
     @staticmethod
     def _decode_data(data: dict[int, bytearray], offs: int) -> dict[str, int | float]:

@@ -193,7 +193,7 @@ class BMS(BaseBMS):
         return {f"{KEY_TEMP_VALUE}{idx}": data[14 + idx] - 40 for idx in range(sensors)}
 
     @staticmethod
-    def _crc(frame: bytes) -> int:
+    def _crc(frame: bytearray) -> int:
         """Calculate XOR of all frame bytes."""
         crc: int = 0
         for b in frame:
@@ -203,7 +203,7 @@ class BMS(BaseBMS):
     @staticmethod
     def _cmd(cmd: bytes) -> bytes:
         """Assemble a RoyPow BMS command."""
-        data: Final[bytes] = bytes([len(cmd) + 2, *cmd])
+        data: Final[bytearray] = bytearray([len(cmd) + 2, *cmd])
         return bytes([*BMS._HEAD, *data, BMS._crc(data), BMS._TAIL])
 
     async def _async_update(self) -> BMSsample:

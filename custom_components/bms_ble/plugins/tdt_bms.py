@@ -162,16 +162,15 @@ class BMS(BaseBMS):
         self._data_event.set()
 
     @staticmethod
-    def _cmd(cmd: int, data: bytearray = bytearray()) -> bytearray:
+    def _cmd(cmd: int, data: bytearray = bytearray()) -> bytes:
         """Assemble a TDT BMS command."""
         assert cmd in (0x8C, 0x8D, 0x92)  # allow only read commands
-        frame = bytearray(
-            [BMS._HEAD, BMS._CMD_VER, 0x1, 0x3, 0x0, cmd]
-        )  # fixed version
+
+        frame = bytearray([BMS._HEAD, BMS._CMD_VER, 0x1, 0x3, 0x0, cmd])
         frame += len(data).to_bytes(2, "big", signed=False) + data
-        frame += bytearray(int.to_bytes(crc_modbus(frame), 2, byteorder="big"))
-        frame += bytearray([BMS._TAIL])
-        return frame
+        frame += crc_modbus(frame).to_bytes(2, "big") + bytes([BMS._TAIL])
+
+        return bytes(frame)
 
     @staticmethod
     def _decode_data(data: dict[int, bytearray], offs: int) -> dict[str, int | float]:
