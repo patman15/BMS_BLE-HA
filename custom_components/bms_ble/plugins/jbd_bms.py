@@ -31,8 +31,9 @@ from .basebms import BaseBMS, BMSsample
 class BMS(BaseBMS):
     """JBD Smart BMS class implementation."""
 
-    HEAD_RSP: Final = bytes([0xDD])  # header for responses
-    HEAD_CMD: Final = bytes([0xDD, 0xA5])  # read header for commands
+    HEAD_RSP: Final[bytes] = bytes([0xDD])  # header for responses
+    HEAD_CMD: Final[bytes] = bytes([0xDD, 0xA5])  # read header for commands
+    TAIL: Final[int] = 0x77  # tail for command
     INFO_LEN: Final[int] = 7  # minimum frame size
     BASIC_INFO: Final[int] = 23  # basic info data length
     _FIELDS: Final[list[tuple[str, int, int, bool, Callable[[int], int | float]]]] = [
@@ -139,9 +140,9 @@ class BMS(BaseBMS):
         ):
             return
 
-        # check correct frame ending (0x77)
+        # check correct frame ending
         frame_end: Final[int] = BMS.INFO_LEN + self._data[3] - 1
-        if self._data[frame_end] != 0x77:
+        if self._data[frame_end] != BMS.TAIL:
             self._log.debug("incorrect frame end (length: %i).", len(self._data))
             return
 
@@ -159,17 +160,16 @@ class BMS(BaseBMS):
         self._data_event.set()
 
     @staticmethod
-    def _crc(frame: bytes) -> int:
+    def _crc(frame: bytearray) -> int:
         """Calculate JBD frame CRC."""
         return 0x10000 - sum(frame)
 
     @staticmethod
     def _cmd(cmd: bytes) -> bytes:
         """Assemble a JBD BMS command."""
-        frame = bytes([*BMS.HEAD_CMD, cmd[0], 0x00])
-        frame += BMS._crc(frame[2:4]).to_bytes(2, "big")
-        frame += bytes([0x77])
-        return frame
+        frame = bytearray([*BMS.HEAD_CMD, cmd[0], 0x00])
+        frame.extend([*BMS._crc(frame[2:4]).to_bytes(2, "big"), BMS.TAIL])
+        return bytes(frame)
 
     @staticmethod
     def _decode_data(data: bytearray) -> dict[str, int | float]:
