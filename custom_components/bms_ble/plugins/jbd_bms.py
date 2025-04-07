@@ -31,8 +31,9 @@ from .basebms import BaseBMS, BMSsample
 class BMS(BaseBMS):
     """JBD Smart BMS class implementation."""
 
-    HEAD_RSP: Final = bytes([0xDD])  # header for responses
-    HEAD_CMD: Final = bytes([0xDD, 0xA5])  # read header for commands
+    HEAD_RSP: Final[bytes] = bytes([0xDD])  # header for responses
+    HEAD_CMD: Final[bytes] = bytes([0xDD, 0xA5])  # read header for commands
+    TAIL: Final[int] = 0x77  # tail for command
     INFO_LEN: Final[int] = 7  # minimum frame size
     BASIC_INFO: Final[int] = 23  # basic info data length
     _FIELDS: Final[list[tuple[str, int, int, bool, Callable[[int], int | float]]]] = [
@@ -73,11 +74,12 @@ class BMS(BaseBMS):
                 "PKT*",  # Perfektium
             )
         ] + [
-            {  # SBL
+            {
                 "service_uuid": BMS.uuid_services()[0],
-                "manufacturer_id": 123,
+                "manufacturer_id": m_id,
                 "connectable": True,
-            }
+            }  # SBL, EPOCH batteries 12.8V 460Ah - 12460A-H
+            for m_id in (0x7B, 0xC1A4)
         ]
 
     @staticmethod
@@ -138,9 +140,9 @@ class BMS(BaseBMS):
         ):
             return
 
-        # check correct frame ending (0x77)
+        # check correct frame ending
         frame_end: Final[int] = BMS.INFO_LEN + self._data[3] - 1
-        if self._data[frame_end] != 0x77:
+        if self._data[frame_end] != BMS.TAIL:
             self._log.debug("incorrect frame end (length: %i).", len(self._data))
             return
 
@@ -166,7 +168,7 @@ class BMS(BaseBMS):
     def _cmd(cmd: bytes) -> bytes:
         """Assemble a JBD BMS command."""
         frame = bytearray([*BMS.HEAD_CMD, cmd[0], 0x00])
-        frame += BMS._crc(frame[2:4]).to_bytes(2, "big") + bytes([0x77])
+        frame.extend([*BMS._crc(frame[2:4]).to_bytes(2, "big"), BMS.TAIL])
         return bytes(frame)
 
     @staticmethod

@@ -475,6 +475,15 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "jbd_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/236)
+        generate_advertisement_data(
+            local_name="162400552210210097",
+            rssi=-35,
+            manufacturer_data={49572: "375532f9"},  # MAC address, correct
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+        ),
+        "jbd_bms",
+    ),
     (  # source BTctl (https://github.com/patman15/BMS_BLE-HA/issues/242)
         generate_advertisement_data(
             local_name="PKT2201PB121000084",
@@ -483,5 +492,12 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
         ),
         "jbd_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/241)
+        generate_advertisement_data(
+            local_name="V-12V200Ah-0215",
+            rssi=-74,
+        ),
+        "ej_bms",
     ),
 ]

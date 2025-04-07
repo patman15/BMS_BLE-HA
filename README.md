@@ -28,13 +28,13 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - E&J Technology BMS (show ups as `libatt`&#x2026;)
     - Elektronicx batteries (show up as `LT-`&#x2026;)
     - Lithtech batteries (show up as `LT-12V-`&#x2026; or `L-12V`&#x2026;)
-    - Meritsun, Supervolt v1, Volthium batteries
+    - Meritsun, Supervolt v1, and Volthium (show up as `V-12V`&#x2026;) batteries
 - ECO-WORTHY + BW02 adapter (show up as `ECO-WORTHY`&#x2026;)
 - Ective, Topband batteries (show up as `$PFLAC`&#x2026;, `NWJ20`&#x2026;, `ZM20`&#x2026;)
 - Felicity ESS batteries (show up as `F10`&#x2026;)
 - JBD BMS, Jiabaida (show up as `AP2.S`&#x2026;, `SP..S`&#x2026;)
     - accurat batteries (show up as `GJ-`&#x2026;)
-    - DCHOUSE, ECO-WORTHY batteries (show up as `DP04S`&#x2026;)
+    - DCHOUSE, ECO-WORTHY (show up as `DP04S`&#x2026;), Epoch batteries
     - Eleksol, Perfektium (show up as `PKT`&#x2026;), Ultimatron batteries (show up as `12??0`&#x2026;)
     - SBL batteries, Supervolt v3 batteries (show up as `SX1`&#x2026;)
 - JK BMS, Jikong, (HW version &ge; 6 required)
@@ -110,16 +110,39 @@ This integration follows standard integration removal. No extra steps are requir
 
 ## Known Issues
 
+<details><summary>Daly BMS with WiFi, e.g. Bulltron</summary>
+The connection cannot be established. The reason is most likely a <a href="https://github.com/hbldh/bleak/issues/972#issuecomment-1235867382">violation of the Bluetooth specification</a>, that is rejected by the Linux BlueZ daemon. Please raise a <a href="https://github.com/patman15/BMS_BLE-HA/issues/new?template=support.yml">new issue</a> if you have further information or observations.
+</details>
 <details><summary>Elektronicx, Lithtech batteries</summary>
 Bluetooth is turned off, when there is no current. Thus, device will get unavailble / cannot be added.
+</details>
+<details><summary>Redodo MPPT</summary>
+Currently there is no way to distinguish Redodo batteries from their MPPT chargers. Thus, the latter are also detected but cannot be read out. Please set these devices to `ignore`.
 </details>
 <details><summary>Seplos v2</summary>
 The internal Bluetooth adapter issues <code>AT</code> commands in regular intervals which can interfer with BMS messages causing them to be corrupted. This impacts data availability (<code>link quality</code>).
 </details>
-<details><summary>Daly BMS with WiFi, e.g. Bulltron</summary>
-The connection cannot be established. The reason is most likely a <a href="https://github.com/hbldh/bleak/issues/972#issuecomment-1235867382">violation of the Bluetooth specification</a>, that is rejected by the Linux BlueZ daemon. Please raise a <a href="https://github.com/patman15/BMS_BLE-HA/issues/new?template=support.yml">new issue</a> if you have further information or observations.
-</details>
-    
+
+## Troubleshooting
+### If your device is not recognized
+
+1. Check that your BMS type is listed as [supported device](#supported-devices)
+1. If a name detection pattern is listed ("show up as"), make sure your device matches it.
+1. Make sure that no other device is connected to the BMS, e.g. app on your phone
+1. Check that your are running the [latest release](https://github.com//patman15/BMS_BLE-HA/releases) of the integration
+1. Open a [terminal to Home Assistant](https://www.home-assistant.io/common-tasks/supervised/#installing-and-using-the-ssh-add-on) and verify that your BMS is listed in the ouput of the command `bluetoothctl devices`.
+1. If you use a BT proxy, make sure you have set `active: true` and that you do not exced the [BT proxy limit][btproxy-url] of 3 devices/proxy; check the logs of the proxy if the device is recognized. Note: The [Bluetooth proxy of Shelly devices](https://www.home-assistant.io/integrations/shelly/#bluetooth-support) does not support active connections and thus cannot be used.
+1. If above points did not help, please [open an issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) providing the advertisement data of the device. To get the data, please go to the [bluetooth integration](https://my.home-assistant.io/redirect/integration/?domain=bluetooth). On your BT adapter select `configure -> advertisement monitor`, click the device in question and provide the information via **`copy to clipboard`**.
+
+### In case you have troubles you'd like to have help with
+
+- please [enable the debug protocol](https://www.home-assistant.io/docs/configuration/troubleshooting/#debug-logs-and-diagnostics) for the [BLE Battery Management integration](https://my.home-assistant.io/redirect/integration/?domain=bms_ble),
+- restart Home Assistant, wait till it is fully started up,
+- reproduce the issue,
+- disable the log (Home Assistant will prompt you to download the log), and finally
+- [open an issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=support.yml) with a good description of what your question/issue is and attach the log, or
+- [open a bug](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=Bug&projects=&template=bug.yml) if you think the behaviour you see is caused by the integration, including a good description of what happened, your expectations, and attach the log.
+
 ## FAQ
 ### My sensors show unknown/unavailable at startup!
 The polling interval is 30 seconds. So at startup it takes a few minutes to detect the battery and query the sensors. Then data will be available.
@@ -178,26 +201,6 @@ Then you need to pair your device first. This is procedure is only required once
 
 Once pairing is done, the integration should automatically detect the BMS.
 
-## Troubleshooting
-### If your device is not recognized
-
-1. Check that your BMS type is listed as [supported device](#supported-devices)
-1. If a name detection pattern is listed ("show up as"), make sure your device matches it.
-1. Make sure that no other device is connected to the BMS, e.g. app on your phone
-1. Check that your are running the [latest release](https://github.com//patman15/BMS_BLE-HA/releases) of the integration
-1. Open a [terminal to Home Assistant](https://www.home-assistant.io/common-tasks/supervised/#installing-and-using-the-ssh-add-on) and verify that your BMS is listed in the ouput of the command `bluetoothctl devices`.
-1. If you use a BT proxy, make sure you have set `active: true` and that you do not exced the [BT proxy limit][btproxy-url] of 3 devices/proxy; check the logs of the proxy if the device is recognized. Note: The [Bluetooth proxy of Shelly devices](https://www.home-assistant.io/integrations/shelly/#bluetooth-support) does not support active connections and thus cannot be used.
-1. If above points did not help, please [open an issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) providing the output of `bluetoothctl info <MAC>` or a BT proxy log set to `VERY_VERBOSE`. On HA 2025.02 and later you can also go to the [bluetooth integration](https://my.home-assistant.io/redirect/integration/?domain=bluetooth). On your BT adapter select `configure->advertisement monitor`, click the device in question and provide the information via `copy to clipboard`.
-
-### In case you have troubles you'd like to have help with
-
-- please [enable the debug protocol](https://www.home-assistant.io/docs/configuration/troubleshooting/#debug-logs-and-diagnostics) for the [BLE Battery Management integration](https://my.home-assistant.io/redirect/integration/?domain=bms_ble),
-- restart Home Assistant, wait till it is fully started up,
-- reproduce the issue,
-- disable the log (Home Assistant will prompt you to download the log), and finally
-- [open an issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=support.yml) with a good description of what your question/issue is and attach the log, or
-- [open a bug](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=Bug&projects=&template=bug.yml) if you think the behaviour you see is caused by the integration, including a good description of what happened, your expectations, and attach the log.
-
 ## Outlook
 - Improvements to fulfill the [Home Assistant quality scale](https://www.home-assistant.io/docs/quality_scale/)
 - Add option to only have temporary connections (lowers reliability, but helps running more devices via [ESPHome Bluetooth proxy][btproxy-url])
@@ -219,6 +222,6 @@ for helping with making the integration better.
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-433_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-444_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=Analytics&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
