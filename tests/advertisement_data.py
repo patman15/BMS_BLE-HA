@@ -211,7 +211,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source BT monitor (https://github.com/patman15/BMS_BLE-HA/issues/176)
         generate_advertisement_data(
             local_name="140R000288",
-            manufacturer_data={0: b"ffffffff6400ff000000000000000000"},
+            manufacturer_data={0: b"\xff\xff\xff\xff\x64\x00\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00"},
             service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
             rssi=-82,
         ),
@@ -386,7 +386,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/197)
         generate_advertisement_data(  # Creabest
             local_name="100R0002E3",
-            manufacturer_data={21330: "2134ba03ec110909010500010000"},
+            manufacturer_data={21330: "\x21\x34\xba\x03\xec\x11\x09\x09\x01\x05\x00\x01\x00\x00"},
             service_uuids=["000003c1-0000-1000-8000-00805f9b34fb"],
             rssi=-76,
             tx_power=0,
@@ -404,7 +404,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/204)
         generate_advertisement_data(  # 16S LiFePo 250A BMS
             local_name="DL-40160901534C",
-            manufacturer_data={258: "04"},
+            manufacturer_data={258: "\x04"},
             rssi=-87,
         ),
         "daly_bms",
@@ -425,7 +425,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         generate_advertisement_data(
             local_name="12-6C-14-39-28-1F",
             rssi=-50,
-            manufacturer_data={2865: "88a0126c1439281f"},
+            manufacturer_data={2865: "\x88\xa0\x12\x6c\x14\x39\x28\x1f"},
             service_uuids=[
                 "0000ffe0-0000-1000-8000-00805f9b34fb",
                 "0000fee7-0000-1000-8000-00805f9b34fb",
@@ -437,7 +437,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         generate_advertisement_data(
             local_name="C6-6C-15-08-A7-E9",
             rssi=-66,
-            manufacturer_data={35579: "88a0c66c1508a7e9"},
+            manufacturer_data={35579: "\x88\xa0\xc6\x6c\x15\x08\xa7\xe9"},
             service_uuids=[
                 "0000ffe0-0000-1000-8000-00805f9b34fb",
                 "0000fee7-0000-1000-8000-00805f9b34fb",
@@ -449,7 +449,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         generate_advertisement_data(  # A4:C1:37:42:3E:D9
             local_name="AP21S002-L21S",
             rssi=-84,
-            manufacturer_data={16089: "4237c1a4"},  # MAC address, wrong
+            manufacturer_data={16089: "\x42\x37\xc1\xa4"},  # MAC address, wrong
             service_uuids=[
                 "0000ff00-0000-1000-8000-00805f9b34fb",
             ],
@@ -470,16 +470,28 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         generate_advertisement_data(
             local_name="SBL-12330BLH1-242055",
             rssi=-84,
-            manufacturer_data={123: "02ffff7d"},
+            manufacturer_data={123: "\x02\xff\xff\x7d"},
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
         ),
         "jbd_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/240)
+        generate_advertisement_data(  # Creabest
+            local_name="VB024000390",
+            rssi=-73,
+            manufacturer_data={16963: "\x54\x5e\x02\x11\xf8\x2e\x0c\xa8\x89\x42"},
+            service_uuids=[
+                "0000fff0-0000-1000-8000-00805f9b34fb",
+                "0000ffb0-0000-1000-8000-00805f9b34fb",
+            ],
+        ),
+        "cbtpwr_vb_bms",
     ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/236)
         generate_advertisement_data(
             local_name="162400552210210097",
             rssi=-35,
-            manufacturer_data={49572: "375532f9"},  # MAC address, correct
+            manufacturer_data={49572: "\x37\x55\x32\xf9"},  # MAC address, correct
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
         ),
         "jbd_bms",
