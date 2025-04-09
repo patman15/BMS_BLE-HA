@@ -31,7 +31,7 @@ from .basebms import BaseBMS, BMSsample, crc_xmodem
 
 
 class BMS(BaseBMS):
-    """Dummy battery class implementation."""
+    """Seplos v2 BMS implementation."""
 
     _HEAD: Final[int] = 0x7E
     _TAIL: Final[int] = 0x0D

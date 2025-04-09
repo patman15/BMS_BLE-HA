@@ -29,7 +29,7 @@ from .basebms import BaseBMS, BMSsample
 
 
 class BMS(BaseBMS):
-    """RoyPow battery class implementation."""
+    """RoyPow BMS implementation."""
 
     _HEAD: Final[bytes] = b"\xea\xd1\x01"
     _TAIL: Final[int] = 0xF5

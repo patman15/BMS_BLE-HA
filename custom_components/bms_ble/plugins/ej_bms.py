@@ -1,4 +1,4 @@
-"""Module to support Dummy BMS."""
+"""Module to support E&J Technology BMS."""
 
 from collections.abc import Callable
 from enum import IntEnum
@@ -35,7 +35,7 @@ class Cmd(IntEnum):
 
 
 class BMS(BaseBMS):
-    """Dummy battery class implementation."""
+    """E&J Technology BMS implementation."""
 
     _BT_MODULE_MSG: Final[bytes] = bytes([0x41, 0x54, 0x0D, 0x0A])  # BLE module message
     _HEAD: Final[bytes] = b"\x3a"

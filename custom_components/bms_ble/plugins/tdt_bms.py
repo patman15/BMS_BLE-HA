@@ -30,7 +30,7 @@ from .basebms import BaseBMS, BMSsample, crc_modbus
 
 
 class BMS(BaseBMS):
-    """Dummy battery class implementation."""
+    """TDT BMS implementation."""
 
     _UUID_CFG: Final[str] = "fffa"
     _HEAD: Final[int] = 0x7E
