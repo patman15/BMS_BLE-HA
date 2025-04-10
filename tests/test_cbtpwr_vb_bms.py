@@ -20,15 +20,14 @@ def ref_value() -> BMSsample:
     return {
         "voltage": 13.4,
         "current": -3.14,
-        "battery_level": 100,
+        "battery_level": 96,
         "cycles": 3,
         "cycle_charge": 40.0,
-        "cell#0": 3.339,
-        "cell#1": 3.339,
-        "cell#2": 3.338,
-        "cell#3": 3.338,
-        "cell#4": 2.317,
-        "delta_voltage": 1.022,
+        "cell#0": 3.328,
+        "cell#1": 3.326,
+        "cell#2": 3.326,
+        "cell#3": 3.326,
+        "delta_voltage": 0.002,
         "temperature": -2,
         "cycle_capacity": 536.0,
         "design_capacity": 40,
@@ -44,7 +43,7 @@ class MockCBTpwrVBBleakClient(MockBleakClient):
     """Emulate a CBT power VB series BMS BleakClient."""
 
     RESP: dict[int, bytearray] = {
-        0x01: bytearray(
+        0x34: bytearray(
             b"\x7e\x32\x32\x30\x31\x34\x36\x30\x30\x36\x30\x34\x36\x30\x34\x30\x44\x30\x30\x30"
             b"\x43\x46\x45\x30\x43\x46\x45\x30\x43\x46\x45\x30\x32\x30\x30\x33\x45\x30\x30\x34"
             b"\x39\x30\x30\x30\x30\x30\x30\x38\x35\x30\x30\x36\x30\x30\x37\x30\x30\x30\x30\x30"
@@ -69,9 +68,9 @@ class MockCBTpwrVBBleakClient(MockBleakClient):
     ) -> bytearray:
         if isinstance(char_specifier, str) and normalize_uuid_str(
             char_specifier
-        ) != normalize_uuid_str("fff2"):
+        ) != normalize_uuid_str("ffe9"):
             return bytearray()
-        cmd: int = int.from_bytes(bytes(data)[2:4], byteorder="little")
+        cmd: int = int.from_bytes(bytes(data)[7:8], byteorder="little")
 
         return self.RESP.get(cmd, bytearray())
 
