@@ -14,7 +14,7 @@ from custom_components.bms_ble.const import (
     ATTR_CURRENT,
     # ATTR_CYCLE_CAP,
     # ATTR_CYCLE_CHRG,
-    # ATTR_CYCLES,
+    ATTR_CYCLES,
     ATTR_DELTA_VOLTAGE,
     # KEY_PROBLEM,
     ATTR_POWER,
@@ -43,8 +43,8 @@ class BMS(BaseBMS):
     _FIELDS: Final[list[tuple[str, int, int, bool, Callable[[int], int | float]]]] = [
         (ATTR_VOLTAGE, 2, 2, False, lambda x: float(x) / 10),
         (ATTR_CURRENT, 0, 2, True, lambda x: float(x) / 10),
-        (ATTR_BATTERY_LEVEL, 4, 2, False, lambda x: x),
-        # (ATTR_CYCLES, 40, 2, lambda x: x),
+        (ATTR_BATTERY_LEVEL, 4, 2, False, lambda x: min(x, 100)),
+        (ATTR_CYCLES, 7, 2, False, lambda x: x),
         # (KEY_PROBLEM, 69, 4, lambda x: x),
     ]
 
