@@ -35,8 +35,8 @@ class BMS(BaseBMS):
 
     _HEAD: Final[int] = 0x7E
     _TAIL: Final[int] = 0x0D
-    _CMD_VER: Final[int] = 0x10
-    _RSP_VER: Final[int] = 0x14
+    _CMD_VER: Final[int] = 0x10  # TX protocol version
+    _RSP_VER: Final[int] = 0x14  # RX protocol version
     _MIN_LEN: Final[int] = 10
     _MAX_SUBS: Final[int] = 0xF
     _CELL_POS: Final[int] = 9
@@ -167,9 +167,7 @@ class BMS(BaseBMS):
     def _cmd(cmd: int, address: int = 0, data: bytearray = bytearray()) -> bytes:
         """Assemble a Seplos V2 BMS command."""
         assert cmd in (0x47, 0x51, 0x61, 0x62, 0x04)  # allow only read commands
-        frame = bytearray(
-            [BMS._HEAD, BMS._CMD_VER, address, 0x46, cmd]
-        )  # fixed version
+        frame = bytearray([BMS._HEAD, BMS._CMD_VER, address, 0x46, cmd])
         frame += len(data).to_bytes(2, "big", signed=False) + data
         frame += int.to_bytes(crc_xmodem(frame[1:]), 2, byteorder="big") + bytes([BMS._TAIL])
         return bytes(frame)
