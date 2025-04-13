@@ -512,4 +512,12 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "ej_bms",
     ),
+    (  # source BTctl (https://github.com/patman15/BMS_BLE-HA/issues/253)
+        generate_advertisement_data(
+            local_name="ECO-WORTHY 02_50DB",
+            manufacturer_data={47912: "\xed\x00\x50\xdc"},  # MAC address correct
+            rssi=-49,
+        ),
+        "ecoworthy_bms",
+    ),
 ]
