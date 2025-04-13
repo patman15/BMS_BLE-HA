@@ -46,15 +46,15 @@ def ref_value() -> BMSsample:
 class MockCBTpwrVBBleakClient(MockBleakClient):
     """Emulate a CBT power VB series BMS BleakClient."""
 
-    RESP: dict[int, bytearray] = {
-        0x42: bytearray(
+    RESP: dict[bytes, bytearray] = {
+        b"~11014642E00201FD35\r": bytearray(
             b"\x7e\x32\x32\x30\x31\x34\x36\x30\x30\x36\x30\x34\x36\x30\x34\x30\x44\x30\x30\x30"
             b"\x43\x46\x45\x30\x43\x46\x45\x30\x43\x46\x45\x30\x32\x30\x30\x33\x45\x30\x30\x34"
             b"\x39\x30\x30\x30\x30\x30\x30\x38\x35\x30\x30\x36\x30\x30\x37\x30\x30\x30\x30\x30"
             b"\x30\x38\x36\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30\x30"
             b"\x30\x30\x30\x45\x46\x36\x30\x0d"
         ),
-        0x81: bytearray(
+        b"~11014681A00601A101FC5F\r": bytearray(
             b"\x7e\x32\x32\x30\x31\x34\x36\x30\x30\x43\x30\x30\x34\x30\x37\x44\x30\x46\x43\x42"
             b"\x46\x0d"
         ),
@@ -74,9 +74,9 @@ class MockCBTpwrVBBleakClient(MockBleakClient):
             char_specifier
         ) != normalize_uuid_str("ffe9"):
             return bytearray()
-        cmd: int = int(bytes(data)[7:9], 16)
+        # cmd: int = int(bytes(data)[7:9], 16)
 
-        return self.RESP.get(cmd, bytearray())
+        return self.RESP.get(bytes(data), bytearray())
 
     async def write_gatt_char(
         self,

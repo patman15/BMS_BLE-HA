@@ -36,6 +36,8 @@ class BMS(BaseBMS):
 
     _HEAD: Final[bytes] = b"\x7e"
     _TAIL: Final[bytes] = b"\x0d"
+    _CMD_VER: Final[int] = 0x11  # TX protocol version
+    _RSP_VER: Final[int] = 0x22  # RX protocol version
     _LEN_POS: Final[int] = 9
     _MIN_LEN: Final[int] = _LEN_POS + 3 + len(_HEAD) + len(_TAIL) + 4
     _MAX_LEN: Final[int] = 255
@@ -133,8 +135,14 @@ class BMS(BaseBMS):
             self._data.clear()
             return
 
+        if (ver:= int.from_bytes(self._data[1:3])) != BMS._RSP_VER:
+            self._log.debug("unknown response frame version: %i", ver)
+            self._data.clear()
+            return
+
         if (crc := lrc_modbus(data[1:-5])) != int(data[-5:-1], 16):
             self._log.debug("invalid checksum 0x%X != 0x%X", crc, int(data[-5:-1], 16))
+            self._data.clear()
             return
 
         self._data = bytearray(
@@ -180,29 +188,30 @@ class BMS(BaseBMS):
     def _decode_data(data: bytearray, offs: int) -> BMSsample:
         return {
             key: func(
-                int.from_bytes(
-                    data[idx + offs : idx + offs + size], byteorder="big", signed=sign
-                )
+                int.from_bytes(data[idx + offs : idx + offs + size], "big", signed=sign)
             )
             for key, idx, size, sign, func in BMS._FIELDS
         }
 
-    # @staticmethod
-    # def _cmd(cmd: bytes, dev_id: int = 0, value: list[int] | None = None) -> bytes:
-    #     """Assemble a CBT Power BMS command."""
-    #     value = [] if value is None else value
-
-    #     frame = bytearray([*BMS._HEAD, *cmd[:2], dev_id, *value])
-    #     frame.append(crc_sum(frame[5:], 2))
-    #     frame.extend(BMS._TAIL)
-    #     return bytes(frame)
+    @staticmethod
+    def _cmd(cmd: int, dev_id: int = 1, data: bytes = b"") -> bytes:
+        """Assemble a Seplos VB series command."""
+        assert len(data) <= 0xFFF
+        cdat: Final[bytes] = data + int.to_bytes(dev_id)
+        frame = bytearray([BMS._CMD_VER, dev_id, 0x46, cmd])
+        frame.extend(
+            int.to_bytes(len(cdat) * 2 + (BMS.lencs(len(cdat) * 2) << 12), 2, "big")
+        )
+        frame.extend(cdat)
+        frame.extend(
+            int.to_bytes(lrc_modbus(bytearray(frame.hex().upper().encode())), 2, "big")
+        )
+        return BMS._HEAD + frame.hex().upper().encode() + BMS._TAIL
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
-        await self._await_reply(
-            b"~11014642E00201FD35\r",
-        )
+        await self._await_reply(BMS._cmd(0x42))
 
         result: BMSsample = {KEY_CELL_COUNT: int(self._data[BMS._CELL_POS])}
         temp_pos: Final[int] = (
@@ -219,9 +228,7 @@ class BMS(BaseBMS):
             self._data, temp_pos + 2 * int(result.get(KEY_TEMP_SENS, 0)) + 1
         )
 
-        await self._await_reply(
-            b"~11014681A00601A101FC5F\r",
-        )
+        await self._await_reply(BMS._cmd(0x81, 1, b"\x01\xa1"))
 
         result |= {
             KEY_DESIGN_CAP: int.from_bytes(
