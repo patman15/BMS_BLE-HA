@@ -5,7 +5,7 @@
       "no_devices_found": "Keine unterstützen Geräte via Bluetooth gefunden.",
       "not_supported": "Gerät wird nicht unterstützt."
     },
-    "flow_title": "Setup {name ({id}) als {model}",
+    "flow_title": "Setup {name} ({id}) als {model}",
     "step": {
       "user": {
         "description": "Wähle ein Gerät zum Einrichten aus:",
