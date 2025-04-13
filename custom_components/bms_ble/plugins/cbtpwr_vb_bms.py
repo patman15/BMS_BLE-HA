@@ -16,7 +16,6 @@ from custom_components.bms_ble.const import (
     ATTR_CYCLE_CHRG,
     ATTR_CYCLES,
     ATTR_DELTA_VOLTAGE,
-    # KEY_PROBLEM,
     ATTR_POWER,
     ATTR_RUNTIME,
     ATTR_TEMPERATURE,
@@ -24,6 +23,7 @@ from custom_components.bms_ble.const import (
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
     KEY_DESIGN_CAP,
+    KEY_PROBLEM,
     KEY_TEMP_SENS,
     KEY_TEMP_VALUE,
 )
@@ -48,7 +48,7 @@ class BMS(BaseBMS):
         (ATTR_CURRENT, 0, 2, True, lambda x: float(x) / 10),
         (ATTR_BATTERY_LEVEL, 4, 2, False, lambda x: min(x, 100)),
         (ATTR_CYCLES, 7, 2, False, lambda x: x),
-        # (KEY_PROBLEM, 69, 4, lambda x: x),
+        (KEY_PROBLEM, 15, 6, False, lambda x: x & 0xFFF000FF000F),
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -135,8 +135,8 @@ class BMS(BaseBMS):
             self._data.clear()
             return
 
-        if (ver:= int.from_bytes(self._data[1:3])) != BMS._RSP_VER:
-            self._log.debug("unknown response frame version: %i", ver)
+        if (ver := bytes.fromhex(self._data[1:3].decode())) != BMS._RSP_VER.to_bytes():
+            self._log.debug("unknown response frame version: 0x%X", int.from_bytes(ver))
             self._data.clear()
             return
 

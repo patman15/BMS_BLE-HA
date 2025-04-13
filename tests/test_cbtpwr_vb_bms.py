@@ -21,7 +21,7 @@ def ref_value() -> BMSsample:
         "voltage": 13.3,
         "current": 0.0,
         "battery_level": 96,
-        "cycles": 3,
+        "cycles": 0,
         "cycle_charge": 192.0,
         "cell_count": 4,
         "cell#0": 3.328,
