@@ -202,12 +202,11 @@ class BMS(BaseBMS):
         temp_pos: Final[int] = (
             BMS._CELL_POS + int(result.get(KEY_CELL_COUNT, 0)) * 2 + 1
         )
-        result |= (
-            {KEY_TEMP_SENS: int(self._data[temp_pos])}
-            | BMS._cell_voltages(self._data, int(result.get(KEY_CELL_COUNT, 0)))
-            | BMS._temp_sensors(
-                self._data, int(result.get(KEY_TEMP_SENS, 0)), temp_pos + 1
-            )
+        result |= {KEY_TEMP_SENS: int(self._data[temp_pos])} | BMS._cell_voltages(
+            self._data, int(result.get(KEY_CELL_COUNT, 0))
+        )
+        result |= BMS._temp_sensors(
+            self._data, int(result.get(KEY_TEMP_SENS, 0)), temp_pos + 1
         )
 
         # await self._await_reply(
