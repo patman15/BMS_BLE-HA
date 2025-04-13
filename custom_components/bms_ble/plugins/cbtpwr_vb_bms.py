@@ -12,8 +12,8 @@ from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
     ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
-    # ATTR_CYCLE_CAP,
-    # ATTR_CYCLE_CHRG,
+    ATTR_CYCLE_CAP,
+    ATTR_CYCLE_CHRG,
     ATTR_CYCLES,
     ATTR_DELTA_VOLTAGE,
     # KEY_PROBLEM,
@@ -23,6 +23,7 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
+    KEY_DESIGN_CAP,
     KEY_TEMP_SENS,
     KEY_TEMP_VALUE,
 )
@@ -96,6 +97,8 @@ class BMS(BaseBMS):
                 ATTR_TEMPERATURE,
                 ATTR_POWER,
                 ATTR_RUNTIME,
+                ATTR_CYCLE_CAP,
+                ATTR_CYCLE_CHRG,
             }
         )  # calculate further values from BMS provided set ones
 
@@ -209,12 +212,19 @@ class BMS(BaseBMS):
             self._data, int(result.get(KEY_TEMP_SENS, 0)), temp_pos + 1
         )
 
-        # await self._await_reply(
-        #     b"~11014681A00601A101FC5F\r",
-        # )
-
         result |= BMS._decode_data(
             self._data, temp_pos + 2 * int(result.get(KEY_TEMP_SENS, 0)) + 1
         )
+
+        await self._await_reply(
+            b"~11014681A00601A101FC5F\r",
+        )
+
+        result |= {
+            KEY_DESIGN_CAP: int.from_bytes(
+                self._data[6:8], byteorder="big", signed=False
+            )
+            / 10
+        }
 
         return result
