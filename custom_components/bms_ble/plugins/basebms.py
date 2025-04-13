@@ -307,6 +307,10 @@ def crc_modbus(data: bytearray) -> int:
             crc = (crc >> 1) ^ 0xA001 if crc % 2 else (crc >> 1)
     return crc & 0xFFFF
 
+def lrc_modbus(data: bytearray) -> int:
+    """Calculate MODBUS LRC."""
+    return ((sum(data) ^ 0xFFFF) + 1) & 0xFFFF
+
 
 def crc_xmodem(data: bytearray) -> int:
     """Calculate CRC-16-CCITT XMODEM."""

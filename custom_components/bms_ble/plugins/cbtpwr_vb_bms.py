@@ -28,7 +28,7 @@ from custom_components.bms_ble.const import (
     KEY_TEMP_VALUE,
 )
 
-from .basebms import BaseBMS, BMSsample  # , crc_sum
+from .basebms import BaseBMS, BMSsample, lrc_modbus
 
 
 class BMS(BaseBMS):
@@ -108,10 +108,12 @@ class BMS(BaseBMS):
         """Handle the RX characteristics notify event (new data arrives)."""
 
         if len(data) > BMS._LEN_POS + 4 and data.startswith(BMS._HEAD):
-            self._exp_len = (
-                int(data[BMS._LEN_POS : BMS._LEN_POS + 4], 16) & 0x0FFF
-            )  # first byte unclear
             self._data = bytearray()
+            length: Final[int] = int(data[BMS._LEN_POS : BMS._LEN_POS + 4], 16)
+            self._exp_len = length & 0xFFF
+            if BMS.lencs(length) != length >> 12:
+                self._exp_len = 0
+                self._log.debug("incorrect length checksum.")
 
         self._data += data
         self._log.debug(
@@ -131,7 +133,7 @@ class BMS(BaseBMS):
             self._data.clear()
             return
 
-        if (crc := BMS._crc(data[1:-5])) != int(data[-5:-1], 16):
+        if (crc := lrc_modbus(data[1:-5])) != int(data[-5:-1], 16):
             self._log.debug("invalid checksum 0x%X != 0x%X", crc, int(data[-5:-1], 16))
             return
 
@@ -141,8 +143,9 @@ class BMS(BaseBMS):
         self._data_event.set()
 
     @staticmethod
-    def _crc(data: bytearray) -> int:
-        return ((sum(data) & 0xFFFF) ^ 0xFFFF) + 1
+    def lencs(length: int) -> int:
+        """Calculate the length checksum."""
+        return (sum((length >> (i * 4)) & 0xF for i in range(3)) ^ 0xF) + 1 & 0xF
 
     @staticmethod
     def _cell_voltages(data: bytearray, cells: int) -> dict[str, float]:
