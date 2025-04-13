@@ -1,6 +1,7 @@
 """Test the CBT power VB series BMS implementation."""
 
 from collections.abc import Buffer
+from typing import Final
 from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -13,6 +14,8 @@ from custom_components.bms_ble.plugins.cbtpwr_vb_bms import BMS, BMSsample
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
+
+BT_FRAME_SIZE = 32
 
 
 def ref_value() -> BMSsample:
@@ -89,9 +92,11 @@ class MockCBTpwrVBBleakClient(MockBleakClient):
 
         assert self._notify_callback is not None
 
-        self._notify_callback(
-            "MockCBTpwrVBBleakClient", self._response(char_specifier, data)
-        )
+        resp: Final[bytearray] = self._response(char_specifier, data)
+        for notify_data in [
+            resp[i : i + BT_FRAME_SIZE] for i in range(0, len(resp), BT_FRAME_SIZE)
+        ]:
+            self._notify_callback("MockCBTpwrVBBleakClient", notify_data)
 
 
 # class MockInvalidBleakClient(MockCBTpwrVBBleakClient):

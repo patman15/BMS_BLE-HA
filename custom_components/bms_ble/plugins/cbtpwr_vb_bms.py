@@ -140,8 +140,8 @@ class BMS(BaseBMS):
             self._data.clear()
             return
 
-        if (crc := lrc_modbus(data[1:-5])) != int(data[-5:-1], 16):
-            self._log.debug("invalid checksum 0x%X != 0x%X", crc, int(data[-5:-1], 16))
+        if (crc := lrc_modbus(self._data[1:-5])) != int(self._data[-5:-1], 16):
+            self._log.debug("invalid checksum 0x%X != 0x%X", crc, int(self._data[-5:-1], 16))
             self._data.clear()
             return
 
