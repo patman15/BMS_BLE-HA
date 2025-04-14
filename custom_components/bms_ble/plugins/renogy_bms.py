@@ -1,6 +1,7 @@
-"""Module to support Dummy BMS."""
+"""Module to support Renogy BMS."""
 
 import contextlib
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
@@ -20,11 +21,14 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
 )
 
-from .basebms import BaseBMS, BMSsample
+from .basebms import BaseBMS, BMSsample, crc_modbus
 
 
 class BMS(BaseBMS):
-    """Dummy battery class implementation."""
+    """Renogy battery class implementation."""
+
+    _HEAD: Final[bytes] = b"\x30\x03"
+    _CRC_POS: Final[int] = -2
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -72,22 +76,45 @@ class BMS(BaseBMS):
     ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
         self._log.debug("RX BLE data: %s", data)
+
+        if not data.startswith(BMS._HEAD):
+            self._log.debug("incorrect SOF")
+
+        if len(data) < 3 or data[2] + 5 != len(data):
+            self._log.debug("incorrect frame length: %i != %i", len(data), data[2] + 5)
+
+        if (crc := crc_modbus(data[: BMS._CRC_POS])) != int.from_bytes(
+            data[BMS._CRC_POS :], "little"
+        ):
+            self._log.debug(
+                "invalid checksum 0x%X != 0x%X",
+                crc,
+                int.from_bytes(data[BMS._CRC_POS :], "little"),
+            )
+            return
         #
         # # do things like checking correctness of frame here and
         # # store it into a instance variable, e.g. self._data
         #
         # self._data_event.set()
 
+    @staticmethod
+    def _cmd(cmd: bytes) -> bytes:
+        """Assemble a Seplos BMS command."""
+        frame: bytearray = bytearray([*BMS._HEAD, *cmd])
+        frame.extend(int.to_bytes(crc_modbus(frame), 2, byteorder="little"))
+        return bytes(frame)
+
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         for cmd in (
-            b"\x30\x03\x13\x88\x00\x22\x45\x5c",
-            b"\x30\x03\x13\xf0\x00\x1c\x44\x95",
-            b"\x30\x03\x13\xb2\x00\x06\x65\x4a",
-            b"\x30\x03\x14\x02\x00\x08\xe4\x1d",
+            b"\x13\x88\x00\x22",
+            b"\x13\xf0\x00\x1c",
+            b"\x13\xb2\x00\x06",
+            b"\x14\x02\x00\x08",
         ):
             with contextlib.suppress(TimeoutError):
-                await self._await_reply(cmd)
+                await self._await_reply(self._cmd(cmd))
 
         return {
             ATTR_VOLTAGE: 12,
