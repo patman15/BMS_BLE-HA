@@ -72,7 +72,7 @@ class BMS(BaseBMS):
     @staticmethod
     def device_info() -> dict[str, str]:
         """Return device information for the battery management system."""
-        return {"manufacturer": "Seplos", "model": "VB series"}
+        return {"manufacturer": "Creabest", "model": "VB series"}
 
     @staticmethod
     def uuid_services() -> list[str]:
@@ -234,7 +234,7 @@ class BMS(BaseBMS):
 
         for attempt in range(4):
             try:
-                await self._await_reply(BMS._cmd(0x81, 1, b"\x01\xa1"))
+                await self._await_reply(BMS._cmd(0x81, 1, b"\x01\x00"), max_size=20)
                 break
             except BleakDBusError:
                 retry_delay = 0.1 * (attempt + 1)

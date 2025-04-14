@@ -254,12 +254,19 @@ class BaseBMS(metaclass=ABCMeta):
         data: bytes,
         char: BleakGATTCharacteristic | int | str | None = None,
         wait_for_notify: bool = True,
+        max_size: int = 0,
     ) -> None:
         """Send data to the BMS and wait for valid reply notification."""
 
-        self._log.debug("TX BLE data: %s", data.hex(" "))
         self._data_event.clear()  # clear event before requesting new data
-        await self._client.write_gatt_char(char or self.uuid_tx(), data, response=False)
+        for chunk in (
+            data[i : i + (max_size or len(data))]
+            for i in range(0, len(data), max_size or len(data))
+        ):
+            self._log.debug("TX BLE data: %s", chunk.hex(" "))
+            await self._client.write_gatt_char(
+                char or self.uuid_tx(), chunk, response=False
+            )
         if wait_for_notify:
             await asyncio.wait_for(self._wait_event(), timeout=self.TIMEOUT)
 
@@ -306,6 +313,7 @@ def crc_modbus(data: bytearray) -> int:
         for _ in range(8):
             crc = (crc >> 1) ^ 0xA001 if crc % 2 else (crc >> 1)
     return crc & 0xFFFF
+
 
 def lrc_modbus(data: bytearray) -> int:
     """Calculate MODBUS LRC."""
