@@ -508,4 +508,13 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "ecoworthy_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/247)
+        generate_advertisement_data(
+            local_name="BT-TH-66EDFC11",
+            rssi=-65,
+            manufacturer_data={39008: "\x66\xed\xfc\x11"},  # MAC address correct
+            service_uuids=["0000ffd0-0000-1000-8000-00805f9b34fb"],
+        ),
+        "renogy_bms",
+    ),
 ]
