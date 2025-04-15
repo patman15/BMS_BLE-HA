@@ -14,10 +14,14 @@ from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
 
-@pytest.fixture(name="dev_name", params=["TBA-", "DXB-"])
+@pytest.fixture(
+    name="dev_name",
+    params=["TBA-MockBLEDevice_C0FE", "DXB-MockBLEDevice_C0FE", "invalid"],
+    ids=["TBA", "DXB", "wrong"],
+)
 def patch_dev_name(request) -> str:
     """Provide device name variants."""
-    return request.param + "MockBLEDevice_C0FE"
+    return request.param
 
 
 class MockDPwrcoreBleakClient(MockBleakClient):
@@ -35,19 +39,19 @@ class MockDPwrcoreBleakClient(MockBleakClient):
         cmd: int = int(bytearray(data)[5])
         if cmd == 0x60:
             return bytearray(
-                b"\x12\x12\x3A\x05\x03\x60\x00\x0A\x02\x13\x00\x00\x71\xC5\x45\x8E\x3D\x00\x02\xCD"
-                b"\x02\x22\x0D\x0A\x03\x60\x00\x0A\x02\x13\x00\x00\x71\xC5\x45\x8E\x3D\x00\x02\xCD"
+                b"\x12\x12\x3a\x05\x03\x60\x00\x0a\x02\x13\x00\x00\x71\xc5\x45\x8e\x3d\x00\x02\xcd"
+                b"\x02\x22\x0d\x0a\x03\x60\x00\x0a\x02\x13\x00\x00\x71\xc5\x45\x8e\x3d\x00\x02\xcd"
             )  # 2nd line only 4 bytes valid! TODO: put numbers
         if cmd == 0x61:
             return bytearray(
-                b"\x12\x12\x3A\x05\x03\x61\x00\x0C\x00\x12\x00\x12\x6D\x60\x0B\x7E\x8F\xDB\x18\x20"
-                b"\x04\x22\x03\x91\x0D\x0A\x00\x0C\x00\x12\x00\x12\x6D\x60\x0B\x7E\x8F\xDB\x18\x20"
+                b"\x12\x12\x3a\x05\x03\x61\x00\x0c\x00\x12\x00\x12\x6d\x60\x0b\x7e\x8f\xdb\x18\x20"
+                b"\x04\x22\x03\x91\x0d\x0a\x00\x0c\x00\x12\x00\x12\x6d\x60\x0b\x7e\x8f\xdb\x18\x20"
             )  # 2nd line only 6 bytes valid! TODO: put numbers
         if cmd == 0x62:
             return bytearray(
-                b"\x12\x13\x3A\x05\x03\x62\x00\x1D\x0E\x0E\xD7\x0E\xD6\x0E\xD6\x0E\xD5\x0E\xD5\x0E"
-                b"\x12\x23\xD6\x0E\xD1\x0E\xD2\x0E\xD5\x0E\xD6\x0E\xD4\x0E\xD8\x0E\xD7\x0E\xDB\x0D"
-                b"\x03\x33\x08\x0D\x0A\x0E\xD2\x0E\xD5\x0E\xD6\x0E\xD4\x0E\xD8\x0E\xD7\x0E\xDB\x0D"
+                b"\x12\x13\x3a\x05\x03\x62\x00\x1d\x0e\x0e\xd7\x0e\xd6\x0e\xd6\x0e\xd5\x0e\xd5\x0e"
+                b"\x12\x23\xd6\x0e\xd1\x0e\xd2\x0e\xd5\x0e\xd6\x0e\xd4\x0e\xd8\x0e\xd7\x0e\xdb\x0d"
+                b"\x03\x33\x08\x0d\x0a\x0e\xd2\x0e\xd5\x0e\xd6\x0e\xd4\x0e\xd8\x0e\xd7\x0e\xdb\x0d"
             )  # 2nd line only 5 bytes valid TODO: put numbers
         if cmd == 0x64:
             assert bytearray(data)[8:10] == bytes.fromhex("C0FE"), "incorrect password"
@@ -60,7 +64,7 @@ class MockDPwrcoreBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # type: ignore[implicit-optional] # noqa: RUF013 # same as upstream
+        response: bool = None,  # noqa: RUF013 # same as upstream
     ) -> None:
         """Issue write command to GATT."""
         data_ba = bytearray(data)
@@ -91,19 +95,19 @@ class MockWrongCRCBleakClient(MockDPwrcoreBleakClient):
         cmd: int = int(bytearray(data)[5])
         if cmd == 0x60:
             return bytearray(
-                b"\x12\x12\x3A\x05\x03\x60\x00\x0A\x02\x13\x00\x00\x71\xC5\x45\x8E\x3D\x00\x01\xCE"
-                b"\x02\x22\x0D\x0A\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x12\x12\x3a\x05\x03\x60\x00\x0a\x02\x13\x00\x00\x71\xc5\x45\x8e\x3d\x00\x01\xce"
+                b"\x02\x22\x0d\x0a\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
             )  # wrong CRC [0x01CE != 0x02CD] in line 1
         if cmd == 0x61:
             return bytearray(
-                b"\x12\x12\x3A\x05\x03\x61\x00\x0C\x00\x12\x00\x12\x6D\x60\x0B\x7E\x8F\xDB\x18\x20"
-                b"\x04\x22\x02\x91\x0D\x0A\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x12\x12\x3a\x05\x03\x61\x00\x0c\x00\x12\x00\x12\x6d\x60\x0b\x7e\x8f\xdb\x18\x20"
+                b"\x04\x22\x02\x91\x0d\x0a\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
             )  # wrong CRC [0x02 != 0x03] in line 2
         if cmd == 0x62:
             return bytearray(
-                b"\x12\x13\x3A\x05\x03\x62\x00\x1D\x0E\x0E\xD7\x0E\xD6\x0E\xD6\x0E\xD5\x0E\xD5\x0E"
-                b"\x12\x23\xD6\x0E\xD1\x0E\xD2\x0E\xD5\x0E\xD6\x0E\xD4\x0E\xD8\x0E\xD7\x0E\xDB\x0E"
-                b"\x03\x33\x08\x0D\x0A\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x12\x13\x3a\x05\x03\x62\x00\x1d\x0e\x0e\xd7\x0e\xd6\x0e\xd6\x0e\xd5\x0e\xd5\x0e"
+                b"\x12\x23\xd6\x0e\xd1\x0e\xd2\x0e\xd5\x0e\xd6\x0e\xd4\x0e\xd8\x0e\xd7\x0e\xdb\x0e"
+                b"\x03\x33\x08\x0d\x0a\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
             )  # wrong CRC [0x0E != 0x0D] in line 2
         return bytearray()
 
@@ -139,20 +143,17 @@ class MockProblemBleakClient(MockDPwrcoreBleakClient):
         cmd: int = int(bytearray(data)[5])
         if cmd == 0x60:
             return bytearray(
-                b"\x12\x12\x3A\x05\x03\x60\x00\x0A\x02\x13\x00\x00\x71\xC5\x45\x8E\x3D\xFF\x03\xCC"
-                b"\x02\x22\x0D\x0A\x03\x60\x00\x0A\x02\x13\x00\x00\x71\xC5\x45\x8E\x3D\x00\x03\xCC"
+                b"\x12\x12\x3a\x05\x03\x60\x00\x0a\x02\x13\x00\x00\x71\xc5\x45\x8e\x3d\xff\x03\xcc"
+                b"\x02\x22\x0d\x0a\x03\x60\x00\x0a\x02\x13\x00\x00\x71\xc5\x45\x8e\x3d\x00\x03\xcc"
             )  # 2nd line only 4 bytes valid!
 
         return super()._response(char_specifier, data)
 
 
-async def test_update(monkeypatch, dev_name, reconnect_fixture) -> None:
+async def test_update(patch_bleak_client, dev_name, reconnect_fixture) -> None:
     """Test D-pwercore BMS data update."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockDPwrcoreBleakClient,
-    )
+    patch_bleak_client(MockDPwrcoreBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", dev_name, None, -73),
@@ -198,18 +199,11 @@ async def test_update(monkeypatch, dev_name, reconnect_fixture) -> None:
     await bms.disconnect()
 
 
-async def test_invalid_response(monkeypatch, dev_name) -> None:
+async def test_invalid_response(patch_bleak_client, patch_bms_timeout, dev_name) -> None:
     """Test data update with BMS returning invalid data."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.dpwrcore_bms.BMS.BAT_TIMEOUT",
-        0.1,
-    )
-
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockInvalidBleakClient,
-    )
+    patch_bms_timeout("dpwrcore_bms")
+    patch_bleak_client(MockInvalidBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", dev_name, None, -73))
 
@@ -222,18 +216,11 @@ async def test_invalid_response(monkeypatch, dev_name) -> None:
     await bms.disconnect()
 
 
-async def test_wrong_crc(monkeypatch, dev_name) -> None:
+async def test_wrong_crc(patch_bleak_client, patch_bms_timeout, dev_name) -> None:
     """Test data update with BMS returning invalid data."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.dpwrcore_bms.BMS.BAT_TIMEOUT",
-        0.1,
-    )
-
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockWrongCRCBleakClient,
-    )
+    patch_bms_timeout("dpwrcore_bms")
+    patch_bleak_client(MockWrongCRCBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", dev_name, None, -73))
 
@@ -246,13 +233,10 @@ async def test_wrong_crc(monkeypatch, dev_name) -> None:
     await bms.disconnect()
 
 
-async def test_problem_response(monkeypatch, dev_name) -> None:
+async def test_problem_response(patch_bleak_client, dev_name) -> None:
     """Test D-pwercore BMS data update."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockProblemBleakClient,
-    )
+    patch_bleak_client(MockProblemBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", dev_name, None, -73), False)
 

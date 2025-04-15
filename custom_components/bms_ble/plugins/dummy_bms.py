@@ -54,11 +54,10 @@ class BMS(BaseBMS):
         return "#changeme"
 
     @staticmethod
-    def _calc_values() -> set[str]:
-        return {
-            ATTR_POWER,
-            ATTR_BATTERY_CHARGING,
-        }  # calculate further values from BMS provided set ones
+    def _calc_values() -> frozenset[str]:
+        return frozenset(
+            {ATTR_POWER, ATTR_BATTERY_CHARGING}
+        )  # calculate further values from BMS provided set ones
 
     def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
@@ -74,7 +73,7 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         self._log.debug("replace with command to UUID %s", BMS.uuid_tx())
-        # await self._send(b"<some_command>")
+        # await self._await_reply(b"<some_command>")
         # #
         # # parse data from self._data here
 

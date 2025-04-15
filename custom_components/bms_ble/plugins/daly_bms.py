@@ -50,7 +50,7 @@ class BMS(BaseBMS):
         (KEY_TEMP_SENS, 100 + HEAD_LEN, 2, lambda x: min(x, BMS.MAX_TEMP)),
         (ATTR_CYCLES, 102 + HEAD_LEN, 2, lambda x: x),
         (ATTR_DELTA_VOLTAGE, 112 + HEAD_LEN, 2, lambda x: float(x / 1000)),
-        (KEY_PROBLEM, 116 + HEAD_LEN, 8, lambda x: x),
+        (KEY_PROBLEM, 116 + HEAD_LEN, 8, lambda x: x % 2**64),
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -66,8 +66,9 @@ class BMS(BaseBMS):
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             },
-            {"manufacturer_id": 0x0302, "connectable": True},
-            {"manufacturer_id": 0x0104, "connectable": True},
+        ] + [
+            {"manufacturer_id": m_id, "connectable": True}
+            for m_id in (0x102, 0x104, 0x0302)
         ]
 
     @staticmethod
@@ -91,14 +92,16 @@ class BMS(BaseBMS):
         return "fff2"
 
     @staticmethod
-    def _calc_values() -> set[str]:
-        return {
-            ATTR_CYCLE_CAP,
-            ATTR_POWER,
-            ATTR_BATTERY_CHARGING,
-            ATTR_RUNTIME,
-            ATTR_TEMPERATURE,
-        }
+    def _calc_values() -> frozenset[str]:
+        return frozenset(
+            {
+                ATTR_CYCLE_CAP,
+                ATTR_POWER,
+                ATTR_BATTERY_CHARGING,
+                ATTR_RUNTIME,
+                ATTR_TEMPERATURE,
+            }
+        )
 
     def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
@@ -113,8 +116,9 @@ class BMS(BaseBMS):
             self._log.debug("response data is invalid")
             return
 
-        crc: Final = crc_modbus(data[:-2])
-        if crc != int.from_bytes(data[-2:], byteorder="little"):
+        if (crc := crc_modbus(data[:-2])) != int.from_bytes(
+            data[-2:], byteorder="little"
+        ):
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",
                 int.from_bytes(data[-2:], byteorder="little"),

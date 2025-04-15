@@ -45,6 +45,8 @@ from .const import (
 )
 from .coordinator import BTBmsCoordinator
 
+PARALLEL_UPDATES = 0
+
 SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
     SensorEntityDescription(
         key=ATTR_VOLTAGE,
@@ -72,7 +74,6 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
     SensorEntityDescription(
         key=ATTR_CURRENT,
         translation_key=ATTR_CURRENT,
-        icon="mdi:current-dc",
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.CURRENT,
@@ -104,6 +105,7 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
         translation_key=ATTR_RUNTIME,
         name="Runtime",
         native_unit_of_measurement=UnitOfTime.SECONDS,
+        suggested_unit_of_measurement=UnitOfTime.HOURS,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DURATION,
     ),
@@ -111,7 +113,6 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
         key=ATTR_DELTA_VOLTAGE,
         translation_key=ATTR_DELTA_VOLTAGE,
         name="Delta voltage",
-        icon="mdi:battery-sync",
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
@@ -121,7 +122,6 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
     SensorEntityDescription(
         key=ATTR_RSSI,
         translation_key=ATTR_RSSI,
-        icon="mdi:bluetooth-connect",
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
@@ -132,7 +132,6 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
         key=ATTR_LQ,
         translation_key=ATTR_LQ,
         name="Link quality",
-        icon="mdi:link",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -186,8 +185,7 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
             return {ATTR_CELL_VOLTAGES: self._get_attr_list(KEY_CELL_VOLTAGE)}
         # add individual temperature values to temperature sensor
         if sensor_key == ATTR_TEMPERATURE:
-            temp_sensors: Final = self._get_attr_list(KEY_TEMP_VALUE)
-            if temp_sensors:
+            if temp_sensors:= self._get_attr_list(KEY_TEMP_VALUE):
                 return {ATTR_TEMP_SENSORS: temp_sensors}
             if temp := self.coordinator.data.get(ATTR_TEMPERATURE):
                 return {ATTR_TEMP_SENSORS: [temp]}

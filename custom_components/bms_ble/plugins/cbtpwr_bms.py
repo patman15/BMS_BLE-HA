@@ -31,7 +31,6 @@ from .basebms import BaseBMS, BMSsample, crc_sum
 class BMS(BaseBMS):
     """CBT Power Smart BMS class implementation."""
 
-    BAT_TIMEOUT = 1
     HEAD: Final[bytes] = bytes([0xAA, 0x55])
     TAIL_RX: Final[bytes] = bytes([0x0D, 0x0A])
     TAIL_TX: Final[bytes] = bytes([0x0A, 0x0D])
@@ -96,14 +95,16 @@ class BMS(BaseBMS):
         return "ffe9"
 
     @staticmethod
-    def _calc_values() -> set[str]:
-        return {
-            ATTR_POWER,
-            ATTR_BATTERY_CHARGING,
-            ATTR_DELTA_VOLTAGE,
-            ATTR_CYCLE_CAP,
-            ATTR_TEMPERATURE,
-        }
+    def _calc_values() -> frozenset[str]:
+        return frozenset(
+            {
+                ATTR_POWER,
+                ATTR_BATTERY_CHARGING,
+                ATTR_DELTA_VOLTAGE,
+                ATTR_CYCLE_CAP,
+                ATTR_TEMPERATURE,
+            }
+        )
 
     def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
@@ -111,7 +112,7 @@ class BMS(BaseBMS):
         """Retrieve BMS data update."""
         self._log.debug("RX BLE data: %s", data)
 
-        # verify that data long enough
+        # verify that data is long enough
         if len(data) < BMS.MIN_FRAME or len(data) != BMS.MIN_FRAME + data[BMS.LEN_POS]:
             self._log.debug("incorrect frame length (%i): %s", len(data), data)
             return
@@ -120,8 +121,9 @@ class BMS(BaseBMS):
             self._log.debug("incorrect frame start/end: %s", data)
             return
 
-        crc = crc_sum(data[len(BMS.HEAD) : len(data) + BMS.CRC_POS])
-        if data[BMS.CRC_POS] != crc:
+        if (crc := crc_sum(data[len(BMS.HEAD) : len(data) + BMS.CRC_POS])) != data[
+            BMS.CRC_POS
+        ]:
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",
                 data[len(data) + BMS.CRC_POS],
@@ -137,11 +139,10 @@ class BMS(BaseBMS):
         """Assemble a CBT Power BMS command."""
         value = [] if value is None else value
         assert len(value) <= 255
-        frame = bytes([*BMS.HEAD, cmd[0]])
-        frame += bytes([len(value), *value])
-        frame += bytes([crc_sum(frame[len(BMS.HEAD) :])])
-        frame += bytes([*BMS.TAIL_TX])
-        return frame
+        frame = bytearray([*BMS.HEAD, cmd[0], len(value), *value])
+        frame.append(crc_sum(frame[len(BMS.HEAD) :]))
+        frame.extend(BMS.TAIL_TX)
+        return bytes(frame)
 
     @staticmethod
     def _cell_voltages(data: bytearray) -> dict[str, float]:

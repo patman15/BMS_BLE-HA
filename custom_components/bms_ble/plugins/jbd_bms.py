@@ -31,8 +31,9 @@ from .basebms import BaseBMS, BMSsample
 class BMS(BaseBMS):
     """JBD Smart BMS class implementation."""
 
-    HEAD_RSP: Final = bytes([0xDD])  # header for responses
-    HEAD_CMD: Final = bytes([0xDD, 0xA5])  # read header for commands
+    HEAD_RSP: Final[bytes] = bytes([0xDD])  # header for responses
+    HEAD_CMD: Final[bytes] = bytes([0xDD, 0xA5])  # read header for commands
+    TAIL: Final[int] = 0x77  # tail for command
     INFO_LEN: Final[int] = 7  # minimum frame size
     BASIC_INFO: Final[int] = 23  # basic info data length
     _FIELDS: Final[list[tuple[str, int, int, bool, Callable[[int], int | float]]]] = [
@@ -59,17 +60,26 @@ class BMS(BaseBMS):
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             }
-            for pattern in [
+            for pattern in (
                 "SP0?S*",
                 "SP1?S*",
                 "SP2?S*",
+                "AP2?S*",
                 "GJ-*",  # accurat batteries
                 "SX1*",  # Supervolt v3
-                "DP04S*", # ECO-WORTHY, DCHOUSE
-                "121?0*",  # Eleksol
+                "DP04S*",  # ECO-WORTHY, DCHOUSE
+                "121?0*",  # Eleksol, Ultimatron
                 "12200*",
                 "12300*",
-            ]
+                "PKT*",  # Perfektium
+            )
+        ] + [
+            {
+                "service_uuid": BMS.uuid_services()[0],
+                "manufacturer_id": m_id,
+                "connectable": True,
+            }  # SBL, EPOCH batteries 12.8V 460Ah - 12460A-H
+            for m_id in (0x7B, 0xC1A4)
         ]
 
     @staticmethod
@@ -93,15 +103,17 @@ class BMS(BaseBMS):
         return "ff02"
 
     @staticmethod
-    def _calc_values() -> set[str]:
-        return {
-            ATTR_POWER,
-            ATTR_BATTERY_CHARGING,
-            ATTR_CYCLE_CAP,
-            ATTR_RUNTIME,
-            ATTR_DELTA_VOLTAGE,
-            ATTR_TEMPERATURE,
-        }
+    def _calc_values() -> frozenset[str]:
+        return frozenset(
+            {
+                ATTR_POWER,
+                ATTR_BATTERY_CHARGING,
+                ATTR_CYCLE_CAP,
+                ATTR_RUNTIME,
+                ATTR_DELTA_VOLTAGE,
+                ATTR_TEMPERATURE,
+            }
+        )
 
     def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
@@ -121,18 +133,22 @@ class BMS(BaseBMS):
             "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
-        # verify that data long enough
-        if len(self._data) < BMS.INFO_LEN + self._data[3]:
+        # verify that data is long enough
+        if (
+            len(self._data) < BMS.INFO_LEN
+            or len(self._data) < BMS.INFO_LEN + self._data[3]
+        ):
             return
 
-        # check correct frame ending (0x77)
+        # check correct frame ending
         frame_end: Final[int] = BMS.INFO_LEN + self._data[3] - 1
-        if self._data[frame_end] != 0x77:
+        if self._data[frame_end] != BMS.TAIL:
             self._log.debug("incorrect frame end (length: %i).", len(self._data))
             return
 
-        crc: Final[int] = BMS._crc(self._data[2 : frame_end - 2])
-        if int.from_bytes(self._data[frame_end - 2 : frame_end], "big") != crc:
+        if (crc := BMS._crc(self._data[2 : frame_end - 2])) != int.from_bytes(
+            self._data[frame_end - 2 : frame_end], "big"
+        ):
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",
                 int.from_bytes(self._data[frame_end - 2 : frame_end], "big"),
@@ -144,17 +160,16 @@ class BMS(BaseBMS):
         self._data_event.set()
 
     @staticmethod
-    def _crc(frame: bytes) -> int:
+    def _crc(frame: bytearray) -> int:
         """Calculate JBD frame CRC."""
         return 0x10000 - sum(frame)
 
     @staticmethod
     def _cmd(cmd: bytes) -> bytes:
         """Assemble a JBD BMS command."""
-        frame = bytes([*BMS.HEAD_CMD, cmd[0], 0x00])
-        frame += BMS._crc(frame[2:4]).to_bytes(2, "big")
-        frame += bytes([0x77])
-        return frame
+        frame = bytearray([*BMS.HEAD_CMD, cmd[0], 0x00])
+        frame.extend([*BMS._crc(frame[2:4]).to_bytes(2, "big"), BMS.TAIL])
+        return bytes(frame)
 
     @staticmethod
     def _decode_data(data: bytearray) -> dict[str, int | float]:
@@ -190,10 +205,10 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         data: BMSsample = {}
-        for cmd, exp_len, dec_fct in [
+        for cmd, exp_len, dec_fct in (
             (BMS._cmd(b"\x03"), BMS.BASIC_INFO, BMS._decode_data),
             (BMS._cmd(b"\x04"), 0, BMS._cell_voltages),
-        ]:
+        ):
             await self._await_reply(cmd)
             if (
                 len(self._data_final) != BMS.INFO_LEN + self._data_final[3]

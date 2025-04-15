@@ -3,7 +3,7 @@
 import logging
 from typing import Final
 
-from homeassistant.const import (  # noqa: F401
+from homeassistant.const import (  # noqa: F401  # pylint: disable=unused-import
     ATTR_BATTERY_CHARGING,
     ATTR_BATTERY_LEVEL,
     ATTR_TEMPERATURE,
@@ -11,8 +11,10 @@ from homeassistant.const import (  # noqa: F401
 )
 
 BMS_TYPES: Final[list[str]] = [
+    "abc_bms",
     "cbtpwr_bms",
     "daly_bms",
+    "ecoworthy_bms",
     "ective_bms",
     "ej_bms",
     "jbd_bms",
@@ -21,12 +23,13 @@ BMS_TYPES: Final[list[str]] = [
     "redodo_bms",
     "seplos_bms",
     "seplos_v2_bms",
+    "roypow_bms",
     "tdt_bms",
     "dpwrcore_bms",  # only name filter
     "felicity_bms",
 ]  # available BMS types
 DOMAIN: Final[str] = "bms_ble"
-LOGGER: Final = logging.getLogger(__package__)
+LOGGER: Final[logging.Logger] = logging.getLogger(__package__)
 UPDATE_INTERVAL: Final[int] = 30  # [s]
 
 # attributes (do not change)

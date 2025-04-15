@@ -2,9 +2,9 @@
 
 from typing import Final
 
-from .bluetooth import generate_advertisement_data
+from .bluetooth import AdvertisementData, generate_advertisement_data
 
-ADVERTISEMENTS: Final[list] = [
+ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source LOG
         generate_advertisement_data(
             local_name="NWJ20221223010330\x11",
@@ -25,8 +25,8 @@ ADVERTISEMENTS: Final[list] = [
     ),
     (  # nRF Connect (https://github.com/patman15/BMS_BLE-HA/issues/82#issuecomment-2498299433)
         generate_advertisement_data(
-            local_name="$PFLAC,R,RADIOID\x0D\x0A",
-            manufacturer_data={65535: b"\x10\x55\x44\x33\xE8\xB4"},
+            local_name="$PFLAC,R,RADIOID\x0d\x0a",
+            manufacturer_data={65535: b"\x10\x55\x44\x33\xe8\xb4"},
             service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
             rssi=-47,
         ),
@@ -35,7 +35,7 @@ ADVERTISEMENTS: Final[list] = [
     (  # BTctl (https://github.com/patman15/BMS_BLE-HA/issues/137)
         generate_advertisement_data(
             local_name="NWJ20200720020539",
-            manufacturer_data={0: b"\x34\x14\xb5\x9d\x78\xE7\x4c"},
+            manufacturer_data={0: b"\x34\x14\xb5\x9d\x78\xe7\x4c"},
             service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
         ),
         "ective_bms",
@@ -102,6 +102,14 @@ ADVERTISEMENTS: Final[list] = [
     (  # source LOG
         generate_advertisement_data(
             local_name="SP66B2404270002       ",
+            service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
+            rssi=-81,
+        ),
+        "seplos_bms",
+    ),
+    (  # advmon (https://github.com/patman15/BMS_BLE-HA/issues/214)
+        generate_advertisement_data(
+            local_name="SP47B-A2410230006",
             service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
             rssi=-81,
         ),
@@ -292,7 +300,7 @@ ADVERTISEMENTS: Final[list] = [
         generate_advertisement_data(  # Supervolt battery
             local_name="SX100P-B230201",
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
-            manufacturer_data={31488: "\x02\xFF\xFF\x7D"},
+            manufacturer_data={31488: "\x02\xff\xff\x7d"},
         ),
         "jbd_bms",
     ),
@@ -353,6 +361,28 @@ ADVERTISEMENTS: Final[list] = [
         ),
         "felicity_bms",
     ),
+    (  # source LOG, proxy (https://github.com/patman15/BMS_BLE-HA/issues/164#issue-2825586172)
+        generate_advertisement_data(
+            local_name="ECO-WORTHY 02_B8EF",
+            manufacturer_data={49844: b"\xe0\xfa\xb8\xf0"},  # MAC address, correct
+            service_uuids=[
+                "00001800-0000-1000-8000-00805f9b34fb",
+                "00001801-0000-1000-8000-00805f9b34fb",
+                "0000fff0-0000-1000-8000-00805f9b34fb",
+            ],
+            rssi=-50,
+        ),
+        "ecoworthy_bms",
+    ),
+    (  # source BTctl (https://github.com/patman15/BMS_BLE-HA/issues/194)
+        generate_advertisement_data(  # Topband
+            local_name="ZM20210512010036�",
+            manufacturer_data={0: "\xfc\x45\xc3\xbc\xd6\xa8"},
+            service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
+            rssi=-48,
+        ),
+        "ective_bms",
+    ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/197)
         generate_advertisement_data(  # Creabest
             local_name="100R0002E3",
@@ -362,5 +392,120 @@ ADVERTISEMENTS: Final[list] = [
             tx_power=0,
         ),
         "cbtpwr_bms",
+    ),
+    (  # source pcap (https://github.com/patman15/BMS_BLE-HA/issues/168)
+        generate_advertisement_data(
+            local_name="SOK-24V1127",
+            service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
+            rssi=-94,
+        ),
+        "abc_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/204)
+        generate_advertisement_data(  # 16S LiFePo 250A BMS
+            local_name="DL-40160901534C",
+            manufacturer_data={258: "04"},
+            rssi=-87,
+        ),
+        "daly_bms",
+    ),
+    (  # source pcap (https://github.com/patman15/BMS_BLE-HA/issues/186)
+        generate_advertisement_data(  # Epoch, BMS: RoyPow SPB22-TI04
+            local_name=" B12100A 220600016 ",
+            service_uuids=[
+                "0000ffe0-0000-1000-8000-00805f9b34fb",
+                "0000ffe7-0000-1000-8000-00805f9b34fb",
+            ],
+            manufacturer_data={424: "\x88\xa0\x12\x6c\x14\x39\x22\xb8"},
+            rssi=-87,
+        ),
+        "roypow_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/186)
+        generate_advertisement_data(
+            local_name="12-6C-14-39-28-1F",
+            rssi=-50,
+            manufacturer_data={2865: "88a0126c1439281f"},
+            service_uuids=[
+                "0000ffe0-0000-1000-8000-00805f9b34fb",
+                "0000fee7-0000-1000-8000-00805f9b34fb",
+            ],
+        ),
+        "roypow_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/186)
+        generate_advertisement_data(
+            local_name="C6-6C-15-08-A7-E9",
+            rssi=-66,
+            manufacturer_data={35579: "88a0c66c1508a7e9"},
+            service_uuids=[
+                "0000ffe0-0000-1000-8000-00805f9b34fb",
+                "0000fee7-0000-1000-8000-00805f9b34fb",
+            ],
+        ),
+        "roypow_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/226)
+        generate_advertisement_data(  # A4:C1:37:42:3E:D9
+            local_name="AP21S002-L21S",
+            rssi=-84,
+            manufacturer_data={16089: "4237c1a4"},  # MAC address, wrong
+            service_uuids=[
+                "0000ff00-0000-1000-8000-00805f9b34fb",
+            ],
+        ),
+        "jbd_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/231)
+        generate_advertisement_data(
+            local_name="CSY012405290042",
+            rssi=-78,
+            service_uuids=[
+                "0000fff0-0000-1000-8000-00805f9b34fb",
+            ],
+        ),
+        "seplos_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/236)
+        generate_advertisement_data(
+            local_name="SBL-12330BLH1-242055",
+            rssi=-84,
+            manufacturer_data={123: "02ffff7d"},
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+        ),
+        "jbd_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/236)
+        generate_advertisement_data(
+            local_name="162400552210210097",
+            rssi=-35,
+            manufacturer_data={49572: "375532f9"},  # MAC address, correct
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+        ),
+        "jbd_bms",
+    ),
+    (  # source BTctl (https://github.com/patman15/BMS_BLE-HA/issues/242)
+        generate_advertisement_data(
+            local_name="PKT2201PB121000084",
+            rssi=-46,
+            manufacturer_data={30669: "\xe4\x38\xc1\xa4"},  # MAC address, wrong
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+        ),
+        "jbd_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/241)
+        generate_advertisement_data(
+            local_name="V-12V200Ah-0215",
+            rssi=-74,
+        ),
+        "ej_bms",
+    ),
+    (  # source BTctl (https://github.com/patman15/BMS_BLE-HA/issues/253)
+        generate_advertisement_data(
+            local_name="ECO-WORTHY 02_50DB",
+            manufacturer_data={47912: "\xed\x00\x50\xdc"},  # MAC address correct
+            rssi=-49,
+        ),
+        "ecoworthy_bms",
     ),
 ]

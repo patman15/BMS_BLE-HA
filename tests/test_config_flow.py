@@ -6,6 +6,7 @@ from bleak.backends.scanner import AdvertisementData
 from home_assistant_bluetooth import BluetoothServiceInfoBleak
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
+from voluptuous import Schema
 
 from custom_components.bms_ble.const import DOMAIN
 from custom_components.bms_ble.plugins.basebms import BaseBMS
@@ -21,11 +22,7 @@ from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er
 
 from .advertisement_data import ADVERTISEMENTS
-from .bluetooth import (
-    generate_advertisement_data,
-    generate_ble_device,
-    inject_bluetooth_service_info_bleak,
-)
+from .bluetooth import generate_ble_device, inject_bluetooth_service_info_bleak
 from .conftest import mock_config, mock_update_min
 
 
@@ -46,7 +43,7 @@ def bms_advertisement(request) -> BluetoothServiceInfoBleak:
         service_uuids=dev.service_uuids,
         manufacturer_data=dev.manufacturer_data,
         service_data=dev.service_data,
-        advertisement=generate_advertisement_data(**dev._asdict()),
+        advertisement=dev,
         source=SOURCE_BLUETOOTH,
         connectable=True,
         time=0,
@@ -54,6 +51,7 @@ def bms_advertisement(request) -> BluetoothServiceInfoBleak:
     )
 
 
+@pytest.mark.usefixtures("enable_bluetooth")
 async def test_bluetooth_discovery(
     hass: HomeAssistant, advertisement: BluetoothServiceInfoBleak
 ) -> None:
@@ -86,10 +84,10 @@ async def test_bluetooth_discovery(
     )
 
 
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_device_setup(
     monkeypatch,
-    patch_bleakclient: None,
-    BTdiscovery: BluetoothServiceInfoBleak,
+    bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
 ) -> None:
     """Test discovery via bluetooth with a valid device."""
@@ -97,14 +95,18 @@ async def test_device_setup(
     result: ConfigFlowResult = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_BLUETOOTH},
-        data=BTdiscovery,
+        data=bt_discovery,
     )
 
     assert result.get("type") == FlowResultType.FORM
     assert result.get("step_id") == "bluetooth_confirm"
-    assert result.get("description_placeholders") == {"name": "SmartBat-B12345"}
+    assert result.get("description_placeholders") == {
+        "name": "SmartBat-B12345",
+        "id": ":cc:cc:cc",
+        "model": "OGT BMS",
+    }
 
-    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
     monkeypatch.setattr(
         "custom_components.bms_ble.plugins.ogt_bms.BMS.async_update",
@@ -123,7 +125,7 @@ async def test_device_setup(
     assert result_detail.unique_id == "cc:cc:cc:cc:cc:cc"
     assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 11
 
-    entities = er.async_get(hass).entities
+    entities: er.EntityRegistryItems = er.async_get(hass).entities
     assert len(entities) == 13  # sensors, binary_sensors, rssi
 
     # check correct unique_id format of all sensor entries
@@ -132,21 +134,23 @@ async def test_device_setup(
 
 
 async def test_device_not_supported(
-    BTdiscovery_notsupported, hass: HomeAssistant
+    bt_discovery_notsupported: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
     """Test discovery via bluetooth with a invalid device."""
 
-    result = await hass.config_entries.flow.async_init(
+    result: ConfigFlowResult = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_BLUETOOTH},
-        data=BTdiscovery_notsupported,
+        data=bt_discovery_notsupported,
     )
 
     assert result.get("type") == FlowResultType.ABORT
     assert result.get("reason") == "not_supported"
 
 
-async def test_invalid_plugin(monkeypatch, BTdiscovery, hass: HomeAssistant) -> None:
+async def test_invalid_plugin(
+    monkeypatch, bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
+) -> None:
     """Test discovery via bluetooth with a valid device but invalid plugin.
 
     assertion is handled by internal function
@@ -156,23 +160,23 @@ async def test_invalid_plugin(monkeypatch, BTdiscovery, hass: HomeAssistant) -> 
     result: ConfigFlowResult = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_BLUETOOTH},
-        data=BTdiscovery,
+        data=bt_discovery,
     )
 
     assert result.get("type") == FlowResultType.ABORT
     assert result.get("reason") == "not_supported"
 
 
-async def test_already_configured(bms_fixture, hass: HomeAssistant) -> None:
+async def test_already_configured(bms_fixture: str, hass: HomeAssistant) -> None:
     """Test that same device cannot be added twice."""
 
-    cfg = mock_config(bms_fixture)
+    cfg: MockConfigEntry = mock_config(bms_fixture)
     cfg.add_to_hass(hass)
 
     await hass.config_entries.async_setup(cfg.entry_id)
     await hass.async_block_till_done()
 
-    result = await hass.config_entries.flow.async_init(
+    result: ConfigFlowResult = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_USER},
         data={
@@ -184,14 +188,18 @@ async def test_already_configured(bms_fixture, hass: HomeAssistant) -> None:
     assert result.get("reason") == "already_configured"
 
 
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_async_setup_entry(
-    monkeypatch, patch_bleakclient, bms_fixture, BTdiscovery, hass: HomeAssistant
+    monkeypatch,
+    bms_fixture: str,
+    bt_discovery: BluetoothServiceInfoBleak,
+    hass: HomeAssistant,
 ) -> None:
     """Test async_setup_entry with valid input."""
 
-    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
-    cfg = mock_config(bms=bms_fixture)
+    cfg: MockConfigEntry = mock_config(bms=bms_fixture)
     cfg.add_to_hass(hass)
 
     monkeypatch.setattr(
@@ -209,7 +217,7 @@ async def test_async_setup_entry(
 async def test_setup_entry_missing_unique_id(bms_fixture, hass: HomeAssistant) -> None:
     """Test async_setup_entry with missing unique id."""
 
-    cfg = mock_config(bms=bms_fixture, unique_id=None)
+    cfg: MockConfigEntry = mock_config(bms=bms_fixture, unique_id=None)
     cfg.add_to_hass(hass)
 
     assert not await hass.config_entries.async_setup(cfg.entry_id)
@@ -218,8 +226,9 @@ async def test_setup_entry_missing_unique_id(bms_fixture, hass: HomeAssistant) -
     assert cfg.state is ConfigEntryState.SETUP_ERROR
 
 
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_user_setup(
-    monkeypatch, patch_bleakclient, BTdiscovery, hass: HomeAssistant
+    monkeypatch, bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
     """Check config flow for user adding previously discovered device."""
 
@@ -228,7 +237,7 @@ async def test_user_setup(
         mock_update_min,
     )
 
-    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
     result: ConfigFlowResult = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_USER}
@@ -237,7 +246,7 @@ async def test_user_setup(
     assert result.get("step_id") == "user"
     assert result.get("errors") is None
 
-    data_schema = result.get("data_schema")
+    data_schema: Final[Schema | None] = result.get("data_schema")
     assert data_schema is not None
     assert data_schema.schema.get(CONF_ADDRESS).serialize() == {
         "selector": {
@@ -245,7 +254,7 @@ async def test_user_setup(
                 "options": [
                     {
                         "value": "cc:cc:cc:cc:cc:cc",
-                        "label": "SmartBat-B12345 (cc:cc:cc:cc:cc:cc)",
+                        "label": "SmartBat-B12345 (cc:cc:cc:cc:cc:cc) - OGT BMS",
                     }
                 ],
                 "multiple": False,
@@ -269,20 +278,22 @@ async def test_user_setup(
     assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 11
 
 
+@pytest.mark.usefixtures("enable_bluetooth")
 async def test_user_setup_invalid(
-    BTdiscovery_notsupported, hass: HomeAssistant
+    bt_discovery_notsupported: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
     """Check config flow for user adding previously discovered invalid device."""
 
-    inject_bluetooth_service_info_bleak(hass, BTdiscovery_notsupported)
-    result = await hass.config_entries.flow.async_init(
+    inject_bluetooth_service_info_bleak(hass, bt_discovery_notsupported)
+    result: Final[ConfigFlowResult] = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_USER}
     )
     assert result.get("type") == FlowResultType.ABORT
 
 
+@pytest.mark.usefixtures("enable_bluetooth")
 async def test_user_setup_double_configure(
-    monkeypatch, BTdiscovery, hass: HomeAssistant
+    monkeypatch, bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
     """Check config flow for user adding previously already added device."""
 
@@ -294,7 +305,7 @@ async def test_user_setup_double_configure(
         patch_async_current_ids,
     )
 
-    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
     result: ConfigFlowResult = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_USER}
@@ -302,11 +313,10 @@ async def test_user_setup_double_configure(
     assert result.get("type") == FlowResultType.ABORT
 
 
-async def test_no_migration(bms_fixture, hass: HomeAssistant) -> None:
+async def test_no_migration(bms_fixture: str, hass: HomeAssistant) -> None:
     """Test that entries of correct version are kept."""
 
     cfg: MockConfigEntry = mock_config(bms=bms_fixture)
-    #monkeypatch.setattr(cfg, "minor_version", 1)
     cfg.add_to_hass(hass)
     hass.config_entries.async_update_entry(cfg, minor_version=1)
 
@@ -319,11 +329,12 @@ async def test_no_migration(bms_fixture, hass: HomeAssistant) -> None:
     assert cfg.state is ConfigEntryState.SETUP_RETRY
 
 
-async def test_migrate_entry_future_version(bms_fixture, hass: HomeAssistant) -> None:
+async def test_migrate_entry_future_version(
+    bms_fixture: str, hass: HomeAssistant
+) -> None:
     """Test migrating entries from future version."""
 
     cfg: MockConfigEntry = mock_config(bms=bms_fixture)
-    # monkeypatch.setattr(cfg, "version", 999)
     cfg.add_to_hass(hass)
     hass.config_entries.async_update_entry(cfg, version=999)
 
@@ -334,12 +345,10 @@ async def test_migrate_entry_future_version(bms_fixture, hass: HomeAssistant) ->
     assert cfg.state is ConfigEntryState.MIGRATION_ERROR
 
 
-async def test_migrate_invalid_v_0_1(bms_fixture, hass: HomeAssistant) -> None:
+async def test_migrate_invalid_v_0_1(bms_fixture: str, hass: HomeAssistant) -> None:
     """Test migrating an invalid entry in version 0.1."""
 
     cfg: MockConfigEntry = mock_config(bms=bms_fixture)
-    # monkeypatch.setattr(cfg, "version", 0)
-    # monkeypatch.setattr(cfg, "data", {"type": None})
     cfg.add_to_hass(hass)
     hass.config_entries.async_update_entry(cfg, version=0, data={"type": None})
 
@@ -350,12 +359,16 @@ async def test_migrate_invalid_v_0_1(bms_fixture, hass: HomeAssistant) -> None:
     assert cfg.state is ConfigEntryState.MIGRATION_ERROR
 
 
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_migrate_entry_from_v_0_1(
-    monkeypatch, patch_bleakclient, mock_config_v0_1, BTdiscovery, hass: HomeAssistant
+    monkeypatch,
+    mock_config_v0_1: MockConfigEntry,
+    bt_discovery: BluetoothServiceInfoBleak,
+    hass: HomeAssistant,
 ) -> None:
     """Test migrating entries from version 0.1."""
 
-    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
     cfg: MockConfigEntry = mock_config_v0_1
     cfg.add_to_hass(hass)
@@ -383,9 +396,9 @@ async def test_migrate_unique_id(hass: HomeAssistant) -> None:
     assert cfg in hass.config_entries.async_entries()
     config_entry = hass.config_entries.async_entries(domain=DOMAIN)[0]
 
-    ent_reg = er.async_get(hass)
+    ent_reg: er.EntityRegistry = er.async_get(hass)
     # add entry with old unique_id style to be modified
-    entry_old = ent_reg.async_get_or_create(
+    entry_old: Final[er.RegistryEntry] = ent_reg.async_get_or_create(
         capabilities={"state_class": "measurement"},
         config_entry=config_entry,
         domain=DOMAIN,
@@ -400,7 +413,7 @@ async def test_migrate_unique_id(hass: HomeAssistant) -> None:
     )
 
     # generate another entry that should be kept untouched
-    entry_new = ent_reg.async_get_or_create(
+    entry_new: Final[er.RegistryEntry] = ent_reg.async_get_or_create(
         capabilities={"state_class": "measurement"},
         config_entry=config_entry,
         domain=DOMAIN,
@@ -418,11 +431,15 @@ async def test_migrate_unique_id(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
     # check that "old_style" entry is migrated
-    modified_entry = ent_reg.async_get(entry_old.entity_id)
+    modified_entry: Final[er.RegistryEntry | None] = ent_reg.async_get(
+        entry_old.entity_id
+    )
     assert (modified_entry) is not None
     assert modified_entry.unique_id == f"{DOMAIN}-cc:cc:cc:cc:cc:cc-battery_level"
 
     # check that "new style" entry is not modified
-    unmodified_entry = ent_reg.async_get(entry_new.entity_id)
+    unmodified_entry: Final[er.RegistryEntry | None] = ent_reg.async_get(
+        entry_new.entity_id
+    )
     assert (unmodified_entry) is not None
     assert unmodified_entry.unique_id == f"{DOMAIN}-myJBD-test-battery_level"

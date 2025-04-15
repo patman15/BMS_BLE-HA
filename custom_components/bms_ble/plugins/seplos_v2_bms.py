@@ -69,7 +69,7 @@ class BMS(BaseBMS):
         """Initialize BMS."""
         super().__init__(__name__, ble_device, reconnect)
         self._data_final: dict[int, bytearray] = {}
-        self._exp_len: int = 0
+        self._exp_len: int = self._MIN_LEN
 
     @staticmethod
     def matcher_dict_list() -> list[dict]:
@@ -103,23 +103,25 @@ class BMS(BaseBMS):
         return "ff02"
 
     @staticmethod
-    def _calc_values() -> set[str]:
-        return {
-            ATTR_BATTERY_CHARGING,
-            ATTR_CYCLE_CAP,
-            ATTR_DELTA_VOLTAGE,
-            ATTR_POWER,
-            ATTR_RUNTIME,
-            ATTR_TEMPERATURE,
-        }  # calculate further values from BMS provided set ones
+    def _calc_values() -> frozenset[str]:
+        return frozenset(
+            {
+                ATTR_BATTERY_CHARGING,
+                ATTR_CYCLE_CAP,
+                ATTR_DELTA_VOLTAGE,
+                ATTR_POWER,
+                ATTR_RUNTIME,
+                ATTR_TEMPERATURE,
+            }
+        )  # calculate further values from BMS provided set ones
 
     def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
     ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
         if (
-            data[0] == BMS._HEAD
-            and len(data) > BMS._MIN_LEN
+            len(data) > BMS._MIN_LEN
+            and data[0] == BMS._HEAD
             and len(self._data) >= self._exp_len
         ):
             self._exp_len = BMS._MIN_LEN + int.from_bytes(data[5:7])
@@ -130,7 +132,7 @@ class BMS(BaseBMS):
             "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
-        # verify that data long enough
+        # verify that data is long enough
         if len(self._data) < self._exp_len:
             return
 
@@ -146,8 +148,7 @@ class BMS(BaseBMS):
             self._log.debug("BMS reported error code: 0x%X", self._data[4])
             return
 
-        crc: Final[int] = crc_xmodem(self._data[1:-3])
-        if int.from_bytes(self._data[-3:-1]) != crc:
+        if (crc := crc_xmodem(self._data[1:-3])) != int.from_bytes(self._data[-3:-1]):
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",
                 int.from_bytes(self._data[-3:-1]),
@@ -168,7 +169,7 @@ class BMS(BaseBMS):
     async def _init_connection(self) -> None:
         """Initialize protocol state."""
         await super()._init_connection()
-        self._exp_len = 0
+        self._exp_len = BMS._MIN_LEN
 
     @staticmethod
     def _cmd(cmd: int, address: int = 0, data: bytearray = bytearray()) -> bytearray:

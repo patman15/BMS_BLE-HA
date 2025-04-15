@@ -54,7 +54,7 @@ class BMS(BaseBMS):
     _FIELDS: Final[
         list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
     ] = [
-        (ATTR_TEMPERATURE, EIB_LEN, 20, 2, False, lambda x: float(x / 10)),
+        (ATTR_TEMPERATURE, EIB_LEN, 20, 2, True, lambda x: float(x / 10)),  # avg. ctemp
         (ATTR_VOLTAGE, EIA_LEN, 0, 4, False, lambda x: float(BMS._swap32(x) / 100)),
         (
             ATTR_CURRENT,
@@ -96,7 +96,7 @@ class BMS(BaseBMS):
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             }
-            for pattern in ["SP0*", "SP1*", "SP5*", "SP6*"]
+            for pattern in ("SP0*", "SP1*", "SP4*", "SP5*", "SP6*", "CSY*")
         ]
 
     @staticmethod
@@ -124,8 +124,10 @@ class BMS(BaseBMS):
         return "fff2"
 
     @staticmethod
-    def _calc_values() -> set[str]:
-        return {ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_RUNTIME}
+    def _calc_values() -> frozenset[str]:
+        return frozenset(
+            {ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_RUNTIME}
+        )
 
     def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
@@ -154,12 +156,13 @@ class BMS(BaseBMS):
             "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
-        # verify that data long enough
+        # verify that data is long enough
         if len(self._data) < self._pkglen:
             return
 
-        crc: Final[int] = crc_modbus(self._data[: self._pkglen - 2])
-        if int.from_bytes(self._data[self._pkglen - 2 : self._pkglen], "little") != crc:
+        if (crc := crc_modbus(self._data[: self._pkglen - 2])) != int.from_bytes(
+            self._data[self._pkglen - 2 : self._pkglen], "little"
+        ):
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",
                 int.from_bytes(self._data[self._pkglen - 2 : self._pkglen], "little"),

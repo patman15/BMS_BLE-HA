@@ -122,7 +122,7 @@ class MockSeplosv2BleakClient(MockBleakClient):
         bytes([HEAD_CMD, PROTOCOL]) + b"\x00\x46\x62\x00\x00"
     )  # get parallel data
     CMD_GMI = bytearray(
-        bytes([HEAD_CMD, PROTOCOL]) + b"\00\x46\x51\x00\x00\x3A\x7F\x0D"
+        bytes([HEAD_CMD, PROTOCOL]) + b"\00\x46\x51\x00\x00\x3a\x7f\x0d"
     )
 
     def _response(
@@ -171,13 +171,10 @@ class MockSeplosv2BleakClient(MockBleakClient):
             self._notify_callback("MockSeplosv2BleakClient", notify_data)
 
 
-async def test_update(monkeypatch, reconnect_fixture) -> None:
+async def test_update(patch_bleak_client, reconnect_fixture) -> None:
     """Test Seplos V2 BMS data update."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockSeplosv2BleakClient,
-    )
+    patch_bleak_client(MockSeplosv2BleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
@@ -198,37 +195,30 @@ async def test_update(monkeypatch, reconnect_fixture) -> None:
 @pytest.fixture(
     name="wrong_response",
     params=[
-        (b"\x7E\x14\x00\x51\x00\x00\x01\x00\x7A\xEF\x00", "invalid frame end"),
-        (b"\x7E\x10\x00\x51\x00\x00\x01\x00\xBB\x29\x0D", "invalid version"),
-        (b"\x7E\x14\x00\x51\x80\x00\x01\x00\xA7\xD7\x0D", "error response"),
-        (b"\x7E\x14\x00\x51\x00\x00\x01\x00\x7A\xEE\x0D", "invalid CRC"),
-        (b"\x7E\x14\x00\x51\x00\x00\x01\x00\x7A\xEF\x0D\x00", "oversized frame"),
-        (b"\x7E\x14\x00\x51\x00\x00\x02\x00\x7A\xEF\x0D", "undersized frame"),
+        (b"\x7e\x14\x00\x51\x00\x00\x01\x00\x7a\xef\x00", "invalid frame end"),
+        (b"\x7e\x10\x00\x51\x00\x00\x01\x00\xbb\x29\x0d", "invalid version"),
+        (b"\x7e\x14\x00\x51\x80\x00\x01\x00\xa7\xd7\x0d", "error response"),
+        (b"\x7e\x14\x00\x51\x00\x00\x01\x00\x7a\xee\x0d", "invalid CRC"),
+        (b"\x7e\x14\x00\x51\x00\x00\x01\x00\x7a\xef\x0d\x00", "oversized frame"),
+        (b"\x7e\x14\x00\x51\x00\x00\x02\x00\x7a\xef\x0d", "undersized frame"),
     ],
     ids=lambda param: param[1],
 )
-def response(request):
+def fix_response(request):
     """Return faulty response frame."""
     return request.param[0]
 
 
-async def test_invalid_response(monkeypatch, wrong_response) -> None:
+async def test_invalid_response(monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response) -> None:
     """Test data up date with BMS returning invalid data."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.seplos_v2_bms.BMS.BAT_TIMEOUT",
-        0.1,
-    )
+    patch_bms_timeout("seplos_v2_bms")
 
     monkeypatch.setattr(
-        "tests.test_seplos_v2_bms.MockSeplosv2BleakClient._response",
-        lambda _s, _c, _d: wrong_response,
+        MockSeplosv2BleakClient, "_response", lambda _s, _c, _d: wrong_response
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockSeplosv2BleakClient,
-    )
+    patch_bleak_client(MockSeplosv2BleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
@@ -241,7 +231,7 @@ async def test_invalid_response(monkeypatch, wrong_response) -> None:
 
 
 # Alarm flags: Events 1-6, excluding 7-8
-async def test_problem_response(monkeypatch) -> None:
+async def test_problem_response(monkeypatch, patch_bleak_client) -> None:
     """Test data update with BMS returning invalid data (wrong CRC)."""
 
     def prb_response(
@@ -263,7 +253,7 @@ async def test_problem_response(monkeypatch) -> None:
                 return bytearray(
                     b"\x7e\x14\x00\x62\x00\x00\x30\x00\x00\x10\x0c\xf4\x0c\xee\x06\x0b\x93\x0b\x7f"
                     b"\x0b\xb6\x0b\x8d\x00\xd7\x14\xb4\x11\x14\x07\x20\xd0\x02\x08\x20\xd0\x00\x71"
-                    b"\x03\xe8\x14\xb9\x07\x00\x02\x03\x08\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xD0\xD0"
+                    b"\x03\xe8\x14\xb9\x07\x00\x02\x03\x08\xff\xff\xff\xff\xff\xff\xff\xff\xd0\xd0"
                     b"\x0d"
                 )
             if bytearray(data).startswith(self.CMD_GMI):
@@ -271,13 +261,9 @@ async def test_problem_response(monkeypatch) -> None:
 
         return bytearray()
 
-    monkeypatch.setattr(
-        "tests.test_seplos_v2_bms.MockSeplosv2BleakClient._response", prb_response
-    )
+    monkeypatch.setattr(MockSeplosv2BleakClient, "_response", prb_response)
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockSeplosv2BleakClient
-    )
+    patch_bleak_client(MockSeplosv2BleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 

@@ -62,7 +62,7 @@ class BMS(BaseBMS):
         """Initialize BMS."""
         super().__init__(__name__, ble_device, reconnect)
         self._data_final: dict[int, bytearray] = {}
-        self._exp_len: int = 0
+        self._exp_len: int = BMS._INFO_LEN
 
     @staticmethod
     def matcher_dict_list() -> list[dict]:
@@ -90,15 +90,17 @@ class BMS(BaseBMS):
         return "fff2"
 
     @staticmethod
-    def _calc_values() -> set[str]:
-        return {
-            ATTR_BATTERY_CHARGING,
-            ATTR_CYCLE_CAP,
-            ATTR_DELTA_VOLTAGE,
-            ATTR_POWER,
-            ATTR_RUNTIME,
-            ATTR_TEMPERATURE,
-        }  # calculate further values from BMS provided set ones
+    def _calc_values() -> frozenset[str]:
+        return frozenset(
+            {
+                ATTR_BATTERY_CHARGING,
+                ATTR_CYCLE_CAP,
+                ATTR_DELTA_VOLTAGE,
+                ATTR_POWER,
+                ATTR_RUNTIME,
+                ATTR_TEMPERATURE,
+            }
+        )  # calculate further values from BMS provided set ones
 
     async def _init_connection(self) -> None:
         await self._await_reply(
@@ -110,7 +112,7 @@ class BMS(BaseBMS):
             self._log.debug("error unlocking BMS: %X", ret)
 
         await super()._init_connection()
-        self._exp_len = 0
+        self._exp_len = BMS._INFO_LEN
 
     def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
@@ -119,8 +121,8 @@ class BMS(BaseBMS):
         self._log.debug("RX BLE data: %s", data)
 
         if (
-            data[0] == BMS._HEAD
-            and len(data) > BMS._INFO_LEN
+            len(data) > BMS._INFO_LEN
+            and data[0] == BMS._HEAD
             and len(self._data) >= self._exp_len
         ):
             self._exp_len = BMS._INFO_LEN + int.from_bytes(data[6:8])
@@ -131,7 +133,7 @@ class BMS(BaseBMS):
             "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
-        # verify that data long enough
+        # verify that data is long enough
         if len(self._data) < self._exp_len:
             return
 
@@ -147,8 +149,9 @@ class BMS(BaseBMS):
             self._log.debug("BMS reported error code: 0x%X", self._data[4])
             return
 
-        crc: Final[int] = crc_modbus(self._data[:-3])
-        if int.from_bytes(self._data[-3:-1], "big") != crc:
+        if (crc := crc_modbus(self._data[:-3])) != int.from_bytes(
+            self._data[-3:-1], "big"
+        ):
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",
                 int.from_bytes(self._data[-3:-1], "big"),

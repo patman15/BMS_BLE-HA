@@ -79,15 +79,17 @@ class BMS(BaseBMS):
         return "ffe2"
 
     @staticmethod
-    def _calc_values() -> set[str]:
-        return {
-            ATTR_BATTERY_CHARGING,
-            ATTR_DELTA_VOLTAGE,
-            ATTR_CYCLE_CAP,
-            ATTR_POWER,
-            ATTR_RUNTIME,
-            ATTR_TEMPERATURE,
-        }  # calculate further values from BMS provided set ones
+    def _calc_values() -> frozenset[str]:
+        return frozenset(
+            {
+                ATTR_BATTERY_CHARGING,
+                ATTR_DELTA_VOLTAGE,
+                ATTR_CYCLE_CAP,
+                ATTR_POWER,
+                ATTR_RUNTIME,
+                ATTR_TEMPERATURE,
+            }
+        )  # calculate further values from BMS provided set ones
 
     def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
@@ -103,8 +105,7 @@ class BMS(BaseBMS):
             self._log.debug("incorrect frame length (%i)", len(data))
             return
 
-        crc: Final[int] = crc_sum(data[: BMS.CRC_POS])
-        if crc != data[BMS.CRC_POS]:
+        if (crc := crc_sum(data[: BMS.CRC_POS])) != data[BMS.CRC_POS]:
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X", data[len(data) + BMS.CRC_POS], crc
             )

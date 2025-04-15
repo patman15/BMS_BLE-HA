@@ -4,7 +4,7 @@ from abc import ABCMeta, abstractmethod
 import asyncio
 import logging
 from statistics import fmean
-from typing import Final, Literal
+from typing import Final
 
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -25,6 +25,7 @@ from custom_components.bms_ble.const import (
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
+    KEY_DESIGN_CAP,
     KEY_PROBLEM,
     KEY_TEMP_VALUE,
 )
@@ -39,7 +40,7 @@ type BMSsample = dict[str, int | float | bool]
 class BaseBMS(metaclass=ABCMeta):
     """Base class for battery management system."""
 
-    BAT_TIMEOUT = 10
+    TIMEOUT = 2.5
     MAX_CELL_VOLTAGE: Final[float] = 5.906  # max cell potential
 
     def __init__(
@@ -51,9 +52,11 @@ class BaseBMS(metaclass=ABCMeta):
         """Intialize the BMS.
 
         logger_name: name of the logger for the BMS instance (usually file name)
-        notification_handler: the callback used for notifications from 'uuid_rx()' characteristics
         ble_device: the Bleak device to connect to
         reconnect: if true, the connection will be closed after each update
+
+        notification_handler: the callback used for notifications from 'uuid_rx()' characteristics
+            Not defined as abstract, as it can be both, a normal or async function
         """
         assert (
             getattr(self, "_notification_handler", None) is not None
@@ -61,14 +64,13 @@ class BaseBMS(metaclass=ABCMeta):
         self._ble_device: Final[BLEDevice] = ble_device
         self._reconnect: Final[bool] = reconnect
         self.name: Final[str] = self._ble_device.name or "undefined"
-        self._log: Final[logging.Logger] = logging.getLogger(logger_name)
-        if not self._log.filters:
-            self._log.addFilter(self._prefix_filter)
+        self._log: Final[logging.Logger] = logging.getLogger(
+            f"{logger_name.replace('.plugins', '')}::{self.name}:"
+            f"{self._ble_device.address[-5:].replace(':','')})"
+        )
 
         self._log.debug(
-            "initializing %s, BT address: %s",
-            self.device_id(),
-            ble_device.address,
+            "initializing %s, BT address: %s", self.device_id(), ble_device.address
         )
         self._client: BleakClient = BleakClient(
             self._ble_device,
@@ -77,13 +79,6 @@ class BaseBMS(metaclass=ABCMeta):
         )
         self._data: bytearray = bytearray()
         self._data_event: Final[asyncio.Event] = asyncio.Event()
-
-    def _prefix_filter(self, record: logging.LogRecord) -> Literal[True]:
-        """Add BMS name and 2 bytes of MAC as prefix to all messages."""
-        setattr(
-            record, "msg", f"{self.name}[{self._ble_device.address[-5:]}]: {record.msg}"
-        )
-        return True
 
     @staticmethod
     @abstractmethod
@@ -129,15 +124,15 @@ class BaseBMS(metaclass=ABCMeta):
         """Return 16-bit UUID of characteristic that provides write property."""
 
     @staticmethod
-    def _calc_values() -> set[str]:
+    def _calc_values() -> frozenset[str]:
         """Return values that the BMS cannot provide and need to be calculated.
 
         See calc_values() function for the required input to actually do so.
         """
-        return set()
+        return frozenset()
 
     @staticmethod
-    def _add_missing_values(data: BMSsample, values: set[str]) -> None:
+    def _add_missing_values(data: BMSsample, values: frozenset[str]) -> None:
         """Calculate missing BMS values from existing ones.
 
         data: data dictionary from BMS
@@ -164,6 +159,12 @@ class BaseBMS(metaclass=ABCMeta):
                 float(v) for k, v in data.items() if k.startswith(KEY_CELL_VOLTAGE)
             ]
             data[ATTR_DELTA_VOLTAGE] = round(max(cell_voltages) - min(cell_voltages), 3)
+
+        # calculate cycle charge from design capacity and SoC
+        if can_calc(ATTR_CYCLE_CHRG, frozenset({KEY_DESIGN_CAP, ATTR_BATTERY_LEVEL})):
+            data[ATTR_CYCLE_CHRG] = (
+                data[KEY_DESIGN_CAP] * data[ATTR_BATTERY_LEVEL]
+            ) / 100
 
         # calculate cycle capacity from voltage and cycle charge
         if can_calc(ATTR_CYCLE_CAP, frozenset({ATTR_VOLTAGE, ATTR_CYCLE_CHRG})):
@@ -258,9 +259,9 @@ class BaseBMS(metaclass=ABCMeta):
 
         self._log.debug("TX BLE data: %s", data.hex(" "))
         self._data_event.clear()  # clear event before requesting new data
-        await self._client.write_gatt_char(char or self.uuid_tx(), data)
+        await self._client.write_gatt_char(char or self.uuid_tx(), data, response=False)
         if wait_for_notify:
-            await asyncio.wait_for(self._wait_event(), timeout=self.BAT_TIMEOUT)
+            await asyncio.wait_for(self._wait_event(), timeout=self.TIMEOUT)
 
     async def disconnect(self) -> None:
         """Disconnect the BMS, includes stoping notifications."""
@@ -317,6 +318,18 @@ def crc_xmodem(data: bytearray) -> int:
     return crc & 0xFFFF
 
 
-def crc_sum(frame: bytes) -> int:
+def crc8(data: bytearray) -> int:
+    """Calculate CRC-8/MAXIM-DOW."""
+    crc: int = 0x00  # Initialwert für CRC
+
+    for byte in data:
+        crc ^= byte
+        for _ in range(8):
+            crc = (crc >> 1) ^ 0x8C if crc & 0x1 else crc >> 1
+
+    return crc & 0xFF
+
+
+def crc_sum(frame: bytearray) -> int:
     """Calculate frame CRC."""
     return sum(frame) & 0xFF
