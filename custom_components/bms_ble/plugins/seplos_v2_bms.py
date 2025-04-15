@@ -241,7 +241,7 @@ class BMS(BaseBMS):
         temp_pos: Final[int] = BMS._CELL_POS + cell_count * 2 + 1
         offset: Final[int] = BMS._CELL_POS + (cell_count + temp_count) * 2 + 2
 
-        for pack in range(int(result.get(KEY_PACK_COUNT, 0))):
+        for pack in range(int(result.get(KEY_PACK_COUNT, 0)) + 1):
 
             await self._await_reply(
                 BMS._cmd(0x61, address=pack, data=bytearray(b"\x00"))

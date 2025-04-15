@@ -71,7 +71,7 @@ REF_VALUE: BMSsample = {
     "temp#10": 27.75,
     "temp#11": 23.75,
     "delta_voltage": 0.005,
-    "pack_count": 2,
+    "pack_count": 1,
     "pack_current#0": 6.85,
     "pack_current#1": 6.86,
     "pack_cycle_charge#0": 143.94,
@@ -108,7 +108,7 @@ SMD_RESP: Final[list[bytes]] = [  # single machine data
 MI_RESP: Final[bytearray] = bytearray(  # manufacturer information
     b"\x7E\x14\x00\x51\x00\x00\x24\x43\x41\x4E\x3A\x50\x4E\x47\x5F\x44\x59\x45\x5F"
     b"\x4C\x75\x78\x70\x5F\x54\x42\x42\x45\x4D\x55\x31\x31\x30\x31\x31\x30\x45\x10"
-    b"\x04\x01\x01\x46\x02\x14\xE2\x58\x0D"
+    b"\x04\x01\x01\x46\x01\x14\xB7\x0B\x0D"
 )
 
 
@@ -147,6 +147,11 @@ class MockSeplosv2BleakClient(MockBleakClient):
                     b"\x03\xe8\x14\xb9\x07\x00\x02\x03\x08\x00\x00\x00\x00\x00\x00\x00\x00\x76\x31"
                     b"\x0d"
                 )
+                # return bytearray( # BP03
+                #     b"\x7e\x14\x00\x62\x00\x00\x28\x00\x00\x10\x00\x00\x00\x00\x06\x00\x00\x00\x00"
+                #     b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x00\x00"
+                #     b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x0a\x4f\x0d"
+                # )
             if bytearray(data).startswith(self.CMD_GMI):
                 return MI_RESP
 
