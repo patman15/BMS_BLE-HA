@@ -183,6 +183,7 @@ class BMS(BaseBMS):
                 )
             )
             for key, cmd, idx, size, sign, func in BMS._PFIELDS
+            if idx + offs + size < len(data[cmd]) - 3  # CRC, EOF
         }
 
     @staticmethod
