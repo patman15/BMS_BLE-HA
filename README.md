@@ -124,6 +124,10 @@ The internal Bluetooth adapter issues <code>AT</code> commands in regular interv
 </details>
 
 ## Troubleshooting
+
+> [!NOTE]
+> A lot of transient issues are due to problems with Bluetooth adapters. Most prominent example is the performance limitation of the [internal Raspberry Pi BT adapter](https://www.home-assistant.io/integrations/bluetooth/#cypress-based-adapters), resulting in, e.g., sometimes wrong data, when you have multiple devices. Please check the Home Assistant [Bluetooth integration](https://www.home-assistant.io/integrations/bluetooth/) page for known issues and consider using a [recommended high-performance adapter](https://www.home-assistant.io/integrations/bluetooth/#known-working-high-performance-adapters).
+
 ### If your device is not recognized
 
 1. Check that your BMS type is listed as [supported device](#supported-devices)
