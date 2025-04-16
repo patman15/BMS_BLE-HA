@@ -1,8 +1,9 @@
 """Module to support Daly Smart BMS."""
 
 from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
@@ -20,6 +21,7 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
+    KEY_PROBLEM,
     KEY_TEMP_SENS,
     KEY_TEMP_VALUE,
 )
@@ -39,30 +41,34 @@ class BMS(BaseBMS):
     MAX_TEMP: Final[int] = 8
     INFO_LEN: Final[int] = 84 + HEAD_LEN + CRC_LEN + MAX_CELLS + MAX_TEMP
     MOS_TEMP_POS: Final[int] = HEAD_LEN + 8
-    _FIELDS: Final[list[tuple[str, int, Callable[[int], int | float]]]] = [
-        (ATTR_VOLTAGE, 80 + HEAD_LEN, lambda x: float(x / 10)),
-        (ATTR_CURRENT, 82 + HEAD_LEN, lambda x: float((x - 30000) / 10)),
-        (ATTR_BATTERY_LEVEL, 84 + HEAD_LEN, lambda x: float(x / 10)),
-        (ATTR_CYCLE_CHRG, 96 + HEAD_LEN, lambda x: float(x / 10)),
-        (KEY_CELL_COUNT, 98 + HEAD_LEN, lambda x: min(x, BMS.MAX_CELLS)),
-        (KEY_TEMP_SENS, 100 + HEAD_LEN, lambda x: min(x, BMS.MAX_TEMP)),
-        (ATTR_CYCLES, 102 + HEAD_LEN, lambda x: x),
-        (ATTR_DELTA_VOLTAGE, 112 + HEAD_LEN, lambda x: float(x / 1000)),
+    _FIELDS: Final[list[tuple[str, int, int, Callable[[int], int | float]]]] = [
+        (ATTR_VOLTAGE, 80 + HEAD_LEN, 2, lambda x: float(x / 10)),
+        (ATTR_CURRENT, 82 + HEAD_LEN, 2, lambda x: float((x - 30000) / 10)),
+        (ATTR_BATTERY_LEVEL, 84 + HEAD_LEN, 2, lambda x: float(x / 10)),
+        (ATTR_CYCLE_CHRG, 96 + HEAD_LEN, 2, lambda x: float(x / 10)),
+        (KEY_CELL_COUNT, 98 + HEAD_LEN, 2, lambda x: min(x, BMS.MAX_CELLS)),
+        (KEY_TEMP_SENS, 100 + HEAD_LEN, 2, lambda x: min(x, BMS.MAX_TEMP)),
+        (ATTR_CYCLES, 102 + HEAD_LEN, 2, lambda x: x),
+        (ATTR_DELTA_VOLTAGE, 112 + HEAD_LEN, 2, lambda x: float(x / 1000)),
+        (KEY_PROBLEM, 116 + HEAD_LEN, 8, lambda x: x % 2**64),
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, ble_device, reconnect)
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [
             {
                 "local_name": "DL-*",
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
-            }
+            },
+        ] + [
+            {"manufacturer_id": m_id, "connectable": True}
+            for m_id in (0x102, 0x104, 0x0302)
         ]
 
     @staticmethod
@@ -86,16 +92,20 @@ class BMS(BaseBMS):
         return "fff2"
 
     @staticmethod
-    def _calc_values() -> set[str]:
-        return {
-            ATTR_CYCLE_CAP,
-            ATTR_POWER,
-            ATTR_BATTERY_CHARGING,
-            ATTR_RUNTIME,
-            ATTR_TEMPERATURE,
-        }
+    def _calc_values() -> frozenset[str]:
+        return frozenset(
+            {
+                ATTR_CYCLE_CAP,
+                ATTR_POWER,
+                ATTR_BATTERY_CHARGING,
+                ATTR_RUNTIME,
+                ATTR_TEMPERATURE,
+            }
+        )
 
-    def _notification_handler(self, _sender, data: bytearray) -> None:
+    def _notification_handler(
+        self, _sender: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
         self._log.debug("RX BLE data: %s", data)
 
         if (
@@ -106,8 +116,9 @@ class BMS(BaseBMS):
             self._log.debug("response data is invalid")
             return
 
-        crc: Final = crc_modbus(data[:-2])
-        if crc != int.from_bytes(data[-2:], byteorder="little"):
+        if (crc := crc_modbus(data[:-2])) != int.from_bytes(
+            data[-2:], byteorder="little"
+        ):
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",
                 int.from_bytes(data[-2:], byteorder="little"),
@@ -121,7 +132,7 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        data = {}
+        data: BMSsample = {}
         try:
             # request MOS temperature (possible outcome: response, empty response, no response)
             await self._await_reply(BMS.HEAD_READ + BMS.MOS_INFO)
@@ -149,9 +160,11 @@ class BMS(BaseBMS):
 
         data |= {
             key: func(
-                int.from_bytes(self._data[idx : idx + 2], byteorder="big", signed=True)
+                int.from_bytes(
+                    self._data[idx : idx + size], byteorder="big", signed=True
+                )
             )
-            for key, idx, func in BMS._FIELDS
+            for key, idx, size, func in BMS._FIELDS
         }
 
         # get temperatures

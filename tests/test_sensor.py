@@ -1,8 +1,14 @@
 """Test the BLE Battery Management System integration sensor definition."""
 
 from datetime import timedelta
+from typing import Final
 
-from pytest_homeassistant_custom_component.common import async_fire_time_changed
+from habluetooth import BluetoothServiceInfoBleak
+import pytest
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_fire_time_changed,
+)
 
 from custom_components.bms_ble.const import (
     ATTR_BALANCE_CUR,
@@ -19,15 +25,20 @@ from custom_components.bms_ble.const import (
     UPDATE_INTERVAL,
 )
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, State
+from homeassistant.helpers.entity_component import async_update_entity
 import homeassistant.util.dt as dt_util
 
 from .bluetooth import inject_bluetooth_service_info_bleak
 from .conftest import mock_config
 
 
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_update(
-    monkeypatch, patch_bleakclient, BTdiscovery, bool_fixture, hass: HomeAssistant
+    monkeypatch,
+    bt_discovery: BluetoothServiceInfoBleak,
+    bool_fixture,
+    hass: HomeAssistant,
 ) -> None:
     """Test sensor value updates through coordinator."""
 
@@ -35,6 +46,7 @@ async def test_update(
         """Patch async_update to return a specific value."""
         return {
             "balance_current": -1.234,
+            "battery_level": 42,
             "voltage": 17.0,
             "current": 0,
             "cell#0": 3,
@@ -46,6 +58,15 @@ async def test_update(
                 "temp#0": 73,
                 "temp#1": 31.4,
                 "temp#2": 27.18,
+                "pack_battery_level#0": 1.0,
+                "pack_battery_level#1": 2.0,
+                "pack_count": 2,
+                "pack_current#0": -3.14,
+                "pack_current#1": 2.71,
+                "pack_cycles#0": 0,
+                "pack_cycles#1": 1,
+                "pack_voltage#0": 12.34,
+                "pack_voltage#1": 24.56,
             }
             if bool_fixture
             else {}
@@ -56,18 +77,18 @@ async def test_update(
         lambda _: True,
     )
 
-    config = mock_config(bms="dummy_bms")
+    config: MockConfigEntry = mock_config(bms="dummy_bms")
     config.add_to_hass(hass)
 
-    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
     assert await hass.config_entries.async_setup(config.entry_id)
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
 
     assert config in hass.config_entries.async_entries()
     assert config.state is ConfigEntryState.LOADED
     assert len(hass.states.async_all(["sensor"])) == 11
-    data = {
+    data: dict[str, str] = {
         entity.entity_id: entity.state for entity in hass.states.async_all(["sensor"])
     }
     assert data == {
@@ -91,6 +112,15 @@ async def test_update(
 
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=UPDATE_INTERVAL))
     await hass.async_block_till_done()
+
+    # check that link quality has been updated, since the coordinator and the LQ sensor are
+    # asynchronous to each other, a race condition can happen, thus update LQ sensor again
+    # to cover the case that LQ is updated before the coordinator changes the value
+    lq: Final[State | None] = hass.states.get(f"sensor.smartbat_b12345_{ATTR_LQ}")
+    assert lq is not None and int(lq.state) >= 50
+    await async_update_entity(hass, f"sensor.smartbat_b12345_{ATTR_LQ}")
+    await hass.async_block_till_done()
+
     data = {
         entity.entity_id: entity.state for entity in hass.states.async_all(["sensor"])
     }
@@ -98,7 +128,7 @@ async def test_update(
     # check all sensor have correct updated value
     assert data == {
         f"sensor.smartbat_b12345_{ATTR_VOLTAGE}": "17.0",
-        "sensor.smartbat_b12345_battery": "unknown",
+        "sensor.smartbat_b12345_battery": "42",
         f"sensor.smartbat_b12345_{ATTR_TEMPERATURE}": "43.86",
         f"sensor.smartbat_b12345_{ATTR_CURRENT}": "0",
         "sensor.smartbat_b12345_stored_energy": "unknown",
@@ -110,22 +140,38 @@ async def test_update(
         f"sensor.smartbat_b12345_{ATTR_RUNTIME}": "unknown",
     }
     # check delta voltage sensor has cell voltage as attribute array
-    delta_state = hass.states.get(f"sensor.smartbat_b12345_{ATTR_DELTA_VOLTAGE}")
+    delta_state: State | None = hass.states.get(
+        f"sensor.smartbat_b12345_{ATTR_DELTA_VOLTAGE}"
+    )
     assert delta_state is not None and delta_state.attributes[ATTR_CELL_VOLTAGES] == [
         3,
         3.123,
     ]
 
     # check temperature sensor has individual sensors as attribute array
-    temp_state = hass.states.get(f"sensor.smartbat_b12345_{ATTR_TEMPERATURE}")
-    assert (
-        temp_state is not None
-        and temp_state.attributes[ATTR_TEMP_SENSORS] == [73, 31.4, 27.18]
-        if bool_fixture
-        else [temp_state]
+    temp_state: State | None = hass.states.get(
+        f"sensor.smartbat_b12345_{ATTR_TEMPERATURE}"
+    )
+    assert temp_state is not None and temp_state.attributes[ATTR_TEMP_SENSORS] == (
+        [73, 31.4, 27.18] if bool_fixture else [float(temp_state.state)]
     )
     # check balance current as attribute
-    current_state = hass.states.get(f"sensor.smartbat_b12345_{ATTR_CURRENT}")
+    current_state: State | None = hass.states.get(
+        f"sensor.smartbat_b12345_{ATTR_CURRENT}"
+    )
     assert current_state is not None and current_state.attributes[ATTR_BALANCE_CUR] == [
         -1.234
     ]
+
+    # check battery pack attributes
+    for sensor, attribute, ref_value in [
+        (ATTR_CURRENT, "pack_current", [-3.14, 2.71]),
+        (ATTR_CYCLES, "pack_cycles", [0, 1]),
+        ("battery", "pack_battery_level", [1.0, 2.0]),
+        (ATTR_VOLTAGE, "pack_voltage", [12.34, 24.56]),
+    ]:
+        pack_state: State | None = hass.states.get(f"sensor.smartbat_b12345_{sensor}")
+        assert pack_state is not None, f"failed to get state of sensor '{sensor}'"
+        assert pack_state.attributes.get(attribute, None) == (
+            ref_value if bool_fixture else None
+        ), f"faild to verify sensor '{sensor}' attribute '{attribute}'"

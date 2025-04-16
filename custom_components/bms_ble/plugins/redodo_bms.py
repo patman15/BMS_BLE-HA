@@ -1,8 +1,9 @@
 """Module to support Dummy BMS."""
 
 from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
@@ -19,6 +20,7 @@ from custom_components.bms_ble.const import (
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
+    KEY_PROBLEM,
     KEY_TEMP_VALUE,
 )
 
@@ -38,14 +40,15 @@ class BMS(BaseBMS):
         (ATTR_BATTERY_LEVEL, 90, 2, False, lambda x: x),
         (ATTR_CYCLE_CHRG, 62, 2, False, lambda x: float(x / 100)),
         (ATTR_CYCLES, 96, 4, False, lambda x: x),
+        (KEY_PROBLEM, 76, 4, False, lambda x: x),
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, ble_device, reconnect)
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [
             {
@@ -76,17 +79,21 @@ class BMS(BaseBMS):
         return "ffe2"
 
     @staticmethod
-    def _calc_values() -> set[str]:
-        return {
-            ATTR_BATTERY_CHARGING,
-            ATTR_DELTA_VOLTAGE,
-            ATTR_CYCLE_CAP,
-            ATTR_POWER,
-            ATTR_RUNTIME,
-            ATTR_TEMPERATURE,
-        }  # calculate further values from BMS provided set ones
+    def _calc_values() -> frozenset[str]:
+        return frozenset(
+            {
+                ATTR_BATTERY_CHARGING,
+                ATTR_DELTA_VOLTAGE,
+                ATTR_CYCLE_CAP,
+                ATTR_POWER,
+                ATTR_RUNTIME,
+                ATTR_TEMPERATURE,
+            }
+        )  # calculate further values from BMS provided set ones
 
-    def _notification_handler(self, _sender, data: bytearray) -> None:
+    def _notification_handler(
+        self, _sender: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
         self._log.debug("RX BLE data: %s", data)
 
@@ -98,8 +105,7 @@ class BMS(BaseBMS):
             self._log.debug("incorrect frame length (%i)", len(data))
             return
 
-        crc = crc_sum(data[: BMS.CRC_POS])
-        if crc != data[BMS.CRC_POS]:
+        if (crc := crc_sum(data[: BMS.CRC_POS])) != data[BMS.CRC_POS]:
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X", data[len(data) + BMS.CRC_POS], crc
             )
@@ -112,29 +118,27 @@ class BMS(BaseBMS):
     def _cell_voltages(data: bytearray, cells: int) -> dict[str, float]:
         """Return cell voltages from status message."""
         return {
-            f"{KEY_CELL_VOLTAGE}{idx}": int.from_bytes(
-                data[16 + 2 * idx : 16 + 2 * idx + 2],
-                byteorder="little",
-                signed=False,
-            )
-            / 1000
+            f"{KEY_CELL_VOLTAGE}{idx}": value / 1000
             for idx in range(cells)
-            if int.from_bytes(data[16 + 2 * idx : 16 + 2 * idx + 2], byteorder="little")
+            if (
+                value := int.from_bytes(
+                    data[16 + 2 * idx : 16 + 2 * idx + 2],
+                    byteorder="little",
+                )
+            )
         }
 
     @staticmethod
     def _temp_sensors(data: bytearray, sensors: int) -> dict[str, int]:
         return {
-            f"{KEY_TEMP_VALUE}{idx}": int.from_bytes(
-                data[52 + idx * 2 : 54 + idx * 2],
-                byteorder="little",
-                signed=False,
-            )
+            f"{KEY_TEMP_VALUE}{idx}": value
             for idx in range(sensors)
-            if int.from_bytes(
-                data[52 + idx * 2 : 54 + idx * 2],
-                byteorder="little",
-                signed=False,
+            if (
+                value := int.from_bytes(
+                    data[52 + idx * 2 : 54 + idx * 2],
+                    byteorder="little",
+                    signed=True,
+                )
             )
         }
 

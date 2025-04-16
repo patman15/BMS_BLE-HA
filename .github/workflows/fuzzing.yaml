@@ -1,13 +1,10 @@
-name: Run tests for integrations
+name: Run fuzz tests
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
   workflow_dispatch:
   schedule:
-    - cron:  '0 5 * * 6'
+    - cron:  '1 5 * * *'
   
 jobs:
   validate:
@@ -25,5 +22,12 @@ jobs:
         - name: Install dependencies
           run: pip install -r requirements_test.txt
           
-        - name: Run tests and collect coverage
-          run: pytest
+        - name: Set Fuzzing Samples
+          id: set-param
+          run: |
+            if [[ "${{ github.event_name }}" == "schedule" ]]; then
+              echo "test_param='--max-examples=100000'" >> $GITHUB_ENV
+            fi
+      
+        - name: Run fuzz tests
+          run: pytest tests/test_fuzzing.py --no-cov ${{ env.test_param }}

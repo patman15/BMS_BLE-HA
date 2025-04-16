@@ -11,6 +11,15 @@
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
+      "manufacturer_id": 770
+    },
+    {
+      "manufacturer_id": 258
+    },
+    {
+      "manufacturer_id": 260
+    },
+    {
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
       "manufacturer_id": 2917
     },
@@ -27,6 +36,10 @@
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
+      "local_name": "AP2?S*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
       "local_name": "GJ-*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
@@ -40,6 +53,19 @@
     },    
     {
       "manufacturer_id": 8856,
+      "local_name": "121?0*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "12200*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "12300*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "PKT*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
@@ -51,6 +77,34 @@
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },    
     {
+      "manufacturer_id": 123,
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "manufacturer_id": 49572,
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },    
+    {
+      "manufacturer_id": 6226,
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "manufacturer_id": 8856,
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "ECO-WORTHY*",
+      "manufacturer_id": 49844
+    },
+    {
+      "local_name": "ECO-WORTHY*",
+      "manufacturer_id": 47912
+    },    
+    {
+      "local_name": "DP04S*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
       "local_name": "SP0*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
@@ -59,7 +113,19 @@
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
+      "local_name": "SP4*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "SP5*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },
+    {
       "local_name": "SP6*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "CSY*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
@@ -69,7 +135,11 @@
       "local_name": "DXB-*"
     },
     {
-      "service_uuid": "0000ffb0-0000-1000-8000-00805f9b34fb"
+      "service_uuid": "0000ffe5-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb",
+      "manufacturer_id": 0
     },
     {
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
@@ -84,6 +154,15 @@
       "manufacturer_id": 33384
     },
     {
+      "local_name": "L-12V???AH-*"
+    },
+    {
+      "local_name": "LT-12V-*"
+    },
+    {
+      "local_name": "V-12V???Ah-*"
+    },    
+    {
       "local_name": "$PFLAC*",
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb"
     },
@@ -92,21 +171,59 @@
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb"
     },
     {
+      "local_name": "ZM20*",
+      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb"
+    },
+    {
       "manufacturer_id": 54976
     },
     {
       "local_name": "BP0?",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"      
-    }    
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "F10*"
+    },
+    {
+      "service_uuid": "000003c1-0000-1000-8000-00805f9b34fb",
+      "manufacturer_id": 21330
+    },
+    {
+      "local_name": "SOK-*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "ABC-*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
+      "manufacturer_id": 424
+    },
+    {
+      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
+      "manufacturer_id": 2865
+    },
+    {
+      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
+      "manufacturer_id": 35579
+    }
   ],
-  "codeowners": ["@patman15"],
+  "codeowners": [
+    "@patman15"
+  ],
   "config_flow": true,
-  "dependencies": ["bluetooth_adapters"],
+  "dependencies": [
+    "bluetooth_adapters"
+  ],
   "documentation": "https://github.com/patman15/BMS_BLE-HA",
   "integration_type": "device",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
-  "loggers": ["bleak_retry_connector"],
+  "loggers": [
+    "bleak_retry_connector"
+  ],
+  "quality_scale": "silver",
   "requirements": [],
-  "version": "1.11.4"
+  "version": "1.15.0"
 }

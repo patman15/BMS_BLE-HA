@@ -38,10 +38,14 @@ from .const import (
     ATTR_TEMP_SENSORS,
     DOMAIN,
     KEY_CELL_VOLTAGE,
+    KEY_PACK,
+    KEY_PACK_COUNT,
     KEY_TEMP_VALUE,
     LOGGER,
 )
 from .coordinator import BTBmsCoordinator
+
+PARALLEL_UPDATES = 0
 
 SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
     SensorEntityDescription(
@@ -70,7 +74,6 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
     SensorEntityDescription(
         key=ATTR_CURRENT,
         translation_key=ATTR_CURRENT,
-        icon="mdi:current-dc",
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.CURRENT,
@@ -102,6 +105,7 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
         translation_key=ATTR_RUNTIME,
         name="Runtime",
         native_unit_of_measurement=UnitOfTime.SECONDS,
+        suggested_unit_of_measurement=UnitOfTime.HOURS,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DURATION,
     ),
@@ -109,7 +113,6 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
         key=ATTR_DELTA_VOLTAGE,
         translation_key=ATTR_DELTA_VOLTAGE,
         name="Delta voltage",
-        icon="mdi:battery-sync",
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
@@ -119,7 +122,6 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
     SensorEntityDescription(
         key=ATTR_RSSI,
         translation_key=ATTR_RSSI,
-        icon="mdi:bluetooth-connect",
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
@@ -130,7 +132,6 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
         key=ATTR_LQ,
         translation_key=ATTR_LQ,
         name="Link quality",
-        icon="mdi:link",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
@@ -146,8 +147,8 @@ async def async_setup_entry(
 ) -> None:
     """Add sensors for passed config_entry in Home Assistant."""
 
-    bms: BTBmsCoordinator = config_entry.runtime_data
-    mac: str = format_mac(config_entry.unique_id)
+    bms: Final[BTBmsCoordinator] = config_entry.runtime_data
+    mac: Final[str] = format_mac(config_entry.unique_id)
     for descr in SENSOR_TYPES:
         if descr.key == ATTR_RSSI:
             async_add_entities([RSSISensor(bms, descr, mac)])
@@ -172,36 +173,40 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
         self.entity_description = descr
         super().__init__(bms)
 
+    def _get_attr_list(self, key_prefix: str) -> list[float]:
+        return [v for k, v in self.coordinator.data.items() if k.startswith(key_prefix)]
+
     @property
     def extra_state_attributes(self) -> dict[str, list[float]] | None:  # type: ignore[reportIncompatibleVariableOverride]
         """Return entity specific state attributes, e.g. cell voltages."""
+        sensor_key: Final[str] = self.entity_description.key
         # add cell voltages to delta voltage sensor
-        if self.entity_description.key == ATTR_DELTA_VOLTAGE:
-            return {
-                ATTR_CELL_VOLTAGES: [
-                    v
-                    for k, v in self.coordinator.data.items()
-                    if k.startswith(KEY_CELL_VOLTAGE)
-                ]
-            }
+        if sensor_key == ATTR_DELTA_VOLTAGE:
+            return {ATTR_CELL_VOLTAGES: self._get_attr_list(KEY_CELL_VOLTAGE)}
         # add individual temperature values to temperature sensor
-        if self.entity_description.key == ATTR_TEMPERATURE:
-            temp_sensors: Final = [
-                v
-                for k, v in self.coordinator.data.items()
-                if k.startswith(KEY_TEMP_VALUE)
-            ]
-            if temp_sensors:
+        if sensor_key == ATTR_TEMPERATURE:
+            if temp_sensors:= self._get_attr_list(KEY_TEMP_VALUE):
                 return {ATTR_TEMP_SENSORS: temp_sensors}
             if temp := self.coordinator.data.get(ATTR_TEMPERATURE):
                 return {ATTR_TEMP_SENSORS: [temp]}
+
+        result: dict[str, list[float]] = {}
         # add balance current as attribute to current sensor
-        if (
-            self.entity_description.key == ATTR_CURRENT
-            and ATTR_BALANCE_CUR in self.coordinator.data
-        ):
-            return {ATTR_BALANCE_CUR: [self.coordinator.data[ATTR_BALANCE_CUR]]}
-        return None
+        if sensor_key == ATTR_CURRENT:
+            if ATTR_BALANCE_CUR in self.coordinator.data:
+                result[ATTR_BALANCE_CUR] = [self.coordinator.data[ATTR_BALANCE_CUR]]
+        # add per-pack values as attributes to corresponding sensor
+        if self.coordinator.data.get(KEY_PACK_COUNT, 0) and sensor_key in [
+            ATTR_CURRENT,
+            ATTR_VOLTAGE,
+            ATTR_CYCLES,
+            ATTR_BATTERY_LEVEL,
+        ]:
+            result[f"{KEY_PACK}_{sensor_key}"] = self._get_attr_list(
+                f"{KEY_PACK}_{sensor_key}"
+            )
+
+        return result
 
     @property
     def native_value(self) -> int | float | None:  # type: ignore[reportIncompatibleVariableOverride]
@@ -212,7 +217,7 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
 class RSSISensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverride]
     """The Bluetooth RSSI sensor."""
 
-    LIMIT: Final = 127  # limit to +/- this range
+    LIMIT: Final[int] = 127  # limit to +/- this range
     _attr_has_entity_name = True
     _attr_native_value = -LIMIT
 
@@ -224,7 +229,7 @@ class RSSISensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverri
         self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
         self._attr_device_info = bms.device_info
         self.entity_description = descr
-        self._bms = bms
+        self._bms: Final[BTBmsCoordinator] = bms
 
     async def async_update(self) -> None:
         """Update RSSI sensor value."""
@@ -253,16 +258,12 @@ class LQSensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverride
         self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
         self._attr_device_info = bms.device_info
         self.entity_description = descr
-        self._bms = bms
+        self._bms: Final[BTBmsCoordinator] = bms
 
     async def async_update(self) -> None:
         """Update BMS link quality sensor value."""
 
         self._attr_native_value = self._bms.link_quality
 
-        LOGGER.debug(
-            "%s: Link quality: %i %%",
-            self._bms.name,
-            self._attr_native_value,
-        )
+        LOGGER.debug("%s: Link quality: %i %%", self._bms.name, self._attr_native_value)
         self.async_write_ha_state()

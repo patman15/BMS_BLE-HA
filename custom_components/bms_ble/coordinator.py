@@ -3,6 +3,7 @@
 from collections import deque
 from datetime import timedelta
 from time import monotonic
+from typing import Final
 
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
@@ -10,6 +11,7 @@ from habluetooth import BluetoothServiceInfoBleak
 
 from homeassistant.components.bluetooth import async_last_service_info
 from homeassistant.components.bluetooth.const import DOMAIN as BLUETOOTH_DOMAIN
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH, DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -26,6 +28,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
         hass: HomeAssistant,
         ble_device: BLEDevice,
         bms_device: BaseBMS,
+        config_entry: ConfigEntry,
     ) -> None:
         """Initialize BMS data coordinator."""
         assert ble_device.name is not None
@@ -35,9 +38,10 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             name=ble_device.name,
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
             always_update=False,  # only update when sensor value has changed
+            config_entry=config_entry,
         )
-        self.name: str = ble_device.name
-        self._mac = ble_device.address
+        self.name: Final[str] = ble_device.name
+        self._mac: Final[str] = ble_device.address
         LOGGER.debug(
             "Initializing coordinator for %s (%s) as %s",
             self.name,
@@ -51,8 +55,8 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             LOGGER.debug("%s: advertisement: %s", self.name, service_info.as_dict())
 
         # retrieve BMS class and initialize it
-        self._device: BaseBMS = bms_device
-        device_info = self._device.device_info()
+        self._device: Final[BaseBMS] = bms_device
+        device_info: dict[str, str] = self._device.device_info()
         self.device_info = DeviceInfo(
             identifiers={
                 (DOMAIN, self._mac),
@@ -92,30 +96,27 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
 
         LOGGER.debug("%s: BMS data update", self.name)
 
-        start = monotonic()
+        start: Final[float] = monotonic()
         try:
-            battery_info = await self._device.async_update()
-            if not battery_info:
+            if not (bms_data := await self._device.async_update()):
                 LOGGER.debug("%s: no valid data received", self.name)
                 raise UpdateFailed("no valid data received.")
         except TimeoutError as err:
             LOGGER.debug("%s: device communication timed out", self.name)
             raise TimeoutError("device communication timed out") from err
         except (BleakError, EOFError) as err:
-            LOGGER.debug(
-                "%s: device communicating failed: %s (%s)",
-                self.name,
-                err,
-                type(err).__name__,
+            basemsg: Final[str] = "device communication failed" + (
+                f", check signal strength ({self.rssi} dBm)"
+                if self.rssi and self.rssi <= -80
+                else ""
             )
-            raise UpdateFailed(
-                f"device communicating failed: {err!s} ({type(err).__name__})"
-            ) from err
+            LOGGER.debug("%s: %s: %s (%s)", self.name, basemsg, err, type(err).__name__)
+            raise UpdateFailed(f"{basemsg}: {err!s} ({type(err).__name__})") from err
         finally:
             self._link_q.extend(
                 [False] * (1 + int((monotonic() - start) / UPDATE_INTERVAL))
             )
 
         self._link_q[-1] = True  # set success
-        LOGGER.debug("%s: BMS data sample %s", self.name, battery_info)
-        return battery_info
+        LOGGER.debug("%s: BMS data sample %s", self.name, bms_data)
+        return bms_data

@@ -3,16 +3,19 @@
 from collections.abc import Awaitable, Buffer, Callable, Iterable
 import importlib
 import logging
+from types import ModuleType
 from typing import Any
 from uuid import UUID
 
+from _pytest.config import Notset
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.descriptor import BleakGATTDescriptor
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str, uuidstr_to_str
-from home_assistant_bluetooth import BluetoothServiceInfoBleak
+from home_assistant_bluetooth import SOURCE_LOCAL, BluetoothServiceInfoBleak
+from hypothesis import HealthCheck, settings
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -27,32 +30,48 @@ from custom_components.bms_ble.const import (
     KEY_TEMP_VALUE,
 )
 from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
-from homeassistant.config_entries import SOURCE_BLUETOOTH
 
 from .bluetooth import generate_advertisement_data, generate_ble_device
 
-LOGGER = logging.getLogger(__name__)
+LOGGER: logging.Logger = logging.getLogger(__name__)
+
+
+def pytest_addoption(parser) -> None:
+    """Add custom command-line option for max_examples."""
+    parser.addoption(
+        "--max-examples",
+        action="store",
+        type=int,
+        default=1000,
+        help="Set the maximum number of examples for Hypothesis tests.",
+    )
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Configure pytest with custom settings."""
+    max_examples: int | Notset = config.getoption("--max-examples")
+    settings.register_profile(
+        "default",
+        max_examples=max_examples,
+        suppress_health_check=[HealthCheck.function_scoped_fixture],
+    )
+    settings.load_profile("default")
 
 
 @pytest.fixture(autouse=True)
-def auto_enable_custom_integrations(enable_custom_integrations: Any):
+def auto_enable_custom_integrations(enable_custom_integrations: Any) -> None:
     """Auto add enable_custom_integrations."""
     return
 
 
-@pytest.fixture(autouse=True)
-def mock_bluetooth(enable_bluetooth):
-    """Auto mock bluetooth."""
-
-
 @pytest.fixture(params=[False, True])
-def bool_fixture(request):
+def bool_fixture(request) -> bool:
     """Return False, True for tests."""
     return request.param
 
 
 @pytest.fixture(params=[*BMS_TYPES, "dummy_bms"])
-def bms_fixture(request):
+def bms_fixture(request) -> str:
     """Return all possible BMS variants."""
     return request.param
 
@@ -75,19 +94,43 @@ def bms_data_fixture(request) -> BMSsample:
 
 
 @pytest.fixture
-def patch_bleakclient(monkeypatch) -> None:
+def patch_bms_timeout(monkeypatch):
+    """Fixture to patch BMS.TIMEOUT for different BMS classes."""
+
+    def _patch_timeout(bms_class: str, timeout: float = 0.1) -> None:
+        monkeypatch.setattr(
+            f"custom_components.bms_ble.plugins.{bms_class}.BMS.TIMEOUT", timeout
+        )
+
+    return _patch_timeout
+
+
+@pytest.fixture
+def patch_default_bleak_client(monkeypatch) -> None:
     """Patch BleakClient to a mock as BT is not available.
 
     required because BTdiscovery cannot be used to generate a BleakClient in async_setup()
     """
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockBleakClient,
+        "custom_components.bms_ble.plugins.basebms.BleakClient", MockBleakClient
     )
 
 
 @pytest.fixture
-def BTdiscovery() -> BluetoothServiceInfoBleak:
+def patch_bleak_client(monkeypatch):
+    """Fixture to patch BleakClient with a given MockClient."""
+
+    def _patch(mock_client=MockBleakClient) -> None:
+        monkeypatch.setattr(
+            "custom_components.bms_ble.plugins.basebms.BleakClient",
+            mock_client,
+        )
+
+    return _patch
+
+
+@pytest.fixture
+def bt_discovery() -> BluetoothServiceInfoBleak:
     """Return a valid Bluetooth object for testing."""
     return BluetoothServiceInfoBleak(
         name="SmartBat-B12345",
@@ -104,7 +147,7 @@ def BTdiscovery() -> BluetoothServiceInfoBleak:
             local_name="SmartBat-B12345",
             service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
         ),
-        source=SOURCE_BLUETOOTH,
+        source=SOURCE_LOCAL,
         connectable=True,
         time=0,
         tx_power=-76,
@@ -113,7 +156,7 @@ def BTdiscovery() -> BluetoothServiceInfoBleak:
 
 # use inject_bluetooth_service_info
 @pytest.fixture
-def BTdiscovery_notsupported():
+def bt_discovery_notsupported() -> BluetoothServiceInfoBleak:
     """Return a Bluetooth object that describes a not supported device."""
     return BluetoothServiceInfoBleak(
         name="random",  # not supported name
@@ -136,7 +179,9 @@ def BTdiscovery_notsupported():
     )
 
 
-def mock_config(bms: str, unique_id: str | None = "cc:cc:cc:cc:cc:cc"):
+def mock_config(
+    bms: str, unique_id: str | None = "cc:cc:cc:cc:cc:cc"
+) -> MockConfigEntry:
     """Return a Mock of the HA entity config."""
     return MockConfigEntry(
         domain=DOMAIN,
@@ -149,7 +194,7 @@ def mock_config(bms: str, unique_id: str | None = "cc:cc:cc:cc:cc:cc"):
 
 
 @pytest.fixture(params=["OGTBms", "DalyBms"])
-def mock_config_v0_1(request, unique_id="cc:cc:cc:cc:cc:cc"):
+def mock_config_v0_1(request, unique_id="cc:cc:cc:cc:cc:cc") -> MockConfigEntry:
     """Return a Mock of the HA entity config."""
     return MockConfigEntry(
         domain=DOMAIN,
@@ -162,22 +207,22 @@ def mock_config_v0_1(request, unique_id="cc:cc:cc:cc:cc:cc"):
 
 
 @pytest.fixture(params=[TimeoutError, BleakError, EOFError])
-def mock_coordinator_exception(request):
+def mock_coordinator_exception(request: pytest.FixtureRequest) -> Exception:
     """Return possible exceptions for mock BMS update function."""
     return request.param
 
 
 @pytest.fixture(params=[*BMS_TYPES, "dummy_bms"])
-def plugin_fixture(request) -> BaseBMS:
-    """Return instance of a BMS."""
+def plugin_fixture(request: pytest.FixtureRequest) -> ModuleType:
+    """Return module of a BMS."""
     return importlib.import_module(
         f"custom_components.bms_ble.plugins.{request.param}",
         package=__name__[: __name__.rfind(".")],
-    ).BMS
+    )
 
 
-@pytest.fixture(params=[False, True])
-def reconnect_fixture(request) -> bool:
+@pytest.fixture(params=[False, True], ids=["persist", "reconnect"])
+def reconnect_fixture(request: pytest.FixtureRequest) -> bool:
     """Return False, True for reconnect test."""
     return request.param
 
@@ -189,7 +234,7 @@ def ogt_bms_fixture(request) -> str:
     return request.param
 
 
-class Mock_BMS(BaseBMS):
+class MockBMS(BaseBMS):
     """Mock Battery Management System."""
 
     def __init__(
@@ -197,10 +242,10 @@ class Mock_BMS(BaseBMS):
     ) -> None:  # , ble_device, reconnect: bool = False
         """Initialize BMS."""
         super().__init__(
-            LOGGER.name, lambda char, data: None, generate_ble_device(address=""), False
+            LOGGER.name, generate_ble_device(address="", details={"path": None}), False
         )
         LOGGER.debug("%s init(), Test except: %s", self.device_id(), str(exc))
-        self._exception = exc
+        self._exception: Exception | None = exc
         self._ret_value: BMSsample = (
             ret_value
             if ret_value is not None
@@ -237,6 +282,11 @@ class Mock_BMS(BaseBMS):
         """Return characteristic that provides write property."""
         return "cafe"
 
+    def _notification_handler(
+        self, sender: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
+        """Retrieve BMS data update."""
+
     async def disconnect(self) -> None:
         """Disconnect connection to BMS if active."""
 
@@ -269,7 +319,7 @@ class MockBleakClient(BleakClient):
         self._disconnect_callback: Callable[[BleakClient], None] | None = (
             disconnected_callback
         )
-        self._ble_device = address_or_ble_device
+        self._ble_device: BLEDevice = address_or_ble_device
 
     @property
     def address(self) -> str:
@@ -305,7 +355,7 @@ class MockBleakClient(BleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # type: ignore[implicit-optional] # noqa: RUF013 # same as upstream
+        response: bool = None,  # noqa: RUF013 # same as upstream
     ) -> None:
         """Mock write GATT characteristics."""
         LOGGER.debug(

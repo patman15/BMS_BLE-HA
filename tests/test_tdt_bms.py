@@ -9,7 +9,7 @@ from bleak.exc import BleakDeviceNotFoundError
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.plugins.tdt_bms import BMS
+from custom_components.bms_ble.plugins.tdt_bms import BMS, BMSsample
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -56,6 +56,8 @@ def ref_value() -> dict:
             "temp#5": 18.65,
             "delta_voltage": 0.012,
             "runtime": 62589,
+            "problem": False,
+            "problem_code": 0,
         },
         "4S4T": {
             "cell_count": 4,
@@ -78,6 +80,8 @@ def ref_value() -> dict:
             "temp#2": 22.55,
             "temp#3": 22.45,
             "delta_voltage": 0.005,
+            "problem": False,
+            "problem_code": 0,
         },
     }
 
@@ -165,13 +169,10 @@ class MockTDTBleakClient(MockBleakClient):
         return bytearray(int.to_bytes(self._char_fffa, 1, "big"))
 
 
-async def test_update_16S_6T(monkeypatch, reconnect_fixture) -> None:
+async def test_update_16s_6t(patch_bleak_client, reconnect_fixture) -> None:
     """Test TDT BMS data update."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockTDTBleakClient,
-    )
+    patch_bleak_client(MockTDTBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
@@ -184,14 +185,12 @@ async def test_update_16S_6T(monkeypatch, reconnect_fixture) -> None:
 
     # query again to check already connected state
     result = await bms.async_update()
-    assert (
-        bms._client and bms._client.is_connected is not reconnect_fixture
-    )  # noqa: SLF001
+    assert bms._client and bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
 
 
-async def test_update_4s_4t(monkeypatch, reconnect_fixture) -> None:
+async def test_update_4s_4t(monkeypatch, patch_bleak_client, reconnect_fixture) -> None:
     """Test TDT BMS data update."""
 
     resp_4s4t: Final[dict[int, bytearray]] = {
@@ -201,21 +200,15 @@ async def test_update_4s_4t(monkeypatch, reconnect_fixture) -> None:
             b"\x04\x1c\x00\x08\x03\xe8\x00\x37\x91\x91\x0d"
         ),
         0x8D: bytearray(
-            b"\x7e\x00\x01\x03\x00\x8d\x00\x18\x04\x00\x00\x00\x00\x04\xc0\x00"
+            b"\x7e\x00\x41\x03\x00\x8d\x00\x18\x04\x00\x00\x00\x00\x04\x00\x00"
             b"\x00\x00\x00\x00\x00\x00\x00\x00\x06\x09\x00\x00\x18\x00\x00\x00"
-            b"\xdf\x18\x0d"
+            b"\xdf\x68\x0d"
         ),
     }
 
-    monkeypatch.setattr(
-        "tests.test_tdt_bms.MockTDTBleakClient.RESP",
-        resp_4s4t,
-    )
+    monkeypatch.setattr(MockTDTBleakClient, "RESP", resp_4s4t)
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockTDTBleakClient,
-    )
+    patch_bleak_client(MockTDTBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
@@ -227,9 +220,7 @@ async def test_update_4s_4t(monkeypatch, reconnect_fixture) -> None:
 
     # query again to check already connected state
     _ = await bms.async_update()
-    assert (
-        bms._client and bms._client.is_connected is not reconnect_fixture
-    )  # noqa: SLF001
+    assert bms._client and bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
 
@@ -237,37 +228,30 @@ async def test_update_4s_4t(monkeypatch, reconnect_fixture) -> None:
 @pytest.fixture(
     name="wrong_response",
     params=[
-        (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xA1\x18\x00", "invalid frame end"),
-        (b"\x7e\x10\x01\x03\x00\x8c\x00\x01\x00\xAD\x19\x0D", "invalid version"),
-        (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xA1\x00\x0D", "invalid CRC"),
-        (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xA1\x18\x0D\x00", "oversized frame"),
-        (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xA1\x0D", "undersized frame"),
-        (b"\x7e\x00\x01\x03\x01\x8c\x00\x01\x00\x61\x25\x0D", "error response"),
+        (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xa1\x18\x00", "invalid frame end"),
+        (b"\x7e\x10\x01\x03\x00\x8c\x00\x01\x00\xad\x19\x0d", "invalid version"),
+        (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xa1\x00\x0d", "invalid CRC"),
+        (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xa1\x18\x0d\x00", "oversized frame"),
+        (b"\x7e\x00\x01\x03\x00\x8c\x00\x01\x00\xa1\x0d", "undersized frame"),
+        (b"\x7e\x00\x01\x03\x01\x8c\x00\x01\x00\x61\x25\x0d", "error response"),
     ],
     ids=lambda param: param[1],
 )
-def response(request):
+def fix_response(request):
     """Return faulty response frame."""
     return request.param[0]
 
 
-async def test_invalid_response(monkeypatch, wrong_response) -> None:
+async def test_invalid_response(monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response) -> None:
     """Test data up date with BMS returning invalid data."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.tdt_bms.BMS.BAT_TIMEOUT",
-        0.1,
-    )
+    patch_bms_timeout("tdt_bms")
 
     monkeypatch.setattr(
-        "tests.test_tdt_bms.MockTDTBleakClient._response",
-        lambda _s, _c_, d: wrong_response,
+        MockTDTBleakClient, "_response", lambda _s, _c, _d: wrong_response
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockTDTBleakClient,
-    )
+    patch_bleak_client(MockTDTBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
@@ -279,7 +263,7 @@ async def test_invalid_response(monkeypatch, wrong_response) -> None:
     await bms.disconnect()
 
 
-async def test_init_fail(monkeypatch, bool_fixture) -> None:
+async def test_init_fail(monkeypatch, patch_bleak_client, bool_fixture) -> None:
     """Test that failing to initialize simply continues and tries to read data."""
 
     throw_exception: bool = bool_fixture
@@ -291,14 +275,12 @@ async def test_init_fail(monkeypatch, bool_fixture) -> None:
         raise BleakDeviceNotFoundError("MockTDTBleakClient")
 
     monkeypatch.setattr(
-        "tests.test_tdt_bms.MockTDTBleakClient.read_gatt_char",
+        MockTDTBleakClient,
+        "read_gatt_char",
         throw_response if throw_exception else error_repsonse,
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockTDTBleakClient,
-    )
+    patch_bleak_client(MockTDTBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
@@ -307,5 +289,98 @@ async def test_init_fail(monkeypatch, bool_fixture) -> None:
             assert not await bms.async_update()
     else:
         assert await bms.async_update() == ref_value()["16S6T"]
+
+    await bms.disconnect()
+
+
+@pytest.fixture(
+    name="problem_response",
+    params=[
+        (
+            {
+                0x8C: bytearray(  # 4 cell message
+                    b"\x7e\x00\x01\x03\x00\x8c\x00\x20\x04\x0c\xe1\x0c\xdf\x0c\xe1\x0c"
+                    b"\xdc\x04\x0b\x93\x0b\x9b\x0b\x8d\x0b\x8c\x40\x00\x05\x26\x02\x3f"
+                    b"\x04\x1c\x00\x08\x03\xe8\x00\x37\x91\x91\x0d"
+                ),
+                0x8D: bytearray(
+                    b"\x7e\x00\x41\x03\x00\x8d\x00\x18\x04\x00\x00\x00\x00\x04\x00\x00"
+                    b"\x00\x00\x00\x00\x00\x00\x00\x01\x06\x09\x00\x00\x18\x00\x00\x00"
+                    b"\x4f\x65\x0d"  #          ^^  ^^ problem bits
+                ),
+            },
+            "first_bit_4cell",
+        ),
+        (
+            {
+                0x8C: bytearray(  # 4 cell message
+                    b"\x7e\x00\x01\x03\x00\x8c\x00\x20\x04\x0c\xe1\x0c\xdf\x0c\xe1\x0c"
+                    b"\xdc\x04\x0b\x93\x0b\x9b\x0b\x8d\x0b\x8c\x40\x00\x05\x26\x02\x3f"
+                    b"\x04\x1c\x00\x08\x03\xe8\x00\x37\x91\x91\x0d"
+                ),
+                0x8D: bytearray(
+                    b"\x7e\x00\x41\x03\x00\x8d\x00\x18\x04\x00\x00\x00\x00\x04\x00\x00"
+                    b"\x00\x00\x00\x00\x00\x00\x80\x00\x06\x09\x00\x00\x18\x00\x00\x00"
+                    b"\x37\x6f\x0d"  #          ^^  ^^ problem bits
+                ),
+            },
+            "last_bit_4cell",
+        ),
+        (
+            {
+                0x8C: bytearray(  # 16 celll message
+                    b"\x7e\x00\x01\x03\x00\x8c\x00\x3c\x10\x0c\xe3\x0c\xe6\x0c\xde\x0c\xde\x0c\xdd"
+                    b"\x0c\xde\x0c\xdd\x0c\xdc\x0c\xdc\x0c\xda\x0c\xde\x0c\xde\x0c\xde\x0c\xdd\x0c"
+                    b"\xdf\x0c\xde\x06\x0b\x5e\x0b\x6f\x0b\x5e\x0b\x5e\x0b\x5e\x0b\x66\xc0\x39\x14"
+                    b"\x96\x03\xdf\x04\x3b\x00\x08\x03\xe8\x00\x5b\x2b\x9c\x0d"
+                ),
+                0x8D: bytearray(
+                    b"\x7e\x00\x01\x03\x00\x8d\x00\x27\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                    b"\x00\x00\x00\x00\x00\x00\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x01"
+                    b"\x0e\x01\x00\x00\x18\x00\x00\x00\x00\xce\x2a\x0d"  #     problem bits ^^  ^^
+                ),
+            },
+            "first_bit_16cell",
+        ),
+        (
+            {
+                0x8C: bytearray(  # 16 celll message
+                    b"\x7e\x00\x01\x03\x00\x8c\x00\x3c\x10\x0c\xe3\x0c\xe6\x0c\xde\x0c\xde\x0c\xdd"
+                    b"\x0c\xde\x0c\xdd\x0c\xdc\x0c\xdc\x0c\xda\x0c\xde\x0c\xde\x0c\xde\x0c\xdd\x0c"
+                    b"\xdf\x0c\xde\x06\x0b\x5e\x0b\x6f\x0b\x5e\x0b\x5e\x0b\x5e\x0b\x66\xc0\x39\x14"
+                    b"\x96\x03\xdf\x04\x3b\x00\x08\x03\xe8\x00\x5b\x2b\x9c\x0d"
+                ),
+                0x8D: bytearray(
+                    b"\x7e\x00\x01\x03\x00\x8d\x00\x27\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                    b"\x00\x00\x00\x00\x00\x00\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x80\x00"
+                    b"\x0e\x01\x00\x00\x18\x00\x00\x00\x00\xc9\xd2\x0d"  #     problem bits ^^  ^^
+                ),
+            },
+            "last_bit_16cell",
+        ),
+    ],
+    ids=lambda param: param[1],
+)
+def prb_response(request) -> list[tuple[dict[int, bytearray], str]]:
+    """Return faulty response frame."""
+    return request.param
+
+
+async def test_problem_response(monkeypatch, patch_bleak_client, problem_response) -> None:
+    """Test data update with BMS returning error flags."""
+
+    monkeypatch.setattr(MockTDTBleakClient, "RESP", problem_response[0])
+
+    patch_bleak_client(MockTDTBleakClient)
+
+    bms = BMS(
+        generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73), False
+    )
+
+    result: BMSsample = await bms.async_update()
+    assert result.get("problem", False)  # we expect a problem
+    assert result.get("problem_code", 0) == (
+        0x1 if problem_response[1].startswith("first_bit") else 0x8000
+    )
 
     await bms.disconnect()

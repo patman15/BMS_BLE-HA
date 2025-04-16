@@ -23,77 +23,123 @@ BT_FRAME_SIZE = 29
 _PROTO_DEFS: Final[dict[str, dict[str, bytearray]]] = {
     "JK02_24S": {
         "dev": bytearray(  # JK02_24S (SW: 10.08)
-            b"\x55\xaa\xeb\x90\x03\x79\x4a\x4b\x2d\x42\x32\x41\x32\x30\x53\x32\x30\x50\x00\x00\x00\x00"
-            b"\x31\x30\x2e\x58\x47\x00\x00\x00\x31\x30\x2e\x30\x38\x00\x00\x00\xe4\xe7\x6c\x03\x11\x00"
-            b"\x00\x00\x4a\x4b\x2d\x42\x4d\x53\x2d\x41\x00\x00\x00\x00\x00\x00\x00\x00\x31\x32\x33\x34"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x32\x32\x30\x37\x30\x31\x00\x00\x32\x30"
-            b"\x33\x32\x38\x31\x36\x30\x31\x32\x00\x30\x30\x30\x30\x00\x4d\x61\x72\x69\x6f\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x61\x00\x00\x31\x32\x33\x34\x35\x36\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x93"
+            b"\x55\xaa\xeb\x90\x03\x79\x4a\x4b\x2d\x42\x32\x41\x32\x30\x53\x32\x30\x50\x00\x00\x00"
+            b"\x00\x31\x30\x2e\x58\x47\x00\x00\x00\x31\x30\x2e\x30\x38\x00\x00\x00\xe4\xe7\x6c\x03"
+            b"\x11\x00\x00\x00\x4a\x4b\x2d\x42\x4d\x53\x2d\x41\x00\x00\x00\x00\x00\x00\x00\x00\x31"
+            b"\x32\x33\x34\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x32\x32\x30\x37\x30\x31"
+            b"\x00\x00\x32\x30\x33\x32\x38\x31\x36\x30\x31\x32\x00\x30\x30\x30\x30\x00\x4d\x61\x72"
+            b"\x69\x6f\x00\x00\x00\x00\x00\x00\x00\x00\x61\x00\x00\x31\x32\x33\x34\x35\x36\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x93"
         ),
         "ack": bytearray(
-            b"\xaa\x55\x90\xeb\xc8\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x44\x41\x54\x0d\x0a"
+            b"\xaa\x55\x90\xeb\xc8\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x44\x41"
+            b"\x54\x0d\x0a"
         ),  # ACKnowledge message with attached AT\r\n message (needs to be filtered)
         "cell": bytearray(  # JK02_24S (SW: 10.08)
-            b"\x55\xaa\xeb\x90\x02\xc8\xee\x0c\xf2\x0c\xf1\x0c\xf0\x0c\xf0\x0c\xec\x0c\xf0\x0c\xed\x0c"
-            b"\xed\x0c\xed\x0c\xed\x0c\xf0\x0c\xf1\x0c\xed\x0c\xee\x0c\xed\x0c\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\x00\xef\x0c\x05\x00\x01\x09\x36\x00"
-            b"\x37\x00\x39\x00\x38\x00\x37\x00\x37\x00\x35\x00\x41\x00\x42\x00\x36\x00\x37\x00\x3a\x00"
-            b"\x38\x00\x34\x00\x36\x00\x37\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\xeb\xce\x00\x00\xc7\x0d\x02\x00\x19\x09\x00\x00\xb5\x00"
-            b"\xba\x00\xe4\x00\x00\x00\x02\x00\x00\x38\x5d\xba\x01\x00\x10\x15\x03\x00\x3c\x00\x00\x00"
-            b"\xa4\x65\xb9\x00\x64\x00\xd9\x02\x8b\xe8\x6c\x03\x01\x01\xb3\x06\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x07\x00\x01\x00\x00\x00\x23\x04\x0b\x00\x00\x00\x9f\x19\x40\x40"
-            b"\x00\x00\x00\x00\xe2\x04\x00\x00\x00\x00\x00\x01\x00\x03\x00\x00\x83\xd5\x37\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xbd"
+            b"\x55\xaa\xeb\x90\x02\xc8\xee\x0c\xf2\x0c\xf1\x0c\xf0\x0c\xf0\x0c\xec\x0c\xf0\x0c\xed"
+            b"\x0c\xed\x0c\xed\x0c\xed\x0c\xf0\x0c\xf1\x0c\xed\x0c\xee\x0c\xed\x0c\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\x00\xef\x0c\x05\x00\x01"
+            b"\x09\x36\x00\x37\x00\x39\x00\x38\x00\x37\x00\x37\x00\x35\x00\x41\x00\x42\x00\x36\x00"
+            b"\x37\x00\x3a\x00\x38\x00\x34\x00\x36\x00\x37\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xeb\xce\x00\x00\xc7\x0d\x02\x00"
+            b"\x19\x09\x00\x00\xb5\x00\xba\x00\xe4\x00\x00\x00\x02\x00\x00\x38\x5d\xba\x01\x00\x10"
+            b"\x15\x03\x00\x3c\x00\x00\x00\xa4\x65\xb9\x00\x64\x00\xd9\x02\x8b\xe8\x6c\x03\x01\x01"
+            b"\xb3\x06\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x07\x00\x01\x00\x00\x00\x23"
+            b"\x04\x0b\x00\x00\x00\x9f\x19\x40\x40\x00\x00\x00\x00\xe2\x04\x00\x00\x00\x00\x00\x01"
+            b"\x00\x03\x00\x00\x83\xd5\x37\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\xbd"
         ),
     },
     "JK02_32S": {  # JK02_32 (SW: V11.48)
         "dev": bytearray(
-            b"\x55\xaa\xeb\x90\x03\xa3\x4a\x4b\x5f\x42\x32\x41\x38\x53\x32\x30\x50\x00\x00\x00\x00\x00"
-            b"\x31\x31\x2e\x58\x41\x00\x00\x00\x31\x31\x2e\x34\x38\x00\x00\x00\xe4\xa7\x46\x00\x07\x00"
-            b"\x00\x00\x31\x32\x76\x34\x32\x30\x61\x00\x00\x00\x00\x00\x00\x00\x00\x00\x31\x32\x33\x34"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x32\x34\x30\x37\x30\x34\x00\x00\x34\x30"
-            b"\x34\x30\x39\x32\x43\x32\x32\x36\x32\x00\x30\x30\x30\x00\x49\x6e\x70\x75\x74\x20\x55\x73"
-            b"\x65\x72\x64\x61\x74\x61\x00\x00\x31\x34\x30\x37\x30\x33\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xfe\xf9\xff\xff"
-            b"\x1f\x2d\x00\x02\x00\x00\x00\x00\x90\x1f\x00\x00\x00\x00\xc0\xd8\xe7\x32\x00\x00\x00\x01"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x07\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x41\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x09\x00\x00\x00\x64\x00\x00\x00"
-            b"\x5f\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\xfe\xbf\x21\x06\x00\x00\x00\x00\x00\x00\x00\x00\xd8"
+            b"\x55\xaa\xeb\x90\x03\xa3\x4a\x4b\x5f\x42\x32\x41\x38\x53\x32\x30\x50\x00\x00\x00\x00"
+            b"\x00\x31\x31\x2e\x58\x41\x00\x00\x00\x31\x31\x2e\x34\x38\x00\x00\x00\xe4\xa7\x46\x00"
+            b"\x07\x00\x00\x00\x31\x32\x76\x34\x32\x30\x61\x00\x00\x00\x00\x00\x00\x00\x00\x00\x31"
+            b"\x32\x33\x34\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x32\x34\x30\x37\x30\x34"
+            b"\x00\x00\x34\x30\x34\x30\x39\x32\x43\x32\x32\x36\x32\x00\x30\x30\x30\x00\x49\x6e\x70"
+            b"\x75\x74\x20\x55\x73\x65\x72\x64\x61\x74\x61\x00\x00\x31\x34\x30\x37\x30\x33\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\xfe\xf9\xff\xff\x1f\x2d\x00\x02\x00\x00\x00\x00\x90\x1f\x00\x00\x00\x00"
+            b"\xc0\xd8\xe7\x32\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x07\x04\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x41\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x09\x00\x00\x00\x64\x00\x00\x00\x5f\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xfe\xbf\x21\x06\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\xd8"
         ),  # Vendor_ID: JK_B2A8S20P, SN: 404092C2262, HW: V11.XA, SW: V11.48, power-on: 7, Version: 4.28.0
         "ack": bytearray(
-            b"\xaa\x55\x90\xeb\xc8\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x44\x41\x54\x0d\x0a"
+            b"\xaa\x55\x90\xeb\xc8\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x44\x41"
+            b"\x54\x0d\x0a"
         ),  # ACKnowledge message with attached AT\r\n message (needs to be filtered)
         "cell": bytearray(
-            b"\x55\xaa\xeb\x90\x02\xc6\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c"
-            b"\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\xc1\x0c\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\xff\xff\x00\x00\xc1\x0c\x02\x00\x00\x07\x3a\x00\x3c\x00\x46\x00\x48\x00"
-            b"\x54\x00\x5c\x00\x69\x00\x76\x00\x7d\x00\x76\x00\x6c\x00\x69\x00\x61\x00\x4b\x00\x47\x00"
-            b"\x3c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xb8\x00\x00\x00\x00\x00\x0a\xcc\x00\x00"
-            b"\xcd\x71\x08\x00\x9d\xd6\xff\xff\xb5\x00\xb6\x00\x00\x00\x00\x00\x01\x00\x00\x2a\x47\xcb"
-            b"\x01\x00\xc0\x45\x04\x00\x02\x00\x00\x00\x15\xb7\x08\x00\x64\x00\x00\x00\x6b\xc7\x06\x00"
-            b"\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\x00\x01\x00\x00\x00"
-            b"\xb2\x03\x00\x00\x1c\x00\x54\x29\x40\x40\x00\x00\x00\x00\x67\x14\x00\x00\x00\x01\x01\x01"
-            b"\x00\x06\x00\x00\xf3\x48\x2e\x00\x00\x00\x00\x00\xb8\x00\xb4\x00\xb7\x00\xb2\x03\xde\xe4"
-            b"\x5b\x08\x2c\x00\x00\x00\x80\x51\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\xfe\xff\x7f\xdc\x2f\x01\x01\xb0\x07\x00\x00\x00\xd1"
-        ),  # {"temperature": 18.4, "voltage": 52.234, "current": -10.595, "balance_current": 0.001, "battery_level": 42, "cycle_charge": 117.575, "cycles": 2}
+            b"\x55\xaa\xeb\x90\x02\xad\xf3\x0c\xf3\x0c\xf3\x0c\xf0\x0c\xf1\x0c\xf0\x0c\xf1\x0c\xf1"
+            b"\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\xff\x00\x00\x00\xf2\x0c\x03\x00\x00\x07\x38\x00\x37\x00"
+            b"\x36\x00\x37\x00\x36\x00\x37\x00\x36\x00\x37\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x36\x01\x00"
+            b"\x00\x00\x00\x8d\x67\x00\x00\x60\xdb\x02\x00\x69\xe4\xff\xff\x1c\x01\x24\x01\x00\x00"
+            b"\x00\x00\x00\x00\x00\x44\x80\x2c\x02\x00\x50\x34\x03\x00\x15\x00\x00\x00\xbc\x62\x44"
+            b"\x00\x64\x00\x00\x00\x1e\xf3\x68\x00\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\xff\x00\x01\x00\x00\x00\xf1\x03\x00\x00\x23\x00\x29\xb4\x3f\x40\x00"
+            b"\x00\x00\x00\x5a\x0a\x00\x00\x00\x01\x00\x01\x00\x06\x00\x00\xef\x3d\x08\x04\x00\x00"
+            b"\x00\x00\x36\x01\x00\x00\x00\x00\xf1\x03\x64\x39\x67\x00\x1a\x00\x00\x00\x80\x51\x01"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\xfe\xff\x7f\xdc\x0f\x01\x00"
+            b"\x80\x03\x00\x00\x00\xb4"
+        ),
+    },
+    "JK02_32S_v15": {  # JK02_32 (SW: V15.38)
+        "dev": bytearray(
+            b"\x55\xaa\xeb\x90\x03\x21\x4a\x4b\x5f\x50\x42\x32\x41\x31\x36\x53\x32\x30\x50\x00\x00"
+            b"\x00\x31\x35\x41\x00\x00\x00\x00\x00\x31\x35\x2e\x33\x38\x00\x00\x00\x20\x48\x01\x00"
+            b"\x05\x00\x00\x00\x34\x31\x30\x31\x38\x34\x39\x32\x35\x35\x35\x00\x50\x00\x00\x00\x31"
+            b"\x32\x33\x34\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x32\x35\x30\x32\x31\x30"
+            b"\x00\x00\x34\x31\x30\x31\x38\x34\x39\x32\x35\x35\x35\x00\x30\x30\x30\x00\x4a\x4b\x2d"
+            b"\x42\x4d\x53\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x37\x31\x32\x30\x33\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x4a\x4b\x2d\x42\x4d\x53\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\xfe\xff\xff\xff\x8f\xe9\x1d\x02\x00\x00\x00\x00\x90\x1f\x00\x00\x00\x00"
+            b"\xc0\xd8\xe7\xfe\x3f\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\xff\x67\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\x0f\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x01\xff\x67\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x09\x08\x00\x01\x64\x00\x00\x00\x5f\x00\x00\x00\x3c\x00\x00\x00\x32\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x10\x0e\x00\x00\x0a\x50\x01\x1e\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xfe\x9f\xe9\xff\x0f\x00\x00"
+            b"\x00\x00\x00\x00\x00\xf1"
+        ),  # TODO: values
+        "ack": bytearray(
+            b"\xaa\x55\x90\xeb\xc8\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x44\x41"
+            b"\x54\x0d\x0a"
+        ),  # ACKnowledge message with attached AT\r\n message (needs to be filtered)
+        "cell": bytearray(
+            b"\x55\xaa\xeb\x90\x02\xf7\x51\x0d\x50\x0d\x52\x0d\x52\x0d\x53\x0d\x51\x0d\x53\x0d\x57"
+            b"\x0d\x58\x0d\x52\x0d\x54\x0d\x54\x0d\x53\x0d\x52\x0d\x53\x0d\x53\x0d\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\x00\x53\x0d\x08\x00\x08\x01\x3b\x00\x3c\x00"
+            b"\x47\x00\x49\x00\x55\x00\x5d\x00\x6a\x00\x77\x00\x7e\x00\x76\x00\x6d\x00\x6a\x00\x62"
+            b"\x00\x4b\x00\x48\x00\x3d\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xba\x00\x00"
+            b"\x00\x00\x00\x2f\xd5\x00\x00\x0a\xbe\x15\x00\xfd\x65\x00\x00\xbf\x00\xbf\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x62\xf3\x2f\x04\x00\xc0\x45\x04\x00\x40\x00\x00\x00\xfe\x90\x11"
+            b"\x01\x64\x00\x00\x00\x62\xe4\x4a\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\xff\x00\x01\x00\x00\x00\xb2\x03\x45\x00\x00\x00\x54\x29\x40\x40\x00"
+            b"\x00\x00\x00\x51\x15\x00\x00\x00\x01\x01\x01\x00\x06\x00\x00\xa2\x81\x00\x00\x00\x00"
+            b"\x00\x00\xba\x00\xba\x00\xc3\x00\xb2\x03\x83\xa6\x9f\x09\x0b\x00\x00\x00\x80\x51\x01"
+            b"\x00\x00\x00\x03\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\xfe\xff\x7f\xdc\x2f\x01\x01"
+            b"\xb0\xcf\x07\x00\x00\x93"
+        ),  # TODO: values
     },
 }
 
@@ -130,51 +176,87 @@ _RESULT_DEFS: Final[dict[str, BMSsample]] = {
         "temp#0": 18.1,
         "temp#1": 18.6,
         "temp#2": 22.8,
+        "temp_sensors": 7,
+        "problem": False,
+        "problem_code": 0,
     },
     "JK02_32S": {
-        "cell_count": 16,
-        "delta_voltage": 0.002,
-        "temperature": 18.2,
-        "voltage": 52.234,
-        "current": -10.595,
-        "balance_current": 0.001,
-        "battery_level": 42,
-        "cycle_charge": 117.575,
-        "cycles": 2,
-        "cell#0": 3.265,
-        "cell#1": 3.265,
-        "cell#2": 3.265,
-        "cell#3": 3.265,
-        "cell#4": 3.265,
-        "cell#5": 3.265,
-        "cell#6": 3.265,
-        "cell#7": 3.265,
-        "cell#8": 3.265,
-        "cell#9": 3.265,
-        "cell#10": 3.265,
-        "cell#11": 3.265,
-        "cell#12": 3.265,
-        "cell#13": 3.265,
-        "cell#14": 3.265,
-        "cell#15": 3.265,
-        "cycle_capacity": 6141.413,
-        "power": -553.419,
+        "cell_count": 8,
+        "delta_voltage": 0.003,
+        "voltage": 26.509,
+        "current": -7.063,
+        "battery_level": 68,
+        "cycle_charge": 142.464,
+        "cycles": 21,
+        "balance_current": 0.0,
+        "temp_sensors": 255,
+        "problem_code": 0,
+        "temp#0": 31.0,
+        "temp#1": 28.4,
+        "temp#2": 29.2,
+        "temp#3": 31.0,
+        "cell#0": 3.315,
+        "cell#1": 3.315,
+        "cell#2": 3.315,
+        "cell#3": 3.312,
+        "cell#4": 3.313,
+        "cell#5": 3.312,
+        "cell#6": 3.313,
+        "cell#7": 3.313,
+        "cycle_capacity": 3776.578,
+        "power": -187.233,
         "battery_charging": False,
-        "runtime": 39949,
-        "temp#0": 18.4,
-        "temp#1": 18.1,
-        "temp#2": 18.2,
-        "temp#3": 18.0,
-        "temp#4": 18.3,
+        "runtime": 72613,
+        "temperature": 29.9,
+        "problem": False,
+    },
+    "JK02_32S_v15": {
+        "cell_count": 16,
+        "delta_voltage": 0.008,
+        "voltage": 54.575,
+        "current": 26.109,
+        "battery_level": 98,
+        "cycle_charge": 274.419,
+        "cycles": 64,
+        "balance_current": 0.0,
+        "temp_sensors": 255,
+        "problem_code": 0,
+        "temp#0": 18.6,
+        "temp#1": 19.1,
+        "temp#2": 19.1,
+        "temp#3": 18.6,
+        "temp#4": 18.6,
+        "temp#5": 19.5,
+        "cell#0": 3.409,
+        "cell#1": 3.408,
+        "cell#2": 3.41,
+        "cell#3": 3.41,
+        "cell#4": 3.411,
+        "cell#5": 3.409,
+        "cell#6": 3.411,
+        "cell#7": 3.415,
+        "cell#8": 3.416,
+        "cell#9": 3.41,
+        "cell#10": 3.412,
+        "cell#11": 3.412,
+        "cell#12": 3.411,
+        "cell#13": 3.41,
+        "cell#14": 3.411,
+        "cell#15": 3.411,
+        "cycle_capacity": 14976.417,
+        "power": 1424.899,
+        "battery_charging": True,
+        "temperature": 18.917,
+        "problem": False,
     },
 }
 
 
 @pytest.fixture(
     name="protocol_type",
-    params=["JK02_24S", "JK02_32S"],
+    params=["JK02_24S", "JK02_32S", "JK02_32S_v15"],
 )
-def proto(request: pytest.FixtureRequest) -> dict[str, bytearray]:
+def proto(request: pytest.FixtureRequest) -> str:
     """Protocol fixture."""
     return request.param
 
@@ -182,7 +264,7 @@ def proto(request: pytest.FixtureRequest) -> dict[str, bytearray]:
 class MockJikongBleakClient(MockBleakClient):
     """Emulate a Jikong BMS BleakClient."""
 
-    HEAD_CMD: Final = bytearray(b"\xAA\x55\x90\xEB")
+    HEAD_CMD: Final = bytearray(b"\xaa\x55\x90\xeb")
     CMD_INFO: Final = bytearray(b"\x96")
     DEV_INFO: Final = bytearray(b"\x97")
     _FRAME: dict[str, bytearray] = {}
@@ -203,7 +285,7 @@ class MockJikongBleakClient(MockBleakClient):
 
         return bytearray()
 
-    async def _send_confirm(self):
+    async def _send_confirm(self) -> None:
         assert self._notify_callback, "send confirm called but notification not enabled"
         await asyncio.sleep(0.01)
         self._notify_callback(
@@ -215,7 +297,7 @@ class MockJikongBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # type: ignore[implicit-optional] # noqa: RUF013 # same as upstream
+        response: bool = None,  # noqa: RUF013 # same as upstream
     ) -> None:
         """Issue write command to GATT."""
 
@@ -238,7 +320,7 @@ class MockJikongBleakClient(MockBleakClient):
     async def disconnect(self) -> bool:
         """Mock disconnect and wait for send task."""
         await asyncio.wait_for(self._task, 0.1)
-        assert self._task.result, "send task still running!"
+        assert self._task.done(), "send task still running!"
         return await super().disconnect()
 
     class JKservice(BleakGATTService):
@@ -377,7 +459,7 @@ class MockStreamBleakClient(MockJikongBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # type: ignore[implicit-optional] # noqa: RUF013 # same as upstream
+        response: bool = None,  # noqa: RUF013 # same as upstream
     ) -> None:
         """Issue write command to GATT."""
 
@@ -430,16 +512,12 @@ class MockOversizedBleakClient(MockJikongBleakClient):
 
 
 @pytest.mark.asyncio
-async def test_update(monkeypatch, protocol_type, reconnect_fixture) -> None:
+async def test_update(monkeypatch, patch_bleak_client, protocol_type, reconnect_fixture) -> None:
     """Test Jikong BMS data update."""
 
-    monkeypatch.setattr(
-        "tests.test_jikong_bms.MockJikongBleakClient._FRAME", _PROTO_DEFS[protocol_type]
-    )
+    monkeypatch.setattr(MockJikongBleakClient, "_FRAME", _PROTO_DEFS[protocol_type])
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockJikongBleakClient
-    )
+    patch_bleak_client(MockJikongBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
@@ -450,40 +528,41 @@ async def test_update(monkeypatch, protocol_type, reconnect_fixture) -> None:
 
     # query again to check already connected state
     assert await bms.async_update() == _RESULT_DEFS[protocol_type]
-    assert (
-        bms._client and bms._client.is_connected is not reconnect_fixture
-    )  # noqa: SLF001
+    assert bms._client and bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
 
 
-async def test_hide_temp_sensors(monkeypatch, protocol_type) -> None:
+async def test_hide_temp_sensors(monkeypatch, patch_bleak_client, protocol_type) -> None:
     """Test Jikong BMS data update with not connected temperature sensors."""
 
-    temp2_zero: dict[str, bytearray] = deepcopy(_PROTO_DEFS[protocol_type])
+    temp12_hide: dict[str, bytearray] = deepcopy(_PROTO_DEFS[protocol_type])
 
     # clear temp sensor #2
     if protocol_type == "JK02_24S":
-        temp2_zero["cell"][134:136] = bytearray(2)
+        temp12_hide["cell"][182:184] = bytearray(b"\x03\x00")
+        temp12_hide["cell"][132:134] = bytearray(b"\x30\xf8")  # -200.0
     else:
-        temp2_zero["cell"][164:166] = bytearray(2)
+        temp12_hide["cell"][214:216] = bytearray(b"\xfb\x00")
+        temp12_hide["cell"][162:164] = bytearray(b"\x30\xf8")  # -200.0
     # recalculate CRC
-    temp2_zero["cell"][-1] = crc_sum(temp2_zero["cell"][:-1])
+    temp12_hide["cell"][-1] = crc_sum(temp12_hide["cell"][:-1])
 
-    monkeypatch.setattr(
-        "tests.test_jikong_bms.MockJikongBleakClient._FRAME", temp2_zero
-    )
+    monkeypatch.setattr(MockJikongBleakClient, "_FRAME", temp12_hide)
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockJikongBleakClient
-    )
+    patch_bleak_client(MockJikongBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
     # modify result dict to match removed temp#2
     ref_result = deepcopy(_RESULT_DEFS[protocol_type])
     if protocol_type == "JK02_24S":
-        ref_result["temperature"] = 18.35
+        ref_result |= {"temp_sensors": 3, "temperature": 18.1}
+    elif protocol_type == "JK02_32S":
+        ref_result |= {"temp_sensors": 251, "temperature": 31.0}
+    elif protocol_type == "JK02_32S_v15":
+        ref_result |= {"temp_sensors": 251, "temperature": 18.825}
+    del ref_result["temp#1"]
     del ref_result["temp#2"]
 
     assert await bms.async_update() == ref_result
@@ -491,17 +570,11 @@ async def test_hide_temp_sensors(monkeypatch, protocol_type) -> None:
     await bms.disconnect()
 
 
-async def test_stream_update(monkeypatch, protocol_type, reconnect_fixture) -> None:
+async def test_stream_update(monkeypatch, patch_bleak_client, protocol_type, reconnect_fixture) -> None:
     """Test Jikong BMS data update."""
 
-    monkeypatch.setattr(
-        "tests.test_jikong_bms.MockStreamBleakClient._FRAME", _PROTO_DEFS[protocol_type]
-    )
-
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockStreamBleakClient
-    )
-
+    monkeypatch.setattr(MockStreamBleakClient, "_FRAME", _PROTO_DEFS[protocol_type])
+    patch_bleak_client(MockStreamBleakClient)
     monkeypatch.setattr(  # mock that response has already been received
         "custom_components.bms_ble.plugins.basebms.asyncio.Event.is_set", lambda _: True
     )
@@ -515,80 +588,65 @@ async def test_stream_update(monkeypatch, protocol_type, reconnect_fixture) -> N
 
     # query again to check already connected state
     assert await bms.async_update() == _RESULT_DEFS[protocol_type]
-    assert (
-        bms._client and bms._client.is_connected is not reconnect_fixture
-    )  # noqa: SLF001
+    assert bms._client and bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
 
 
-async def test_invalid_response(monkeypatch) -> None:
+async def test_invalid_response(monkeypatch, patch_bleak_client, patch_bms_timeout) -> None:
     """Test data update with BMS returning invalid data."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.jikong_bms.BMS.BAT_TIMEOUT", 0.1
-    )
+    patch_bms_timeout("jikong_bms")
 
     # return type 0x03 (first requested message) with incorrect CRC
     monkeypatch.setattr(
-        "tests.test_jikong_bms.MockInvalidBleakClient._response",
-        lambda _s, _c_, d: bytearray(b"\x55\xaa\xeb\x90\x03") + bytearray(295),
+        MockInvalidBleakClient,
+        "_response",
+        lambda _s, _c, _d: bytearray(b"\x55\xaa\xeb\x90\x03") + bytearray(295),
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockInvalidBleakClient
-    )
+    patch_bleak_client(MockInvalidBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
     result: BMSsample = {}
     with pytest.raises(TimeoutError):
         result = await bms.async_update()
-    assert result == {}
+    assert not result
 
     await bms.disconnect()
 
 
-async def test_invalid_frame_type(monkeypatch) -> None:
+async def test_invalid_frame_type(monkeypatch, patch_bleak_client, patch_bms_timeout) -> None:
     """Test data update with BMS returning invalid data."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.jikong_bms.BMS.BAT_TIMEOUT",
-        0.1,
-    )
+    patch_bms_timeout("jikong_bms")
 
     monkeypatch.setattr(
-        "tests.test_jikong_bms.MockInvalidBleakClient._response",
-        lambda _s, _c_, d: bytearray(b"\x55\xaa\xeb\x90\x05")
+        MockInvalidBleakClient,
+        "_response",
+        lambda _s, _c, _d: bytearray(b"\x55\xaa\xeb\x90\x05")
         + bytearray(295),  # invalid frame type (0x5)
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockInvalidBleakClient
-    )
+    patch_bleak_client(MockInvalidBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
     result: BMSsample = {}
     with pytest.raises(TimeoutError):
         result = await bms.async_update()
-    assert result == {}
+    assert not result
 
     await bms.disconnect()
 
 
-async def test_oversized_response(monkeypatch, protocol_type) -> None:
+async def test_oversized_response(monkeypatch, patch_bleak_client, protocol_type) -> None:
     """Test data update with BMS returning oversized data, result shall still be ok."""
 
-    monkeypatch.setattr(
-        "tests.test_jikong_bms.MockOversizedBleakClient._FRAME",
-        _PROTO_DEFS[protocol_type],
-    )
+    monkeypatch.setattr(MockOversizedBleakClient, "_FRAME", _PROTO_DEFS[protocol_type])
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient",
-        MockOversizedBleakClient,
-    )
+    patch_bleak_client(MockOversizedBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
@@ -597,12 +655,10 @@ async def test_oversized_response(monkeypatch, protocol_type) -> None:
     await bms.disconnect()
 
 
-async def test_invalid_device(monkeypatch) -> None:
+async def test_invalid_device(patch_bleak_client) -> None:
     """Test data update with BMS returning invalid data."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockWrongBleakClient
-    )
+    patch_bleak_client(MockWrongBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
@@ -613,33 +669,27 @@ async def test_invalid_device(monkeypatch) -> None:
     ):
         result = await bms.async_update()
 
-    assert result == {}
+    assert not result
 
     await bms.disconnect()
 
 
-async def test_non_stale_data(monkeypatch) -> None:
+async def test_non_stale_data(monkeypatch, patch_bleak_client, patch_bms_timeout) -> None:
     """Test if BMS class is reset if connection is reset."""
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.jikong_bms.BMS.BAT_TIMEOUT",
-        0.1,
-    )
+    patch_bms_timeout("jikong_bms")
 
-    monkeypatch.setattr(
-        "tests.test_jikong_bms.MockJikongBleakClient._FRAME", _PROTO_DEFS["JK02_32S"]
-    )
+    monkeypatch.setattr(MockJikongBleakClient, "_FRAME", _PROTO_DEFS["JK02_32S"])
 
     orig_response = MockJikongBleakClient._response
     monkeypatch.setattr(
-        "tests.test_jikong_bms.MockJikongBleakClient._response",
-        lambda _s, _c_, d: bytearray(b"\x55\xaa\xeb\x90\x05")
+        MockJikongBleakClient,
+        "_response",
+        lambda _s, _c, _d: bytearray(b"\x55\xaa\xeb\x90\x05")
         + bytearray(10),  # invalid frame type (0x5)
     )
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockJikongBleakClient
-    )
+    patch_bleak_client(MockJikongBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
@@ -647,12 +697,57 @@ async def test_non_stale_data(monkeypatch) -> None:
     result: BMSsample = {}
     with pytest.raises(TimeoutError):
         result = await bms.async_update()
-    assert result == {}
+    assert not result
     await bms.disconnect()
 
     # restore working BMS responses and run a test again to see if stale data is kept
-    monkeypatch.setattr(
-        "tests.test_jikong_bms.MockJikongBleakClient._response", orig_response
-    )
+    monkeypatch.setattr(MockJikongBleakClient, "_response", orig_response)
 
     assert await bms.async_update() == _RESULT_DEFS["JK02_32S"]
+
+
+@pytest.fixture(
+    name="problem_response",
+    params=[
+        (bytearray(b"\x01\x00"), "first_bit"),
+        (bytearray(b"\x00\x80"), "last_bit"),
+    ],
+    ids=lambda param: param[1],
+)
+def prb_response(request) -> bytearray:
+    """Return faulty response frame."""
+    return request.param
+
+
+async def test_problem_response(
+    monkeypatch, patch_bleak_client, protocol_type: str, problem_response
+) -> None:
+    """Test data update with BMS returning system problem flags."""
+
+    def frame_update(data: bytearray, update: bytearray, pos: int) -> None:
+        data[pos : pos + 2] = update
+        data[-1] = (int(data[-1]) + sum(update)) & 0xFF
+
+    protocol_def: dict[str, dict[str, bytearray]] = deepcopy(_PROTO_DEFS)
+    # set error flags in the copy
+
+    frame_update(
+        protocol_def[protocol_type]["cell"],
+        problem_response[0],
+        136 if protocol_type == "JK02_24S" else 166,
+    )
+
+    monkeypatch.setattr(MockJikongBleakClient, "_FRAME", protocol_def[protocol_type])
+
+    patch_bleak_client(MockJikongBleakClient)
+
+    bms = BMS(
+        generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73), False
+    )
+
+    assert await bms.async_update() == _RESULT_DEFS[protocol_type] | {
+        "problem": True,
+        "problem_code": 1 << (0 if problem_response[1] == "first_bit" else 15),
+    }
+
+    await bms.disconnect()

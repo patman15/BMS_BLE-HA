@@ -1,8 +1,9 @@
 """Module to support TDT BMS."""
 
 from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
@@ -20,6 +21,7 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
+    KEY_PROBLEM,
     KEY_TEMP_SENS,
     KEY_TEMP_VALUE,
 )
@@ -52,17 +54,18 @@ class BMS(BaseBMS):
         (ATTR_CYCLE_CHRG, 0x8C, 4, 2, False, lambda x: float(x / 10)),
         (ATTR_BATTERY_LEVEL, 0x8C, 13, 1, False, lambda x: x),
         (ATTR_CYCLES, 0x8C, 8, 2, False, lambda x: x),
+        (KEY_PROBLEM, 0x8D, 36, 2, False, lambda x: x),
     ]
     _CMDS: Final[list[int]] = [*list({field[1] for field in _FIELDS})]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, ble_device, reconnect)
         self._data_final: dict[int, bytearray] = {}
-        self._exp_len: int = 0
+        self._exp_len: int = BMS._INFO_LEN
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [{"manufacturer_id": 54976, "connectable": True}]
 
@@ -87,15 +90,17 @@ class BMS(BaseBMS):
         return "fff2"
 
     @staticmethod
-    def _calc_values() -> set[str]:
-        return {
-            ATTR_BATTERY_CHARGING,
-            ATTR_CYCLE_CAP,
-            ATTR_DELTA_VOLTAGE,
-            ATTR_POWER,
-            ATTR_RUNTIME,
-            ATTR_TEMPERATURE,
-        }  # calculate further values from BMS provided set ones
+    def _calc_values() -> frozenset[str]:
+        return frozenset(
+            {
+                ATTR_BATTERY_CHARGING,
+                ATTR_CYCLE_CAP,
+                ATTR_DELTA_VOLTAGE,
+                ATTR_POWER,
+                ATTR_RUNTIME,
+                ATTR_TEMPERATURE,
+            }
+        )  # calculate further values from BMS provided set ones
 
     async def _init_connection(self) -> None:
         await self._await_reply(
@@ -107,15 +112,17 @@ class BMS(BaseBMS):
             self._log.debug("error unlocking BMS: %X", ret)
 
         await super()._init_connection()
-        self._exp_len = 0
+        self._exp_len = BMS._INFO_LEN
 
-    def _notification_handler(self, _sender, data: bytearray) -> None:
+    def _notification_handler(
+        self, _sender: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
         self._log.debug("RX BLE data: %s", data)
 
         if (
-            data[0] == BMS._HEAD
-            and len(data) > BMS._INFO_LEN
+            len(data) > BMS._INFO_LEN
+            and data[0] == BMS._HEAD
             and len(self._data) >= self._exp_len
         ):
             self._exp_len = BMS._INFO_LEN + int.from_bytes(data[6:8])
@@ -126,7 +133,7 @@ class BMS(BaseBMS):
             "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
-        # verify that data long enough
+        # verify that data is long enough
         if len(self._data) < self._exp_len:
             return
 
@@ -142,8 +149,9 @@ class BMS(BaseBMS):
             self._log.debug("BMS reported error code: 0x%X", self._data[4])
             return
 
-        crc = crc_modbus(self._data[:-3])
-        if int.from_bytes(self._data[-3:-1], "big") != crc:
+        if (crc := crc_modbus(self._data[:-3])) != int.from_bytes(
+            self._data[-3:-1], "big"
+        ):
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",
                 int.from_bytes(self._data[-3:-1], "big"),
@@ -195,20 +203,14 @@ class BMS(BaseBMS):
     @staticmethod
     def _temp_sensors(data: bytearray, sensors: int, offs: int) -> dict[str, float]:
         return {
-            f"{KEY_TEMP_VALUE}{idx}": (
-                int.from_bytes(
+            f"{KEY_TEMP_VALUE}{idx}": (value - 2731.5) / 10
+            for idx in range(sensors)
+            if (
+                value := int.from_bytes(
                     data[offs + idx * 2 : offs + (idx + 1) * 2],
                     byteorder="big",
                     signed=False,
                 )
-                - 2731.5
-            )
-            / 10
-            for idx in range(sensors)
-            if int.from_bytes(
-                data[offs + idx * 2 : offs + (idx + 1) * 2],
-                byteorder="big",
-                signed=False,
             )
         }
 
@@ -229,9 +231,13 @@ class BMS(BaseBMS):
             int(result[KEY_TEMP_SENS]),
             BMS._CELL_POS + int(result[KEY_CELL_COUNT]) * 2 + 2,
         )
+        idx: Final[int] = int(result[KEY_CELL_COUNT] + result[KEY_TEMP_SENS])
         result |= BMS._decode_data(
             self._data_final,
-            BMS._CELL_POS + int(result[KEY_CELL_COUNT] + result[KEY_TEMP_SENS]) * 2 + 2,
+            BMS._CELL_POS + idx * 2 + 2,
+        )
+        result[KEY_PROBLEM] = int.from_bytes(
+            self._data_final[0x8D][BMS._CELL_POS + idx + 6 : BMS._CELL_POS + idx + 8]
         )
 
         self._data_final.clear()

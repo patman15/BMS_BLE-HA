@@ -16,9 +16,11 @@ body:
         required: true
       - label: I'm not avoiding to fill out the [bug report](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=Bug&projects=&template=bug.yml) form.
         required: true
+        label: I have thought about [providing a debug log](https://www.home-assistant.io/docs/configuration/troubleshooting/#debug-logs-and-diagnostics) and/or [diagnostic data](https://www.home-assistant.io/docs/configuration/troubleshooting/#download-diagnostics).
+        required: true
 - type: textarea
   attributes:
     label: "Describe the issue"
-    description: "Please describe your issue, ask your question and give necessary context (BMS you are using)."
+    description: "Please describe your issue, ask your question and give necessary context ([debug log](https://github.com/patman15/BMS_BLE-HA/blob/main/README.md#troubleshooting), or BMS you are using)."
   validations:
     required: true

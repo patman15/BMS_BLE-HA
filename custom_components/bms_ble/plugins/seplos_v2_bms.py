@@ -1,8 +1,9 @@
 """Module to support Seplos V2 BMS."""
 
 from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
@@ -21,6 +22,7 @@ from custom_components.bms_ble.const import (
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
     KEY_PACK_COUNT,
+    KEY_PROBLEM,
     KEY_TEMP_SENS,
     KEY_TEMP_VALUE,
 )
@@ -38,7 +40,13 @@ class BMS(BaseBMS):
     _MIN_LEN: Final[int] = 10
     _MAX_SUBS: Final[int] = 0xF
     _CELL_POS: Final[int] = 9
-    _FIELDS: Final[
+    _FIELDS: Final[  # Seplos V2: device manufacturer info 0x51, parallel data 0x62
+        list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
+    ] = [
+        (KEY_PACK_COUNT, 0x51, 42, 1, False, lambda x: min(int(x), BMS._MAX_SUBS)),
+        (KEY_PROBLEM, 0x62, 47, 6, False, lambda x: x),
+    ]
+    _PFIELDS: Final[  # Seplos V2: single machine data
         list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
     ] = [
         (ATTR_VOLTAGE, 0x61, 2, 2, False, lambda x: float(x / 100)),
@@ -46,17 +54,17 @@ class BMS(BaseBMS):
         (ATTR_CYCLE_CHRG, 0x61, 4, 2, False, lambda x: float(x / 100)),  # /10 for 0x62
         (ATTR_CYCLES, 0x61, 13, 2, False, lambda x: x),
         (ATTR_BATTERY_LEVEL, 0x61, 9, 2, False, lambda x: float(x / 10)),
-    ]  # Protocol Seplos V2 (parallel data 0x62, device manufacturer info 0x51)
-    _CMDS: Final[list[tuple[int, bytes]]] = [(0x51, b""), (0x61, b"\x00")]
+    ]
+    _CMDS: Final[list[tuple[int, bytes]]] = [(0x51, b""), (0x61, b"\x00"), (0x62, b"")]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, ble_device, reconnect)
         self._data_final: dict[int, bytearray] = {}
-        self._exp_len: int = 0
+        self._exp_len: int = self._MIN_LEN
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [
             {
@@ -87,21 +95,25 @@ class BMS(BaseBMS):
         return "ff02"
 
     @staticmethod
-    def _calc_values() -> set[str]:
-        return {
-            ATTR_BATTERY_CHARGING,
-            ATTR_CYCLE_CAP,
-            ATTR_DELTA_VOLTAGE,
-            ATTR_POWER,
-            ATTR_RUNTIME,
-            ATTR_TEMPERATURE,
-        }  # calculate further values from BMS provided set ones
+    def _calc_values() -> frozenset[str]:
+        return frozenset(
+            {
+                ATTR_BATTERY_CHARGING,
+                ATTR_CYCLE_CAP,
+                ATTR_DELTA_VOLTAGE,
+                ATTR_POWER,
+                ATTR_RUNTIME,
+                ATTR_TEMPERATURE,
+            }
+        )  # calculate further values from BMS provided set ones
 
-    def _notification_handler(self, _sender, data: bytearray) -> None:
+    def _notification_handler(
+        self, _sender: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
         if (
-            data[0] == BMS._HEAD
-            and len(data) > BMS._MIN_LEN
+            len(data) > BMS._MIN_LEN
+            and data[0] == BMS._HEAD
             and len(self._data) >= self._exp_len
         ):
             self._exp_len = BMS._MIN_LEN + int.from_bytes(data[5:7])
@@ -112,7 +124,7 @@ class BMS(BaseBMS):
             "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
-        # verify that data long enough
+        # verify that data is long enough
         if len(self._data) < self._exp_len:
             return
 
@@ -128,8 +140,7 @@ class BMS(BaseBMS):
             self._log.debug("BMS reported error code: 0x%X", self._data[4])
             return
 
-        crc = crc_xmodem(self._data[1:-3])
-        if int.from_bytes(self._data[-3:-1]) != crc:
+        if (crc := crc_xmodem(self._data[1:-3])) != int.from_bytes(self._data[-3:-1]):
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",
                 int.from_bytes(self._data[-3:-1]),
@@ -150,7 +161,7 @@ class BMS(BaseBMS):
     async def _init_connection(self) -> None:
         """Initialize protocol state."""
         await super()._init_connection()
-        self._exp_len = 0
+        self._exp_len = BMS._MIN_LEN
 
     @staticmethod
     def _cmd(cmd: int, address: int = 0, data: bytearray = bytearray()) -> bytearray:
@@ -174,26 +185,20 @@ class BMS(BaseBMS):
                     signed=sign,
                 )
             )
-            for key, cmd, idx, size, sign, func in BMS._FIELDS
+            for key, cmd, idx, size, sign, func in BMS._PFIELDS
         }
 
     @staticmethod
     def _temp_sensors(data: bytearray, sensors: int, offs: int) -> dict[str, float]:
         return {
-            f"{KEY_TEMP_VALUE}{idx}": (
-                int.from_bytes(
+            f"{KEY_TEMP_VALUE}{idx}": (value - 2731.5) / 10
+            for idx in range(sensors)
+            if (
+                value := int.from_bytes(
                     data[offs + idx * 2 : offs + (idx + 1) * 2],
                     byteorder="big",
                     signed=False,
                 )
-                - 2731.5
-            )
-            / 10
-            for idx in range(sensors)
-            if int.from_bytes(
-                data[offs + idx * 2 : offs + (idx + 1) * 2],
-                byteorder="big",
-                signed=False,
             )
         }
 
@@ -219,7 +224,17 @@ class BMS(BaseBMS):
         result[KEY_TEMP_SENS] = int(
             self._data_final[0x61][BMS._CELL_POS + int(result[KEY_CELL_COUNT]) * 2 + 1]
         )
-        result[KEY_PACK_COUNT] = min(int(self._data_final[0x51][42]), BMS._MAX_SUBS)
+
+        result |= {
+            key: func(
+                int.from_bytes(
+                    self._data_final[cmd][idx : idx + size],
+                    byteorder="big",
+                    signed=sign,
+                )
+            )
+            for key, cmd, idx, size, sign, func in BMS._FIELDS
+        }
 
         result |= BMS._cell_voltages(self._data_final[0x61])
         result |= BMS._temp_sensors(

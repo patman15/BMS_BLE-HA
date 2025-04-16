@@ -29,7 +29,7 @@ body:
 - type: textarea
   attributes:
     label: "Additional context"
-    description: "Add any other context (documentation) or screenshots about the feature request here. For new BMS types, please provide the output of `bluetoothctl info <MAC>` and the [service explorer script](https://github.com/hbldh/bleak/blob/develop/examples/service_explorer.py). To speed up the integration please see if you are able to [capture the Bluetooth traffic](https://www.caichinger.com/blog/2020/11/08/capture_bluetooth_traffic_from_android/) while using the vendor app with the battery."
+    description: "Add any other context (documentation) or screenshots about the feature request here. For new BMS types, please provide the advertisement data of the device (Go to the [bluetooth integration](https://my.home-assistant.io/redirect/integration/?domain=bluetooth). On your BT adapter select `configure -> advertisement monitor`, click the device in question and provide the information via **`copy to clipboard`**). Optionally, the [service explorer script](https://github.com/hbldh/bleak/blob/develop/examples/service_explorer.py) can help as well. To speed up the integration please see if you are able to capture the Bluetooth traffic on [Android](https://www.caichinger.com/blog/2020/11/08/capture_bluetooth_traffic_from_android/) or [iOS](https://novelbits.io/debugging-sniffing-secure-ble-ios/) while using the vendor app with the battery."
     placeholder: "For new BMS, please provide any links to documentation, the BT protocol, link to an Android app, other open source implementations, or the like."
   validations:
     required: false

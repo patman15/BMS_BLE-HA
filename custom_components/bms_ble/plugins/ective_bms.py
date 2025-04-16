@@ -3,8 +3,9 @@
 import asyncio
 from collections.abc import Callable
 from string import hexdigits
-from typing import Any, Final
+from typing import Final
 
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
@@ -21,6 +22,7 @@ from custom_components.bms_ble.const import (
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
+    KEY_PROBLEM,
 )
 
 from .basebms import BaseBMS, BMSsample
@@ -40,22 +42,24 @@ class BMS(BaseBMS):
         (ATTR_CYCLE_CHRG, 17, 8, False, lambda x: float(x / 1000)),
         (ATTR_CYCLES, 25, 4, False, lambda x: x),
         (ATTR_TEMPERATURE, 33, 4, False, lambda x: round(x * 0.1 - 273.15, 1)),
+        (KEY_PROBLEM, 37, 2, False, lambda x: x),
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, ble_device, reconnect)
         self._data_final: bytearray = bytearray()
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [
             {
                 "local_name": pattern,
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
-            } for pattern in ["$PFLAC*", "NWJ20*"]
+            }
+            for pattern in ("$PFLAC*", "NWJ20*", "ZM20*")
         ]
 
     @staticmethod
@@ -79,20 +83,25 @@ class BMS(BaseBMS):
         raise NotImplementedError
 
     @staticmethod
-    def _calc_values() -> set[str]:
-        return {
-            ATTR_BATTERY_CHARGING,
-            ATTR_CYCLE_CAP,
-            ATTR_DELTA_VOLTAGE,
-            ATTR_POWER,
-            ATTR_RUNTIME,
-        }  # calculate further values from BMS provided set ones
+    def _calc_values() -> frozenset[str]:
+        return frozenset(
+            {
+                ATTR_BATTERY_CHARGING,
+                ATTR_CYCLE_CAP,
+                ATTR_CYCLE_CHRG,
+                ATTR_DELTA_VOLTAGE,
+                ATTR_POWER,
+                ATTR_RUNTIME,
+            }
+        )  # calculate further values from BMS provided set ones
 
-    def _notification_handler(self, _sender, data: bytearray) -> None:
+    def _notification_handler(
+        self, _sender: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
 
-        data = data.strip(b"\x00")  # remove leading/trailing string end
-        if data.startswith(BMS._HEAD_RSP):  # check for beginning of frame
+        if (start := data.find(BMS._HEAD_RSP)) != -1:  # check for beginning of frame
+            data = data[start:]
             self._data.clear()
 
         self._data += data
@@ -103,16 +112,19 @@ class BMS(BaseBMS):
         if len(self._data) < BMS._INFO_LEN:
             return
 
+        self._data = self._data[: BMS._INFO_LEN]  # cut off exceeding data
+
         if not (
             self._data.startswith(BMS._HEAD_RSP)
-            and set(self._data.decode()[3:]).issubset(hexdigits)
+            and set(self._data.decode(errors="replace")[1:]).issubset(hexdigits)
         ):
             self._log.debug("incorrect frame coding: %s", self._data)
             self._data.clear()
             return
 
-        crc: Final[int] = BMS._crc(self._data[1 : -BMS._CRC_LEN])
-        if crc != int(self._data[-BMS._CRC_LEN :], 16):
+        if (crc := BMS._crc(self._data[1 : -BMS._CRC_LEN])) != int(
+            self._data[-BMS._CRC_LEN :], 16
+        ):
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",
                 int(self._data[-BMS._CRC_LEN :], 16),
@@ -151,7 +163,7 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
-        await asyncio.wait_for(self._wait_event(), timeout=self.BAT_TIMEOUT)
+        await asyncio.wait_for(self._wait_event(), timeout=self.TIMEOUT)
         return {
             key: func(BMS._conv_int(self._data_final[idx : idx + size], sign))
             for key, idx, size, sign, func in BMS._FIELDS

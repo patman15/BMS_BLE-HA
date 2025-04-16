@@ -1,8 +1,9 @@
 """Module to support CBT Power Smart BMS."""
 
 from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
@@ -20,6 +21,7 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
     KEY_CELL_VOLTAGE,
     KEY_DESIGN_CAP,
+    KEY_PROBLEM,
 )
 from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
@@ -29,7 +31,6 @@ from .basebms import BaseBMS, BMSsample, crc_sum
 class BMS(BaseBMS):
     """CBT Power Smart BMS class implementation."""
 
-    BAT_TIMEOUT: Final = 1
     HEAD: Final[bytes] = bytes([0xAA, 0x55])
     TAIL_RX: Final[bytes] = bytes([0x0D, 0x0A])
     TAIL_TX: Final[bytes] = bytes([0x0A, 0x0D])
@@ -48,19 +49,27 @@ class BMS(BaseBMS):
         (KEY_DESIGN_CAP, 0x15, 4, 2, False, lambda x: x),
         (ATTR_CYCLES, 0x15, 6, 2, False, lambda x: x),
         (ATTR_RUNTIME, 0x0C, 14, 2, False, lambda x: float(x * _HRS_TO_SECS / 100)),
+        (KEY_PROBLEM, 0x21, 4, 4, False, lambda x: x),
     ]
     _CMDS: Final[list[int]] = list({field[1] for field in _FIELDS})
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(__name__, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, ble_device, reconnect)
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [
+            {"service_uuid": BMS.uuid_services()[0], "connectable": True},
+            {  # Creabest
+                "service_uuid": normalize_uuid_str("fff0"),
+                "manufacturer_id": 0,
+                "connectable": True,
+            },
             {
-                "service_uuid": normalize_uuid_str("ffb0"),
+                "service_uuid": normalize_uuid_str("03c1"),
+                "manufacturer_id": 0x5352,
                 "connectable": True,
             },
         ]
@@ -86,20 +95,24 @@ class BMS(BaseBMS):
         return "ffe9"
 
     @staticmethod
-    def _calc_values() -> set[str]:
-        return {
-            ATTR_POWER,
-            ATTR_BATTERY_CHARGING,
-            ATTR_DELTA_VOLTAGE,
-            ATTR_CYCLE_CAP,
-            ATTR_TEMPERATURE,
-        }
+    def _calc_values() -> frozenset[str]:
+        return frozenset(
+            {
+                ATTR_POWER,
+                ATTR_BATTERY_CHARGING,
+                ATTR_DELTA_VOLTAGE,
+                ATTR_CYCLE_CAP,
+                ATTR_TEMPERATURE,
+            }
+        )
 
-    def _notification_handler(self, _sender, data: bytearray) -> None:
+    def _notification_handler(
+        self, _sender: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
         """Retrieve BMS data update."""
         self._log.debug("RX BLE data: %s", data)
 
-        # verify that data long enough
+        # verify that data is long enough
         if len(data) < BMS.MIN_FRAME or len(data) != BMS.MIN_FRAME + data[BMS.LEN_POS]:
             self._log.debug("incorrect frame length (%i): %s", len(data), data)
             return
@@ -108,8 +121,9 @@ class BMS(BaseBMS):
             self._log.debug("incorrect frame start/end: %s", data)
             return
 
-        crc = crc_sum(data[len(BMS.HEAD) : len(data) + BMS.CRC_POS])
-        if data[BMS.CRC_POS] != crc:
+        if (crc := crc_sum(data[len(BMS.HEAD) : len(data) + BMS.CRC_POS])) != data[
+            BMS.CRC_POS
+        ]:
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",
                 data[len(data) + BMS.CRC_POS],
@@ -125,11 +139,10 @@ class BMS(BaseBMS):
         """Assemble a CBT Power BMS command."""
         value = [] if value is None else value
         assert len(value) <= 255
-        frame = bytes([*BMS.HEAD, cmd[0]])
-        frame += bytes([len(value), *value])
-        frame += bytes([crc_sum(frame[len(BMS.HEAD) :])])
-        frame += bytes([*BMS.TAIL_TX])
-        return frame
+        frame = bytearray([*BMS.HEAD, cmd[0], len(value), *value])
+        frame.append(crc_sum(frame[len(BMS.HEAD) :]))
+        frame.extend(BMS.TAIL_TX)
+        return bytes(frame)
 
     @staticmethod
     def _cell_voltages(data: bytearray) -> dict[str, float]:
@@ -146,7 +159,7 @@ class BMS(BaseBMS):
 
     @staticmethod
     def _decode_data(cache: dict[int, bytearray]) -> BMSsample:
-        data = {}
+        data: BMSsample = {}
         for field, cmd, pos, size, sign, fct in BMS._FIELDS:
             if cmd in cache:
                 data[field] = fct(
@@ -156,7 +169,7 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        resp_cache = {}  # variable to avoid multiple queries with same command
+        resp_cache: dict[int, bytearray] = {}  # avoid multiple queries
         for cmd in BMS._CMDS:
             self._log.debug("request command 0x%X.", cmd)
             try:
@@ -171,7 +184,7 @@ class BMS(BaseBMS):
                 )
             resp_cache[self._data[BMS.CMD_POS]] = self._data.copy()
 
-        voltages = {}
+        voltages: dict[str, float] = {}
         for cmd in BMS.CELL_VOLTAGE_CMDS:
             try:
                 await self._await_reply(BMS._gen_frame(cmd.to_bytes(1)))

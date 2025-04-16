@@ -1,5 +1,8 @@
 """Test the BLE Battery Management System integration initialization."""
 
+from habluetooth import BluetoothServiceInfoBleak
+import pytest
+
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 
@@ -7,8 +10,12 @@ from .bluetooth import inject_bluetooth_service_info_bleak
 from .conftest import mock_config, mock_update_exc, mock_update_min
 
 
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_init_fail(
-    monkeypatch, patch_bleakclient, bms_fixture, BTdiscovery, hass: HomeAssistant
+    monkeypatch,
+    bms_fixture,
+    bt_discovery: BluetoothServiceInfoBleak,
+    hass: HomeAssistant,
 ) -> None:
     """Test entries are unloaded correctly."""
 
@@ -27,7 +34,7 @@ async def test_init_fail(
         mock_coord_shutdown,
     )
 
-    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
     cfg = mock_config(bms=bms_fixture)
     cfg.add_to_hass(hass)
@@ -51,19 +58,19 @@ async def test_init_fail(
     ), "Failure: config entry generated sensors."
 
 
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_unload_entry(
     monkeypatch,
-    patch_bleakclient,
-    bms_fixture,
-    bool_fixture,
-    BTdiscovery,
+    bms_fixture: str,
+    bool_fixture: bool,
+    bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
 ) -> None:
     """Test entries are unloaded correctly."""
     unload_fail: bool = bool_fixture
 
     # first load entry (see test_async_setup_entry)
-    inject_bluetooth_service_info_bleak(hass, BTdiscovery)
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
     cfg = mock_config(bms=bms_fixture)
     cfg.add_to_hass(hass)
@@ -98,12 +105,14 @@ async def test_unload_entry(
     assert cfg.state is ConfigEntryState.LOADED
 
     # run removal of entry (actual test)
-    trace_fct = {"shutdown_called": False}
+    trace_fct: dict[str, bool] = {"shutdown_called": False}
 
     assert await hass.config_entries.async_remove(cfg.entry_id)
-    await hass.async_block_till_done()
+    await hass.async_block_till_done(wait_background_tasks=True)
 
-    assert trace_fct["shutdown_called"], "Failed to call coordinator async_shutdown()."
+    assert (  # shutdown is only called if entry unload succeeded
+        trace_fct["shutdown_called"] or unload_fail
+    ), "Failed to call coordinator async_shutdown()."
     assert (
         cfg not in hass.config_entries.async_entries()
     ), "Failed to remove configuration entry."
