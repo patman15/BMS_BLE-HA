@@ -173,7 +173,7 @@ class BMS(BaseBMS):
         self._exp_len: int = 0
 
     @staticmethod
-    def _cmd(cmd: int, address: int = 0, data: bytearray = bytearray()) -> bytearray:
+    def _cmd(cmd: int, address: int = 0, data: bytes = b"") -> bytes:
         """Assemble a Seplos V2 BMS command."""
         assert cmd in (0x47, 0x51, 0x61, 0x62, 0x04)  # allow only read commands
         frame = bytearray(
@@ -182,7 +182,7 @@ class BMS(BaseBMS):
         frame += len(data).to_bytes(2, "big", signed=False) + data
         frame += bytearray(int.to_bytes(crc_xmodem(frame[1:]), 2, byteorder="big"))
         frame += BMS._TAIL
-        return frame
+        return bytes(frame)
 
     @staticmethod
     def _decode_data(
@@ -234,7 +234,7 @@ class BMS(BaseBMS):
         """Update battery status information."""
 
         for cmd, data in BMS._CMDS:
-            await self._await_reply(BMS._cmd(cmd, data=bytearray(data)))
+            await self._await_reply(BMS._cmd(cmd, data=data))
 
         result: BMSsample = BMS._decode_data(self._data_final)
 
@@ -245,9 +245,7 @@ class BMS(BaseBMS):
 
         for pack in range(int(result.get(KEY_PACK_COUNT, 0)) + 1):
 
-            await self._await_reply(
-                BMS._cmd(0x61, address=pack, data=bytearray(b"\x00"))
-            )
+            await self._await_reply(BMS._cmd(0x61, data=bytes([pack])))
             pkg_data: bytearray = self._data_final[0x61]
 
             result |= {

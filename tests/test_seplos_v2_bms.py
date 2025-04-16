@@ -117,7 +117,7 @@ class MockSeplosv2BleakClient(MockBleakClient):
 
     HEAD_CMD = 0x7E
     PROTOCOL = 0x10
-    CMD_GSMD = bytearray(b"\x46\x61\x00\x01\x00")  # get single machine data
+    CMD_GSMD = bytearray(b"\x46\x61\x00\x01")  # get single machine data
     CMD_GPD = bytearray(
         bytes([HEAD_CMD, PROTOCOL]) + b"\x00\x46\x62\x00\x00"
     )  # get parallel data
@@ -136,10 +136,10 @@ class MockSeplosv2BleakClient(MockBleakClient):
         ):
             if (
                 bytearray(data)[1] == self.PROTOCOL
-                and bytearray(data)[2] < 2  # only two packs supported
+                # and bytearray(data)[2] < 2  # only two packs supported
                 and bytearray(data)[3:].startswith(self.CMD_GSMD)
             ):
-                return bytearray(SMD_RESP[bytearray(data)[2]])
+                return bytearray(SMD_RESP[bytearray(data)[7]])
             if bytearray(data).startswith(self.CMD_GPD):
                 return bytearray(  # adr 0x0, 53.0V, 21.5A, 437.2Ah, 52%, 113 cycles
                     b"\x7e\x14\x00\x62\x00\x00\x30\x00\x00\x10\x0c\xf4\x0c\xee\x06\x0b\x93\x0b\x7f"
@@ -252,10 +252,10 @@ async def test_problem_response(monkeypatch, patch_bleak_client) -> None:
         ):
             if (
                 bytearray(data)[1] == self.PROTOCOL
-                and bytearray(data)[2] < 2  # only two packs supported
+                #and bytearray(data)[2] < 2  # only two packs supported
                 and bytearray(data)[3:].startswith(self.CMD_GSMD)
             ):
-                return bytearray(SMD_RESP[bytearray(data)[2]])
+                return bytearray(SMD_RESP[bytearray(data)[7]])
             if bytearray(data).startswith(self.CMD_GPD):
                 return bytearray(
                     b"\x7e\x14\x00\x62\x00\x00\x30\x00\x00\x10\x0c\xf4\x0c\xee\x06\x0b\x93\x0b\x7f"
