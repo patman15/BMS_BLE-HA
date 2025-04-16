@@ -72,6 +72,7 @@ class BMS(BaseBMS):
                 "12200*",
                 "12300*",
                 "PKT*",  # Perfektium
+                "gokwh*",
             )
         ] + [
             {
