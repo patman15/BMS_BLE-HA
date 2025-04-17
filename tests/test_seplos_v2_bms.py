@@ -1,6 +1,7 @@
 """Test the Seplos v2 implementation."""
 
 from collections.abc import Buffer
+from typing import Final
 from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -48,10 +49,16 @@ REF_VALUE: BMSsample = {
     "temp#4": 27.65,
     "temp#5": 23.65,
     "delta_voltage": 0.004,
-    "pack_count": 2,
+    "pack_count": 1,
     "problem": False,
     "problem_code": 0,
 }
+
+MI_RESP: Final[bytearray] = bytearray(  # manufacturer information
+    b"\x7e\x14\x00\x51\x00\x00\x24\x43\x41\x4e\x3a\x50\x4e\x47\x5f\x44\x59\x45\x5f"
+    b"\x4c\x75\x78\x70\x5f\x54\x42\x42\x31\x31\x30\x31\x2d\x53\x50\x37\x36\x20\x10"
+    b"\x06\x01\x01\x46\x01\xa2\x6c\x0d"
+)
 
 
 class MockSeplosv2BleakClient(MockBleakClient):
@@ -96,11 +103,7 @@ class MockSeplosv2BleakClient(MockBleakClient):
                     b"\x0d"
                 )
             if bytearray(data).startswith(self.CMD_GMI):
-                return bytearray(
-                    b"\x7e\x14\x00\x51\x00\x00\x24\x43\x41\x4e\x3a\x50\x4e\x47\x5f\x44\x59\x45\x5f"
-                    b"\x4c\x75\x78\x70\x5f\x54\x42\x42\x45\x4d\x55\x31\x31\x30\x31\x31\x30\x45\x10"
-                    b"\x04\x01\x01\x46\x02\x14\xe2\x58\x0d"
-                )
+                return MI_RESP
 
         return bytearray()
 
@@ -161,7 +164,9 @@ def fix_response(request):
     return request.param[0]
 
 
-async def test_invalid_response(monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response) -> None:
+async def test_invalid_response(
+    monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response
+) -> None:
     """Test data up date with BMS returning invalid data."""
 
     patch_bms_timeout("seplos_v2_bms")
@@ -215,11 +220,7 @@ async def test_problem_response(monkeypatch, patch_bleak_client) -> None:
                     b"\x0d"
                 )
             if bytearray(data).startswith(self.CMD_GMI):
-                return bytearray(
-                    b"\x7e\x14\x00\x51\x00\x00\x24\x43\x41\x4e\x3a\x50\x4e\x47\x5f\x44\x59\x45\x5f"
-                    b"\x4c\x75\x78\x70\x5f\x54\x42\x42\x45\x4d\x55\x31\x31\x30\x31\x31\x30\x45\x10"
-                    b"\x04\x01\x01\x46\x02\x14\xe2\x58\x0d"
-                )
+                return MI_RESP
 
         return bytearray()
 
