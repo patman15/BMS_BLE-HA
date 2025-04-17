@@ -123,7 +123,11 @@ class BMS(BaseBMS):
             self._log.debug("filtering AT cmd")
             return
 
-        if data.startswith(BMS._HEAD) and not self._data.startswith(BMS._HEAD):
+        if (
+            data.startswith(BMS._HEAD)
+            and not self._data.startswith(BMS._HEAD)
+            and len(data) > len(BMS._HEAD)
+        ):
             self._exp_len = data[len(BMS._HEAD)]
             self._data.clear()
 
