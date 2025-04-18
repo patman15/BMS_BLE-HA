@@ -1,6 +1,6 @@
 """Base class defintion for battery management systems (BMS)."""
 
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 import asyncio
 import logging
 from statistics import fmean
@@ -37,7 +37,7 @@ from homeassistant.util.unit_conversion import _HRS_TO_SECS
 type BMSsample = dict[str, int | float | bool]
 
 
-class BaseBMS(metaclass=ABCMeta):
+class BaseBMS(ABC):
     """Base class for battery management system."""
 
     TIMEOUT: float = 5.0
