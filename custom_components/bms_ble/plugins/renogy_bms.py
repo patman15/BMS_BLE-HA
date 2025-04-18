@@ -1,6 +1,6 @@
 """Module to support Renogy BMS."""
 
-import contextlib
+from collections.abc import Callable
 from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -9,16 +9,21 @@ from bleak.uuids import normalize_uuid_str
 
 from custom_components.bms_ble.const import (
     ATTR_BATTERY_CHARGING,
-    # ATTR_BATTERY_LEVEL,
+    ATTR_BATTERY_LEVEL,
     ATTR_CURRENT,
-    # ATTR_CYCLE_CAP,
-    # ATTR_CYCLE_CHRG,
+    ATTR_CYCLE_CAP,
+    ATTR_CYCLE_CHRG,
     # ATTR_CYCLES,
-    # ATTR_DELTA_VOLTAGE,
+    ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
-    # ATTR_RUNTIME,
+    ATTR_RUNTIME,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
+    KEY_CELL_COUNT,
+    KEY_CELL_VOLTAGE,
+    KEY_DESIGN_CAP,
+    KEY_TEMP_SENS,
+    KEY_TEMP_VALUE,
 )
 
 from .basebms import BaseBMS, BMSsample, crc_modbus
@@ -29,6 +34,17 @@ class BMS(BaseBMS):
 
     _HEAD: Final[bytes] = b"\x30\x03"
     _CRC_POS: Final[int] = -2
+    _TEMP_POS: Final[int] = 37
+    _CELL_POS: Final[int] = 3
+    _FIELDS: Final[list[tuple[str, int, int, bool, Callable[[int], int | float]]]] = [
+        (ATTR_VOLTAGE, 5, 2, False, lambda x: float(x / 10)),
+        (ATTR_CURRENT, 3, 2, True, lambda x: float(x / 10)),
+        #        (ATTR_BATTERY_LEVEL, 7, 4, False, lambda x: x / 1000),
+        (KEY_DESIGN_CAP, 11, 4, False, lambda x: x / 1000),
+        (ATTR_CYCLE_CHRG, 7, 4, False, lambda x: float(x / 1000)),
+        #        (ATTR_CYCLES, 12, 2, False, lambda x: x),
+        #        (KEY_PROBLEM, 20, 2, False, lambda x: x),
+    ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -68,7 +84,15 @@ class BMS(BaseBMS):
     @staticmethod
     def _calc_values() -> frozenset[str]:
         return frozenset(
-            {ATTR_POWER, ATTR_BATTERY_CHARGING}
+            {
+                ATTR_POWER,
+                ATTR_BATTERY_CHARGING,
+                ATTR_TEMPERATURE,
+                ATTR_CYCLE_CAP,
+                ATTR_BATTERY_LEVEL,
+                ATTR_RUNTIME,
+                ATTR_DELTA_VOLTAGE,
+            }
         )  # calculate further values from BMS provided set ones
 
     def _notification_handler(
@@ -92,11 +116,44 @@ class BMS(BaseBMS):
                 int.from_bytes(data[BMS._CRC_POS :], "little"),
             )
             return
-        #
-        # # do things like checking correctness of frame here and
-        # # store it into a instance variable, e.g. self._data
-        #
-        # self._data_event.set()
+
+        self._data = data.copy()  # TODO: necessary?
+
+        self._data_event.set()
+
+    @staticmethod
+    def _decode_data(data: bytearray) -> dict[str, int | float]:
+        return {
+            key: func(
+                int.from_bytes(data[idx : idx + size], byteorder="big", signed=sign)
+            )
+            for key, idx, size, sign, func in BMS._FIELDS
+        }
+
+    @staticmethod
+    def _cell_voltages(data: bytearray) -> dict[str, int | float]:
+        """Return cell voltages from status message."""
+        cells: Final[int] = min(16, data[BMS._CELL_POS + 1])  # max is 16, second byte
+        return {KEY_CELL_COUNT: cells} | {
+            f"{KEY_CELL_VOLTAGE}{idx}": int.from_bytes(
+                data[BMS._CELL_POS + 2 + 2 * idx : BMS._CELL_POS + 4 + 2 * idx],
+                byteorder="big",
+            )
+            / 10
+            for idx in range(cells)
+        }
+
+    @staticmethod
+    def _temp_sensors(data: bytearray) -> dict[str, float]:
+        sensors: Final[int] = min(16, data[BMS._TEMP_POS + 1])  # max is 16, second byte
+        return {KEY_TEMP_SENS: sensors} | {
+            f"{KEY_TEMP_VALUE}{idx}": int.from_bytes(
+                data[BMS._TEMP_POS + 2 + 2 * idx : BMS._TEMP_POS + 4 + 2 * idx],
+                byteorder="big",
+            )
+            / 10
+            for idx in range(sensors)
+        }
 
     @staticmethod
     def _cmd(cmd: bytes) -> bytes:
@@ -107,17 +164,11 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        for cmd in (
-            b"\x13\x88\x00\x22",
-            b"\x13\xf0\x00\x1c",
-            b"\x13\xb2\x00\x06",
-            b"\x14\x02\x00\x08",
-        ):
-            with contextlib.suppress(TimeoutError):
-                await self._await_reply(self._cmd(cmd))
 
-        return {
-            ATTR_VOLTAGE: 12,
-            ATTR_CURRENT: 1.5,
-            ATTR_TEMPERATURE: 27.182,
-        }  # fixed values, replace parsed data
+        await self._await_reply(self._cmd(b"\x13\xb2\x00\x06"))
+        result: BMSsample = BMS._decode_data(self._data)
+
+        await self._await_reply(self._cmd(b"\x13\x88\x00\x22"))
+        result |= BMS._cell_voltages(self._data) | BMS._temp_sensors(self._data)
+
+        return result

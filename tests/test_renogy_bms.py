@@ -8,12 +8,37 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.uuids import normalize_uuid_str
 
 # import pytest
-from custom_components.bms_ble.plugins.renogy_bms import BMS  # , BMSsample
+from custom_components.bms_ble.plugins.renogy_bms import BMS, BMSsample
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
 BT_FRAME_SIZE = 512  # ATT max is 512 bytes
+
+
+def ref_value() -> BMSsample:
+    """Return reference value for mock Seplos BMS."""
+    return {
+        "battery_charging": False,
+        "battery_level": 97.2,
+        "cell#0": 3.5,
+        "cell#1": 3.3,
+        "cell#2": 3.3,
+        "cell#3": 3.3,
+        "cell_count": 4,
+        "current": 0.0,
+        "cycle_capacity": 1321.92,
+        "cycle_charge": 97.2,
+        "delta_voltage": 0.2,
+        "design_capacity": 100.0,
+        "power": 0.0,
+        "problem": False,
+        "temp#0": 17.0,
+        "temp#1": 17.0,
+        "temp_sensors": 2,
+        "temperature": 17.0,
+        "voltage": 13.6,
+    }
 
 
 class MockRenogyBleakClient(MockBleakClient):
@@ -25,15 +50,15 @@ class MockRenogyBleakClient(MockBleakClient):
             b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xaa\x00"
             b"\xaa\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
             b"\x00\x00\x00\x00\x00\x00\x00\x00\x25\x74"
-        ),
-        b"\x30\x03\x13\xf0\x00\x1c\x44\x95": bytearray(  # system ID
+        ),  # cell count (4/16), cell [0.1 V] (3.5, 3.3, 3.3, 3.3), temp count (2/16), temp [0.1°C] (17,17)
+        b"\x30\x03\x13\xf0\x00\x1c\x44\x95": bytearray(  # system ID, name, firmware
             b"\x30\x03\x38\x00\x00\x00\x00\x00\x06\x00\x00\x00\x00\x00\xc8\x32\x30\x32\x31\x30\x35"
             b"\x32\x36\x00\x00\x00\x00\x00\x00\x00\x00\x20\x20\x20\x20\x20\x20\x20\x20\x52\x42\x54"
             b"\x31\x30\x30\x4c\x46\x50\x31\x32\x2d\x42\x54\x20\x20\x30\x31\x30\x30\x55\x2f"
         ),  # 08È20210526        RBT100LFP12-BT  0100
         b"\x30\x03\x13\xb2\x00\x06\x65\x4a": bytearray(
-            b"\x30\x03\x0c\x00\x00\x00\x88\x00\x01\x82\xb8\x00\x01\x86\xa0\xf9\x43"
-        ),
+            b"\x30\x03\x0c\x00\x00\x00\x88\x00\x01\x7b\xb0\x00\x01\x86\xa0\x0c\xeb"
+        ),  # 13.6V, 97.2% (4B), 100Ah [mAh]
         b"\x30\x03\x14\x02\x00\x08\xe4\x1d": bytearray(
             b"\x30\x03\x10\x52\x42\x54\x31\x30\x30\x4c\x46\x50\x31\x32\x2d\x42\x54\x20\x20\x58\xbb"
         ),  # 0RBT100LFP12-BT
@@ -79,30 +104,7 @@ async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
 
     result = await bms.async_update()
 
-    assert result == {
-        "temp_sensors": 1,
-        "voltage": 27.554,
-        "current": 0.0,
-        "battery_level": 99,
-        "cycle_charge": 106.048,
-        "cycles": 7,
-        "problem_code": 0,
-        "cell#0": 3.442,
-        "cell#1": 3.496,
-        "cell#2": 3.375,
-        "cell#3": 3.464,
-        "cell#4": 3.457,
-        "cell#5": 3.429,
-        "cell#6": 3.359,
-        "cell#7": 3.42,
-        "temp#0": 20,
-        "delta_voltage": 0.137,
-        "cycle_capacity": 2922.047,
-        "power": 0.0,
-        "battery_charging": False,
-        "temperature": 20.0,
-        "problem": False,
-    }
+    assert result == ref_value()
 
     # query again to check already connected state
     result = await bms.async_update()
