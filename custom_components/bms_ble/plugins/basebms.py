@@ -32,7 +32,6 @@ from custom_components.bms_ble.const import (
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.components.bluetooth.match import ble_device_matches
 from homeassistant.loader import BluetoothMatcherOptional
-from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 type BMSsample = dict[str, int | float | bool]
 
@@ -40,8 +39,9 @@ type BMSsample = dict[str, int | float | bool]
 class BaseBMS(ABC):
     """Base class for battery management system."""
 
-    TIMEOUT: float = 5.0
-    MAX_CELL_VOLTAGE: Final[float] = 5.906  # max cell potential
+    TIMEOUT = 5.0
+    _MAX_CELL_VOLT: Final[float] = 5.906  # max cell potential
+    _HRS_TO_SECS: Final[int] = 60 * 60  # seconds in an hour
 
     def __init__(
         self,
@@ -184,7 +184,7 @@ class BaseBMS(ABC):
             and data[ATTR_CURRENT] < 0
         ):
             data[ATTR_RUNTIME] = int(
-                data[ATTR_CYCLE_CHRG] / abs(data[ATTR_CURRENT]) * _HRS_TO_SECS
+                data[ATTR_CYCLE_CHRG] / abs(data[ATTR_CURRENT]) * BaseBMS._HRS_TO_SECS
             )
         # calculate temperature (average of all sensors)
         if can_calc(ATTR_TEMPERATURE, frozenset({f"{KEY_TEMP_VALUE}0"})):
@@ -200,11 +200,11 @@ class BaseBMS(ABC):
             or (
                 data.get(ATTR_VOLTAGE, 1) <= 0
                 or any(
-                    v <= 0 or v > BaseBMS.MAX_CELL_VOLTAGE
+                    v <= 0 or v > BaseBMS._MAX_CELL_VOLT
                     for k, v in data.items()
                     if k.startswith(KEY_CELL_VOLTAGE)
                 )
-                or data.get(ATTR_DELTA_VOLTAGE, 0) > BaseBMS.MAX_CELL_VOLTAGE
+                or data.get(ATTR_DELTA_VOLTAGE, 0) > BaseBMS._MAX_CELL_VOLT
                 or data.get(ATTR_CYCLE_CHRG, 1) <= 0
                 or data.get(ATTR_BATTERY_LEVEL, 0) > 100
             )
