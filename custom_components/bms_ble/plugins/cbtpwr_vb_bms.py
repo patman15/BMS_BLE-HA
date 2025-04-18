@@ -113,11 +113,14 @@ class BMS(BaseBMS):
 
         if len(data) > BMS._LEN_POS + 4 and data.startswith(BMS._HEAD):
             self._data = bytearray()
-            length: Final[int] = int(data[BMS._LEN_POS : BMS._LEN_POS + 4], 16)
-            self._exp_len = length & 0xFFF
-            if BMS.lencs(length) != length >> 12:
+            try:
+                length: Final[int] = int(data[BMS._LEN_POS : BMS._LEN_POS + 4], 16)
+                self._exp_len = length & 0xFFF
+                if BMS.lencs(length) != length >> 12:
+                    self._exp_len = 0
+                    self._log.debug("incorrect length checksum.")
+            except ValueError:
                 self._exp_len = 0
-                self._log.debug("incorrect length checksum.")
 
         self._data += data
         self._log.debug(
