@@ -1,13 +1,11 @@
 """Module to support CBT Power VB series BMS."""
 
-import asyncio
 from collections.abc import Callable
 from string import hexdigits
 from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
-from bleak.exc import BleakDBusError
 from bleak.uuids import normalize_uuid_str
 
 from custom_components.bms_ble.const import (
@@ -219,7 +217,6 @@ class BMS(BaseBMS):
         """Update battery status information."""
 
         await self._await_reply(BMS._cmd(0x42))
-
         result: BMSsample = {KEY_CELL_COUNT: int(self._data[BMS._CELL_POS])}
         temp_pos: Final[int] = (
             BMS._CELL_POS + int(result.get(KEY_CELL_COUNT, 0)) * 2 + 1
@@ -235,22 +232,7 @@ class BMS(BaseBMS):
             self._data, temp_pos + 2 * int(result.get(KEY_TEMP_SENS, 0)) + 1
         )
 
-        for attempt in range(4):
-            try:
-                await self._await_reply(BMS._cmd(0x81, 1, b"\x01\x00"), max_size=20)
-                break
-            except BleakDBusError:
-                retry_delay = 0.1 * (attempt + 1)
-                self._log.debug(
-                    "Retrying in %.1f seconds (attempt %d of 4)",
-                    retry_delay,
-                    attempt + 1,
-                )
-                if attempt == 3:
-                    self._log.error("Failed to receive reply after 4 attempts.")
-                    raise
-                await asyncio.sleep(retry_delay)
-
+        await self._await_reply(BMS._cmd(0x81, 1, b"\x01\x00"), max_size=20)
         result |= {
             KEY_DESIGN_CAP: int.from_bytes(
                 self._data[6:8], byteorder="big", signed=False
