@@ -6,8 +6,8 @@ from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.uuids import normalize_uuid_str
+import pytest
 
-# import pytest
 from custom_components.bms_ble.plugins.renogy_bms import BMS, BMSsample
 
 from .bluetooth import generate_ble_device
@@ -113,56 +113,54 @@ async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
     await bms.disconnect()
 
 
-# @pytest.fixture(
-#     name="wrong_response",
-#     params=[
-#         (
-#             b"\xcc\xf0\xa2\x6b\x00\x00\x00\x00\xa0\x86\x01\x40\x9e\x01\x07\x00\x63\x00\x00\x20",
-#             "wrong_CRC",
-#         ),
-#         (
-#             b"\xc0\xf0\xa2\x6b\x00\x00\x00\x00\xa0\x86\x01\x40\x9e\x01\x07\x00\x63\x00\x00\x21",
-#             "wrong_SOF",
-#         ),
-#         (
-#             b"\xcc\xfe\xa2\x6b\x00\x00\x00\x00\xa0\x86\x01\x40\x9e\x01\x07\x00\x63\x00\x00\x4f",
-#             "wrong_CMD",
-#         ),
-#         (
-#             b"\xcc\xf0\xa2\x6b\x00\x00\x00\x00\xa0\x86\x01\x40\x9e\x01\x07\x00\x63\x00\x21",
-#             "wrong_length",
-#         ),
-#     ],
-#     ids=lambda param: param[1],
-# )
-# def response(request) -> bytearray:
-#     """Return faulty response frame."""
-#     return bytearray(request.param[0])
-#
-#
-# async def test_invalid_response(
-#     monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response: bytearray
-# ) -> None:
-#     """Test data up date with BMS returning invalid data."""
+@pytest.fixture(
+    name="wrong_response",
+    params=[
+        (
+            b"\x30\x03\x0c\x00\x00\x00\x88\x00\x01\x7b\xb0\x00\x01\x86\xa0\x0d\xeb",
+            "wrong_CRC",
+        ),
+        (
+            b"\x31\x03\x0c\x00\x00\x00\x88\x00\x01\x7b\xb0\x00\x01\x86\xa0\x0c\xeb",
+            "wrong_SOF",
+        ),
+        (
+            b"\x30\x03\x0d\x00\x00\x00\x88\x00\x01\x7b\xb0\x00\x01\x86\xa0\x0c\xeb",
+            "wrong_length",
+        ),
+        (bytes(2), "critical_length"),
+    ],
+    ids=lambda param: param[1],
+)
+def response(request) -> bytearray:
+    """Return faulty response frame."""
+    return bytearray(request.param[0])
 
-#     patch_bms_timeout("renogy_bms")
 
-#     monkeypatch.setattr(
-#         MockRenogyBleakClient,
-#         "RESP",
-#         MockRenogyBleakClient.RESP | {0xF0: wrong_response},
-#     )
+async def test_invalid_response(
+    monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response: bytearray
+) -> None:
+    """Test data up date with BMS returning invalid data."""
 
-#     patch_bleak_client(MockRenogyBleakClient)
+    patch_bms_timeout("renogy_bms")
 
-#     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    monkeypatch.setattr(
+        MockRenogyBleakClient,
+        "RESP",
+        MockRenogyBleakClient.RESP
+        | {b"\x30\x03\x13\xb2\x00\x06\x65\x4a": wrong_response},
+    )
 
-#     result: BMSsample = {}
-#     with pytest.raises(TimeoutError):
-#         result = await bms.async_update()
+    patch_bleak_client(MockRenogyBleakClient)
 
-#     assert not result
-#     await bms.disconnect()
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+
+    result: BMSsample = {}
+    with pytest.raises(TimeoutError):
+        result = await bms.async_update()
+
+    assert not result
+    await bms.disconnect()
 
 
 # @pytest.fixture(
