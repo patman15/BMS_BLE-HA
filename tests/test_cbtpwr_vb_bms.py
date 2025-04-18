@@ -47,6 +47,7 @@ def ref_value() -> BMSsample:
 class MockCBTpwrVBBleakClient(MockBleakClient):
     """Emulate a CBT power VB series BMS BleakClient."""
 
+    _wr_buffer: bytearray = bytearray()  # collect individual write calls
     RESP: dict[bytes, bytearray] = {
         b"~11014642E00201FD35\r": bytearray(
             b"\x7e\x32\x32\x30\x31\x34\x36\x30\x30\x36\x30\x34\x36\x30\x34\x30\x44\x30\x30\x30"
@@ -81,9 +82,17 @@ class MockCBTpwrVBBleakClient(MockBleakClient):
         """Issue write command to GATT."""
         await super().write_gatt_char(char_specifier, data, response)
 
+        if bytes(data).startswith(b"\x7e"):
+            self._wr_buffer = bytearray(data)
+        else:
+            # concatenate write commands (BMS only accepts 20 bytes at once)
+            self._wr_buffer.extend(bytes(data))
+        if not bytes(data).endswith(b"\x0d"):
+            return
+
         assert self._notify_callback is not None
 
-        resp: Final[bytearray] = self._response(char_specifier, data)
+        resp: Final[bytearray] = self._response(char_specifier, self._wr_buffer)
         for notify_data in [
             resp[i : i + BT_FRAME_SIZE] for i in range(0, len(resp), BT_FRAME_SIZE)
         ]:
@@ -175,7 +184,7 @@ async def test_invalid_response(
     monkeypatch.setattr(
         MockCBTpwrVBBleakClient,
         "RESP",
-        MockCBTpwrVBBleakClient.RESP | {b"~11014681A00601A101FC5F\r": wrong_response},
+        MockCBTpwrVBBleakClient.RESP | {b"~11014681A006010001FC71\r": wrong_response},
     )
 
     patch_bleak_client(MockCBTpwrVBBleakClient)
