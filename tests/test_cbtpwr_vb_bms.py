@@ -165,7 +165,14 @@ async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
             ),
             "wrong_LRC",
         ),
-        (bytearray(12), "critical_length"),
+        (
+            bytearray(
+                b"\x7e\x32\x32\x30\x31\x34\x36\x30\x30\x43\x29\x30\x34\x30\x37\x44\x30\x46\x43\x42"
+                b"\x46\x0d"
+            ),
+            "wrong_head_ENC",
+        ),
+        (bytearray(13), "critical_length"),
     ],
     ids=lambda param: param[1],
 )
