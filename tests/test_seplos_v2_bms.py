@@ -84,9 +84,9 @@ class MockSeplosv2BleakClient(MockBleakClient):
             and bytearray(data)[0] == self.HEAD_CMD
         ):
             if bytearray(data)[1] == self.PROTOCOL and bytearray(data)[3:].startswith(
-                self.CMD_GSMD
+                self.CMD_GSMD  # ignore address as device does
             ):
-                return bytearray(  # TODO: respond with correct address
+                return bytearray(  # address is incorrect but device also ignores it
                     b"\x7e\x14\x02\x61\x00\x00\x6a\x00\x02\x10\x0c\xf0\x0c\xf1\x0c\xf1\x0c\xf1\x0c"
                     b"\xf1\x0c\xf0\x0c\xf1\x0c\xf3\x0c\xef\x0c\xf0\x0c\xf1\x0c\xf1\x0c\xf1\x0c\xf0"
                     b"\x0c\xf1\x0c\xf1\x06\x0b\x8f\x0b\x89\x0b\x8a\x0b\x93\x0b\xc0\x0b\x98\x02\xad"
