@@ -1,4 +1,4 @@
-"""Module to support Dummy BMS."""
+"""Module to support E&J Technology BMS."""
 
 from collections.abc import Callable
 from enum import IntEnum
@@ -35,7 +35,7 @@ class Cmd(IntEnum):
 
 
 class BMS(BaseBMS):
-    """Dummy battery class implementation."""
+    """E&J Technology BMS implementation."""
 
     _BT_MODULE_MSG: Final[bytes] = bytes([0x41, 0x54, 0x0D, 0x0A])  # BLE module message
     _HEAD: Final[bytes] = b"\x3a"
@@ -115,10 +115,7 @@ class BMS(BaseBMS):
         self._data += data
 
         self._log.debug(
-            "%s: RX BLE data (%s): %s",
-            self._ble_device.name,
-            "start" if data == self._data else "cnt.",
-            data,
+            "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
         exp_frame_len: Final[int] = (
@@ -160,7 +157,7 @@ class BMS(BaseBMS):
             return
 
         self._log.debug(
-            "address: 0x%X, commnad 0x%X, version: 0x%X, length: 0x%X",
+            "address: 0x%X, command 0x%X, version: 0x%X, length: 0x%X",
             int(self._data[1:3], 16),
             int(self._data[3:5], 16) & 0x7F,
             int(self._data[5:7], 16),
