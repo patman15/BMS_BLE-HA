@@ -101,11 +101,13 @@ class BMS(BaseBMS):
         """Handle the RX characteristics notify event (new data arrives)."""
         self._log.debug("RX BLE data: %s", data)
 
-        if not data.startswith(BMS._HEAD):
+        if not data.startswith(BMS._HEAD) or len(data) < 3:
             self._log.debug("incorrect SOF")
+            return
 
-        if len(data) < 3 or data[2] + 5 != len(data):
+        if data[2] + 5 != len(data):
             self._log.debug("incorrect frame length: %i != %i", len(data), data[2] + 5)
+            return
 
         if (crc := crc_modbus(data[: BMS._CRC_POS])) != int.from_bytes(
             data[BMS._CRC_POS :], "little"
