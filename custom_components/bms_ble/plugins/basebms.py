@@ -166,6 +166,12 @@ class BaseBMS(metaclass=ABCMeta):
                 data[KEY_DESIGN_CAP] * data[ATTR_BATTERY_LEVEL]
             ) / 100
 
+        # calculate battery level from design capacity and cycle charge
+        if can_calc(ATTR_BATTERY_LEVEL, frozenset({KEY_DESIGN_CAP, ATTR_CYCLE_CHRG})):
+            data[ATTR_BATTERY_LEVEL] = round(
+                data[ATTR_CYCLE_CHRG] * data[KEY_DESIGN_CAP] / 100, 1
+            )
+
         # calculate cycle capacity from voltage and cycle charge
         if can_calc(ATTR_CYCLE_CAP, frozenset({ATTR_VOLTAGE, ATTR_CYCLE_CHRG})):
             data[ATTR_CYCLE_CAP] = round(data[ATTR_VOLTAGE] * data[ATTR_CYCLE_CHRG], 3)

@@ -50,7 +50,7 @@
     {
       "local_name": "LT40AH",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },    
+    },
     {
       "manufacturer_id": 8856,
       "local_name": "121?0*",
@@ -73,17 +73,13 @@
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
-      "manufacturer_id": 49572,
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },    
-    {
       "manufacturer_id": 123,
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
       "manufacturer_id": 49572,
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },    
+    },
     {
       "manufacturer_id": 6226,
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
@@ -99,7 +95,7 @@
     {
       "local_name": "ECO-WORTHY*",
       "manufacturer_id": 47912
-    },    
+    },
     {
       "local_name": "DP04S*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
@@ -161,7 +157,7 @@
     },
     {
       "local_name": "V-12V???Ah-*"
-    },    
+    },
     {
       "local_name": "$PFLAC*",
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb"
@@ -207,6 +203,10 @@
     {
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
       "manufacturer_id": 35579
+    },
+    {
+      "service_uuid": "0000ffd0-0000-1000-8000-00805f9b34fb",
+      "manufacturer_id": 39008
     }
   ],
   "codeowners": [
