@@ -322,6 +322,31 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "jbd_bms",
     ),
+    (  # source bluetoothctl (https://github.com/patman15/BMS_BLE-HA/issues/141)
+        generate_advertisement_data(  # https://liontron.com/download/german/LISMART1240LX.pdf
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            manufacturer_data={15984: "\x97\xd1\xc1\x8c"}, # MAC address, correct
+            rssi=-53,
+        ),
+        "jbd_bms",
+    ),
+    (  # source bluetoothctl (https://github.com/patman15/BMS_BLE-HA/issues/174)
+        generate_advertisement_data(  # LionTron XL19110253
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            manufacturer_data={49572: "\x38\x99\x15\x54"}, # MAC address, correct
+            rssi=-53,
+        ),
+        "jbd_bms",
+    ),
+    (  # source bluetoothctl (https://github.com/patman15/BMS_BLE-HA/issues/174)
+        generate_advertisement_data(  # LionTron LT40AH
+            local_name="LT40AH",
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            manufacturer_data={19011: "\x1B\x38\xC1\xA4"}, # MAC address, wrong
+            rssi=-53,
+        ),
+        "jbd_bms",
+    ),
     (  # source LOG (https://github.com/patman15/BMS_BLE-HA/issues/134)
         # (https://github.com/patman15/BMS_BLE-HA/issues/157)
         generate_advertisement_data(  # ECO-WORTHY LiFePO4 12V 150Ah, DCHOUSE FW v6.6
