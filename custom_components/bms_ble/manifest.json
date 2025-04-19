@@ -48,6 +48,11 @@
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
+      "local_name": "LT40AH",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },    
+    {
+      "manufacturer_id": 8856,
       "local_name": "121?0*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
@@ -61,6 +66,14 @@
     },
     {
       "local_name": "PKT*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "manufacturer_id": 15984,
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "manufacturer_id": 49572,
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },    
     {
