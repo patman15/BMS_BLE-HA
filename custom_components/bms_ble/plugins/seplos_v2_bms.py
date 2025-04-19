@@ -31,12 +31,12 @@ from .basebms import BaseBMS, BMSsample, crc_xmodem
 
 
 class BMS(BaseBMS):
-    """Dummy battery class implementation."""
+    """Seplos v2 BMS implementation."""
 
-    _HEAD: Final[int] = 0x7E
-    _TAIL: Final[int] = 0x0D
-    _CMD_VER: Final[int] = 0x10
-    _RSP_VER: Final[int] = 0x14
+    _HEAD: Final[bytes] = b"\x7e"
+    _TAIL: Final[bytes] = b"\x0d"
+    _CMD_VER: Final[int] = 0x10  # TX protocol version
+    _RSP_VER: Final[int] = 0x14  # RX protocol version
     _MIN_LEN: Final[int] = 10
     _MAX_SUBS: Final[int] = 0xF
     _CELL_POS: Final[int] = 9
@@ -113,7 +113,7 @@ class BMS(BaseBMS):
         """Handle the RX characteristics notify event (new data arrives)."""
         if (
             len(data) > BMS._MIN_LEN
-            and data[0] == BMS._HEAD
+            and data.startswith(BMS._HEAD)
             and len(self._data) >= self._exp_len
         ):
             self._exp_len = BMS._MIN_LEN + int.from_bytes(data[5:7])
@@ -128,8 +128,8 @@ class BMS(BaseBMS):
         if len(self._data) < self._exp_len:
             return
 
-        if self._data[-1] != BMS._TAIL:
-            self._log.debug("frame end incorrect: %s", self._data)
+        if not self._data.endswith(BMS._TAIL):
+            self._log.debug("incorrect frame end: %s", self._data)
             return
 
         if self._data[1] != BMS._RSP_VER:
@@ -143,8 +143,8 @@ class BMS(BaseBMS):
         if (crc := crc_xmodem(self._data[1:-3])) != int.from_bytes(self._data[-3:-1]):
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",
-                int.from_bytes(self._data[-3:-1]),
                 crc,
+                int.from_bytes(self._data[-3:-1]),
             )
             return
 
@@ -164,16 +164,13 @@ class BMS(BaseBMS):
         self._exp_len: int = BMS._MIN_LEN
 
     @staticmethod
-    def _cmd(cmd: int, address: int = 0, data: bytearray = bytearray()) -> bytearray:
+    def _cmd(cmd: int, address: int = 0, data: bytearray = bytearray()) -> bytes:
         """Assemble a Seplos V2 BMS command."""
         assert cmd in (0x47, 0x51, 0x61, 0x62, 0x04)  # allow only read commands
-        frame = bytearray(
-            [BMS._HEAD, BMS._CMD_VER, address, 0x46, cmd]
-        )  # fixed version
+        frame = bytearray([*BMS._HEAD, BMS._CMD_VER, address, 0x46, cmd])
         frame += len(data).to_bytes(2, "big", signed=False) + data
-        frame += bytearray(int.to_bytes(crc_xmodem(frame[1:]), 2, byteorder="big"))
-        frame += bytearray([BMS._TAIL])
-        return frame
+        frame += int.to_bytes(crc_xmodem(frame[1:]), 2, byteorder="big") + BMS._TAIL
+        return bytes(frame)
 
     @staticmethod
     def _decode_data(data: dict[int, bytearray], offs: int) -> dict[str, int | float]:
@@ -186,6 +183,7 @@ class BMS(BaseBMS):
                 )
             )
             for key, cmd, idx, size, sign, func in BMS._PFIELDS
+            if idx + offs + size <= len(data[cmd]) - 3  # CRC, EOF
         }
 
     @staticmethod
