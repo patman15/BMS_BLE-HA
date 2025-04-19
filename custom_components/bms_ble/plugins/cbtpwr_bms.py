@@ -135,7 +135,7 @@ class BMS(BaseBMS):
         self._data_event.set()
 
     @staticmethod
-    def _gen_frame(cmd: bytes, value: list[int] | None = None) -> bytes:
+    def _cmd(cmd: bytes, value: list[int] | None = None) -> bytes:
         """Assemble a CBT Power BMS command."""
         value = [] if value is None else value
         assert len(value) <= 255
@@ -173,7 +173,7 @@ class BMS(BaseBMS):
         for cmd in BMS._CMDS:
             self._log.debug("request command 0x%X.", cmd)
             try:
-                await self._await_reply(BMS._gen_frame(cmd.to_bytes(1)))
+                await self._await_reply(BMS._cmd(cmd.to_bytes(1)))
             except TimeoutError:
                 continue
             if cmd != self._data[BMS.CMD_POS]:
@@ -187,7 +187,7 @@ class BMS(BaseBMS):
         voltages: dict[str, float] = {}
         for cmd in BMS.CELL_VOLTAGE_CMDS:
             try:
-                await self._await_reply(BMS._gen_frame(cmd.to_bytes(1)))
+                await self._await_reply(BMS._cmd(cmd.to_bytes(1)))
             except TimeoutError:
                 break
             voltages |= BMS._cell_voltages(self._data)
