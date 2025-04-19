@@ -5,7 +5,7 @@
 [![Effort][effort-shield]](https://buymeacoffee.com/patman15)
 [![Analytics][install-shield]]()
 
-This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). After installation, no configuration is required. You can use the [ESPHome Bluetooth proxy]([btproxy-url]) to extend the bluetooth coverage range. By using standard dashboard cards, it is easy to visualize the current state of remote batteries.
+This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). After installation, no configuration is required. You can use the [ESPHome Bluetooth proxy][btproxy-url] to extend the bluetooth coverage range. By using standard dashboard cards, it is easy to visualize the current state of remote batteries.
 
 ![dashboard](https://github.com/user-attachments/assets/45fbba89-6e80-4f5a-a6a2-f589c4eedaf2)
 
@@ -91,9 +91,9 @@ BMS_BLE is a default repository in [HACS](https://hacs.xyz/). Please follow the 
 <details><summary>Manual installation steps</summary>
 
 1. Using the tool of choice open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
-1. If you do not have a `custom_components` directory (folder) there, you need to create it.
-1. In the `custom_components` directory (folder) create a new folder called `bms_ble`.
-1. Download _all_ the files from the `custom_components/bms_ble/` directory (folder) in this repository.
+1. If you do not have a `_components` directory (folder) there, you need to create it.
+1. In the `_components` directory (folder) create a new folder called `bms_ble`.
+1. Download _all_ the files from the `_components/bms_ble/` directory (folder) in this repository.
 1. Place the files you downloaded in the new directory (folder) you created.
 1. Restart Home Assistant
 1. In the HA UI go to <a href="https://my.home-assistant.io/redirect/integrations">Configuration > Integrations</a> click <a href="https://my.home-assistant.io/redirect/config_flow_start?domain=bms_ble">+ Add Integration</a> and [search](https://my.home-assistant.io/redirect/config_flow_start/?domain=bms_ble) for "BLE Battery Management"
@@ -117,7 +117,7 @@ The connection cannot be established. The reason is most likely a <a href="https
 Bluetooth is turned off, when there is no current. Thus, device will get unavailble / cannot be added.
 </details>
 <details><summary>Liontron batteries</summary>
-These batteries need a shorter interval between queries. Be a bit patient to get them added and set a [custom interval]([custint-url]) of about 9s to keep a stable connection.
+These batteries need a shorter interval between queries. Be a bit patient to get them added and set a <a href="[custint-url]">custom interval</a> of about 9s to keep a stable connection.
 </details>
 <details><summary>Redodo MPPT</summary>
 Currently there is no way to distinguish Redodo batteries from their MPPT chargers. Thus, the latter are also detected but cannot be read out. Please set these devices to `ignore`.
@@ -155,7 +155,7 @@ The internal Bluetooth adapter issues <code>AT</code> commands in regular interv
 The polling interval is 30 seconds. So at startup it takes a few minutes to detect the battery and query the sensors. Then data will be available.
 
 ### Can I set a custom polling interval?
-Yes, but I strongly discourage that for stability reasons. If you still want to do so, please see the default way to define a [custom interval]([custint-url]) by Home Assistant. Note that Bluetooth discoveries can take up to a minute in worst case. Thus, please expect side effects, when changing the default of 30 seconds!
+Yes, but I strongly discourage that for stability reasons. If you still want to do so, please see the default way to define a [custom interval][custint-url] by Home Assistant. Note that Bluetooth discoveries can take up to a minute in worst case. Thus, please expect side effects, when changing the default of 30 seconds!
 
 ### Can I have the runtime in human readable format (using days)?
 Yes, you can use a [template sensor](https://my.home-assistant.io/redirect/config_flow_start?domain=template) or a card to show templates, e.g. [Mushroom template card](https://github.com/piitaya/lovelace-mushroom) with the following template:<br>
