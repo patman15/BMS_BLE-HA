@@ -40,12 +40,12 @@ class BMS(BaseBMS):
     _MIN_LEN: Final[int] = 10
     _MAX_SUBS: Final[int] = 0xF
     _CELL_POS: Final[int] = 9
-    _FIELDS: Final[  # Seplos V2: device manufacturer info 0x51, parallel data 0x62
-        list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
-    ] = [
-        (KEY_PACK_COUNT, 0x51, 42, 1, False, lambda x: min(int(x), BMS._MAX_SUBS)),
-        (KEY_PROBLEM, 0x62, 47, 6, False, lambda x: x),
-    ]
+    # _FIELDS: Final[  # Seplos V2: device manufacturer info 0x51, parallel data 0x62
+    #     list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
+    # ] = [
+    #     (KEY_PACK_COUNT, 0x51, 42, 1, False, lambda x: min(int(x), BMS._MAX_SUBS)),
+    #     (KEY_PROBLEM, 0x62, 47, 6, False, lambda x: x),
+    # ]
     _PFIELDS: Final[  # Seplos V2: single machine data
         list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
     ] = [
@@ -161,7 +161,7 @@ class BMS(BaseBMS):
     async def _init_connection(self) -> None:
         """Initialize protocol state."""
         await super()._init_connection()
-        self._exp_len: int = BMS._MIN_LEN
+        self._exp_len = BMS._MIN_LEN
 
     @staticmethod
     def _cmd(cmd: int, address: int = 0, data: bytearray = bytearray()) -> bytes:
@@ -223,15 +223,20 @@ class BMS(BaseBMS):
             self._data_final[0x61][BMS._CELL_POS + int(result[KEY_CELL_COUNT]) * 2 + 1]
         )
 
+        # get extention pack count from parallel data (main pack)
         result |= {
-            key: func(
-                int.from_bytes(
-                    self._data_final[cmd][idx : idx + size],
-                    byteorder="big",
-                    signed=sign,
-                )
+            KEY_PACK_COUNT: int.from_bytes(
+                self._data_final[0x51][42:43], byteorder="big"
             )
-            for key, cmd, idx, size, sign, func in BMS._FIELDS
+        }
+
+        # get alarms from parallel data (main pack, 8)
+        alarm_events: Final[int] = int.from_bytes(self._data_final[0x62][46:47])
+        result |= {
+            KEY_PROBLEM: int.from_bytes(
+                self._data_final[0x62][47 : 47 + alarm_events], byteorder="big"
+            )
+            >> 16  # ignore last two bytes
         }
 
         result |= BMS._cell_voltages(self._data_final[0x61])
