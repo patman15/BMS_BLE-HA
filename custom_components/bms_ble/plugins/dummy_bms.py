@@ -63,7 +63,7 @@ class BMS(BaseBMS):
         self, _sender: BleakGATTCharacteristic, data: bytearray
     ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
-        self._log.debug("RX BLE data: %s", data)
+        # self._log.debug("RX BLE data: %s", data)
         #
         # # do things like checking correctness of frame here and
         # # store it into a instance variable, e.g. self._data
