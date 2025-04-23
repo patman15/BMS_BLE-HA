@@ -29,7 +29,7 @@ from .basebms import BaseBMS, BMSsample
 
 
 class BMS(BaseBMS):
-    """Ective battery class implementation."""
+    """Ective BMS implementation."""
 
     _HEAD_RSP: Final[bytes] = bytes([0x5E])  # header for responses
     _MAX_CELLS: Final[int] = 16

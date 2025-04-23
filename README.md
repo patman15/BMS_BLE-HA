@@ -9,6 +9,16 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 
 ![dashboard](https://github.com/user-attachments/assets/45fbba89-6e80-4f5a-a6a2-f589c4eedaf2)
 
+* [Features](#features)
+* [Installation](#installation)
+* [Removing the Integration](#removing-the-integration)
+* [Known Issues](#known-issues)
+* [Troubleshooting](#troubleshooting)
+* [FAQ](FAQ)
+* [Outlook](#outlook)
+* [Thanks to](#thanks-to)
+* [References](#references)
+
 ## Features
 - Zero configuration
 - Autodetects compatible batteries
