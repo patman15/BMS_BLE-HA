@@ -1,4 +1,4 @@
-"""Module to support Seplos V2 BMS."""
+"""Module to support Seplos v2 BMS."""
 
 from collections.abc import Callable
 from typing import Final
@@ -40,6 +40,8 @@ class BMS(BaseBMS):
     _MIN_LEN: Final[int] = 10
     _MAX_SUBS: Final[int] = 0xF
     _CELL_POS: Final[int] = 9
+    _PRB_MAX: Final[int] = 8  # max number of alarm event bytes
+    _PRB_MASK: Final[int] = ~0x2FF # ignore byte 7-8 and intermittent power replenishment
     # _FIELDS: Final[  # Seplos V2: device manufacturer info 0x51, parallel data 0x62
     #     list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
     # ] = [
@@ -230,13 +232,15 @@ class BMS(BaseBMS):
             )
         }
 
-        # get alarms from parallel data (main pack, 8)
-        alarm_events: Final[int] = int.from_bytes(self._data_final[0x62][46:47])
+        # get alarms from parallel data (main pack)
+        alarm_events: Final[int] = min(
+            int.from_bytes(self._data_final[0x62][46:47]), BMS._PRB_MAX
+        )
         result |= {
             KEY_PROBLEM: int.from_bytes(
                 self._data_final[0x62][47 : 47 + alarm_events], byteorder="big"
             )
-            >> 16  # ignore last two bytes
+            & BMS._PRB_MASK
         }
 
         result |= BMS._cell_voltages(self._data_final[0x61])
