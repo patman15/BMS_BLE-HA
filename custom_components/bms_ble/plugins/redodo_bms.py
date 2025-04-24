@@ -1,4 +1,4 @@
-"""Module to support Dummy BMS."""
+"""Module to support Redodo BMS."""
 
 from collections.abc import Callable
 from typing import Final
@@ -28,7 +28,7 @@ from .basebms import BaseBMS, BMSsample, crc_sum
 
 
 class BMS(BaseBMS):
-    """Dummy battery class implementation."""
+    """Redodo BMS implementation."""
 
     CRC_POS: Final[int] = -1  # last byte
     HEAD_LEN: Final[int] = 3
@@ -52,10 +52,12 @@ class BMS(BaseBMS):
         """Provide BluetoothMatcher definition."""
         return [
             {
+                "local_name": pattern,
                 "service_uuid": BMS.uuid_services()[0],
                 "manufacturer_id": 0x585A,
                 "connectable": True,
             }
+            for pattern in ("R-12*", "R-24*")
         ]
 
     @staticmethod
