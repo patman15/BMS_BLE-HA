@@ -119,7 +119,7 @@ class BMS(BaseBMS):
             )
             return
 
-        self._data = data.copy()  # TODO: necessary?
+        self._data = data.copy()
 
         self._data_event.set()
 
