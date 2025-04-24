@@ -29,7 +29,7 @@ from .basebms import BaseBMS, BMSsample
 
 
 class BMS(BaseBMS):
-    """Felicity battery class implementation."""
+    """Felicity BMS implementation."""
 
     _HEAD: Final[bytes] = b"{"
     _TAIL: Final[bytes] = b"}"

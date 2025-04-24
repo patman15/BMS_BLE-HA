@@ -545,4 +545,13 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "ecoworthy_bms",
     ),
+    (  # source BTctl (https://github.com/patman15/BMS_BLE-HA/issues/264)
+        generate_advertisement_data(
+            local_name="gokwh battery",
+            manufacturer_data={16666: "\x29\x37\xc2\xa5"},  # MAC address, wrong
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            rssi=-72,
+        ),
+        "jbd_bms",
+    ),
 ]
