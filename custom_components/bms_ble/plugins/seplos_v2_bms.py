@@ -41,7 +41,7 @@ class BMS(BaseBMS):
     _MAX_SUBS: Final[int] = 0xF
     _CELL_POS: Final[int] = 9
     _PRB_MAX: Final[int] = 8  # max number of alarm event bytes
-    _PRB_MASK: Final[int] = ~0x2FF # ignore byte 7-8 and intermittent power replenishment
+    _PRB_MASK: Final[int] = ~0x2FFFF # ignore byte 7-8 and intermittent power replenishment
     # _FIELDS: Final[  # Seplos V2: device manufacturer info 0x51, parallel data 0x62
     #     list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
     # ] = [
