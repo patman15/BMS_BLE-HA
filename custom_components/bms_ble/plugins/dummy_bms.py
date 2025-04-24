@@ -22,7 +22,7 @@ from .basebms import BaseBMS, BMSsample
 
 
 class BMS(BaseBMS):
-    """Dummy battery class implementation."""
+    """Dummy BMS implementation."""
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""

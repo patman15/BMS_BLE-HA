@@ -79,6 +79,14 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
         )
         return service_info.rssi if service_info else None
 
+    def _rssi_msg(self) -> str:
+        """Return check RSSI message if below -75dBm."""
+        return (
+            f", check signal strength ({self.rssi} dBm)"
+            if self.rssi and self.rssi < -75
+            else ""
+        )
+
     @property
     def link_quality(self) -> int:
         """Gives the precentage of successful BMS reads out of the last 100 attempts."""
@@ -102,16 +110,21 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
                 LOGGER.debug("%s: no valid data received", self.name)
                 raise UpdateFailed("no valid data received.")
         except TimeoutError as err:
-            LOGGER.debug("%s: device communication timed out", self.name)
+            LOGGER.debug(
+                "%s: device communication timed out%s", self.name, self._rssi_msg()
+            )
             raise TimeoutError("device communication timed out") from err
         except (BleakError, EOFError) as err:
-            basemsg: Final[str] = "device communication failed" + (
-                f", check signal strength ({self.rssi} dBm)"
-                if self.rssi and self.rssi <= -80
-                else ""
+            LOGGER.debug(
+                "%s: device communication failed%s: %s (%s)",
+                self.name,
+                self._rssi_msg(),
+                err,
+                type(err).__name__,
             )
-            LOGGER.debug("%s: %s: %s (%s)", self.name, basemsg, err, type(err).__name__)
-            raise UpdateFailed(f"{basemsg}: {err!s} ({type(err).__name__})") from err
+            raise UpdateFailed(
+                f"device communication failed{self._rssi_msg()}: {err!s} ({type(err).__name__})"
+            ) from err
         finally:
             self._link_q.extend(
                 [False] * (1 + int((monotonic() - start) / UPDATE_INTERVAL))
