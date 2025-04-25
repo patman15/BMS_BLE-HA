@@ -237,5 +237,5 @@ async def test_problem_response(monkeypatch, patch_bleak_client) -> None:
 
     assert await bms.async_update() == REF_VALUE | {
         "problem": True,
-        "problem_code": 0xFFFFFFFFFFFD0000,
+        "problem_code": 0xFFFFFFFFFF7D0000,
     }
