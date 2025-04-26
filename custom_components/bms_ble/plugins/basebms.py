@@ -254,12 +254,19 @@ class BaseBMS(ABC):
         data: bytes,
         char: BleakGATTCharacteristic | int | str | None = None,
         wait_for_notify: bool = True,
+        max_size: int = 0,
     ) -> None:
         """Send data to the BMS and wait for valid reply notification."""
 
-        self._log.debug("TX BLE data: %s", data.hex(" "))
         self._data_event.clear()  # clear event before requesting new data
-        await self._client.write_gatt_char(char or self.uuid_tx(), data, response=False)
+        for chunk in (
+            data[i : i + (max_size or len(data))]
+            for i in range(0, len(data), max_size or len(data))
+        ):
+            self._log.debug("TX BLE data: %s", chunk.hex(" "))
+            await self._client.write_gatt_char(
+                char or self.uuid_tx(), chunk, response=False
+            )
         if wait_for_notify:
             await asyncio.wait_for(self._wait_event(), timeout=self.TIMEOUT)
 
@@ -308,6 +315,11 @@ def crc_modbus(data: bytearray) -> int:
     return crc & 0xFFFF
 
 
+def lrc_modbus(data: bytearray) -> int:
+    """Calculate MODBUS LRC."""
+    return ((sum(data) ^ 0xFFFF) + 1) & 0xFFFF
+
+
 def crc_xmodem(data: bytearray) -> int:
     """Calculate CRC-16-CCITT XMODEM."""
     crc: int = 0x0000
@@ -330,6 +342,10 @@ def crc8(data: bytearray) -> int:
     return crc & 0xFF
 
 
-def crc_sum(frame: bytearray) -> int:
-    """Calculate frame CRC."""
-    return sum(frame) & 0xFF
+def crc_sum(frame: bytearray, size: int = 1) -> int:
+    """Calculate the checksum of a frame using a specified size.
+
+    size : int, optional
+        The size of the checksum in bytes (default is 1).
+    """
+    return sum(frame) & ((1 << (8 * size)) - 1)

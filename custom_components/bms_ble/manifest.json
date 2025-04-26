@@ -146,6 +146,10 @@
       "manufacturer_id": 0
     },
     {
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb",
+      "manufacturer_id": 16963
+    },    
+    {
       "local_name": "R-12*",
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
       "manufacturer_id": 22618
@@ -235,5 +239,5 @@
   ],
   "quality_scale": "silver",
   "requirements": [],
-  "version": "1.15.0"
+  "version": "1.16.0"
 }
