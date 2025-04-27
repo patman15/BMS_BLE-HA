@@ -73,6 +73,7 @@ class BMS(BaseBMS):
                 "12300*",
                 "LT40AH",  # LionTron
                 "PKT*",  # Perfektium
+                "gokwh*",
             )
         ] + [
             {
