@@ -1,7 +1,7 @@
 """Module to support Offgridtec Smart Pro BMS."""
 
 from collections.abc import Callable
-from string import digits
+from string import digits, hexdigits
 from typing import Final, NamedTuple
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -159,11 +159,11 @@ class BMS(BaseBMS):
 
         self._log.debug("response: %s", msg.rstrip("\r\n"))
         # verify correct response
-        if len(msg)<8 or not msg.startswith("+RD,"):
+        if len(msg) < 8 or not msg.startswith("+RD,"):
             return BMS._Response(False, -1, 0)
         if msg[4:7] == "Err":
             return BMS._Response(True, -1, 0)
-        if not msg.endswith("\r\n"):
+        if not msg.endswith("\r\n") or not all(c in hexdigits for c in msg[4:-2]):
             return BMS._Response(False, -1, 0)
 
         # 16-bit value in network order (plus optional multiplier for 24-bit values)
