@@ -19,6 +19,8 @@ from custom_components.bms_ble.const import (
     ATTR_CYCLE_CAP,
     ATTR_CYCLE_CHRG,
     ATTR_DELTA_VOLTAGE,
+    ATTR_ENERGY_IN,
+    ATTR_ENERGY_OUT,
     ATTR_POWER,
     ATTR_PROBLEM,
     ATTR_RUNTIME,
@@ -42,6 +44,38 @@ class BaseBMS(ABC):
     TIMEOUT = 5.0
     _MAX_CELL_VOLT: Final[float] = 5.906  # max cell potential
     _HRS_TO_SECS: Final[int] = 60 * 60  # seconds in an hour
+
+    class BiDirMeter:
+        """A class to represent a bidirectional meter providing total values."""
+
+        def __init__(self, start: float = 0) -> None:
+            """Initialize the instance with an optional starting value."""
+            self._total_inc: float = 0
+            self._total_dec: float = 0
+            self._last_value: float = start
+
+        @property
+        def total_inc(self) -> float:
+            """Returns the current total sum."""
+            return self._total_inc
+
+        @property
+        def total_dec(self) -> float:
+            """Returns the current total sum."""
+            return self._total_dec
+
+        def update(self, sample: float) -> None:
+            """Add a specified delta to the total sum."""
+            if self._last_value:
+                self._total_inc += max(0, sample - self._last_value)
+                self._total_dec += max(0, self._last_value - sample)
+            self._last_value = sample
+
+        def clear(self, sample: float = 0) -> None:
+            """Reset the total sum to zero."""
+            self._total_inc = 0
+            self._total_dec = 0
+            self._last_value = sample
 
     def __init__(
         self,
@@ -79,6 +113,7 @@ class BaseBMS(ABC):
         )
         self._data: bytearray = bytearray()
         self._data_event: Final[asyncio.Event] = asyncio.Event()
+        self._energy_meter: BaseBMS.BiDirMeter = BaseBMS.BiDirMeter()
 
     @staticmethod
     @abstractmethod
@@ -210,6 +245,15 @@ class BaseBMS(ABC):
             )
         )
 
+    def _add_meters(self, data: BMSsample) -> None:
+        self._energy_meter.update(data.get(ATTR_CYCLE_CAP, 0))
+
+        if ATTR_ENERGY_IN not in data:
+            data[ATTR_ENERGY_IN] = round(self._energy_meter.total_inc,1)
+
+        if ATTR_ENERGY_OUT not in data:
+            data[ATTR_ENERGY_OUT] = round(self._energy_meter.total_dec,1)
+
     def _on_disconnect(self, _client: BleakClient) -> None:
         """Disconnect callback function."""
 
@@ -295,8 +339,8 @@ class BaseBMS(ABC):
         await self._connect()
 
         data = await self._async_update()
-
         self._add_missing_values(data, self._calc_values())
+        self._add_meters(data)
 
         if self._reconnect:
             # disconnect after data update to force reconnect next time (slow!)
