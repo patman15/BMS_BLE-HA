@@ -32,7 +32,7 @@ from .basebms import BaseBMS, BMSsample, crc_modbus
 
 
 class BMS(BaseBMS):
-    """ECO-WORTHY battery class implementation."""
+    """ECO-WORTHY BMS implementation."""
 
     _HEAD: Final[tuple] = (b"\xa1", b"\xa2")
     _CELL_POS: Final[int] = 14

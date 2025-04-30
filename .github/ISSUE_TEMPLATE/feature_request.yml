@@ -5,7 +5,7 @@ labels: "enhancement"
 body:
 - type: markdown
   attributes:
-    value: Before you open a new feature request, search through the existing feature requests to see if others have had the same idea.
+    value: Before you open a new feature request, search through the [existing feature requests](https://github.com/patman15/BMS_BLE-HA/issues?q=is%3Aissue) to see if others have had the same idea. Please select a proper title, i.e., **do not** use `No supported devices found via Bluetooth`. Instead, please put the type of the BMS and/or battery into the title, e.g. `<my_battery_type> not detected`.
 - type: checkboxes
   attributes:
     label: Checklist

@@ -207,18 +207,16 @@ class BMS(BaseBMS):
         return value
 
     @staticmethod
-    def _cmd(device: int, cmd: int, start: int, count: int) -> bytearray:
+    def _cmd(device: int, cmd: int, start: int, count: int) -> bytes:
         """Assemble a Seplos BMS command."""
         assert device >= 0x00 and (device <= 0x10 or device in (0xC0, 0xE0))
         assert cmd in (0x01, 0x04)  # allow only read commands
         assert start >= 0 and count > 0 and start + count <= 0xFFFF
         frame: bytearray = bytearray([device, cmd])
-        frame += bytearray(int.to_bytes(start, 2, byteorder="big"))
-        frame += bytearray(
-            int.to_bytes(count * (0x10 if cmd == 0x1 else 0x1), 2, byteorder="big")
-        )
-        frame += bytearray(int.to_bytes(crc_modbus(frame), 2, byteorder="little"))
-        return frame
+        frame += int.to_bytes(start, 2, byteorder="big")
+        frame += int.to_bytes(count * (0x10 if cmd == 0x1 else 0x1), 2, byteorder="big")
+        frame += int.to_bytes(crc_modbus(frame), 2, byteorder="little")
+        return bytes(frame)
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""

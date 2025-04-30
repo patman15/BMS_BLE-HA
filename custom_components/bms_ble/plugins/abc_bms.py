@@ -30,7 +30,7 @@ from .basebms import BaseBMS, BMSsample, crc8
 
 
 class BMS(BaseBMS):
-    """ABC battery class implementation."""
+    """ABC BMS implementation."""
 
     _HEAD_CMD: Final[int] = 0xEE
     _HEAD_RESP: Final[bytes] = b"\xcc"

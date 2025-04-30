@@ -1,6 +1,6 @@
 """Base class defintion for battery management systems (BMS)."""
 
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 import asyncio
 import logging
 from statistics import fmean
@@ -32,16 +32,16 @@ from custom_components.bms_ble.const import (
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.components.bluetooth.match import ble_device_matches
 from homeassistant.loader import BluetoothMatcherOptional
-from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
 type BMSsample = dict[str, int | float | bool]
 
 
-class BaseBMS(metaclass=ABCMeta):
+class BaseBMS(ABC):
     """Base class for battery management system."""
 
-    TIMEOUT: float = 5.0
-    MAX_CELL_VOLTAGE: Final[float] = 5.906  # max cell potential
+    TIMEOUT = 5.0
+    _MAX_CELL_VOLT: Final[float] = 5.906  # max cell potential
+    _HRS_TO_SECS: Final[int] = 60 * 60  # seconds in an hour
 
     def __init__(
         self,
@@ -184,7 +184,7 @@ class BaseBMS(metaclass=ABCMeta):
             and data[ATTR_CURRENT] < 0
         ):
             data[ATTR_RUNTIME] = int(
-                data[ATTR_CYCLE_CHRG] / abs(data[ATTR_CURRENT]) * _HRS_TO_SECS
+                data[ATTR_CYCLE_CHRG] / abs(data[ATTR_CURRENT]) * BaseBMS._HRS_TO_SECS
             )
         # calculate temperature (average of all sensors)
         if can_calc(ATTR_TEMPERATURE, frozenset({f"{KEY_TEMP_VALUE}0"})):
@@ -200,11 +200,11 @@ class BaseBMS(metaclass=ABCMeta):
             or (
                 data.get(ATTR_VOLTAGE, 1) <= 0
                 or any(
-                    v <= 0 or v > BaseBMS.MAX_CELL_VOLTAGE
+                    v <= 0 or v > BaseBMS._MAX_CELL_VOLT
                     for k, v in data.items()
                     if k.startswith(KEY_CELL_VOLTAGE)
                 )
-                or data.get(ATTR_DELTA_VOLTAGE, 0) > BaseBMS.MAX_CELL_VOLTAGE
+                or data.get(ATTR_DELTA_VOLTAGE, 0) > BaseBMS._MAX_CELL_VOLT
                 or data.get(ATTR_CYCLE_CHRG, 1) <= 0
                 or data.get(ATTR_BATTERY_LEVEL, 0) > 100
             )
@@ -254,12 +254,19 @@ class BaseBMS(metaclass=ABCMeta):
         data: bytes,
         char: BleakGATTCharacteristic | int | str | None = None,
         wait_for_notify: bool = True,
+        max_size: int = 0,
     ) -> None:
         """Send data to the BMS and wait for valid reply notification."""
 
-        self._log.debug("TX BLE data: %s", data.hex(" "))
         self._data_event.clear()  # clear event before requesting new data
-        await self._client.write_gatt_char(char or self.uuid_tx(), data, response=False)
+        for chunk in (
+            data[i : i + (max_size or len(data))]
+            for i in range(0, len(data), max_size or len(data))
+        ):
+            self._log.debug("TX BLE data: %s", chunk.hex(" "))
+            await self._client.write_gatt_char(
+                char or self.uuid_tx(), chunk, response=False
+            )
         if wait_for_notify:
             await asyncio.wait_for(self._wait_event(), timeout=self.TIMEOUT)
 
@@ -308,6 +315,11 @@ def crc_modbus(data: bytearray) -> int:
     return crc & 0xFFFF
 
 
+def lrc_modbus(data: bytearray) -> int:
+    """Calculate MODBUS LRC."""
+    return ((sum(data) ^ 0xFFFF) + 1) & 0xFFFF
+
+
 def crc_xmodem(data: bytearray) -> int:
     """Calculate CRC-16-CCITT XMODEM."""
     crc: int = 0x0000
@@ -330,6 +342,10 @@ def crc8(data: bytearray) -> int:
     return crc & 0xFF
 
 
-def crc_sum(frame: bytearray) -> int:
-    """Calculate frame CRC."""
-    return sum(frame) & 0xFF
+def crc_sum(frame: bytearray, size: int = 1) -> int:
+    """Calculate the checksum of a frame using a specified size.
+
+    size : int, optional
+        The size of the checksum in bytes (default is 1).
+    """
+    return sum(frame) & ((1 << (8 * size)) - 1)
