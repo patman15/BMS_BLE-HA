@@ -265,7 +265,7 @@ class BaseBMS(ABC):
         ):
             self._log.debug("TX BLE data: %s", chunk.hex(" "))
             await self._client.write_gatt_char(
-                char or self.uuid_tx(), chunk, response=False
+                char or self.uuid_tx(), chunk, response=True
             )
         if wait_for_notify:
             await asyncio.wait_for(self._wait_event(), timeout=self.TIMEOUT)
