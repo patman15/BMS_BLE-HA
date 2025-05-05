@@ -39,7 +39,8 @@ type BMSsample = dict[str, int | float | bool]
 class BaseBMS(ABC):
     """Base class for battery management system."""
 
-    TIMEOUT = 5.0
+    TIMEOUT: float = 5.0
+    MAX_RETRY: int = 3
     _MAX_CELL_VOLT: Final[float] = 5.906  # max cell potential
     _HRS_TO_SECS: Final[int] = 60 * 60  # seconds in an hour
 
@@ -263,10 +264,17 @@ class BaseBMS(ABC):
             data[i : i + (max_size or len(data))]
             for i in range(0, len(data), max_size or len(data))
         ):
-            self._log.debug("TX BLE data: %s", chunk.hex(" "))
-            await self._client.write_gatt_char(
-                char or self.uuid_tx(), chunk, response=True
-            )
+            for attempt in range(BaseBMS.MAX_RETRY):
+                self._log.debug("TX BLE data #%i: %s", attempt + 1, chunk.hex(" "))
+                try:
+                    await self._client.write_gatt_char(char or self.uuid_tx(), chunk)
+                    break  # Exit the loop once successful
+                except BleakError as exc:
+                    if attempt == BaseBMS.MAX_RETRY - 1:
+                        raise
+                    self._log.debug("TX failed: %s (%s)", exc, type(exc).__name__)
+                    await asyncio.sleep(0.1 * (2**BaseBMS.MAX_RETRY))
+
         if wait_for_notify:
             await asyncio.wait_for(self._wait_event(), timeout=self.TIMEOUT)
 
