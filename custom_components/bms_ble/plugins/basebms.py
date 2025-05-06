@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 import asyncio
 import logging
 from statistics import fmean
-from typing import Final
+from typing import Final, Literal
 
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -260,14 +260,25 @@ class BaseBMS(ABC):
         """Send data to the BMS and wait for valid reply notification."""
 
         self._data_event.clear()  # clear event before requesting new data
+        if char_tx := (self._client.services.get_characteristic(self.uuid_tx())):
+            self._log.debug("TX chararacteristic properties: %s", char_tx.properties)
+        write_mode: Literal["W", "WNR"] = "W"
+
         for chunk in (
             data[i : i + (max_size or len(data))]
             for i in range(0, len(data), max_size or len(data))
         ):
             for attempt in range(BaseBMS.MAX_RETRY):
-                self._log.debug("TX BLE data #%i: %s", attempt + 1, chunk.hex(" "))
+                self._log.debug(
+                    "TX BLE data #%i(%s): %s",
+                    attempt + 1,
+                    write_mode,
+                    chunk.hex(" "),
+                )
                 try:
-                    await self._client.write_gatt_char(char or self.uuid_tx(), chunk)
+                    await self._client.write_gatt_char(
+                        char or self.uuid_tx(), chunk, response=(write_mode == "W")
+                    )
                     break  # Exit the loop once successful
                 except BleakError as exc:
                     if attempt == BaseBMS.MAX_RETRY - 1:
@@ -303,7 +314,6 @@ class BaseBMS(ABC):
         await self._connect()
 
         data = await self._async_update()
-
         self._add_missing_values(data, self._calc_values())
 
         if self._reconnect:
