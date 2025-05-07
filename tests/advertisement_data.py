@@ -561,7 +561,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/276)
         generate_advertisement_data(
             local_name="xxxxxxx20126\f",  # renamed
-            manufacturer_data={65535: "3055443792f2"},  # MAC address
+            manufacturer_data={65535: "3055443792f2"},  # value: MAC address
             service_uuids=[
                 "00001800-0000-1000-8000-00805f9b34fb",
                 "00001801-0000-1000-8000-00805f9b34fb",
@@ -571,6 +571,18 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             rssi=-127,
         ),
         "ective_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/282)
+        generate_advertisement_data(
+            local_name="ECO0AA8",
+            manufacturer_data={64590: "fad60aa8"},  # MAC address, no OUI, correct
+            service_uuids=[
+                "0000ff00-0000-1000-8000-00805f9b34fb",
+                "00000001-0000-1000-8000-00805f9b34fb",
+            ],
+            rssi=-80,
+        ),
+        "jbd_bms",
     ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/276)
         generate_advertisement_data(
