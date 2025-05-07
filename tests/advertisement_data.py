@@ -575,10 +575,19 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/276)
         generate_advertisement_data(
             local_name="P-24050BNNA70-A01152",
-            rssi=-57,
             manufacturer_data={22618: "c8478018bc81"},
             service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
+            rssi=-57,
         ),
         "redodo_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/286)
+        generate_advertisement_data(
+            local_name="ECO-WORTHY 0B_5AD4",
+            manufacturer_data={57570: "5a783c31"},  # MAC address
+            service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
+            rssi=-86,
+        ),
+        "ecoworthy_bms",
     ),
 ]
