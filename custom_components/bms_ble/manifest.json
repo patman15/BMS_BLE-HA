@@ -52,7 +52,6 @@
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
-      "manufacturer_id": 8856,
       "local_name": "121?0*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
@@ -101,9 +100,17 @@
       "manufacturer_id": 47912
     },
     {
+      "local_name": "ECO????",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
       "local_name": "DP04S*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
+    {
+      "local_name": "ECO-LFP*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },    
     {
       "local_name": "SP0*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"

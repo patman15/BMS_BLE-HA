@@ -68,12 +68,14 @@ class BMS(BaseBMS):
                 "GJ-*",  # accurat batteries
                 "SX1*",  # Supervolt v3
                 "DP04S*",  # ECO-WORTHY, DCHOUSE
+                "ECO-LFP*", # ECO-WORTHY rack (use m_id?)
                 "121?0*",  # Eleksol, Ultimatron
                 "12200*",
                 "12300*",
                 "LT40AH",  # LionTron
                 "PKT*",  # Perfektium
                 "gokwh*",
+                "ECO????", # ECO-WORTHY
             )
         ] + [
             {
@@ -81,8 +83,8 @@ class BMS(BaseBMS):
                 "manufacturer_id": m_id,
                 "connectable": True,
             }
-            for m_id in (0x7B, 0x2298, 0x3E70, 0xC1A4)
-            # SBL, ECO-WORTHY LiFePO4 12V 100Ah, LISMART1240LX/LISMART1255LX,
+            for m_id in (0x7B, 0x3E70, 0xC1A4)
+            # SBL, LISMART1240LX/LISMART1255LX,
             # LionTron XL19110253 / EPOCH batteries 12.8V 460Ah - 12460A-H
         ]
 
