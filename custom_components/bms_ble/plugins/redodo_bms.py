@@ -52,7 +52,7 @@ class BMS(BaseBMS):
         """Provide BluetoothMatcher definition."""
         return [
             {
-                "local_name": pattern,              
+                "local_name": pattern,
                 "service_uuid": BMS.uuid_services()[0],
                 "manufacturer_id": 0x585A,
                 "connectable": True,
