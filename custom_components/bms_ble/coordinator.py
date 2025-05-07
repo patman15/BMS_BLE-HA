@@ -40,22 +40,24 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             always_update=False,  # only update when sensor value has changed
             config_entry=config_entry,
         )
-        self.name: Final[str] = ble_device.name
+        self._device: Final[BaseBMS] = bms_device
+        self._link_q = deque([False], maxlen=100)  # track BMS update issues
         self._mac: Final[str] = ble_device.address
+        self._stale: bool = False  # indicates no BMS response for significant time
+
         LOGGER.debug(
             "Initializing coordinator for %s (%s) as %s",
             self.name,
             self._mac,
             bms_device.device_id(),
         )
-        self._link_q = deque([False], maxlen=100)  # track BMS update issues
+
         if service_info := async_last_service_info(
             self.hass, address=self._mac, connectable=True
         ):
             LOGGER.debug("%s: advertisement: %s", self.name, service_info.as_dict())
 
-        # retrieve BMS class and initialize it
-        self._device: Final[BaseBMS] = bms_device
+        # retrieve device information
         device_info: dict[str, str] = self._device.device_info()
         self.device_info = DeviceInfo(
             identifiers={
@@ -99,6 +101,23 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
         await super().async_shutdown()
         await self._device.disconnect()
 
+    def _device_stale(self, reset: bool = False) -> bool:
+        if reset:
+            self._stale = False
+        elif (
+            not self._stale
+            and self.link_quality <= 50
+            and list(self._link_q)[-10:] == [False] * 10
+        ):
+            LOGGER.error(
+                "%s: device went silent, forcing reconnect%s!",
+                self.name,
+                self._rssi_msg(),
+            )
+            self._stale = True
+
+        return self._stale
+
     async def _async_update_data(self) -> BMSsample:
         """Return the latest data from the device."""
 
@@ -109,6 +128,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             if not (bms_data := await self._device.async_update()):
                 LOGGER.debug("%s: no valid data received", self.name)
                 raise UpdateFailed("no valid data received.")
+            self._device_stale(reset=True)
         except TimeoutError as err:
             LOGGER.debug(
                 "%s: device communication timed out%s", self.name, self._rssi_msg()
@@ -129,7 +149,10 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             self._link_q.extend(
                 [False] * (1 + int((monotonic() - start) / UPDATE_INTERVAL))
             )
+            if self._device_stale():
+                await self._device.disconnect()
 
         self._link_q[-1] = True  # set success
         LOGGER.debug("%s: BMS data sample %s", self.name, bms_data)
+
         return bms_data
