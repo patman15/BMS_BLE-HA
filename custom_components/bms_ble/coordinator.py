@@ -97,7 +97,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
 
     async def async_shutdown(self) -> None:
         """Shutdown coordinator and any connection."""
-        LOGGER.debug("Shutting down BMS device (%s)", self.name)
+        LOGGER.debug("Shutting down BMS (%s)", self.name)
         await super().async_shutdown()
         await self._device.disconnect()
 
@@ -110,7 +110,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             and list(self._link_q)[-10:] == [False] * 10
         ):
             LOGGER.error(
-                "%s: device went silent, forcing reconnect%s!",
+                "%s: BMS went silent, forcing reconnect%s!",
                 self.name,
                 self._rssi_msg(),
             )
@@ -131,19 +131,19 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             self._device_stale(reset=True)
         except TimeoutError as err:
             LOGGER.debug(
-                "%s: device communication timed out%s", self.name, self._rssi_msg()
+                "%s: BMS communication timed out%s", self.name, self._rssi_msg()
             )
-            raise TimeoutError("device communication timed out") from err
+            raise TimeoutError("BMS communication timed out") from err
         except (BleakError, EOFError) as err:
             LOGGER.debug(
-                "%s: device communication failed%s: %s (%s)",
+                "%s: BMS communication failed%s: %s (%s)",
                 self.name,
                 self._rssi_msg(),
                 err,
                 type(err).__name__,
             )
             raise UpdateFailed(
-                f"device communication failed{self._rssi_msg()}: {err!s} ({type(err).__name__})"
+                f"BMS communication failed{self._rssi_msg()}: {err!s} ({type(err).__name__})"
             ) from err
         finally:
             self._link_q.extend(
