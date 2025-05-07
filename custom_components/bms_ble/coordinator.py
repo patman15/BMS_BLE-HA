@@ -110,7 +110,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             and list(self._link_q)[-10:] == [False] * 10
         ):
             LOGGER.error(
-                "%s: BMS went silent, forcing reconnect%s!",
+                "%s: BMS went silent, triggering reconnect%s!",
                 self.name,
                 self._rssi_msg(),
             )
@@ -122,6 +122,9 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
         """Return the latest data from the device."""
 
         LOGGER.debug("%s: BMS data update", self.name)
+
+        if self._device_stale():
+            await self._device.disconnect()
 
         start: Final[float] = monotonic()
         try:
@@ -149,8 +152,6 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             self._link_q.extend(
                 [False] * (1 + int((monotonic() - start) / UPDATE_INTERVAL))
             )
-            if self._device_stale():
-                await self._device.disconnect()
 
         self._link_q[-1] = True  # set success
         LOGGER.debug("%s: BMS data sample %s", self.name, bms_data)
