@@ -250,22 +250,22 @@ class BaseBMS(ABC):
             await self.disconnect()
             raise
 
-    def _write_mode(self) -> Literal["W", "WNR"]:
+    def _write_mode(self, char: int | str) -> Literal["W", "WNR"]:
         char_tx: Final[BleakGATTCharacteristic | None] = (
-            self._client.services.get_characteristic(self.uuid_tx())
+            self._client.services.get_characteristic(char)
         )
         return "W" if char_tx and "write" in char_tx.properties else "WNR"
 
     async def _await_reply(
         self,
         data: bytes,
-        char: BleakGATTCharacteristic | int | str | None = None,
+        char: int | str | None = None,
         wait_for_notify: bool = True,
         max_size: int = 0,
     ) -> None:
         """Send data to the BMS and wait for valid reply notification."""
 
-        write_mode: Final[Literal["W", "WNR"]] = self._write_mode()
+        write_mode: Final[Literal["W", "WNR"]] = self._write_mode(char or self.uuid_tx())
         retries: Final[int] = 1 if write_mode == "W" else BaseBMS.MAX_RETRY
         timeout: Final[float] = self.TIMEOUT / ((2**retries) - 1)
 
