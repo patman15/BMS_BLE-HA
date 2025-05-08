@@ -161,9 +161,8 @@ The internal Bluetooth adapter issues <code>AT</code> commands in regular interv
 
 ## Energy Dashboard Integration
 
-If you want your battery to be integrated with the Home Assistant [energy dashboard](https://my.home-assistant.io/redirect/energy/) you need to integrate the reported power value separately for charge and discharge power to two energy values.
-<details><summary>Detailed steps for energy dashboard configuration</summary>
-Add two template sensors
+If you want your battery to be integrated with the Home Assistant [energy dashboard](https://my.home-assistant.io/redirect/energy/) you need to integrate the reported power value separately for charge and discharge power to two energy values. Here are the detailed steps for energy dashboard configuration in your `configuration.yaml` (you achieve the same result by configuring equivalent [helpers](https://my.home-assistant.io/redirect/helpers/)):
+### Add two template sensors
 ```yaml
 template:
   - sensor:
@@ -180,7 +179,7 @@ template:
       device_class: power
       availability: "{{ has_value('sensor.smartbat_..._power') }}"
 ```
-Add two integration sensors
+### Add two integration sensors
 ```yaml
 sensor:
   - platform: integration
@@ -192,7 +191,6 @@ sensor:
 ```
 
 Then go to the [energy dashboard configuration](https://my.home-assistant.io/redirect/config_energy/), add a battery system and set the two sensors `energy_in` and `energy_out`.
-</details>
 
 ## FAQ
 ### My sensors show unknown/unavailable at startup!
