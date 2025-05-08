@@ -54,6 +54,10 @@ class BMS(BaseBMS):
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
         super().__init__(__name__, ble_device, reconnect)
+        self._MAC_HEAD: Final[tuple] = tuple(
+            int(self._ble_device.address.replace(":", ""), 16).to_bytes(6) + head
+            for head in BMS._HEAD
+        )
         self._data_final: dict[int, bytearray] = {}
 
     @staticmethod
@@ -108,7 +112,7 @@ class BMS(BaseBMS):
         """Handle the RX characteristics notify event (new data arrives)."""
         self._log.debug("RX BLE data: %s", data)
 
-        if not data.startswith(BMS._HEAD):
+        if not data.startswith(BMS._HEAD + self._MAC_HEAD):
             self._log.debug("invalid frame type: '%s'", data[0:1].hex())
             return
 
@@ -121,16 +125,19 @@ class BMS(BaseBMS):
             self._data = bytearray()
             return
 
-        self._data_final[data[0]] = data.copy()
+        key: Final[int] = data[6] if data.startswith(self._MAC_HEAD) else data[0]
+        self._data_final[key] = data.copy()
         if BMS._CMDS.issubset(self._data_final.keys()):
             self._data_event.set()
 
     @staticmethod
-    def _decode_data(data: dict[int, bytearray]) -> dict[str, int | float]:
+    def _decode_data(data: dict[int, bytearray], offs: int) -> dict[str, int | float]:
         return {
             key: func(
                 int.from_bytes(
-                    data[cmd][idx : idx + size], byteorder="big", signed=sign
+                    data[cmd][idx + offs : idx + offs + size],
+                    byteorder="big",
+                    signed=sign,
                 )
             )
             for key, cmd, idx, size, sign, func in BMS._FIELDS
@@ -171,15 +178,18 @@ class BMS(BaseBMS):
         self._data_event.clear()  # clear event to ensure new data is acquired
         await asyncio.wait_for(self._wait_event(), timeout=self.TIMEOUT)
 
-        result: BMSsample = BMS._decode_data(self._data_final)
+        offset = -2 if self._data_final[0xA1].startswith(self._MAC_HEAD) else 0
+        result: BMSsample = BMS._decode_data(self._data_final, offset)
 
         result |= BMS._cell_voltages(
             self._data_final[0xA2],
             int(result.get(KEY_CELL_COUNT, 0)),
-            BMS._CELL_POS + 2,
+            BMS._CELL_POS + 2 + offset,
         )
         result |= BMS._temp_sensors(
-            self._data_final[0xA2], int(result.get(KEY_TEMP_SENS, 0)), BMS._TEMP_POS + 2
+            self._data_final[0xA2],
+            int(result.get(KEY_TEMP_SENS, 0)),
+            BMS._TEMP_POS + 2 + offset,
         )
 
         return result
