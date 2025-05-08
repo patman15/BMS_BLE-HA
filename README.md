@@ -14,6 +14,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 * [Removing the Integration](#removing-the-integration)
 * [Known Issues](#known-issues)
 * [Troubleshooting](#troubleshooting)
+* [Energy Dashboard Integration](#energy-dashboard-integration)
 * [FAQ](FAQ)
 * [Outlook](#outlook)
 * [Thanks to](#thanks-to)
@@ -157,6 +158,41 @@ The internal Bluetooth adapter issues <code>AT</code> commands in regular interv
 - disable the log (Home Assistant will prompt you to download the log), and finally
 - [open an issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=support.yml) with a good description of what your question/issue is and attach the log, or
 - [open a bug](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=Bug&projects=&template=bug.yml) if you think the behaviour you see is caused by the integration, including a good description of what happened, your expectations, and attach the log.
+
+## Energy Dashboard Integration
+
+If you want your battery to be integrated with the Home Assistant [energy dashboard](https://my.home-assistant.io/redirect/energy/) you need to integrate the reported power value separately for charge and discharge power to two energy values.
+<details><summary>Detailed steps for energy dashboard configuration</summary>
+Add two template sensors
+```yaml
+template:
+  - sensor:
+    - unique_id: charge_power
+      state: "{{ [states('sensor.smartbat_..._power') | float, 0] | max}}"
+      unit_of_measurement: 'W'
+      state_class: measurement
+      device_class: power
+      availability: "{{ has_value('sensor.smartbat_..._power') }}"
+    - unique_id: discharge_power
+      state: "{{ [states('sensor.smartbat_..._power') | float, 0] | min | abs}}"
+      unit_of_measurement: 'W'
+      state_class: measurement
+      device_class: power
+      availability: "{{ has_value('sensor.smartbat_..._power') }}"
+```
+Add two integration sensors
+```yaml
+sensor:
+  - platform: integration
+    name: energy_in
+    source: sensor.template_charge_power
+  - platform: integration
+    name: energy_out
+    source: sensor.template_discharge_power
+```
+
+Then go to the [energy dashboard configuration](https://my.home-assistant.io/redirect/config_energy/), add a battery system and set the two sensors `energy_in` and `energy_out`.
+</details>
 
 ## FAQ
 ### My sensors show unknown/unavailable at startup!
