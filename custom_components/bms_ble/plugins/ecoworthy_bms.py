@@ -35,16 +35,16 @@ class BMS(BaseBMS):
     """ECO-WORTHY BMS implementation."""
 
     _HEAD: Final[tuple] = (b"\xa1", b"\xa2")
-    _CELL_POS: Final[int] = 14
-    _TEMP_POS: Final[int] = 80
+    _CELL_POS: Final[int] = 13
+    _TEMP_POS: Final[int] = 79
     _FIELDS: Final[
         list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
     ] = [
-        (ATTR_BATTERY_LEVEL, 0xA1, 16, 2, False, lambda x: x),
-        (ATTR_VOLTAGE, 0xA1, 20, 2, False, lambda x: float(x / 100)),
-        (ATTR_CURRENT, 0xA1, 22, 2, True, lambda x: float(x / 100)),
-        (KEY_PROBLEM, 0xA1, 51, 2, False, lambda x: x),
-        (KEY_DESIGN_CAP, 0xA1, 26, 2, False, lambda x: float(x / 100)),
+        (ATTR_BATTERY_LEVEL, 0xA1, 15, 2, False, lambda x: x),
+        (ATTR_VOLTAGE, 0xA1, 19, 2, False, lambda x: float(x / 100)),
+        (ATTR_CURRENT, 0xA1, 21, 2, True, lambda x: float(x / 100)),
+        (KEY_PROBLEM, 0xA1, 50, 2, False, lambda x: x),
+        (KEY_DESIGN_CAP, 0xA1, 25, 2, False, lambda x: float(x / 100)),
         (KEY_CELL_COUNT, 0xA2, _CELL_POS, 2, False, lambda x: x),
         (KEY_TEMP_SENS, 0xA2, _TEMP_POS, 2, False, lambda x: x),
         # (ATTR_CYCLES, 0xA1, 8, 2, False, lambda x: x),
@@ -54,7 +54,7 @@ class BMS(BaseBMS):
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
         super().__init__(__name__, ble_device, reconnect)
-        self._MAC_HEAD: Final[tuple] = tuple(
+        self._mac_head: Final[tuple] = tuple(
             int(self._ble_device.address.replace(":", ""), 16).to_bytes(6) + head
             for head in BMS._HEAD
         )
@@ -112,7 +112,7 @@ class BMS(BaseBMS):
         """Handle the RX characteristics notify event (new data arrives)."""
         self._log.debug("RX BLE data: %s", data)
 
-        if not data.startswith(BMS._HEAD + self._MAC_HEAD):
+        if not data.startswith(BMS._HEAD + self._mac_head):
             self._log.debug("invalid frame type: '%s'", data[0:1].hex())
             return
 
@@ -125,19 +125,18 @@ class BMS(BaseBMS):
             self._data = bytearray()
             return
 
-        key: Final[int] = data[6] if data.startswith(self._MAC_HEAD) else data[0]
-        self._data_final[key] = data.copy()
+        # copy final data without message type and adapt to protocol type
+        shift: Final[bool] = data.startswith(self._mac_head)
+        self._data_final[data[6 if shift else 0]] = data[3 if shift else 1 :].copy()
         if BMS._CMDS.issubset(self._data_final.keys()):
             self._data_event.set()
 
     @staticmethod
-    def _decode_data(data: dict[int, bytearray], offs: int) -> dict[str, int | float]:
+    def _decode_data(data: dict[int, bytearray]) -> dict[str, int | float]:
         return {
             key: func(
                 int.from_bytes(
-                    data[cmd][idx + offs : idx + offs + size],
-                    byteorder="big",
-                    signed=sign,
+                    data[cmd][idx : idx + size], byteorder="big", signed=sign
                 )
             )
             for key, cmd, idx, size, sign, func in BMS._FIELDS
@@ -178,18 +177,15 @@ class BMS(BaseBMS):
         self._data_event.clear()  # clear event to ensure new data is acquired
         await asyncio.wait_for(self._wait_event(), timeout=self.TIMEOUT)
 
-        offset = -2 if self._data_final[0xA1].startswith(self._MAC_HEAD) else 0
-        result: BMSsample = BMS._decode_data(self._data_final, offset)
+        result: BMSsample = BMS._decode_data(self._data_final)
 
         result |= BMS._cell_voltages(
             self._data_final[0xA2],
             int(result.get(KEY_CELL_COUNT, 0)),
-            BMS._CELL_POS + 2 + offset,
+            BMS._CELL_POS + 2,
         )
         result |= BMS._temp_sensors(
-            self._data_final[0xA2],
-            int(result.get(KEY_TEMP_SENS, 0)),
-            BMS._TEMP_POS + 2 + offset,
+            self._data_final[0xA2], int(result.get(KEY_TEMP_SENS, 0)), BMS._TEMP_POS + 2
         )
 
         return result
