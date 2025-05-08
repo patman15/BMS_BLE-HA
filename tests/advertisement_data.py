@@ -596,10 +596,18 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/284)
         generate_advertisement_data(
             local_name="ECO-LFP48100-3U-8EC7",
-            manufacturer_data={49834:"37018ec700014c03"}, # MAC address correct
+            manufacturer_data={49834: "37018ec700014c03"},  # MAC address correct
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
             rssi=-70,
         ),
         "jbd_bms",
-    )
+    ),
+    (  # source proxy LOG (https://github.com/patman15/BMS_BLE-HA/issues/295)
+        generate_advertisement_data(
+            local_name="ECO-WORTHY 02_3DDF",
+            manufacturer_data={15996: "\x82\x1c\x3d\xe0"},  # MAC address correct
+            rssi=-49,
+        ),
+        "ecoworthy_bms",
+    ),
 ]
