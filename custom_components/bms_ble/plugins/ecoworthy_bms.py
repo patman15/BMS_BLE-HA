@@ -35,16 +35,16 @@ class BMS(BaseBMS):
     """ECO-WORTHY BMS implementation."""
 
     _HEAD: Final[tuple] = (b"\xa1", b"\xa2")
-    _CELL_POS: Final[int] = 13
-    _TEMP_POS: Final[int] = 79
+    _CELL_POS: Final[int] = 14
+    _TEMP_POS: Final[int] = 80
     _FIELDS: Final[
         list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
     ] = [
-        (ATTR_BATTERY_LEVEL, 0xA1, 15, 2, False, lambda x: x),
-        (ATTR_VOLTAGE, 0xA1, 19, 2, False, lambda x: float(x / 100)),
-        (ATTR_CURRENT, 0xA1, 21, 2, True, lambda x: float(x / 100)),
-        (KEY_PROBLEM, 0xA1, 50, 2, False, lambda x: x),
-        (KEY_DESIGN_CAP, 0xA1, 25, 2, False, lambda x: float(x / 100)),
+        (ATTR_BATTERY_LEVEL, 0xA1, 16, 2, False, lambda x: x),
+        (ATTR_VOLTAGE, 0xA1, 20, 2, False, lambda x: float(x / 100)),
+        (ATTR_CURRENT, 0xA1, 22, 2, True, lambda x: float(x / 100)),
+        (KEY_PROBLEM, 0xA1, 51, 2, False, lambda x: x),
+        (KEY_DESIGN_CAP, 0xA1, 26, 2, False, lambda x: float(x / 100)),
         (KEY_CELL_COUNT, 0xA2, _CELL_POS, 2, False, lambda x: x),
         (KEY_TEMP_SENS, 0xA2, _TEMP_POS, 2, False, lambda x: x),
         # (ATTR_CYCLES, 0xA1, 8, 2, False, lambda x: x),
@@ -127,7 +127,9 @@ class BMS(BaseBMS):
 
         # copy final data without message type and adapt to protocol type
         shift: Final[bool] = data.startswith(self._mac_head)
-        self._data_final[data[6 if shift else 0]] = data[3 if shift else 1 :].copy()
+        self._data_final[data[6 if shift else 0]] = (
+            bytearray(2 if shift else 0) + data.copy()
+        )
         if BMS._CMDS.issubset(self._data_final.keys()):
             self._data_event.set()
 
