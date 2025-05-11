@@ -51,13 +51,13 @@ class BMS(BaseBMS):
     def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [
-            {
+            { # patterns required to exclude "BT-ROCC2440"
                 "local_name": pattern,
                 "service_uuid": BMS.uuid_services()[0],
                 "manufacturer_id": 0x585A,
                 "connectable": True,
             }
-            for pattern in ("R-12*", "R-24*", "P-12*", "P-24*")
+            for pattern in ("R-12*", "R-24*", "P-12*", "P-24*", "PQ-12*", "PQ-24*")
         ]
 
     @staticmethod
