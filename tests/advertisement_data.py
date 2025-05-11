@@ -610,4 +610,13 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "ecoworthy_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/301)
+        generate_advertisement_data(  # PowerQueen
+            local_name="PQ-24100B-A00292",
+            rssi=-65,
+            manufacturer_data={22618: "c8478010b79a"},
+            service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
+        ),
+        "redodo_bms",
+    ),
 ]
