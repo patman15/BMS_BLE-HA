@@ -1,5 +1,8 @@
 """Test the BLE Battery Management System update coordinator."""
 
+import contextlib
+from typing import Final
+
 from habluetooth import BluetoothServiceInfoBleak
 import pytest
 
@@ -114,3 +117,58 @@ async def test_update_exception(
         coordinator.last_exception,
         TimeoutError if mock_coordinator_exception is TimeoutError else UpdateFailed,
     )
+
+
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+async def test_stale_recovery(
+    monkeypatch, bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
+) -> None:
+    """Test if coordinator raises appropriate exception from BMS."""
+    flags: dict[str, bool] = {"disconnect_called": False}
+    bms_data: Final[MockBMS] = MockBMS()
+    bms_nodata: Final[MockBMS] = MockBMS(ret_value={})
+
+    async def _mock_disconnect(_self) -> bool:
+        """Mock disconnect method."""
+        flags["disconnect_called"] = True
+        return True
+
+    monkeypatch.setattr(MockBMS, "disconnect", _mock_disconnect)
+
+    coordinator = BTBmsCoordinator(
+        hass,
+        bt_discovery.device,
+        bms_nodata,
+        mock_config(bms="stale_recovery"),
+    )
+
+    # run 8 times failed update from beginning (1 failed is init value!)
+    for _ in range(8):
+        with contextlib.suppress(UpdateFailed):
+            await coordinator.async_refresh()
+        assert not coordinator.last_update_success
+    assert coordinator.link_quality == 0
+    assert not flags["disconnect_called"]  # should trigger tenth time, so not now
+
+    # update once with valid data
+    # (this will set the link quality to 10%, and reset the stale flag)
+    monkeypatch.setattr(coordinator, "_device", bms_data)
+    await coordinator.async_refresh()
+    assert coordinator.last_update_success
+    assert coordinator.link_quality == 10
+    assert not flags["disconnect_called"]
+
+    # run 10 times failed updates
+    monkeypatch.setattr(coordinator, "_device", bms_nodata)
+    for _ in range(10):
+        with contextlib.suppress(UpdateFailed):
+            await coordinator.async_refresh()
+        assert not coordinator.last_update_success
+        assert not flags["disconnect_called"]
+    assert coordinator.link_quality == 5
+
+    # since 10 consecutive updates failed and link quality is below 10%, reconnect shall trigger
+    await coordinator.async_refresh()
+    assert not coordinator.last_update_success
+    assert coordinator.link_quality == 4
+    assert flags["disconnect_called"]
