@@ -561,7 +561,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/276)
         generate_advertisement_data(
             local_name="xxxxxxx20126\f",  # renamed
-            manufacturer_data={65535: "3055443792f2"},  # MAC address
+            manufacturer_data={65535: "3055443792f2"},  # value: MAC address
             service_uuids=[
                 "00001800-0000-1000-8000-00805f9b34fb",
                 "00001801-0000-1000-8000-00805f9b34fb",
@@ -572,7 +572,19 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "ective_bms",
     ),
-    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/276)
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/282)
+        generate_advertisement_data(
+            local_name="ECO0AA8",
+            manufacturer_data={64590: "fad60aa8"},  # MAC address, no OUI, correct
+            service_uuids=[
+                "0000ff00-0000-1000-8000-00805f9b34fb",
+                "00000001-0000-1000-8000-00805f9b34fb",
+            ],
+            rssi=-80,
+        ),
+        "jbd_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/280)
         generate_advertisement_data(
             local_name="P-24050BNNA70-A01152",
             manufacturer_data={22618: "c8478018bc81"},
@@ -590,4 +602,42 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "ecoworthy_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/284)
+        generate_advertisement_data(
+            local_name="ECO-LFP48100-3U-8EC7",
+            manufacturer_data={49834: "37018ec700014c03"},  # MAC address correct
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            rssi=-70,
+        ),
+        "jbd_bms",
+    ),
+    (  # source proxy LOG (https://github.com/patman15/BMS_BLE-HA/issues/295)
+        generate_advertisement_data(
+            local_name="ECO-WORTHY 02_3DDF",
+            manufacturer_data={15996: "\x82\x1c\x3d\xe0"},  # MAC address correct
+            rssi=-49,
+        ),
+        "ecoworthy_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/301)
+        generate_advertisement_data(  # PowerQueen
+            local_name="PQ-24100B-A00292",
+            rssi=-65,
+            manufacturer_data={22618: "c8478010b79a"},
+            service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
+        ),
+        "redodo_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/302)
+        generate_advertisement_data(
+            local_name="OGR-48100-123456789",
+            manufacturer_data={13880: "13014e9a"},
+            service_uuids=[
+                "0000ff00-0000-1000-8000-00805f9b34fb",
+                "00000001-0000-1000-8000-00805f9b34fb",
+            ],
+            rssi=-47,
+        ),
+        "jbd_bms",
+    )
 ]

@@ -4,7 +4,7 @@ from collections.abc import Awaitable, Buffer, Callable, Iterable
 import importlib
 import logging
 from types import ModuleType
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from _pytest.config import Notset
@@ -12,6 +12,7 @@ from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.descriptor import BleakGATTDescriptor
 from bleak.backends.device import BLEDevice
+from bleak.backends.service import BleakGATTServiceCollection
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str, uuidstr_to_str
 from home_assistant_bluetooth import SOURCE_LOCAL, BluetoothServiceInfoBleak
@@ -320,6 +321,7 @@ class MockBleakClient(BleakClient):
             disconnected_callback
         )
         self._ble_device: BLEDevice = address_or_ble_device
+        self._services: Iterable[str] | None = services
 
     @property
     def address(self) -> str:
@@ -331,7 +333,13 @@ class MockBleakClient(BleakClient):
         """Mock connected."""
         return self._connected
 
-    async def connect(self, *_args, **_kwargs):
+    @property
+    def services(self) -> BleakGATTServiceCollection:
+        """Mock GATT services."""
+        return BleakGATTServiceCollection()
+
+
+    async def connect(self, *_args, **_kwargs) -> Literal[True]:
         """Mock connect."""
         assert not self._connected, "connect called, but client already connected."
         LOGGER.debug("MockBleakClient connecting %s", self._ble_device.address)

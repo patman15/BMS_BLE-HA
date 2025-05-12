@@ -52,7 +52,6 @@
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
-      "manufacturer_id": 8856,
       "local_name": "121?0*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
@@ -81,6 +80,10 @@
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
+      "local_name": "OGR-*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },    
+    {
       "manufacturer_id": 123,
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
@@ -105,9 +108,21 @@
       "manufacturer_id": 57570
     },    
     {
+      "local_name": "ECO-WORTHY*",
+      "manufacturer_id": 15996
+    },    
+    {
+      "local_name": "ECO????",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
       "local_name": "DP04S*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
+    {
+      "local_name": "ECO-LFP*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },    
     {
       "local_name": "SP0*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
@@ -229,5 +244,5 @@
   ],
   "quality_scale": "silver",
   "requirements": [],
-  "version": "1.16.1"
+  "version": "1.17.0"
 }

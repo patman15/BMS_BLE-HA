@@ -14,6 +14,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 * [Removing the Integration](#removing-the-integration)
 * [Known Issues](#known-issues)
 * [Troubleshooting](#troubleshooting)
+* [Energy Dashboard Integration](#energy-dashboard-integration)
 * [FAQ](FAQ)
 * [Outlook](#outlook)
 * [Thanks to](#thanks-to)
@@ -158,6 +159,39 @@ The internal Bluetooth adapter issues <code>AT</code> commands in regular interv
 - [open an issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=support.yml) with a good description of what your question/issue is and attach the log, or
 - [open a bug](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=Bug&projects=&template=bug.yml) if you think the behaviour you see is caused by the integration, including a good description of what happened, your expectations, and attach the log.
 
+## Energy Dashboard Integration
+
+If you want your battery to be integrated with the Home Assistant [energy dashboard](https://my.home-assistant.io/redirect/energy/) you need to integrate the reported power value separately for charge and discharge power to two energy values. Here are the detailed steps for energy dashboard configuration in your `configuration.yaml` (you achieve the same result by configuring equivalent [helpers](https://my.home-assistant.io/redirect/helpers/)):
+### Add two template sensors
+```yaml
+template:
+  - sensor:
+    - unique_id: charge_power
+      state: "{{ [states('sensor.smartbat_..._power') | float, 0] | max}}"
+      unit_of_measurement: 'W'
+      state_class: measurement
+      device_class: power
+      availability: "{{ has_value('sensor.smartbat_..._power') }}"
+    - unique_id: discharge_power
+      state: "{{ [states('sensor.smartbat_..._power') | float, 0] | min | abs}}"
+      unit_of_measurement: 'W'
+      state_class: measurement
+      device_class: power
+      availability: "{{ has_value('sensor.smartbat_..._power') }}"
+```
+### Add two integration sensors
+```yaml
+sensor:
+  - platform: integration
+    name: energy_in
+    source: sensor.template_charge_power
+  - platform: integration
+    name: energy_out
+    source: sensor.template_discharge_power
+```
+
+Then go to the [energy dashboard configuration](https://my.home-assistant.io/redirect/config_energy/), add a battery system and set the two sensors `energy_in` and `energy_out`.
+
 ## FAQ
 ### My sensors show unknown/unavailable at startup!
 The polling interval is 30 seconds. So at startup it takes a few minutes to detect the battery and query the sensors. Then data will be available.
@@ -222,7 +256,7 @@ Once pairing is done, the integration should automatically detect the BMS.
 - Add further battery types on [request](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.yml)
 
 ## Thanks to
-> [@gkathan](https://github.com/patman15/BMS_BLE-HA/issues/2), [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22), [@Goaheadz](https://github.com/patman15/BMS_BLE-HA/issues/24), [@alros100, @majonessyltetoy](https://github.com/patman15/BMS_BLE-HA/issues/52), [@snipah, @Gruni22](https://github.com/patman15/BMS_BLE-HA/issues/59), [@azisto](https://github.com/patman15/BMS_BLE-HA/issues/78), [@BikeAtor, @Karatzie](https://github.com/patman15/BMS_BLE-HA/issues/57), [@SkeLLLa,@romanshypovskyi](https://github.com/patman15/BMS_BLE-HA/issues/90), [@riogrande75, @ebagnoli, @andreas-bulling](https://github.com/patman15/BMS_BLE-HA/issues/101), [@goblinmaks, @andreitoma-github](https://github.com/patman15/BMS_BLE-HA/issues/102), [@hacsler](https://github.com/patman15/BMS_BLE-HA/issues/103), [@ViPeR5000](https://github.com/patman15/BMS_BLE-HA/pull/182), [@edelstahlratte](https://github.com/patman15/BMS_BLE-HA/issues/161), [@nezra](https://github.com/patman15/BMS_BLE-HA/issues/164), [@Fandu21](https://github.com/patman15/BMS_BLE-HA/issues/194), [@rubenclark74](https://github.com/patman15/BMS_BLE-HA/issues/186), [@geierwally1978](https://github.com/patman15/BMS_BLE-HA/issues/240), [@Tulexcorp](https://github.com/patman15/BMS_BLE-HA/issues/271)
+> [@gkathan](https://github.com/patman15/BMS_BLE-HA/issues/2), [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22), [@Goaheadz](https://github.com/patman15/BMS_BLE-HA/issues/24), [@alros100, @majonessyltetoy](https://github.com/patman15/BMS_BLE-HA/issues/52), [@snipah, @Gruni22](https://github.com/patman15/BMS_BLE-HA/issues/59), [@azisto](https://github.com/patman15/BMS_BLE-HA/issues/78), [@BikeAtor, @Karatzie](https://github.com/patman15/BMS_BLE-HA/issues/57), [@SkeLLLa,@romanshypovskyi](https://github.com/patman15/BMS_BLE-HA/issues/90), [@riogrande75, @ebagnoli, @andreas-bulling](https://github.com/patman15/BMS_BLE-HA/issues/101), [@goblinmaks, @andreitoma-github](https://github.com/patman15/BMS_BLE-HA/issues/102), [@hacsler](https://github.com/patman15/BMS_BLE-HA/issues/103), [@ViPeR5000](https://github.com/patman15/BMS_BLE-HA/pull/182), [@edelstahlratte](https://github.com/patman15/BMS_BLE-HA/issues/161), [@nezra](https://github.com/patman15/BMS_BLE-HA/issues/164), [@Fandu21](https://github.com/patman15/BMS_BLE-HA/issues/194), [@rubenclark74](https://github.com/patman15/BMS_BLE-HA/issues/186), [@geierwally1978](https://github.com/patman15/BMS_BLE-HA/issues/240), [@Tulexcorp](https://github.com/patman15/BMS_BLE-HA/issues/271), [@oliviercommelarbre](https://github.com/patman15/BMS_BLE-HA/issues/279), [@shaf](https://github.com/patman15/BMS_BLE-HA/issues/286)
 
 for helping with making the integration better.
 
