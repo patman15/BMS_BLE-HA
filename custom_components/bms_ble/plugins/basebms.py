@@ -37,7 +37,7 @@ type BMSsample = dict[str, int | float | bool]
 
 
 class BaseBMS(ABC):
-    """Base class for battery management system."""
+    """Abstract base class for battery management system."""
 
     TIMEOUT: float = 5.0
     MAX_RETRY: int = 3
@@ -321,7 +321,7 @@ class BaseBMS(ABC):
         """Retrieve updated values from the BMS using method of the subclass."""
         await self._connect()
 
-        data = await self._async_update()
+        data: BMSsample = await self._async_update()
         self._add_missing_values(data, self._calc_values())
 
         if self._reconnect:
