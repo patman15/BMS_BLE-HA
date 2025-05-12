@@ -40,23 +40,25 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             always_update=False,  # only update when sensor value has changed
             config_entry=config_entry,
         )
-        self.name: Final[str] = ble_device.name
+        self._device: Final[BaseBMS] = bms_device
+        self._link_q = deque([False], maxlen=100)  # track BMS update issues
         self._mac: Final[str] = ble_device.address
+        self._stale: bool = False  # indicates no BMS response for significant time
+
         LOGGER.debug(
             "Initializing coordinator for %s (%s) as %s",
             self.name,
             self._mac,
             bms_device.device_id(),
         )
-        self._link_q = deque([False], maxlen=100)  # track BMS update issues
+
         if service_info := async_last_service_info(
             self.hass, address=self._mac, connectable=True
         ):
             LOGGER.debug("%s: advertisement: %s", self.name, service_info.as_dict())
 
-        # retrieve BMS class and initialize it
-        self._device: Final[BaseBMS] = bms_device
-        device_info: dict[str, str] = self._device.device_info()
+        # retrieve device information
+        device_info: Final[dict[str, str]] = self._device.device_info()
         self.device_info = DeviceInfo(
             identifiers={
                 (DOMAIN, self._mac),
@@ -95,14 +97,34 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
 
     async def async_shutdown(self) -> None:
         """Shutdown coordinator and any connection."""
-        LOGGER.debug("Shutting down BMS device (%s)", self.name)
+        LOGGER.debug("Shutting down BMS (%s)", self.name)
         await super().async_shutdown()
         await self._device.disconnect()
+
+    def _device_stale(self) -> bool:
+        if self._link_q[-1]:
+            self._stale = False
+        elif (
+            not self._stale
+            and self.link_quality <= 10
+            and list(self._link_q)[-10:] == [False] * 10
+        ):
+            LOGGER.error(
+                "%s: BMS went silent, triggering reconnect%s!",
+                self.name,
+                self._rssi_msg(),
+            )
+            self._stale = True
+
+        return self._stale
 
     async def _async_update_data(self) -> BMSsample:
         """Return the latest data from the device."""
 
         LOGGER.debug("%s: BMS data update", self.name)
+
+        if self._device_stale():
+            await self._device.disconnect()
 
         start: Final[float] = monotonic()
         try:
@@ -111,19 +133,19 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
                 raise UpdateFailed("no valid data received.")
         except TimeoutError as err:
             LOGGER.debug(
-                "%s: device communication timed out%s", self.name, self._rssi_msg()
+                "%s: BMS communication timed out%s", self.name, self._rssi_msg()
             )
-            raise TimeoutError("device communication timed out") from err
+            raise TimeoutError("BMS communication timed out") from err
         except (BleakError, EOFError) as err:
             LOGGER.debug(
-                "%s: device communication failed%s: %s (%s)",
+                "%s: BMS communication failed%s: %s (%s)",
                 self.name,
                 self._rssi_msg(),
                 err,
                 type(err).__name__,
             )
             raise UpdateFailed(
-                f"device communication failed{self._rssi_msg()}: {err!s} ({type(err).__name__})"
+                f"BMS communication failed{self._rssi_msg()}: {err!s} ({type(err).__name__})"
             ) from err
         finally:
             self._link_q.extend(
@@ -132,4 +154,5 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
 
         self._link_q[-1] = True  # set success
         LOGGER.debug("%s: BMS data sample %s", self.name, bms_data)
+
         return bms_data

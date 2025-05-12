@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 import asyncio
 import logging
 from statistics import fmean
-from typing import Final
+from typing import Final, Literal
 
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -39,7 +39,8 @@ type BMSsample = dict[str, int | float | bool]
 class BaseBMS(ABC):
     """Base class for battery management system."""
 
-    TIMEOUT = 5.0
+    TIMEOUT: float = 5.0
+    MAX_RETRY: int = 3
     _MAX_CELL_VOLT: Final[float] = 5.906  # max cell potential
     _HRS_TO_SECS: Final[int] = 60 * 60  # seconds in an hour
 
@@ -255,19 +256,46 @@ class BaseBMS(ABC):
             await self.disconnect()
             raise
 
+    def _write_mode(self, char: int | str) -> Literal["W", "WNR"]:
+        char_tx: Final[BleakGATTCharacteristic | None] = (
+            self._client.services.get_characteristic(char)
+        )
+        return "W" if char_tx and "write" in char_tx.properties else "WNR"
+
     async def _await_reply(
         self,
         data: bytes,
-        char: BleakGATTCharacteristic | int | str | None = None,
+        char: int | str | None = None,
         wait_for_notify: bool = True,
+        max_size: int = 0,
     ) -> None:
         """Send data to the BMS and wait for valid reply notification."""
 
-        self._log.debug("TX BLE data: %s", data.hex(" "))
+        write_mode: Final[Literal["W", "WNR"]] = self._write_mode(char or self.uuid_tx())
+        retries: Final[int] = 1 if write_mode == "W" else BaseBMS.MAX_RETRY
+        timeout: Final[float] = self.TIMEOUT / ((2**retries) - 1)
+
         self._data_event.clear()  # clear event before requesting new data
-        await self._client.write_gatt_char(char or self.uuid_tx(), data, response=False)
-        if wait_for_notify:
-            await asyncio.wait_for(self._wait_event(), timeout=self.TIMEOUT)
+
+        for attempt in range(retries):
+            for chunk in (
+                data[i : i + (max_size or len(data))]
+                for i in range(0, len(data), max_size or len(data))
+            ):
+                self._log.debug(
+                    "TX BLE data #%i (%s): %s", attempt + 1, write_mode, chunk.hex(" ")
+                )
+                await self._client.write_gatt_char(
+                    char or self.uuid_tx(), chunk, response=(write_mode == "W")
+                )
+
+            if wait_for_notify:
+                try:
+                    await asyncio.wait_for(self._wait_event(), timeout * (2**attempt))
+                    break
+                except TimeoutError:
+                    if attempt == retries - 1:
+                        raise
 
     async def disconnect(self) -> None:
         """Disconnect the BMS, includes stoping notifications."""
@@ -294,7 +322,6 @@ class BaseBMS(ABC):
         await self._connect()
 
         data = await self._async_update()
-
         self._add_missing_values(data, self._calc_values())
 
         if self._reconnect:
@@ -312,6 +339,11 @@ def crc_modbus(data: bytearray) -> int:
         for _ in range(8):
             crc = (crc >> 1) ^ 0xA001 if crc % 2 else (crc >> 1)
     return crc & 0xFFFF
+
+
+def lrc_modbus(data: bytearray) -> int:
+    """Calculate MODBUS LRC."""
+    return ((sum(data) ^ 0xFFFF) + 1) & 0xFFFF
 
 
 def crc_xmodem(data: bytearray) -> int:
@@ -336,6 +368,10 @@ def crc8(data: bytearray) -> int:
     return crc & 0xFF
 
 
-def crc_sum(frame: bytearray) -> int:
-    """Calculate frame CRC."""
-    return sum(frame) & 0xFF
+def crc_sum(frame: bytearray, size: int = 1) -> int:
+    """Calculate the checksum of a frame using a specified size.
+
+    size : int, optional
+        The size of the checksum in bytes (default is 1).
+    """
+    return sum(frame) & ((1 << (8 * size)) - 1)

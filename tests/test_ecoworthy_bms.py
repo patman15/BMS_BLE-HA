@@ -14,10 +14,42 @@ from custom_components.bms_ble.plugins.ecoworthy_bms import BMS, BMSsample
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
+_PROTO_DEFS: Final[dict[str, dict[int, bytearray]]] = {
+    "02": {  # protocol version 02
+        0xA1: bytearray(
+            b"\xa1\x00\x00\x00\x65\x00\x00\x00\x00\x00\x18\x01\x03\x44\x00\x18\x00\x48\x00\x64\x05"
+            b"\x31\xff\x8e\x00\x00\x27\x10\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01"
+            b"\x00\x02\x00\x00\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x21\x86"
+        ),
+        0xA2: bytearray(  # 4 cells, 3 temp sensors
+            b"\xa2\x00\x00\x00\x65\x00\x00\x00\x00\x00\x18\x01\x03\x56\x00\x04\x0c\xfb\x0c\xfd\x0c"
+            b"\xfb\x0c\xfa\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+            b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+            b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x03\x00\xcd"
+            b"\x00\xc0\x00\xbe\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18\x97\x6a"
+        ),
+    },
+    "0B": {  # protocol version 0B, MAC in front
+        0xA1: bytearray(
+            b"\xe2\xe0\x5a\x78\x3c\x31\xa1\x00\x00\x08\x03\x44\x00\x08\x00\x64\x00\x64\x05\x84\x00"
+            b"\x00\x00\x00\x27\x10\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xb4\xf2"
+        ),
+        0xA2: bytearray(  # 4 cells, 2 temp sensors
+            b"\xe2\xe0\x5a\x78\x3c\x31\xa2\x00\x00\x08\x03\x56\x00\x04\x0d\x8d\x0d\xec\x0d\xe4\x0d"
+            b"\xd3\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+            b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+            b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x02\x00\x87\x00\x76"
+            b"\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xcd\x72"
+        ),
+    },
+}
 
-def ref_value() -> BMSsample:
-    """Return reference value for mock Seplos BMS."""
-    return {
+
+_RESULT_DEFS: Final[dict[str, BMSsample]] = {
+    "02": {
         "cell_count": 4,
         "temp_sensors": 3,
         "voltage": 13.29,
@@ -41,7 +73,39 @@ def ref_value() -> BMSsample:
         "runtime": 227368,
         "problem": False,
         "problem_code": 0,
-    }
+    },
+    "0B": {
+        "cell_count": 4,
+        "temp_sensors": 2,
+        "voltage": 14.12,
+        "current": 0.0,
+        "battery_level": 100,
+        "cycle_charge": 100.0,
+        "design_capacity": 100.0,
+        "temperature": 12.65,
+        "cycle_capacity": 1412.0,
+        "power": 0.0,
+        "battery_charging": False,
+        "cell#0": 3.469,
+        "cell#1": 3.564,
+        "cell#2": 3.556,
+        "cell#3": 3.539,
+        "temp#0": 13.5,
+        "temp#1": 11.8,
+        "delta_voltage": 0.095,
+        "problem": False,
+        "problem_code": 0,
+    },
+}
+
+
+@pytest.fixture(
+    name="protocol_type",
+    params=["02", "0B"],
+)
+def proto(request: pytest.FixtureRequest) -> str:
+    """Protocol fixture."""
+    return request.param
 
 
 class MockECOWBleakClient(MockBleakClient):
@@ -51,21 +115,8 @@ class MockECOWBleakClient(MockBleakClient):
         0xA1: bytearray(b"\x00\x01\x03\x00\x8c\x00\x00\x99\x42"),
         0xA2: bytearray(b"\x00\x01\x03\x00\x8d\x00\x00\x59\x13"),
     }
-    RESP: Final[dict[int, bytearray]] = {
-        0xA1: bytearray(
-            b"\xa1\x00\x00\x00\x65\x00\x00\x00\x00\x00\x18\x01\x03\x44\x00\x18\x00\x48\x00\x64\x05"
-            b"\x31\xff\x8e\x00\x00\x27\x10\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01"
-            b"\x00\x02\x00\x00\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x21\x86"
-        ),
-        0xA2: bytearray(  # 4 cells, 3 temp sensors
-            b"\xa2\x00\x00\x00\x65\x00\x00\x00\x00\x00\x18\x01\x03\x56\x00\x04\x0c\xfb\x0c\xfd\x0c"
-            b"\xfb\x0c\xfa\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
-            b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
-            b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x03\x00\xcd"
-            b"\x00\xc0\x00\xbe\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18\x97\x6a"
-        ),
-    }
+    RESP: Final[dict[int, bytearray]] = {}
+
     _task: asyncio.Task
 
     async def _notify(self) -> None:
@@ -101,19 +152,22 @@ class MockECOWBleakClient(MockBleakClient):
         return await super().disconnect()
 
 
-async def test_update(patch_bleak_client, reconnect_fixture) -> None:
+async def test_update(
+    monkeypatch, patch_bleak_client, protocol_type, reconnect_fixture
+) -> None:
     """Test ECO-WORTHY BMS data update."""
 
+    monkeypatch.setattr(MockECOWBleakClient, "RESP", _PROTO_DEFS[protocol_type])
     patch_bleak_client(MockECOWBleakClient)
 
     bms = BMS(
-        generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
+        generate_ble_device("E2:E0:5A:78:3C:31", "MockBLEdevice", None, -73),
         reconnect_fixture,
     )
 
     result = await bms.async_update()
 
-    assert result == ref_value()
+    assert result == _RESULT_DEFS[protocol_type]
 
     # query again to check already connected state
     result = await bms.async_update()
@@ -182,12 +236,13 @@ async def test_tx_notimplemented(patch_bleak_client) -> None:
 
 
 async def test_invalid_response(
-    monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response
+    monkeypatch, patch_bleak_client, patch_bms_timeout, protocol_type, wrong_response
 ) -> None:
     """Test data up date with BMS returning invalid data."""
 
     patch_bms_timeout("ecoworthy_bms")
 
+    monkeypatch.setattr(MockECOWBleakClient, "RESP", _PROTO_DEFS[protocol_type])
     monkeypatch.setattr(
         MockECOWBleakClient,
         "RESP",
@@ -232,7 +287,7 @@ async def test_invalid_response(
     ],
     ids=lambda param: param[1],
 )
-def prb_response(request):
+def prb_response(request) -> tuple[bytearray, str]:
     """Return faulty response frame."""
     return request.param
 
@@ -242,10 +297,14 @@ async def test_problem_response(
 ) -> None:
     """Test data update with BMS returning error flags."""
 
+    monkeypatch.setattr(MockECOWBleakClient, "RESP", _PROTO_DEFS["02"])
     monkeypatch.setattr(
         MockECOWBleakClient,
         "RESP",
-        {0xA1: problem_response[0], 0xA2: MockECOWBleakClient.RESP[0xA2]},
+        {
+            0xA1: problem_response[0],
+            0xA2: MockECOWBleakClient.RESP[0xA2],
+        },
     )
 
     patch_bleak_client(MockECOWBleakClient)
@@ -253,7 +312,7 @@ async def test_problem_response(
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
     result: BMSsample = await bms.async_update()
-    assert result == ref_value() | {
+    assert result == _RESULT_DEFS["02"] | {
         "problem": True,
         "problem_code": 1 << (0 if problem_response[1] == "first_bit" else 15),
     }

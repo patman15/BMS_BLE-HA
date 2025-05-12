@@ -51,13 +51,13 @@ class BMS(BaseBMS):
     def matcher_dict_list() -> list[dict]:
         """Provide BluetoothMatcher definition."""
         return [
-            {
+            { # patterns required to exclude "BT-ROCC2440"
                 "local_name": pattern,
                 "service_uuid": BMS.uuid_services()[0],
                 "manufacturer_id": 0x585A,
                 "connectable": True,
             }
-            for pattern in ("R-12*", "R-24*")
+            for pattern in ("R-12*", "R-24*", "P-12*", "P-24*", "PQ-12*", "PQ-24*")
         ]
 
     @staticmethod
@@ -68,7 +68,7 @@ class BMS(BaseBMS):
     @staticmethod
     def uuid_services() -> list[str]:
         """Return list of 128-bit UUIDs of services required by BMS."""
-        return [normalize_uuid_str("ffe0")]  # change service UUID here!
+        return [normalize_uuid_str("ffe0")]
 
     @staticmethod
     def uuid_rx() -> str:

@@ -3,7 +3,7 @@
 [![GitHub Release][releases-shield]][releases]
 [![License][license-shield]](LICENSE)
 [![Effort][effort-shield]](https://buymeacoffee.com/patman15)
-[![Analytics][install-shield]]()
+[![HACS][install-shield]](https://hacs.xyz/docs/use/)
 
 This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). After installation, no configuration is required. You can use the [ESPHome Bluetooth proxy][btproxy-url] to extend the bluetooth coverage range. By using standard dashboard cards, it is easy to visualize the current state of remote batteries.
 
@@ -14,6 +14,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 * [Removing the Integration](#removing-the-integration)
 * [Known Issues](#known-issues)
 * [Troubleshooting](#troubleshooting)
+* [Energy Dashboard Integration](#energy-dashboard-integration)
 * [FAQ](FAQ)
 * [Outlook](#outlook)
 * [Thanks to](#thanks-to)
@@ -129,9 +130,6 @@ Bluetooth is turned off, when there is no current. Thus, device will get unavail
 <details><summary>Liontron batteries</summary>
 These batteries need a shorter interval between queries. Be a bit patient to get them added and set a <a href="[custint-url]">custom interval</a> of about 9s to keep a stable connection.
 </details>
-<details><summary>Redodo MPPT</summary>
-Currently there is no way to distinguish Redodo batteries from their MPPT chargers. Thus, the latter are also detected but cannot be read out. Please set these devices to `ignore`.
-</details>
 <details><summary>Seplos v2</summary>
 The internal Bluetooth adapter issues <code>AT</code> commands in regular intervals which can interfer with BMS messages causing them to be corrupted. This impacts data availability (<code>link quality</code>).
 </details>
@@ -147,9 +145,10 @@ The internal Bluetooth adapter issues <code>AT</code> commands in regular interv
 1. If a name detection pattern is listed ("show up as"), make sure your device matches it.
 1. Make sure that no other device is connected to the BMS, e.g. app on your phone
 1. Check that your are running the [latest release](https://github.com//patman15/BMS_BLE-HA/releases) of the integration
-1. Open a [terminal to Home Assistant](https://www.home-assistant.io/common-tasks/supervised/#installing-and-using-the-ssh-add-on) and verify that your BMS is listed in the ouput of the command `bluetoothctl devices`.
 1. If you use a BT proxy, make sure you have set `active: true` and that you do not exced the [BT proxy limit][btproxy-url] of 3 devices/proxy; check the logs of the proxy if the device is recognized. Note: The [Bluetooth proxy of Shelly devices](https://www.home-assistant.io/integrations/shelly/#bluetooth-support) does not support active connections and thus cannot be used.
-1. If above points did not help, please [open an issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) providing the advertisement data of the device. To get the data, please go to the [bluetooth integration](https://my.home-assistant.io/redirect/integration/?domain=bluetooth). On your BT adapter select `configure -> advertisement monitor`, click the device in question and provide the information via **`copy to clipboard`**.
+1. If above points did not help,please go to the [bluetooth integration](https://my.home-assistant.io/redirect/integration/?domain=bluetooth). On your BT adapter select `configure -> advertisement monitor`.
+    1.  Verify that the device shows up. If it is missing, please check your BT setup (is the device in range?).
+    1.  Click the device in question and provide the information via **`copy to clipboard`** to [a new issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) giving your BMS/battery type in the title.
 
 ### In case you have troubles you'd like to have help with
 
@@ -159,6 +158,39 @@ The internal Bluetooth adapter issues <code>AT</code> commands in regular interv
 - disable the log (Home Assistant will prompt you to download the log), and finally
 - [open an issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=support.yml) with a good description of what your question/issue is and attach the log, or
 - [open a bug](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=Bug&projects=&template=bug.yml) if you think the behaviour you see is caused by the integration, including a good description of what happened, your expectations, and attach the log.
+
+## Energy Dashboard Integration
+
+If you want your battery to be integrated with the Home Assistant [energy dashboard](https://my.home-assistant.io/redirect/energy/) you need to integrate the reported power value separately for charge and discharge power to two energy values. Here are the detailed steps for energy dashboard configuration in your `configuration.yaml` (you achieve the same result by configuring equivalent [helpers](https://my.home-assistant.io/redirect/helpers/)):
+### Add two template sensors
+```yaml
+template:
+  - sensor:
+    - unique_id: charge_power
+      state: "{{ [states('sensor.smartbat_..._power') | float, 0] | max}}"
+      unit_of_measurement: 'W'
+      state_class: measurement
+      device_class: power
+      availability: "{{ has_value('sensor.smartbat_..._power') }}"
+    - unique_id: discharge_power
+      state: "{{ [states('sensor.smartbat_..._power') | float, 0] | min | abs}}"
+      unit_of_measurement: 'W'
+      state_class: measurement
+      device_class: power
+      availability: "{{ has_value('sensor.smartbat_..._power') }}"
+```
+### Add two integration sensors
+```yaml
+sensor:
+  - platform: integration
+    name: energy_in
+    source: sensor.template_charge_power
+  - platform: integration
+    name: energy_out
+    source: sensor.template_discharge_power
+```
+
+Then go to the [energy dashboard configuration](https://my.home-assistant.io/redirect/config_energy/), add a battery system and set the two sensors `energy_in` and `energy_out`.
 
 ## FAQ
 ### My sensors show unknown/unavailable at startup!
@@ -224,7 +256,7 @@ Once pairing is done, the integration should automatically detect the BMS.
 - Add further battery types on [request](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.yml)
 
 ## Thanks to
-> [@gkathan](https://github.com/patman15/BMS_BLE-HA/issues/2), [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22), [@Goaheadz](https://github.com/patman15/BMS_BLE-HA/issues/24), [@alros100, @majonessyltetoy](https://github.com/patman15/BMS_BLE-HA/issues/52), [@snipah, @Gruni22](https://github.com/patman15/BMS_BLE-HA/issues/59), [@azisto](https://github.com/patman15/BMS_BLE-HA/issues/78), [@BikeAtor, @Karatzie](https://github.com/patman15/BMS_BLE-HA/issues/57), [@SkeLLLa,@romanshypovskyi](https://github.com/patman15/BMS_BLE-HA/issues/90), [@riogrande75, @ebagnoli, @andreas-bulling](https://github.com/patman15/BMS_BLE-HA/issues/101), [@goblinmaks, @andreitoma-github](https://github.com/patman15/BMS_BLE-HA/issues/102), [@hacsler](https://github.com/patman15/BMS_BLE-HA/issues/103), [@ViPeR5000](https://github.com/patman15/BMS_BLE-HA/pull/182), [@edelstahlratte](https://github.com/patman15/BMS_BLE-HA/issues/161), [@nezra](https://github.com/patman15/BMS_BLE-HA/issues/164), [@Fandu21](https://github.com/patman15/BMS_BLE-HA/issues/194), [@rubenclark74](https://github.com/patman15/BMS_BLE-HA/issues/186), [@gavrilov](https://github.com/patman15/BMS_BLE-HA/issues/247)
+> [@gkathan](https://github.com/patman15/BMS_BLE-HA/issues/2), [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22), [@Goaheadz](https://github.com/patman15/BMS_BLE-HA/issues/24), [@alros100, @majonessyltetoy](https://github.com/patman15/BMS_BLE-HA/issues/52), [@snipah, @Gruni22](https://github.com/patman15/BMS_BLE-HA/issues/59), [@azisto](https://github.com/patman15/BMS_BLE-HA/issues/78), [@BikeAtor, @Karatzie](https://github.com/patman15/BMS_BLE-HA/issues/57), [@SkeLLLa,@romanshypovskyi](https://github.com/patman15/BMS_BLE-HA/issues/90), [@riogrande75, @ebagnoli, @andreas-bulling](https://github.com/patman15/BMS_BLE-HA/issues/101), [@goblinmaks, @andreitoma-github](https://github.com/patman15/BMS_BLE-HA/issues/102), [@hacsler](https://github.com/patman15/BMS_BLE-HA/issues/103), [@ViPeR5000](https://github.com/patman15/BMS_BLE-HA/pull/182), [@edelstahlratte](https://github.com/patman15/BMS_BLE-HA/issues/161), [@nezra](https://github.com/patman15/BMS_BLE-HA/issues/164), [@Fandu21](https://github.com/patman15/BMS_BLE-HA/issues/194), [@rubenclark74](https://github.com/patman15/BMS_BLE-HA/issues/186), [@geierwally1978](https://github.com/patman15/BMS_BLE-HA/issues/240), [@Tulexcorp](https://github.com/patman15/BMS_BLE-HA/issues/271), [@oliviercommelarbre](https://github.com/patman15/BMS_BLE-HA/issues/279), [@shaf](https://github.com/patman15/BMS_BLE-HA/issues/286), [@gavrilov](https://github.com/patman15/BMS_BLE-HA/issues/247)
 
 for helping with making the integration better.
 
@@ -239,7 +271,7 @@ for helping with making the integration better.
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-444_hours-gold?style=for-the-badge&cacheSeconds=86400
-[install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=Analytics&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-491_hours-gold?style=for-the-badge&cacheSeconds=86400
+[install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=HACS&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
 [custint-url]: https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval

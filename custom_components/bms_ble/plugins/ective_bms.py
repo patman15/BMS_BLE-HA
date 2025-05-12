@@ -55,11 +55,11 @@ class BMS(BaseBMS):
         """Provide BluetoothMatcher definition."""
         return [
             {
-                "local_name": pattern,
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
+                "manufacturer_id": m_id,
             }
-            for pattern in ("$PFLAC*", "NWJ20*", "ZM20*")
+            for m_id in (0, 0xFFFF)
         ]
 
     @staticmethod
@@ -70,7 +70,7 @@ class BMS(BaseBMS):
     @staticmethod
     def uuid_services() -> list[str]:
         """Return list of 128-bit UUIDs of services required by BMS."""
-        return [normalize_uuid_str("ffe0")]  # change service UUID here!
+        return [normalize_uuid_str("ffe0")]
 
     @staticmethod
     def uuid_rx() -> str:

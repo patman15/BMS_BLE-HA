@@ -54,6 +54,10 @@ class BMS(BaseBMS):
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
         super().__init__(__name__, ble_device, reconnect)
+        self._mac_head: Final[tuple] = tuple(
+            int(self._ble_device.address.replace(":", ""), 16).to_bytes(6) + head
+            for head in BMS._HEAD
+        )
         self._data_final: dict[int, bytearray] = {}
 
     @staticmethod
@@ -65,7 +69,7 @@ class BMS(BaseBMS):
                 "manufacturer_id": m_id,
                 "connectable": True,
             }
-            for m_id in (0xBB28, 0xC2B4)
+            for m_id in (0x3E7C, 0xBB28, 0xC2B4, 0xE0E2)
         ]
 
     @staticmethod
@@ -108,7 +112,7 @@ class BMS(BaseBMS):
         """Handle the RX characteristics notify event (new data arrives)."""
         self._log.debug("RX BLE data: %s", data)
 
-        if not data.startswith(BMS._HEAD):
+        if not data.startswith(BMS._HEAD + self._mac_head):
             self._log.debug("invalid frame type: '%s'", data[0:1].hex())
             return
 
@@ -121,7 +125,11 @@ class BMS(BaseBMS):
             self._data = bytearray()
             return
 
-        self._data_final[data[0]] = data.copy()
+        # copy final data without message type and adapt to protocol type
+        shift: Final[bool] = data.startswith(self._mac_head)
+        self._data_final[data[6 if shift else 0]] = (
+            bytearray(2 if shift else 0) + data.copy()
+        )
         if BMS._CMDS.issubset(self._data_final.keys()):
             self._data_event.set()
 
