@@ -1,5 +1,8 @@
 name: Validate with HACS
 
+permissions:
+  contents: read
+
 on:
   push:
   pull_request:
@@ -16,4 +19,3 @@ jobs:
           uses: "hacs/action@main"
           with:
             category: "integration"
-
