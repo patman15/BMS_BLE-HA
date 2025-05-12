@@ -84,7 +84,7 @@ class BaseBMS(ABC):
     @staticmethod
     @abstractmethod
     def matcher_dict_list() -> list[dict]:
-        """Return a list of Bluetooth matchers."""
+        """Return a list of Bluetooth advertisement matchers."""
 
     @staticmethod
     @abstractmethod
@@ -128,7 +128,7 @@ class BaseBMS(ABC):
     def _calc_values() -> frozenset[str]:
         """Return values that the BMS cannot provide and need to be calculated.
 
-        See calc_values() function for the required input to actually do so.
+        See _add_missing_values() function for the required input to actually do so.
         """
         return frozenset()
 
