@@ -186,10 +186,6 @@
       "local_name": "V-12V???Ah-*"
     },
     {
-      "local_name": "$PFLAC*",
-      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb"
-    },
-    {
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
       "manufacturer_id": 0
     },
