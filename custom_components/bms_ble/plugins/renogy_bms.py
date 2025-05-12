@@ -13,7 +13,7 @@ from custom_components.bms_ble.const import (
     ATTR_CURRENT,
     ATTR_CYCLE_CAP,
     ATTR_CYCLE_CHRG,
-    # ATTR_CYCLES,
+    ATTR_CYCLES,
     ATTR_DELTA_VOLTAGE,
     ATTR_POWER,
     ATTR_RUNTIME,
@@ -22,6 +22,7 @@ from custom_components.bms_ble.const import (
     KEY_CELL_COUNT,
     KEY_CELL_VOLTAGE,
     KEY_DESIGN_CAP,
+    KEY_PROBLEM,
     KEY_TEMP_SENS,
     KEY_TEMP_VALUE,
 )
@@ -32,18 +33,16 @@ from .basebms import BaseBMS, BMSsample, crc_modbus
 class BMS(BaseBMS):
     """Renogy battery class implementation."""
 
-    _HEAD: Final[bytes] = b"\x30\x03"
+    _HEAD: Final[bytes] = b"\x30\x03"  # SOP, read fct (x03)
     _CRC_POS: Final[int] = -2
     _TEMP_POS: Final[int] = 37
     _CELL_POS: Final[int] = 3
     _FIELDS: Final[list[tuple[str, int, int, bool, Callable[[int], int | float]]]] = [
         (ATTR_VOLTAGE, 5, 2, False, lambda x: float(x / 10)),
         (ATTR_CURRENT, 3, 2, True, lambda x: float(x / 10)),
-        #        (ATTR_BATTERY_LEVEL, 7, 4, False, lambda x: x / 1000),
         (KEY_DESIGN_CAP, 11, 4, False, lambda x: x / 1000),
         (ATTR_CYCLE_CHRG, 7, 4, False, lambda x: float(x / 1000)),
-        #        (ATTR_CYCLES, 12, 2, False, lambda x: x),
-        #        (KEY_PROBLEM, 20, 2, False, lambda x: x),
+        (ATTR_CYCLES, 15, 2, False, lambda x: x),
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -158,19 +157,27 @@ class BMS(BaseBMS):
         }
 
     @staticmethod
-    def _cmd(cmd: bytes) -> bytes:
-        """Assemble a Seplos BMS command."""
-        frame: bytearray = bytearray([*BMS._HEAD, *cmd])
+    def _cmd(addr: int, words: int) -> bytes:
+        """Assemble a Renogy BMS command (MODBUS)."""
+        frame: bytearray = (
+            bytearray(BMS._HEAD)
+            + int.to_bytes(addr, 2, byteorder="big")
+            + int.to_bytes(words, 2, byteorder="big")
+        )
+
         frame.extend(int.to_bytes(crc_modbus(frame), 2, byteorder="little"))
         return bytes(frame)
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
-        await self._await_reply(self._cmd(b"\x13\xb2\x00\x06"))
+        await self._await_reply(self._cmd(5042, 0x7))
         result: BMSsample = BMS._decode_data(self._data)
 
-        await self._await_reply(self._cmd(b"\x13\x88\x00\x22"))
+        await self._await_reply(self._cmd(5000, 0x22))
         result |= BMS._cell_voltages(self._data) | BMS._temp_sensors(self._data)
+
+        await self._await_reply(self._cmd(5100, 0x7))
+        result[KEY_PROBLEM] = int.from_bytes(self._data[3:-2], byteorder="big") & (~0xE)
 
         return result

@@ -2,6 +2,7 @@
 
 # import asyncio
 from collections.abc import Buffer
+from typing import Final
 from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -29,16 +30,21 @@ def ref_value() -> BMSsample:
         "current": 0.0,
         "cycle_capacity": 1321.92,
         "cycle_charge": 97.2,
+        "cycles": 15,
         "delta_voltage": 0.2,
         "design_capacity": 100.0,
         "power": 0.0,
         "problem": False,
+        "problem_code": 0,
         "temp#0": 17.0,
         "temp#1": 17.0,
         "temp_sensors": 2,
         "temperature": 17.0,
         "voltage": 13.6,
     }
+
+
+BASE_VALUE_CMD: Final[bytes] = b"\x30\x03\x13\xb2\x00\x07\xa4\x8a"
 
 
 class MockRenogyBleakClient(MockBleakClient):
@@ -56,9 +62,12 @@ class MockRenogyBleakClient(MockBleakClient):
             b"\x32\x36\x00\x00\x00\x00\x00\x00\x00\x00\x20\x20\x20\x20\x20\x20\x20\x20\x52\x42\x54"
             b"\x31\x30\x30\x4c\x46\x50\x31\x32\x2d\x42\x54\x20\x20\x30\x31\x30\x30\x55\x2f"
         ),  # 08È20210526        RBT100LFP12-BT  0100
-        b"\x30\x03\x13\xb2\x00\x06\x65\x4a": bytearray(
-            b"\x30\x03\x0c\x00\x00\x00\x88\x00\x01\x7b\xb0\x00\x01\x86\xa0\x0c\xeb"
-        ),  # 13.6V, 97.2% (4B), 100Ah [mAh]
+        BASE_VALUE_CMD: bytearray(
+            b"\x30\x03\x0e\x00\x00\x00\x88\x00\x01\x7b\xb0\x00\x01\x86\xa0\x00\x0f\x87\x4a"
+        ),  # 13.6V, 97.2% (4B), 100Ah [mAh], (15 cycles (generated))
+        b"\x30\x03\x13\xec\x00\x07\xc5\x58": bytearray(
+            b"\x30\x03\x0e\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xaa\x8a"
+        ),  # alarm flags
         b"\x30\x03\x14\x02\x00\x08\xe4\x1d": bytearray(
             b"\x30\x03\x10\x52\x42\x54\x31\x30\x30\x4c\x46\x50\x31\x32\x2d\x42\x54\x20\x20\x58\xbb"
         ),  # 0RBT100LFP12-BT
@@ -147,8 +156,7 @@ async def test_invalid_response(
     monkeypatch.setattr(
         MockRenogyBleakClient,
         "RESP",
-        MockRenogyBleakClient.RESP
-        | {b"\x30\x03\x13\xb2\x00\x06\x65\x4a": wrong_response},
+        MockRenogyBleakClient.RESP | {BASE_VALUE_CMD: wrong_response},
     )
 
     patch_bleak_client(MockRenogyBleakClient)
@@ -160,4 +168,31 @@ async def test_invalid_response(
         result = await bms.async_update()
 
     assert not result
+    await bms.disconnect()
+
+
+async def test_problem_response(monkeypatch, patch_bleak_client) -> None:
+    """Test data update with BMS returning error flags."""
+
+    monkeypatch.setattr(
+        MockRenogyBleakClient,
+        "RESP",
+        MockRenogyBleakClient.RESP
+        | {
+            b"\x30\x03\x13\xec\x00\x07\xc5\x58": bytearray(
+                b"\x30\x03\x0e\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x54\x0a"
+            )
+        },
+    )
+
+    patch_bleak_client(MockRenogyBleakClient)
+
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
+
+    result: BMSsample = await bms.async_update()
+    assert result == ref_value() | {
+        "problem": True,
+        "problem_code": 0xFFFFFFFFFFFFFFFFFFFFFFFFFFF1
+    }
+
     await bms.disconnect()
