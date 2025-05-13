@@ -145,10 +145,11 @@ The internal Bluetooth adapter issues <code>AT</code> commands in regular interv
 1. If a name detection pattern is listed ("show up as"), make sure your device matches it.
 1. Make sure that no other device is connected to the BMS, e.g. app on your phone
 1. Check that your are running the [latest release](https://github.com//patman15/BMS_BLE-HA/releases) of the integration
+1. Go to the [advertisement monitor](https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/) and verify that your device shows up there. Also, please ensure that your `RSSI` value is `>= -75 dBm`. If your device is missing or the `RSSI` value is `-80 dBm`or worse, please check your BT setup (is the device in range?).
 1. If you use a BT proxy, make sure you have set `active: true` and that you do not exced the [BT proxy limit][btproxy-url] of 3 devices/proxy; check the logs of the proxy if the device is recognized. Note: The [Bluetooth proxy of Shelly devices](https://www.home-assistant.io/integrations/shelly/#bluetooth-support) does not support active connections and thus cannot be used.
-1. If above points did not help,please go to the [bluetooth integration](https://my.home-assistant.io/redirect/integration/?domain=bluetooth). On your BT adapter select `configure -> advertisement monitor`.
-    1.  Verify that the device shows up. If it is missing, please check your BT setup (is the device in range?).
-    1.  Click the device in question and provide the information via **`copy to clipboard`** to [a new issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) giving your BMS/battery type in the title.
+1. If above points did not help, please go to the [bluetooth integration](https://my.home-assistant.io/redirect/integration/?domain=bluetooth). On your BT adapter select `configure`.
+    1.  Verify that you have connection slots available.
+    1.  Go to the [advertisement monitor](https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/) and click the device in question. Please provide the information via **`copy to clipboard`** to [a new issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) giving your BMS/battery type in the title.
 
 ### In case you have troubles you'd like to have help with
 
