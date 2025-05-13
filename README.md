@@ -49,11 +49,12 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Eleksol, Liontron, Perfektium (show up as `PKT`&#x2026;), Ultimatron batteries (show up as `12??0`&#x2026;)
     - SBL batteries, Supervolt v3 batteries (show up as `SX1`&#x2026;)
 - JK BMS, Jikong, (HW version &ge; 6 required)
-- Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
 - LiTime, Power Queen, and Redodo batteries
+- Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
+- Renogy BMS
+- RoyPow batteries
 - Seplos v2 (show up as `BP0?`)
 - Seplos v3 (show up as `SP[0,1,4-6]`&#x2026;)
-- RoyPow batteries
 - TDT BMS
 
 > [!TIP]
