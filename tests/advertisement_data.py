@@ -639,5 +639,13 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             rssi=-47,
         ),
         "jbd_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/314)
+        generate_advertisement_data(
+            local_name="SV12V150224041",
+            manufacturer_data={33384:"01020007a030f7"},
+            rssi=-39,
+        ),
+        "ej_bms",
     )
 ]
