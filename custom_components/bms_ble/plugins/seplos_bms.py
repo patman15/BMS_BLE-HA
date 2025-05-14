@@ -1,32 +1,20 @@
 """Module to support Seplos V3 Smart BMS."""
 
 from collections.abc import Callable
-from typing import Final
+from typing import Any, Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from custom_components.bms_ble.const import (
-    ATTR_BATTERY_CHARGING,
-    ATTR_BATTERY_LEVEL,
-    ATTR_CURRENT,
-    ATTR_CYCLE_CAP,
-    ATTR_CYCLE_CHRG,
-    ATTR_CYCLES,
-    ATTR_DELTA_VOLTAGE,
-    ATTR_POWER,
-    ATTR_RUNTIME,
-    ATTR_TEMPERATURE,
-    ATTR_VOLTAGE,
-    KEY_CELL_VOLTAGE,
-    KEY_PACK,
-    KEY_PACK_COUNT,
-    KEY_PROBLEM,
-    KEY_TEMP_VALUE,
+from .basebms import (
+    AdvertisementPattern,
+    BaseBMS,
+    BMSpackvalue,
+    BMSsample,
+    BMSvalue,
+    crc_modbus,
 )
-
-from .basebms import BaseBMS, BMSsample, crc_modbus
 
 
 class BMS(BaseBMS):
@@ -51,30 +39,28 @@ class BMS(BaseBMS):
         "PIA": (0x4, 0x1000, PIA_LEN),
         "PIB": (0x4, 0x1100, PIB_LEN),
     }
-    _FIELDS: Final[
-        list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
-    ] = [
-        (ATTR_TEMPERATURE, EIB_LEN, 20, 2, True, lambda x: float(x / 10)),  # avg. ctemp
-        (ATTR_VOLTAGE, EIA_LEN, 0, 4, False, lambda x: float(BMS._swap32(x) / 100)),
+    _FIELDS: Final[list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]] = [
+        ("temperature", EIB_LEN, 20, 2, True, lambda x: float(x / 10)),  # avg. ctemp
+        ("voltage", EIA_LEN, 0, 4, False, lambda x: float(BMS._swap32(x) / 100)),
         (
-            ATTR_CURRENT,
+            "current",
             EIA_LEN,
             4,
             4,
             True,
             lambda x: float((BMS._swap32(x, True)) / 10),
         ),
-        (ATTR_CYCLE_CHRG, EIA_LEN, 8, 4, False, lambda x: float(BMS._swap32(x) / 100)),
-        (KEY_PACK_COUNT, EIA_LEN, 44, 2, False, lambda x: x),
-        (ATTR_CYCLES, EIA_LEN, 46, 2, False, lambda x: x),
-        (ATTR_BATTERY_LEVEL, EIA_LEN, 48, 2, False, lambda x: float(x / 10)),
-        (KEY_PROBLEM, EIC_LEN, 1, 9, False, lambda x: x & 0xFFFF00FF00FF0000FF),
+        ("cycle_charge", EIA_LEN, 8, 4, False, lambda x: float(BMS._swap32(x) / 100)),
+        ("pack_count", EIA_LEN, 44, 2, False, lambda x: x),
+        ("cycles", EIA_LEN, 46, 2, False, lambda x: x),
+        ("battery_level", EIA_LEN, 48, 2, False, lambda x: float(x / 10)),
+        ("problem_code", EIC_LEN, 1, 9, False, lambda x: x & 0xFFFF00FF00FF0000FF),
     ]  # Protocol Seplos V3
-    _PFIELDS: Final[list[tuple[str, int, bool, Callable[[int], int | float]]]] = [
-        (ATTR_VOLTAGE, 0, False, lambda x: float(x / 100)),
-        (ATTR_CURRENT, 2, True, lambda x: float(x / 100)),
-        (ATTR_BATTERY_LEVEL, 10, False, lambda x: float(x / 10)),
-        (ATTR_CYCLES, 14, False, lambda x: x),
+    _PFIELDS: Final[list[tuple[BMSpackvalue, int, bool, Callable[[int], Any]]]] = [
+        ("pack_voltage", 0, False, lambda x: float(x / 100)),
+        ("pack_current", 2, True, lambda x: float(x / 100)),
+        ("pack_battery_level", 10, False, lambda x: float(x / 10)),
+        ("pack_cycles", 14, False, lambda x: x),
     ]  # Protocol Seplos V3
     _CMDS: Final[set[int]] = {field[2] for field in QUERY.values()} | {
         field[2] for field in PQUERY.values()
@@ -88,7 +74,7 @@ class BMS(BaseBMS):
         self._pkglen: int = 0  # expected packet length
 
     @staticmethod
-    def matcher_dict_list() -> list[dict]:
+    def matcher_dict_list() -> list[AdvertisementPattern]:
         """Provide BluetoothMatcher definition."""
         return [
             {
@@ -124,10 +110,8 @@ class BMS(BaseBMS):
         return "fff2"
 
     @staticmethod
-    def _calc_values() -> frozenset[str]:
-        return frozenset(
-            {ATTR_POWER, ATTR_BATTERY_CHARGING, ATTR_CYCLE_CAP, ATTR_RUNTIME}
-        )
+    def _calc_values() -> frozenset[BMSvalue]:
+        return frozenset({"power", "battery_charging", "cycle_capacity", "runtime"})
 
     def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
@@ -218,41 +202,44 @@ class BMS(BaseBMS):
         frame += int.to_bytes(crc_modbus(frame), 2, byteorder="little")
         return bytes(frame)
 
+    @staticmethod
+    def _decode_data(data: dict[int, bytearray]) -> BMSsample:
+        result: BMSsample = {}
+        for key, msg, idx, size, sign, func in BMS._FIELDS:
+            result[key] = func(
+                int.from_bytes(
+                    data[msg * 2][BMS.HEAD_LEN + idx : BMS.HEAD_LEN + idx + size],
+                    byteorder="big",
+                    signed=sign,
+                )
+            )
+        return result
+
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         for block in BMS.QUERY.values():
             await self._await_reply(BMS._cmd(0x0, *block))
 
-        data: BMSsample = {
-            key: func(
-                int.from_bytes(
-                    self._data_final[msg * 2][
-                        BMS.HEAD_LEN + idx : BMS.HEAD_LEN + idx + size
-                    ],
-                    byteorder="big",
-                    signed=sign,
-                )
-            )
-            for key, msg, idx, size, sign, func in BMS._FIELDS
-        }
-        self._pack_count = min(int(data.get(KEY_PACK_COUNT, 0)), 0x10)
+        data: BMSsample = BMS._decode_data(self._data_final)
+
+        self._pack_count = min(data.get("pack_count", 0), 0x10)
 
         for pack in range(1, 1 + self._pack_count):
             for block in BMS.PQUERY.values():
                 await self._await_reply(self._cmd(pack, *block))
 
-            data |= {
-                f"{KEY_PACK}_{key}#{pack-1}": func(
-                    int.from_bytes(
-                        self._data_final[pack << 8 | BMS.PIA_LEN * 2][
-                            BMS.HEAD_LEN + idx : BMS.HEAD_LEN + idx + 2
-                        ],
-                        byteorder="big",
-                        signed=sign,
+            for key, idx, sign, func in BMS._PFIELDS:
+                data.setdefault(key, []).append(
+                    func(
+                        int.from_bytes(
+                            self._data_final[pack << 8 | BMS.PIA_LEN * 2][
+                                BMS.HEAD_LEN + idx : BMS.HEAD_LEN + idx + 2
+                            ],
+                            byteorder="big",
+                            signed=sign,
+                        )
                     )
                 )
-                for key, idx, sign, func in BMS._PFIELDS
-            }
 
             # get cell voltages
             pack_cells: list[float] = [
@@ -268,20 +255,15 @@ class BMS(BaseBMS):
                 for idx in range(16)
             ]
             # update per pack delta voltage
-            data |= {
-                ATTR_DELTA_VOLTAGE: max(
-                    float(data.get(ATTR_DELTA_VOLTAGE, 0)),
-                    round(max(pack_cells) - min(pack_cells), 3),
-                )
-            }
+            data["delta_voltage"] = max(
+                data.get("delta_voltage", 0),
+                round(max(pack_cells) - min(pack_cells), 3),
+            )
             # add individual cell voltages
-            data |= {
-                f"{KEY_CELL_VOLTAGE}{idx+16*(pack-1)}": pack_cells[idx]
-                for idx in range(16)
-            }
+            data.setdefault("cell_voltages", []).extend(pack_cells)
             # add temperature sensors (4x cell temperature + 4 reserved)
-            data |= {
-                f"{KEY_TEMP_VALUE}{idx+8*(pack-1)}": (
+            data["temp_values"] = [
+                (
                     int.from_bytes(
                         self._data_final[pack << 8 | BMS.PIB_LEN * 2][
                             BMS.TEMP_START + idx * 2 : BMS.TEMP_START + idx * 2 + 2
@@ -292,7 +274,7 @@ class BMS(BaseBMS):
                 )
                 / 10
                 for idx in range(4)
-            }
+            ]
 
         self._data_final.clear()
 

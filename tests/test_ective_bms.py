@@ -6,7 +6,8 @@ from uuid import UUID
 from bleak.backends.characteristic import BleakGATTCharacteristic
 import pytest
 
-from custom_components.bms_ble.plugins.ective_bms import BMS, BMSsample
+from custom_components.bms_ble.const import BMSsample
+from custom_components.bms_ble.plugins.ective_bms import BMS
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient

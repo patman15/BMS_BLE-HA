@@ -17,10 +17,10 @@ from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH, DeviceIn
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN, LOGGER, UPDATE_INTERVAL
-from .plugins.basebms import BaseBMS, BMSsample
+from .plugins.basebms import BaseBMS
 
 
-class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
+class BTBmsCoordinator(DataUpdateCoordinator[dict[str, int | float | bool]]):
     """Update coordinator for a battery management system."""
 
     def __init__(
@@ -118,7 +118,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
 
         return self._stale
 
-    async def _async_update_data(self) -> BMSsample:
+    async def _async_update_data(self) -> dict[str, int | float | bool]:
         """Return the latest data from the device."""
 
         LOGGER.debug("%s: BMS data update", self.name)

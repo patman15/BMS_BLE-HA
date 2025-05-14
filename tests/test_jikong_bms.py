@@ -13,7 +13,8 @@ from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str, uuidstr_to_str
 import pytest
 
-from custom_components.bms_ble.plugins.jikong_bms import BMS, BMSsample, crc_sum
+from custom_components.bms_ble.const import BMSsample
+from custom_components.bms_ble.plugins.jikong_bms import BMS, crc_sum
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient

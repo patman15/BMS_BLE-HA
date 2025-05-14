@@ -33,6 +33,8 @@ DOMAIN: Final[str] = "bms_ble"
 LOGGER: Final[logging.Logger] = logging.getLogger(__package__)
 UPDATE_INTERVAL: Final[int] = 30  # [s]
 
+type BMSsample = dict[str, int | float | bool]
+
 # attributes (do not change)
 ATTR_BALANCE_CUR: Final[str] = "balance_current"  # [A]
 ATTR_CELL_VOLTAGES: Final[str] = "cell_voltages"  # [V]
