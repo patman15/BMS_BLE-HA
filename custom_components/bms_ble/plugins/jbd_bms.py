@@ -61,7 +61,7 @@ class BMS(BaseBMS):
                 "connectable": True,
             }
             for pattern in (
-                "JBD-*"
+                "JBD-*",
                 "SP0?S*",
                 "SP1?S*",
                 "SP2?S*",
