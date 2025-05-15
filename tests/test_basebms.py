@@ -24,7 +24,7 @@ from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 def test_calc_missing_values(bms_data_fixture: BMSsample) -> None:
     """Check if missing data is correctly calculated."""
     bms_data: BMSsample = bms_data_fixture
-    ref: BMSsample = bms_data_fixture
+    ref: BMSsample = bms_data_fixture.copy()
 
     BaseBMS._add_missing_values(
         bms_data,
@@ -52,6 +52,7 @@ def test_calc_missing_values(bms_data_fixture: BMSsample) -> None:
         ATTR_BATTERY_CHARGING: bms_data[ATTR_CURRENT]
         > 0,  # battery is charging if current is positive
         ATTR_TEMPERATURE: -34.396,
+        ATTR_PROBLEM: False,
     }
     if bms_data[ATTR_CURRENT] < 0:
         ref |= {ATTR_RUNTIME: 9415}
@@ -61,16 +62,18 @@ def test_calc_missing_values(bms_data_fixture: BMSsample) -> None:
 
 def test_calc_voltage() -> None:
     """Check if missing data is correctly calculated."""
-    bms_data = ref = {f"{KEY_CELL_VOLTAGE}0": 3.456, f"{KEY_CELL_VOLTAGE}1": 3.567}
+    bms_data: BMSsample = {f"{KEY_CELL_VOLTAGE}0": 3.456, f"{KEY_CELL_VOLTAGE}1": 3.567}
+    ref: BMSsample = bms_data.copy()
     BaseBMS._add_missing_values(bms_data, frozenset({ATTR_VOLTAGE}))
-    assert bms_data == ref | {ATTR_VOLTAGE: 7.023}
+    assert bms_data == ref | {ATTR_VOLTAGE: 7.023, ATTR_PROBLEM: False}
 
 
 def test_calc_cycle_chrg() -> None:
     """Check if missing data is correctly calculated."""
-    bms_data = ref = {ATTR_BATTERY_LEVEL: 73, KEY_DESIGN_CAP: 125.0}
+    bms_data: BMSsample = {ATTR_BATTERY_LEVEL: 73, KEY_DESIGN_CAP: 125.0}
+    ref: BMSsample = bms_data.copy()
     BaseBMS._add_missing_values(bms_data, frozenset({ATTR_CYCLE_CHRG}))
-    assert bms_data == ref | {ATTR_CYCLE_CHRG: 91.25}
+    assert bms_data == ref | {ATTR_CYCLE_CHRG: 91.25, ATTR_PROBLEM: False}
 
 
 @pytest.fixture(
@@ -94,7 +97,7 @@ def mock_bms_data(request: pytest.FixtureRequest) -> BMSsample:
 
 def test_problems(problem_samples: BMSsample) -> None:
     """Check if missing data is correctly calculated."""
-    bms_data: BMSsample = problem_samples
+    bms_data: BMSsample = problem_samples.copy()
 
     BaseBMS._add_missing_values(bms_data, frozenset({ATTR_RUNTIME}))
 
