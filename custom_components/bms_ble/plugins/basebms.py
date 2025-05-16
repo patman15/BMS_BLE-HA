@@ -37,7 +37,7 @@ type BMSsample = dict[str, int | float | bool]
 
 
 class BaseBMS(ABC):
-    """Base class for battery management system."""
+    """Abstract base class for battery management system."""
 
     TIMEOUT: float = 5.0
     MAX_RETRY: int = 3
@@ -84,7 +84,7 @@ class BaseBMS(ABC):
     @staticmethod
     @abstractmethod
     def matcher_dict_list() -> list[dict]:
-        """Return a list of Bluetooth matchers."""
+        """Return a list of Bluetooth advertisement matchers."""
 
     @staticmethod
     @abstractmethod
@@ -128,7 +128,7 @@ class BaseBMS(ABC):
     def _calc_values() -> frozenset[str]:
         """Return values that the BMS cannot provide and need to be calculated.
 
-        See calc_values() function for the required input to actually do so.
+        See _add_missing_values() function for the required input to actually do so.
         """
         return frozenset()
 
@@ -166,6 +166,12 @@ class BaseBMS(ABC):
             data[ATTR_CYCLE_CHRG] = (
                 data[KEY_DESIGN_CAP] * data[ATTR_BATTERY_LEVEL]
             ) / 100
+
+        # calculate battery level from design capacity and cycle charge
+        if can_calc(ATTR_BATTERY_LEVEL, frozenset({KEY_DESIGN_CAP, ATTR_CYCLE_CHRG})):
+            data[ATTR_BATTERY_LEVEL] = round(
+                data[ATTR_CYCLE_CHRG] * data[KEY_DESIGN_CAP] / 100, 1
+            )
 
         # calculate cycle capacity from voltage and cycle charge
         if can_calc(ATTR_CYCLE_CAP, frozenset({ATTR_VOLTAGE, ATTR_CYCLE_CHRG})):
@@ -315,7 +321,7 @@ class BaseBMS(ABC):
         """Retrieve updated values from the BMS using method of the subclass."""
         await self._connect()
 
-        data = await self._async_update()
+        data: BMSsample = await self._async_update()
         self._add_missing_values(data, self._calc_values())
 
         if self._reconnect:
