@@ -24,6 +24,10 @@
       "manufacturer_id": 2917
     },
     {
+      "local_name": "JBD-*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
       "local_name": "SP0?S*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
