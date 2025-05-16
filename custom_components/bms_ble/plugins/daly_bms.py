@@ -138,24 +138,26 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         data: BMSsample = {}
-        try:
-            # request MOS temperature (possible outcome: response, empty response, no response)
-            await self._await_reply(BMS.HEAD_READ + BMS.MOS_INFO)
+        if self._ble_device.details.get("manufacturer_id", 0) not in (0x303,):
+            # do not query devices that do not support MOS temperature, e.g. Bulltron
+            try:
+                # request MOS temperature (possible outcome: response, empty response, no response)
+                await self._await_reply(BMS.HEAD_READ + BMS.MOS_INFO)
 
-            if sum(self._data[BMS.MOS_TEMP_POS :][:2]):
-                self._log.debug("MOS info: %s", self._data)
-                data["temp_values"] = [
-                    float(
-                        int.from_bytes(
-                            self._data[BMS.MOS_TEMP_POS :][:2],
-                            byteorder="big",
-                            signed=True,
+                if sum(self._data[BMS.MOS_TEMP_POS :][:2]):
+                    self._log.debug("MOS info: %s", self._data)
+                    data["temp_values"] = [
+                        float(
+                            int.from_bytes(
+                                self._data[BMS.MOS_TEMP_POS :][:2],
+                                byteorder="big",
+                                signed=True,
+                            )
+                            - 40
                         )
-                        - 40
-                    )
-                ]
-        except TimeoutError:
-            self._log.debug("no MOS temperature available.")
+                    ]
+            except TimeoutError:
+                self._log.debug("no MOS temperature available.")
 
         await self._await_reply(BMS.HEAD_READ + BMS.CMD_INFO)
 
