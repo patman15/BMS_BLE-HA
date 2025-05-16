@@ -8,7 +8,8 @@ from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.plugins.seplos_bms import BMS, BMSsample
+from custom_components.bms_ble.const import BMSsample
+from custom_components.bms_ble.plugins.seplos_bms import BMS
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -64,10 +65,10 @@ REF_VALUE: BMSsample = {
     "temp#1": 23.75,
     "temp#2": 23.85,
     "temp#3": 24.85,
-    "temp#8": 24.95,
-    "temp#9": 23.75,
-    "temp#10": 23.85,
-    "temp#11": 24.85,
+    "temp#4": 24.95,
+    "temp#5": 23.75,
+    "temp#6": 23.85,
+    "temp#7": 24.85,
     "pack_battery_level#0": 47.9,
     "pack_battery_level#1": 48.0,
     "pack_current#0": -7.2,

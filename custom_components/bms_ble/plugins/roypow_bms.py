@@ -1,31 +1,13 @@
 """Module to support RoyPow BMS."""
 
 from collections.abc import Callable
-from typing import Final
+from typing import Any, Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from custom_components.bms_ble.const import (
-    ATTR_BATTERY_CHARGING,
-    ATTR_BATTERY_LEVEL,
-    ATTR_CURRENT,
-    ATTR_CYCLE_CAP,
-    ATTR_CYCLE_CHRG,
-    ATTR_CYCLES,
-    ATTR_DELTA_VOLTAGE,
-    ATTR_POWER,
-    ATTR_RUNTIME,
-    ATTR_TEMPERATURE,
-    ATTR_VOLTAGE,
-    KEY_CELL_VOLTAGE,
-    KEY_PROBLEM,
-    KEY_TEMP_SENS,
-    KEY_TEMP_VALUE,
-)
-
-from .basebms import BaseBMS, BMSsample
+from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue
 
 
 class BMS(BaseBMS):
@@ -35,22 +17,20 @@ class BMS(BaseBMS):
     _TAIL: Final[int] = 0xF5
     _BT_MODULE_MSG: Final[bytes] = b"AT+STAT\r\n"  # AT cmd from BLE module
     _MIN_LEN: Final[int] = len(_HEAD) + 1
-    _FIELDS: Final[
-        list[tuple[str, int, int, int, bool, Callable[[int], int | float]]]
-    ] = [
-        (ATTR_BATTERY_LEVEL, 0x4, 7, 1, False, lambda x: x),
-        (ATTR_VOLTAGE, 0x4, 47, 2, False, lambda x: float(x / 100)),
+    _FIELDS: Final[list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]] = [
+        ("battery_level", 0x4, 7, 1, False, lambda x: x),
+        ("voltage", 0x4, 47, 2, False, lambda x: float(x / 100)),
         (
-            ATTR_CURRENT,
+            "current",
             0x3,
             6,
             3,
             False,
             lambda x: float((x & 0xFFFF) * (-1 if (x >> 16) & 0x1 else 1) / 100),
         ),
-        (KEY_PROBLEM, 0x3, 9, 3, False, lambda x: x),
+        ("problem_code", 0x3, 9, 3, False, lambda x: x),
         (
-            ATTR_CYCLE_CHRG,
+            "cycle_charge",
             0x4,
             24,
             4,
@@ -59,9 +39,9 @@ class BMS(BaseBMS):
                 ((x & 0xFFFF0000) | (x & 0xFF00) >> 8 | (x & 0xFF) << 8) / 1000
             ),
         ),
-        (ATTR_RUNTIME, 0x4, 30, 2, False, lambda x: x * 60),
-        (KEY_TEMP_SENS, 0x3, 13, 1, False, lambda x: x),
-        (ATTR_CYCLES, 0x4, 9, 2, False, lambda x: x),
+        ("runtime", 0x4, 30, 2, False, lambda x: x * 60),
+        ("temp_sensors", 0x3, 13, 1, False, lambda x: x),
+        ("cycles", 0x4, 9, 2, False, lambda x: x),
     ]
     _CMDS: Final[set[int]] = set({field[1] for field in _FIELDS})
 
@@ -72,7 +52,7 @@ class BMS(BaseBMS):
         self._exp_len: int = 0
 
     @staticmethod
-    def matcher_dict_list() -> list[dict]:
+    def matcher_dict_list() -> list[AdvertisementPattern]:
         """Provide BluetoothMatcher definition."""
         return [
             {
@@ -104,14 +84,14 @@ class BMS(BaseBMS):
         return "ffe1"
 
     @staticmethod
-    def _calc_values() -> frozenset[str]:
+    def _calc_values() -> frozenset[BMSvalue]:
         return frozenset(
             {
-                ATTR_BATTERY_CHARGING,
-                ATTR_CYCLE_CAP,
-                ATTR_DELTA_VOLTAGE,
-                ATTR_POWER,
-                ATTR_TEMPERATURE,
+                "battery_charging",
+                "cycle_capacity",
+                "delta_voltage",
+                "power",
+                "temperature",
             }
         )  # calculate further values from BMS provided set ones
 
@@ -164,25 +144,23 @@ class BMS(BaseBMS):
         self._data_event.set()
 
     @staticmethod
-    def _decode_data(data: dict[int, bytearray]) -> dict[str, int | float]:
-        return {
-            key: func(
-                int.from_bytes(
-                    data[cmd][idx : idx + size],
-                    byteorder="big",
-                    signed=sign,
+    def _decode_data(data: dict[int, bytearray]) -> BMSsample:
+        result: BMSsample = {}
+        for key, cmd, idx, size, sign, func in BMS._FIELDS:
+            if cmd in data:
+                result[key] = func(
+                    int.from_bytes(
+                        data[cmd][idx : idx + size], byteorder="big", signed=sign
+                    )
                 )
-            )
-            for key, cmd, idx, size, sign, func in BMS._FIELDS
-            if cmd in data
-        }
+        return result
 
     @staticmethod
-    def _cell_voltages(data: bytearray) -> dict[str, float]:
+    def _cell_voltages(data: bytearray) -> list[float]:
         """Return cell voltages from status message."""
         cells: Final[int] = max(0, (len(data) - 11) // 2)
-        return {
-            f"{KEY_CELL_VOLTAGE}{idx}": value / 1000
+        return [
+            (value / 1000)
             for idx in range(cells)
             if (
                 value := int.from_bytes(
@@ -190,11 +168,11 @@ class BMS(BaseBMS):
                     byteorder="big",
                 )
             )
-        }
+        ]
 
     @staticmethod
-    def _temp_sensors(data: bytearray, sensors: int) -> dict[str, int]:
-        return {f"{KEY_TEMP_VALUE}{idx}": data[14 + idx] - 40 for idx in range(sensors)}
+    def _temp_sensors(data: bytearray, sensors: int) -> list[int | float]:
+        return [data[14 + idx] - 40 for idx in range(sensors)]
 
     @staticmethod
     def _crc(frame: bytearray) -> int:
@@ -221,14 +199,15 @@ class BMS(BaseBMS):
         result: BMSsample = BMS._decode_data(self._data_final)
 
         # remove remaining runtime if battery is charging
-        if result.get(ATTR_RUNTIME) == 0xFFFF * 60:
-            result.pop(ATTR_RUNTIME, None)
+        if result.get("runtime") == 0xFFFF * 60:
+            result.pop("runtime", None)
 
-        return (
-            result
-            | BMS._cell_voltages(self._data_final.get(0x2, bytearray()))
-            | BMS._temp_sensors(
-                self._data_final.get(0x3, bytearray()),
-                int(result.get(KEY_TEMP_SENS, 0)),
-            )
+        result["cell_voltages"] = BMS._cell_voltages(
+            self._data_final.get(0x2, bytearray())
         )
+        result["temp_values"] = BMS._temp_sensors(
+            self._data_final.get(0x3, bytearray()),
+            int(result.get("temp_sensors", 0)),
+        )
+
+        return result

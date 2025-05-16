@@ -1,56 +1,37 @@
 """Module to support Daly Smart BMS."""
 
 from collections.abc import Callable
-from typing import Final
+from typing import Any, Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from custom_components.bms_ble.const import (
-    ATTR_BATTERY_CHARGING,
-    ATTR_BATTERY_LEVEL,
-    ATTR_CURRENT,
-    ATTR_CYCLE_CAP,
-    ATTR_CYCLE_CHRG,
-    ATTR_CYCLES,
-    ATTR_DELTA_VOLTAGE,
-    ATTR_POWER,
-    ATTR_RUNTIME,
-    ATTR_TEMPERATURE,
-    ATTR_VOLTAGE,
-    KEY_CELL_COUNT,
-    KEY_CELL_VOLTAGE,
-    KEY_PROBLEM,
-    KEY_TEMP_SENS,
-    KEY_TEMP_VALUE,
-)
-
-from .basebms import BaseBMS, BMSsample, crc_modbus
+from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue, crc_modbus
 
 
 class BMS(BaseBMS):
     """Daly Smart BMS class implementation."""
 
-    HEAD_READ: Final[bytes] = b"\xD2\x03"
-    CMD_INFO: Final[bytes] = b"\x00\x00\x00\x3E\xD7\xB9"
-    MOS_INFO: Final[bytes] = b"\x00\x3E\x00\x09\xF7\xA3"
+    HEAD_READ: Final[bytes] = b"\xd2\x03"
+    CMD_INFO: Final[bytes] = b"\x00\x00\x00\x3e\xd7\xb9"
+    MOS_INFO: Final[bytes] = b"\x00\x3e\x00\x09\xf7\xa3"
     HEAD_LEN: Final[int] = 3
     CRC_LEN: Final[int] = 2
     MAX_CELLS: Final[int] = 32
     MAX_TEMP: Final[int] = 8
     INFO_LEN: Final[int] = 84 + HEAD_LEN + CRC_LEN + MAX_CELLS + MAX_TEMP
     MOS_TEMP_POS: Final[int] = HEAD_LEN + 8
-    _FIELDS: Final[list[tuple[str, int, int, Callable[[int], int | float]]]] = [
-        (ATTR_VOLTAGE, 80 + HEAD_LEN, 2, lambda x: float(x / 10)),
-        (ATTR_CURRENT, 82 + HEAD_LEN, 2, lambda x: float((x - 30000) / 10)),
-        (ATTR_BATTERY_LEVEL, 84 + HEAD_LEN, 2, lambda x: float(x / 10)),
-        (ATTR_CYCLE_CHRG, 96 + HEAD_LEN, 2, lambda x: float(x / 10)),
-        (KEY_CELL_COUNT, 98 + HEAD_LEN, 2, lambda x: min(x, BMS.MAX_CELLS)),
-        (KEY_TEMP_SENS, 100 + HEAD_LEN, 2, lambda x: min(x, BMS.MAX_TEMP)),
-        (ATTR_CYCLES, 102 + HEAD_LEN, 2, lambda x: x),
-        (ATTR_DELTA_VOLTAGE, 112 + HEAD_LEN, 2, lambda x: float(x / 1000)),
-        (KEY_PROBLEM, 116 + HEAD_LEN, 8, lambda x: x % 2**64),
+    _FIELDS: Final[list[tuple[BMSvalue, int, int, Callable[[int], Any]]]] = [
+        ("voltage", 80 + HEAD_LEN, 2, lambda x: float(x / 10)),
+        ("current", 82 + HEAD_LEN, 2, lambda x: float((x - 30000) / 10)),
+        ("battery_level", 84 + HEAD_LEN, 2, lambda x: float(x / 10)),
+        ("cycle_charge", 96 + HEAD_LEN, 2, lambda x: float(x / 10)),
+        ("cell_count", 98 + HEAD_LEN, 2, lambda x: min(x, BMS.MAX_CELLS)),
+        ("temp_sensors", 100 + HEAD_LEN, 2, lambda x: min(x, BMS.MAX_TEMP)),
+        ("cycles", 102 + HEAD_LEN, 2, lambda x: x),
+        ("delta_voltage", 112 + HEAD_LEN, 2, lambda x: float(x / 1000)),
+        ("problem_code", 116 + HEAD_LEN, 8, lambda x: x % 2**64),
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -58,16 +39,19 @@ class BMS(BaseBMS):
         super().__init__(__name__, ble_device, reconnect)
 
     @staticmethod
-    def matcher_dict_list() -> list[dict]:
+    def matcher_dict_list() -> list[AdvertisementPattern]:
         """Provide BluetoothMatcher definition."""
         return [
-            {
-                "local_name": "DL-*",
-                "service_uuid": BMS.uuid_services()[0],
-                "connectable": True,
-            },
+            AdvertisementPattern(
+                local_name="DL-*",
+                service_uuid=BMS.uuid_services()[0],
+                connectable=True,
+            )
         ] + [
-            {"manufacturer_id": m_id, "connectable": True}
+            AdvertisementPattern(
+                manufacturer_id=m_id,
+                connectable=True,
+            )
             for m_id in (0x102, 0x104, 0x0302)
         ]
 
@@ -92,14 +76,14 @@ class BMS(BaseBMS):
         return "fff2"
 
     @staticmethod
-    def _calc_values() -> frozenset[str]:
+    def _calc_values() -> frozenset[BMSvalue]:
         return frozenset(
             {
-                ATTR_CYCLE_CAP,
-                ATTR_POWER,
-                ATTR_BATTERY_CHARGING,
-                ATTR_RUNTIME,
-                ATTR_TEMPERATURE,
+                "cycle_capacity",
+                "power",
+                "battery_charging",
+                "runtime",
+                "temperature",
             }
         )
 
@@ -130,6 +114,27 @@ class BMS(BaseBMS):
         self._data = data
         self._data_event.set()
 
+    @staticmethod
+    def _cell_voltages(data: bytearray, cells: int) -> list[float]:
+        return [
+            int.from_bytes(
+                data[BMS.HEAD_LEN + 2 * idx : BMS.HEAD_LEN + 2 * idx + 2],
+                byteorder="big",
+                signed=True,
+            )
+            / 1000
+            for idx in range(cells)
+        ]
+
+    @staticmethod
+    def _temp_sensors(data: bytearray, sensors: int, offs: int) -> list[float]:
+        return [
+            float(
+                int.from_bytes(data[idx : idx + 2], byteorder="big", signed=True) - 40
+            )
+            for idx in range(offs, offs + sensors * 2, 2)
+        ]
+
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         data: BMSsample = {}
@@ -139,8 +144,8 @@ class BMS(BaseBMS):
 
             if sum(self._data[BMS.MOS_TEMP_POS :][:2]):
                 self._log.debug("MOS info: %s", self._data)
-                data |= {
-                    f"{KEY_TEMP_VALUE}0": float(
+                data["temp_values"] = [
+                    float(
                         int.from_bytes(
                             self._data[BMS.MOS_TEMP_POS :][:2],
                             byteorder="big",
@@ -148,7 +153,7 @@ class BMS(BaseBMS):
                         )
                         - 40
                     )
-                }
+                ]
         except TimeoutError:
             self._log.debug("no MOS temperature available.")
 
@@ -158,39 +163,23 @@ class BMS(BaseBMS):
             self._log.debug("incorrect frame length: %i", len(self._data))
             return {}
 
-        data |= {
-            key: func(
+        for key, idx, size, func in BMS._FIELDS:
+            data[key] = func(
                 int.from_bytes(
                     self._data[idx : idx + size], byteorder="big", signed=True
                 )
             )
-            for key, idx, size, func in BMS._FIELDS
-        }
 
         # get temperatures
-        # shift index if MOS temperature is available
-        t_off: Final[int] = 1 if f"{KEY_TEMP_VALUE}0" in data else 0
-        data |= {
-            f"{KEY_TEMP_VALUE}{((idx-64-BMS.HEAD_LEN)>>1) + t_off}": float(
-                int.from_bytes(self._data[idx : idx + 2], byteorder="big", signed=True)
-                - 40
+        data.setdefault("temp_values", []).extend(
+            self._temp_sensors(
+                self._data, data.get("temp_sensors", 0), 64 + BMS.HEAD_LEN
             )
-            for idx in range(
-                64 + self.HEAD_LEN, 64 + self.HEAD_LEN + int(data[KEY_TEMP_SENS]) * 2, 2
-            )
-        }
+        )
 
         # get cell voltages
-        data |= {
-            f"{KEY_CELL_VOLTAGE}{idx}": float(
-                int.from_bytes(
-                    self._data[BMS.HEAD_LEN + 2 * idx : BMS.HEAD_LEN + 2 * idx + 2],
-                    byteorder="big",
-                    signed=True,
-                )
-                / 1000
-            )
-            for idx in range(int(data[KEY_CELL_COUNT]))
-        }
+        data["cell_voltages"] = self._cell_voltages(
+            self._data, int(data.get("cell_count", 0))
+        )
 
         return data

@@ -9,7 +9,8 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.plugins.renogy_bms import BMS, BMSsample
+from custom_components.bms_ble.const import BMSsample
+from custom_components.bms_ble.plugins.renogy_bms import BMS
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -192,7 +193,7 @@ async def test_problem_response(monkeypatch, patch_bleak_client) -> None:
     result: BMSsample = await bms.async_update()
     assert result == ref_value() | {
         "problem": True,
-        "problem_code": 0xFFFFFFFFFFFFFFFFFFFFFFFFFFF1
+        "problem_code": 0xFFFFFFFFFFFFFFFFFFFFFFFFFFF1,
     }
 
     await bms.disconnect()
