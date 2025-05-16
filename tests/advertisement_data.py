@@ -639,5 +639,20 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             rssi=-47,
         ),
         "jbd_bms",
-    )
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/309)
+        generate_advertisement_data(
+            local_name="JBD-SP16S020-L8S",
+            manufacturer_data={13880: "13014e9a"},
+            service_uuids=[
+                "00001800-0000-1000-8000-00805f9b34fb",
+                "00001801-0000-1000-8000-00805f9b34fb",
+                "0000180a-0000-1000-8000-00805f9b34fb",
+                "0000ff00-0000-1000-8000-00805f9b34fb",
+                "00010203-0405-0607-0809-0a0b0c0d1912",
+            ],
+            rssi=-81,
+        ),
+        "jbd_bms",
+    ),
 ]

@@ -61,6 +61,7 @@ class BMS(BaseBMS):
                 "connectable": True,
             }
             for pattern in (
+                "JBD-*",
                 "SP0?S*",
                 "SP1?S*",
                 "SP2?S*",
@@ -163,6 +164,9 @@ class BMS(BaseBMS):
             )
             return
 
+        if len(self._data) != BMS.INFO_LEN + self._data[3]:
+            self._log.debug("wrong data length (%i): %s", len(self._data), self._data)
+
         self._data_final = self._data
         self._data_event.set()
 
@@ -179,8 +183,8 @@ class BMS(BaseBMS):
         return bytes(frame)
 
     @staticmethod
-    def _decode_data(data: bytearray) -> dict[str, int | float]:
-        result: dict[str, int | float] = {
+    def _decode_data(data: bytearray) -> BMSsample:
+        result: BMSsample = {
             key: func(
                 int.from_bytes(data[idx : idx + size], byteorder="big", signed=sign)
             )
@@ -212,20 +216,11 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         data: BMSsample = {}
-        for cmd, exp_len, dec_fct in (
-            (BMS._cmd(b"\x03"), BMS.BASIC_INFO, BMS._decode_data),
-            (BMS._cmd(b"\x04"), 0, BMS._cell_voltages),
+        for cmd, dec_fct in (
+            (BMS._cmd(b"\x03"), BMS._decode_data),
+            (BMS._cmd(b"\x04"), BMS._cell_voltages),
         ):
             await self._await_reply(cmd)
-            if (
-                len(self._data_final) != BMS.INFO_LEN + self._data_final[3]
-                or len(self._data_final) < BMS.INFO_LEN + exp_len
-            ):
-                self._log.debug(
-                    "wrong data length (%i): %s",
-                    len(self._data_final),
-                    self._data_final,
-                )
 
             data.update(dec_fct(self._data_final))
 
