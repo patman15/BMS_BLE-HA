@@ -1,30 +1,13 @@
 """Module to support Redodo BMS."""
 
 from collections.abc import Callable
-from typing import Final
+from typing import Any, Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from custom_components.bms_ble.const import (
-    ATTR_BATTERY_CHARGING,
-    ATTR_BATTERY_LEVEL,
-    ATTR_CURRENT,
-    ATTR_CYCLE_CAP,
-    ATTR_CYCLE_CHRG,
-    ATTR_CYCLES,
-    ATTR_DELTA_VOLTAGE,
-    ATTR_POWER,
-    ATTR_RUNTIME,
-    ATTR_TEMPERATURE,
-    ATTR_VOLTAGE,
-    KEY_CELL_VOLTAGE,
-    KEY_PROBLEM,
-    KEY_TEMP_VALUE,
-)
-
-from .basebms import BaseBMS, BMSsample, crc_sum
+from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue, crc_sum
 
 
 class BMS(BaseBMS):
@@ -34,13 +17,13 @@ class BMS(BaseBMS):
     HEAD_LEN: Final[int] = 3
     MAX_CELLS: Final[int] = 16
     MAX_TEMP: Final[int] = 5
-    _FIELDS: Final[list[tuple[str, int, int, bool, Callable[[int], int | float]]]] = [
-        (ATTR_VOLTAGE, 12, 2, False, lambda x: float(x / 1000)),
-        (ATTR_CURRENT, 48, 4, True, lambda x: float(x / 1000)),
-        (ATTR_BATTERY_LEVEL, 90, 2, False, lambda x: x),
-        (ATTR_CYCLE_CHRG, 62, 2, False, lambda x: float(x / 100)),
-        (ATTR_CYCLES, 96, 4, False, lambda x: x),
-        (KEY_PROBLEM, 76, 4, False, lambda x: x),
+    _FIELDS: Final[list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]]] = [
+        ("voltage", 12, 2, False, lambda x: float(x / 1000)),
+        ("current", 48, 4, True, lambda x: float(x / 1000)),
+        ("battery_level", 90, 2, False, lambda x: x),
+        ("cycle_charge", 62, 2, False, lambda x: float(x / 100)),
+        ("cycles", 96, 4, False, lambda x: x),
+        ("problem_code", 76, 4, False, lambda x: x),
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -48,10 +31,10 @@ class BMS(BaseBMS):
         super().__init__(__name__, ble_device, reconnect)
 
     @staticmethod
-    def matcher_dict_list() -> list[dict]:
+    def matcher_dict_list() -> list[AdvertisementPattern]:
         """Provide BluetoothMatcher definition."""
         return [
-            { # patterns required to exclude "BT-ROCC2440"
+            {  # patterns required to exclude "BT-ROCC2440"
                 "local_name": pattern,
                 "service_uuid": BMS.uuid_services()[0],
                 "manufacturer_id": 0x585A,
@@ -81,15 +64,15 @@ class BMS(BaseBMS):
         return "ffe2"
 
     @staticmethod
-    def _calc_values() -> frozenset[str]:
+    def _calc_values() -> frozenset[BMSvalue]:
         return frozenset(
             {
-                ATTR_BATTERY_CHARGING,
-                ATTR_DELTA_VOLTAGE,
-                ATTR_CYCLE_CAP,
-                ATTR_POWER,
-                ATTR_RUNTIME,
-                ATTR_TEMPERATURE,
+                "battery_charging",
+                "delta_voltage",
+                "cycle_capacity",
+                "power",
+                "runtime",
+                "temperature",
             }
         )  # calculate further values from BMS provided set ones
 
@@ -117,46 +100,46 @@ class BMS(BaseBMS):
         self._data_event.set()
 
     @staticmethod
-    def _cell_voltages(data: bytearray, cells: int) -> dict[str, float]:
+    def _decode_data(data: bytearray) -> BMSsample:
+        result: BMSsample = {}
+        for key, idx, size, sign, func in BMS._FIELDS:
+            result[key] = func(
+                int.from_bytes(data[idx : idx + size], byteorder="little", signed=sign)
+            )
+        return result
+
+    @staticmethod
+    def _cell_voltages(data: bytearray, cells: int) -> list[float]:
         """Return cell voltages from status message."""
-        return {
-            f"{KEY_CELL_VOLTAGE}{idx}": value / 1000
+        return [
+            (value / 1000)
             for idx in range(cells)
             if (
                 value := int.from_bytes(
-                    data[16 + 2 * idx : 16 + 2 * idx + 2],
-                    byteorder="little",
+                    data[16 + 2 * idx : 16 + 2 * idx + 2], byteorder="little"
                 )
             )
-        }
+        ]
 
     @staticmethod
-    def _temp_sensors(data: bytearray, sensors: int) -> dict[str, int]:
-        return {
-            f"{KEY_TEMP_VALUE}{idx}": value
+    def _temp_sensors(data: bytearray, sensors: int) -> list[int | float]:
+        return [
+            value
             for idx in range(sensors)
             if (
                 value := int.from_bytes(
-                    data[52 + idx * 2 : 54 + idx * 2],
-                    byteorder="little",
-                    signed=True,
+                    data[52 + idx * 2 : 54 + idx * 2], byteorder="little", signed=True
                 )
             )
-        }
+        ]
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         await self._await_reply(b"\x00\x00\x04\x01\x13\x55\xaa\x17")
 
-        return (
+        return BMS._decode_data(self._data) | BMSsample(
             {
-                key: func(
-                    int.from_bytes(
-                        self._data[idx : idx + size], byteorder="little", signed=sign
-                    )
-                )
-                for key, idx, size, sign, func in BMS._FIELDS
+                "cell_voltages": BMS._cell_voltages(self._data, BMS.MAX_CELLS),
+                "temp_values": BMS._temp_sensors(self._data, BMS.MAX_TEMP),
             }
-            | BMS._cell_voltages(self._data, BMS.MAX_CELLS)
-            | BMS._temp_sensors(self._data, BMS.MAX_TEMP)
         )

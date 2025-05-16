@@ -4,21 +4,7 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from custom_components.bms_ble.const import (
-    ATTR_BATTERY_CHARGING,
-    # ATTR_BATTERY_LEVEL,
-    ATTR_CURRENT,
-    # ATTR_CYCLE_CAP,
-    # ATTR_CYCLE_CHRG,
-    # ATTR_CYCLES,
-    # ATTR_DELTA_VOLTAGE,
-    ATTR_POWER,
-    # ATTR_RUNTIME,
-    ATTR_TEMPERATURE,
-    ATTR_VOLTAGE,
-)
-
-from .basebms import BaseBMS, BMSsample
+from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue
 
 
 class BMS(BaseBMS):
@@ -29,7 +15,7 @@ class BMS(BaseBMS):
         super().__init__(__name__, ble_device, reconnect)
 
     @staticmethod
-    def matcher_dict_list() -> list[dict]:
+    def matcher_dict_list() -> list[AdvertisementPattern]:
         """Provide BluetoothMatcher definition."""
         return [{"local_name": "dummy", "connectable": True}]
 
@@ -54,9 +40,9 @@ class BMS(BaseBMS):
         return "#changeme"
 
     @staticmethod
-    def _calc_values() -> frozenset[str]:
+    def _calc_values() -> frozenset[BMSvalue]:
         return frozenset(
-            {ATTR_POWER, ATTR_BATTERY_CHARGING}
+            {"power", "battery_charging"}
         )  # calculate further values from BMS provided set ones
 
     def _notification_handler(
@@ -78,7 +64,7 @@ class BMS(BaseBMS):
         # # parse data from self._data here
 
         return {
-            ATTR_VOLTAGE: 12,
-            ATTR_CURRENT: 1.5,
-            ATTR_TEMPERATURE: 27.182,
+            "voltage": 12,
+            "current": 1.5,
+            "temperature": 27.182,
         }  # fixed values, replace parsed data

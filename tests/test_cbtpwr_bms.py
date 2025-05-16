@@ -8,7 +8,8 @@ from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.plugins.cbtpwr_bms import BMS, BMSsample
+from custom_components.bms_ble.const import BMSsample
+from custom_components.bms_ble.plugins.cbtpwr_bms import BMS
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
