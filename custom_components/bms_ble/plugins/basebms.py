@@ -226,6 +226,13 @@ class BaseBMS(ABC):
                 {"design_capacity", "battery_level"},
                 lambda: (data.get("design_capacity", 0) * battery_level) / 100,
             ),
+            "battery_level": (
+                {"design_capacity", "cycle_charge"},
+                lambda: round(
+                    data.get("cycle_charge", 0) * data.get("design_capacity", 0) / 100,
+                    1,
+                ),
+            ),
             "cycle_capacity": (
                 {"voltage", "cycle_charge"},
                 lambda: round(data.get("voltage", 0) * data.get("cycle_charge", 0), 3),
