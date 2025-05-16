@@ -208,58 +208,72 @@ class BaseBMS(ABC):
             """Check value to add does not exist, is requested, and needed data is available."""
             return (value in values) and (value not in data) and using.issubset(data)
 
-        cell_voltages: Final[list[float]] = data.get("cell_voltages", [0.0])
-        design_capacity: Final[int | float] = data.get("design_capacity", 0)
+        cell_voltages: Final[list[float]] = data.get("cell_voltages", [])
         battery_level: Final[int | float] = data.get("battery_level", 0)
-        voltage: Final[float] = data.get("voltage", 0)
-        cycle_charge: Final[int | float] = data.get("cycle_charge", 0)
         current: Final[float] = data.get("current", 0)
 
         calculations: dict[BMSvalue, tuple[set[BMSvalue], Callable[[], Any]]] = {
             "voltage": ({"cell_voltages"}, lambda: round(sum(cell_voltages), 3)),
             "delta_voltage": (
                 {"cell_voltages"},
-                lambda: round(
-                    max(cell_voltages, default=0.0) - min(cell_voltages, default=0.0), 3
+                lambda: (
+                    round(max(cell_voltages) - min(cell_voltages), 3)
+                    if len(cell_voltages)
+                    else None
                 ),
             ),
             "cycle_charge": (
                 {"design_capacity", "battery_level"},
-                lambda: (design_capacity * battery_level) / 100,
+                lambda: (data.get("design_capacity", 0) * battery_level) / 100,
             ),
             "cycle_capacity": (
                 {"voltage", "cycle_charge"},
-                lambda: round(voltage * cycle_charge, 3),
+                lambda: round(data.get("voltage", 0) * data.get("cycle_charge", 0), 3),
             ),
-            "power": ({"voltage", "current"}, lambda: round(voltage * current, 3)),
+            "power": (
+                {"voltage", "current"},
+                lambda: round(data.get("voltage", 0) * current, 3),
+            ),
             "battery_charging": ({"current"}, lambda: current > 0),
             "runtime": (
                 {"current", "cycle_charge"},
                 lambda: (
-                    int(cycle_charge / abs(current) * BaseBMS._HRS_TO_SECS)
+                    int(
+                        data.get("cycle_charge", 0)
+                        / abs(current)
+                        * BaseBMS._HRS_TO_SECS
+                    )
                     if current < 0
                     else None
                 ),
             ),
             "temperature": (
                 {"temp_values"},
-                lambda: round(fmean(data.get("temp_values", [])), 3),
+                lambda: (
+                    round(fmean(data.get("temp_values", [])), 3)
+                    if data.get("temp_values")
+                    else None
+                ),
             ),
         }
 
         for attr, (required, calc_func) in calculations.items():
-            if can_calc(attr, frozenset(required)):
-                data[attr] = calc_func()
+            if (
+                can_calc(attr, frozenset(required))
+                and (value := calc_func()) is not None
+            ):
+                data[attr] = value
 
         # do sanity check on values to set problem state
         data["problem"] = any(
             [
                 data.get("problem", False),
                 data.get("problem_code", False),
-                voltage <= 0,
+                data.get("voltage") is not None and data.get("voltage", 0) <= 0,
                 any(v <= 0 or v > BaseBMS._MAX_CELL_VOLT for v in cell_voltages),
                 data.get("delta_voltage", 0) > BaseBMS._MAX_CELL_VOLT,
-                cycle_charge <= 0,
+                data.get("cycle_charge") is not None
+                and data.get("cycle_charge", 0.0) <= 0.0,
                 battery_level > 100,
             ]
         )
@@ -395,6 +409,19 @@ class BaseBMS(ABC):
             f"cell#{k}": v for k, v in enumerate(data.get("cell_voltages", []))
         }
         old_data |= {f"temp#{k}": v for k, v in enumerate(data.get("temp_values", []))}
+        old_data |= {
+            f"pack_voltage#{k}": v for k, v in enumerate(data.get("pack_voltage", []))
+        }
+        old_data |= {
+            f"pack_current#{k}": v for k, v in enumerate(data.get("pack_current", []))
+        }
+        old_data |= {
+            f"pack_battery_level#{k}": v
+            for k, v in enumerate(data.get("pack_battery_level", []))
+        }
+        old_data |= {
+            f"pack_cycles#{k}": v for k, v in enumerate(data.get("pack_cycles", []))
+        }
 
         return old_data
 

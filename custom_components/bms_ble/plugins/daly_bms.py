@@ -171,8 +171,10 @@ class BMS(BaseBMS):
             )
 
         # get temperatures
-        data["temp_values"] = self._temp_sensors(
-            self._data, data.get("temp_sensors", 0), 64 + BMS.HEAD_LEN
+        data.setdefault("temp_values", []).extend(
+            self._temp_sensors(
+                self._data, data.get("temp_sensors", 0), 64 + BMS.HEAD_LEN
+            )
         )
 
         # get cell voltages

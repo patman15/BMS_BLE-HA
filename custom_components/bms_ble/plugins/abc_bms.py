@@ -155,13 +155,9 @@ class BMS(BaseBMS):
     def _decode_data(data: dict[int, bytearray]) -> BMSsample:
         result: BMSsample = {}
         for key, cmd, idx, size, sign, func in BMS._FIELDS:
-            if cmd not in data:
-                continue
             result[key] = func(
                 int.from_bytes(
-                    data[cmd][idx : idx + size],
-                    byteorder="little",
-                    signed=sign,
+                    data[cmd][idx : idx + size], byteorder="little", signed=sign
                 )
             )
         return result

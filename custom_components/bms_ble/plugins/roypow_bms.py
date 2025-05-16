@@ -150,9 +150,7 @@ class BMS(BaseBMS):
             if cmd in data:
                 result[key] = func(
                     int.from_bytes(
-                        data[cmd][idx : idx + size],
-                        byteorder="big",
-                        signed=sign,
+                        data[cmd][idx : idx + size], byteorder="big", signed=sign
                     )
                 )
         return result

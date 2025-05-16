@@ -15,6 +15,29 @@ from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
 
+def ref_value() -> BMSsample:
+    """Return reference value for mock Daly BMS."""
+    return {
+        "voltage": 14.0,
+        "current": 3.0,
+        "battery_level": 90.0,
+        "cycles": 57,
+        "cycle_charge": 345.6,
+        "cell#0": 4.127,
+        "cell#1": 4.137,
+        "cell#2": 4.147,
+        "cell#3": 4.157,
+        "cell_count": 4,
+        "delta_voltage": 0.321,
+        "temp_sensors": 4,
+        "cycle_capacity": 4838.4,
+        "power": 42.0,
+        "battery_charging": True,
+        "problem": False,
+        "problem_code": 0,
+    }
+
+
 class MockDalyBleakClient(MockBleakClient):
     """Emulate a Daly BMS BleakClient."""
 
@@ -106,30 +129,8 @@ async def test_update(
         reconnect_fixture,
     )
 
-    result = await bms.async_update()
-
-    assert (
-        result
-        == {
-            "voltage": 14.0,
-            "current": 3.0,
-            "battery_level": 90.0,
-            "cycles": 57,
-            "cycle_charge": 345.6,
-            "cell#0": 4.127,
-            "cell#1": 4.137,
-            "cell#2": 4.147,
-            "cell#3": 4.157,
-            "cell_count": 4,
-            "delta_voltage": 0.321,
-            "temp_sensors": 4,
-            "cycle_capacity": 4838.4,
-            "power": 42.0,
-            "battery_charging": True,
-            "problem": False,
-            "problem_code": 0,
-        }
-        | {
+    assert await bms.async_update() == ref_value() | (
+        {
             "temperature": 24.8,
             "temp#0": 38.0,
             "temp#1": 20.0,
@@ -148,7 +149,7 @@ async def test_update(
     )
 
     # query again to check already connected state
-    result = await bms.async_update()
+    await bms.async_update()
     assert bms._client and bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()

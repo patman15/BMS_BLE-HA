@@ -216,6 +216,32 @@ async def test_invalid_response(
     assert not result
     await bms.disconnect()
 
+async def test_missing_message(monkeypatch, patch_bleak_client, patch_bms_timeout
+) -> None:
+    """Test data up date with BMS returning no message type 4 but 8."""
+
+    patch_bms_timeout("roypow_bms")
+
+    monkeypatch.setattr(
+        MockRoyPowBleakClient,
+        "RESP",
+        MockRoyPowBleakClient.RESP | {0x4: bytearray(
+                b"\xea\xd1\x01\x0f\xff\x08\x04\x04\x04\x0d\x2f\x0d\x2a\x0d\x29\x0d\x2c\xfc\xf5"
+            )}
+    )
+
+    patch_bleak_client(MockRoyPowBleakClient)
+
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+
+    # remove values from reference that are in 0x4 response (and dependent)
+    ref: BMSsample = ref_value()
+    for key in ("battery_level", "cycle_capacity", "cycle_charge", "cycles", "power", "voltage"):
+        ref.pop(key)
+
+    assert await bms.async_update() == ref
+    await bms.disconnect()
+
 
 @pytest.fixture(
     name="problem_response",

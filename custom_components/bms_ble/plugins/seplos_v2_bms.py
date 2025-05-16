@@ -152,15 +152,14 @@ class BMS(BaseBMS):
     def _decode_data(data: dict[int, bytearray], offs: int) -> BMSsample:
         result: BMSsample = {}
         for key, cmd, idx, size, sign, func in BMS._PFIELDS:
-            if not (idx + offs + size <= len(data[cmd]) - 3):
-                continue  # CRC, EOF
-            result[key] = func(
-                int.from_bytes(
-                    data[cmd][idx + offs : idx + offs + size],
-                    byteorder="big",
-                    signed=sign,
+            if idx + offs + size <= len(data[cmd]) - 3:
+                result[key] = func(
+                    int.from_bytes(
+                        data[cmd][idx + offs : idx + offs + size],
+                        byteorder="big",
+                        signed=sign,
+                    )
                 )
-            )
         return result
 
     @staticmethod

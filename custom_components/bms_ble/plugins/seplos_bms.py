@@ -262,7 +262,7 @@ class BMS(BaseBMS):
             # add individual cell voltages
             data.setdefault("cell_voltages", []).extend(pack_cells)
             # add temperature sensors (4x cell temperature + 4 reserved)
-            data["temp_values"] = [
+            data.setdefault("temp_values", []).extend(
                 (
                     int.from_bytes(
                         self._data_final[pack << 8 | BMS.PIB_LEN * 2][
@@ -274,7 +274,7 @@ class BMS(BaseBMS):
                 )
                 / 10
                 for idx in range(4)
-            ]
+            )
 
         self._data_final.clear()
 

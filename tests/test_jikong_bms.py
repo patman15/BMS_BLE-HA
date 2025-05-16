@@ -555,16 +555,23 @@ async def test_hide_temp_sensors(monkeypatch, patch_bleak_client, protocol_type)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
-    # modify result dict to match removed temp#2
-    ref_result = deepcopy(_RESULT_DEFS[protocol_type])
+    # modify result dict to match removed temp#1, temp#2
+    ref_result: BMSsample = deepcopy(_RESULT_DEFS[protocol_type])
     if protocol_type == "JK02_24S":
         ref_result |= {"temp_sensors": 3, "temperature": 18.1}
     elif protocol_type == "JK02_32S":
         ref_result |= {"temp_sensors": 251, "temperature": 31.0}
     elif protocol_type == "JK02_32S_v15":
         ref_result |= {"temp_sensors": 251, "temperature": 18.825}
+
     del ref_result["temp#1"]
     del ref_result["temp#2"]
+
+    # fill gap of removed temperature sensors
+    for i in range(3, 6):
+        if f"temp#{i}" not in ref_result:
+            break
+        ref_result[f"temp#{i-2}"] = ref_result.pop(f"temp#{i}")
 
     assert await bms.async_update() == ref_result
 

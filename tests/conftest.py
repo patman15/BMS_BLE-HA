@@ -27,8 +27,6 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
     BMS_TYPES,
     DOMAIN,
-    KEY_CELL_VOLTAGE,
-    KEY_TEMP_VALUE,
 )
 from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 
@@ -82,15 +80,11 @@ def bms_data_fixture(request) -> BMSsample:
     """Return a fake BMS data dictionary."""
 
     return {
-        ATTR_VOLTAGE: 7.0,
-        ATTR_CURRENT: request.param,
-        ATTR_CYCLE_CHRG: 34,
-        f"{KEY_CELL_VOLTAGE}0": 3.456,
-        f"{KEY_CELL_VOLTAGE}1": 3.567,
-        f"{KEY_TEMP_VALUE}0": -273.15,
-        f"{KEY_TEMP_VALUE}1": 0.01,
-        f"{KEY_TEMP_VALUE}2": 35.555,
-        f"{KEY_TEMP_VALUE}3": 100.0,
+        "voltage": 7.0,
+        "current": request.param,
+        "cycle_charge": 34,
+        "cell_voltages": [3.456, 3.567],
+        "temp_values": [-273.15, 0.01, 35.555, 100.0],
     }
 
 
@@ -337,7 +331,6 @@ class MockBleakClient(BleakClient):
     def services(self) -> BleakGATTServiceCollection:
         """Mock GATT services."""
         return BleakGATTServiceCollection()
-
 
     async def connect(self, *_args, **_kwargs) -> Literal[True]:
         """Mock connect."""
