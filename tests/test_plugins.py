@@ -15,7 +15,7 @@ from .bluetooth import generate_ble_device
 
 
 def get_fct_bms_supported() -> list[tuple[str, Callable[[BluetoothServiceInfoBleak], bool]]]:
-    """Hilfsfunktion, die die Liste der BMS supported-Methoden zurückgibt."""
+    """Return supported() of all BMS types."""
     return [
         (
             bms_type,
