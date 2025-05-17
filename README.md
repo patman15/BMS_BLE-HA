@@ -124,7 +124,7 @@ This integration follows standard integration removal. No extra steps are requir
 ## Known Issues
 
 <details><summary>Daly BMS with WiFi, e.g. Bulltron</summary>
-BMS incorrectly reports support of write-with-response operation. Requires a [work-around](https://github.com/patman15/BMS_BLE-HA/issues/85#issuecomment-2887461988).
+BMS incorrectly reports support of write-with-response operation. Requires a <a href="https://github.com/patman15/BMS_BLE-HA/issues/85#issuecomment-2887461988">work-around</a>.
 </details>
 <details><summary>Elektronicx, Lithtech batteries</summary>
 Bluetooth is turned off, when there is no current. Thus, device will get unavailble / cannot be added.
