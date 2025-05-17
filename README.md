@@ -123,7 +123,7 @@ This integration follows standard integration removal. No extra steps are requir
 ## Known Issues
 
 <details><summary>Daly BMS with WiFi, e.g. Bulltron</summary>
-The connection cannot be established. The reason is most likely a <a href="https://github.com/hbldh/bleak/issues/972#issuecomment-1235867382">violation of the Bluetooth specification</a>, that is rejected by the Linux BlueZ daemon. Please raise a <a href="https://github.com/patman15/BMS_BLE-HA/issues/new?template=support.yml">new issue</a> if you have further information or observations.
+BMS incorrectly reports support of write-with-response operation. Requires a [work-around](https://github.com/patman15/BMS_BLE-HA/issues/85#issuecomment-2887461988).
 </details>
 <details><summary>Elektronicx, Lithtech batteries</summary>
 Bluetooth is turned off, when there is no current. Thus, device will get unavailble / cannot be added.
@@ -273,7 +273,7 @@ for helping with making the integration better.
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-491_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-502_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=HACS&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
 [custint-url]: https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval
