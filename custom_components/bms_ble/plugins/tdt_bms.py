@@ -104,7 +104,7 @@ class BMS(BaseBMS):
 
     async def _init_connection(self) -> None:
         await self._await_reply(
-            data=b"HiLink", char=BMS._UUID_CFG, wait_for_notify=False
+            data=b"888888", char=BMS._UUID_CFG, wait_for_notify=False
         )
         if (
             ret := int.from_bytes(await self._client.read_gatt_char(BMS._UUID_CFG))
