@@ -7,7 +7,8 @@
 
 This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). After installation, no configuration is required. You can use the [ESPHome Bluetooth proxy][btproxy-url] to extend the bluetooth coverage range. By using standard dashboard cards, it is easy to visualize the current state of remote batteries.
 
-![dashboard](https://github.com/user-attachments/assets/45fbba89-6e80-4f5a-a6a2-f589c4eedaf2)
+![dashboard](https://github.com/user-attachments/assets/56136072-db44-4ffa-94e5-dc165d0fc1b4)
+
 
 * [Features](#features)
 * [Installation](#installation)
@@ -39,7 +40,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - E&J Technology BMS (show ups as `libatt`&#x2026;)
     - Elektronicx batteries (show up as `LT-`&#x2026;)
     - Lithtech batteries (show up as `LT-12V-`&#x2026; or `L-12V`&#x2026;)
-    - Meritsun, Supervolt v1, and Volthium (show up as `V-12V`&#x2026;) batteries
+    - Meritsun, Supervolt v1 (show up as `SV12V`&#x2026;), and Volthium (show up as `V-12V`&#x2026;) batteries
 - ECO-WORTHY + BW02 adapter (show up as `ECO-WORTHY`&#x2026;)
 - Ective, Topband batteries (show up as `$PFLAC`&#x2026;, `NWJ20`&#x2026;, `ZM20`&#x2026;)
 - Felicity ESS batteries (show up as `F10`&#x2026;)
@@ -123,7 +124,7 @@ This integration follows standard integration removal. No extra steps are requir
 ## Known Issues
 
 <details><summary>Daly BMS with WiFi, e.g. Bulltron</summary>
-The connection cannot be established. The reason is most likely a <a href="https://github.com/hbldh/bleak/issues/972#issuecomment-1235867382">violation of the Bluetooth specification</a>, that is rejected by the Linux BlueZ daemon. Please raise a <a href="https://github.com/patman15/BMS_BLE-HA/issues/new?template=support.yml">new issue</a> if you have further information or observations.
+BMS incorrectly reports support of write-with-response operation. Requires a <a href="https://github.com/patman15/BMS_BLE-HA/issues/85#issuecomment-2887461988">work-around</a>.
 </details>
 <details><summary>Elektronicx, Lithtech batteries</summary>
 Bluetooth is turned off, when there is no current. Thus, device will get unavailble / cannot be added.
@@ -273,7 +274,7 @@ for helping with making the integration better.
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-491_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-502_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=HACS&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
 [custint-url]: https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval

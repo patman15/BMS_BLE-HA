@@ -49,6 +49,9 @@ class BMS(BaseBMS):
             AdvertisementPattern(
                 local_name="LT-*", manufacturer_id=33384, connectable=True
             ),
+            AdvertisementPattern(
+                local_name="SV12V*", manufacturer_id=33384, connectable=True
+            ),
         ] + [  # Lithtech Energy (2x), Volthium
             AdvertisementPattern(local_name=pattern, connectable=True)
             for pattern in ("L-12V???AH-*", "LT-12V-*", "V-12V???Ah-*")
