@@ -8,7 +8,7 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.const import BMSsample
+from custom_components.bms_ble.plugins.basebms import BMSsample
 from custom_components.bms_ble.plugins.seplos_v2_bms import BMS
 
 from .bluetooth import generate_ble_device
@@ -27,28 +27,25 @@ REF_VALUE: BMSsample = {
     "cycle_capacity": 7628.82,
     "power": 363.05,
     "battery_charging": True,
-    "cell#0": 3.312,
-    "cell#1": 3.313,
-    "cell#2": 3.313,
-    "cell#3": 3.313,
-    "cell#4": 3.313,
-    "cell#5": 3.312,
-    "cell#6": 3.313,
-    "cell#7": 3.315,
-    "cell#8": 3.311,
-    "cell#9": 3.312,
-    "cell#10": 3.313,
-    "cell#11": 3.313,
-    "cell#12": 3.313,
-    "cell#13": 3.312,
-    "cell#14": 3.313,
-    "cell#15": 3.313,
-    "temp#0": 22.75,
-    "temp#1": 22.15,
-    "temp#2": 22.25,
-    "temp#3": 23.15,
-    "temp#4": 27.65,
-    "temp#5": 23.65,
+    "cell_voltages": [
+        3.312,
+        3.313,
+        3.313,
+        3.313,
+        3.313,
+        3.312,
+        3.313,
+        3.315,
+        3.311,
+        3.312,
+        3.313,
+        3.313,
+        3.313,
+        3.312,
+        3.313,
+        3.313,
+    ],
+    "temp_values": [22.75, 22.15, 22.25, 23.15, 27.65, 23.65],
     "delta_voltage": 0.004,
     "pack_count": 1,
     "problem": False,
@@ -216,7 +213,7 @@ async def test_invalid_response(
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
-    result = {}
+    result: BMSsample = {}
     with pytest.raises(TimeoutError):
         result = await bms.async_update()
 

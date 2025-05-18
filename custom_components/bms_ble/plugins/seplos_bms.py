@@ -57,9 +57,9 @@ class BMS(BaseBMS):
         ("problem_code", EIC_LEN, 1, 9, False, lambda x: x & 0xFFFF00FF00FF0000FF),
     ]  # Protocol Seplos V3
     _PFIELDS: Final[list[tuple[BMSpackvalue, int, bool, Callable[[int], Any]]]] = [
-        ("pack_voltage", 0, False, lambda x: float(x / 100)),
-        ("pack_current", 2, True, lambda x: float(x / 100)),
-        ("pack_battery_level", 10, False, lambda x: float(x / 10)),
+        ("pack_voltages", 0, False, lambda x: float(x / 100)),
+        ("pack_currents", 2, True, lambda x: float(x / 100)),
+        ("pack_battery_levels", 10, False, lambda x: float(x / 10)),
         ("pack_cycles", 14, False, lambda x: x),
     ]  # Protocol Seplos V3
     _CMDS: Final[set[int]] = {field[2] for field in QUERY.values()} | {

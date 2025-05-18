@@ -10,6 +10,7 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.bms_ble.const import UPDATE_INTERVAL
+from custom_components.bms_ble.plugins.basebms import BMSsample
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
@@ -25,7 +26,7 @@ async def test_update(
 ) -> None:
     """Test binary sensor value updates through coordinator."""
 
-    async def patch_async_update(_self):
+    async def patch_async_update(_self) -> BMSsample:
         """Patch async ble device from address to return a given value."""
         return {"voltage": 17.0, "current": 0, "problem": True}
 

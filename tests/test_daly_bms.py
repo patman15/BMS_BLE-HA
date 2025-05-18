@@ -8,7 +8,7 @@ from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.const import BMSsample
+from custom_components.bms_ble.plugins.basebms import BMSsample
 from custom_components.bms_ble.plugins.daly_bms import BMS
 
 from .bluetooth import generate_ble_device
@@ -23,10 +23,7 @@ def ref_value() -> BMSsample:
         "battery_level": 90.0,
         "cycles": 57,
         "cycle_charge": 345.6,
-        "cell#0": 4.127,
-        "cell#1": 4.137,
-        "cell#2": 4.147,
-        "cell#3": 4.157,
+        "cell_voltages": [4.127, 4.137, 4.147, 4.157],
         "cell_count": 4,
         "delta_voltage": 0.321,
         "temp_sensors": 4,
@@ -82,7 +79,7 @@ class MockDalyBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # noqa: RUF013 # same as upstream
+        response: bool | None = None,
     ) -> None:
         """Issue write command to GATT."""
         await super().write_gatt_char(char_specifier, data, response)
@@ -132,19 +129,12 @@ async def test_update(
     assert await bms.async_update() == ref_value() | (
         {
             "temperature": 24.8,
-            "temp#0": 38.0,
-            "temp#1": 20.0,
-            "temp#2": 21.0,
-            "temp#3": 22.0,
-            "temp#4": 23.0,
+            "temp_values": [38.0, 20.0, 21.0, 22.0, 23.0],
         }
         if bool_fixture
         else {
             "temperature": 21.5,
-            "temp#0": 20.0,
-            "temp#1": 21.0,
-            "temp#2": 22.0,
-            "temp#3": 23.0,
+            "temp_values": [20.0, 21.0, 22.0, 23.0],
         }
     )
 

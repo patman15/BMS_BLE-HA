@@ -1,7 +1,9 @@
 """Platform for sensor integration."""
 
-from typing import Final
+from collections.abc import Callable
+from typing import Final, cast
 
+from custom_components.bms_ble.plugins.basebms import BMSpackvalue, BMSsample
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.components.sensor.const import SensorDeviceClass, SensorStateClass
 from homeassistant.const import (
@@ -25,8 +27,6 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import BTBmsConfigEntry
 from .const import (
-    ATTR_BALANCE_CUR,
-    ATTR_CELL_VOLTAGES,
     ATTR_CURRENT,
     ATTR_CYCLE_CAP,
     ATTR_CYCLES,
@@ -35,72 +35,111 @@ from .const import (
     ATTR_POWER,
     ATTR_RSSI,
     ATTR_RUNTIME,
-    ATTR_TEMP_SENSORS,
     DOMAIN,
-    KEY_CELL_VOLTAGE,
-    KEY_PACK,
-    KEY_PACK_COUNT,
-    KEY_TEMP_VALUE,
     LOGGER,
 )
 from .coordinator import BTBmsCoordinator
 
 PARALLEL_UPDATES = 0
 
-SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
-    SensorEntityDescription(
+
+class BmsEntityDescription(SensorEntityDescription, frozen_or_thawed=True):
+    """Describes BMS sensor entity."""
+
+    value_fn: Callable[[BMSsample], float | int | None]
+    attr_fn: Callable[[BMSsample], dict[str, list[int | float]]] | None = None
+
+
+def _attr_pack(
+    data: BMSsample, key: BMSpackvalue, default: list[int | float]
+) -> dict[str, list[int | float]]:
+    """Return a dictionary with the given key and default value."""
+    return (
+        {str(key): cast("list[int | float]", data.get(key, default))}
+        if key in data
+        else {}
+    )
+
+
+SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
+    BmsEntityDescription(
         key=ATTR_VOLTAGE,
         translation_key=ATTR_VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
         suggested_display_precision=1,
+        value_fn=lambda data: data.get("voltage"),
+        attr_fn=lambda data: _attr_pack(data, "pack_voltages", [0.0]),
     ),
-    SensorEntityDescription(
+    BmsEntityDescription(
         key=ATTR_BATTERY_LEVEL,
         translation_key=ATTR_BATTERY_LEVEL,
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.BATTERY,
+        value_fn=lambda data: data.get("battery_level"),
+        attr_fn=lambda data: _attr_pack(data, "pack_battery_levels", [0.0]),
     ),
-    SensorEntityDescription(
+    BmsEntityDescription(
         key=ATTR_TEMPERATURE,
         translation_key=ATTR_TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.TEMPERATURE,
         suggested_display_precision=1,
+        value_fn=lambda data: data.get("temperature"),
+        attr_fn=lambda data: (
+            {"temperature_sensors": data.get("temp_values", [])}
+            if "temp_values" in data
+            else (
+                {"temperature_sensors": [data.get("temperature", 0.0)]}
+                if "temperature" in data
+                else {}
+            )
+        ),
     ),
-    SensorEntityDescription(
+    BmsEntityDescription(
         key=ATTR_CURRENT,
         translation_key=ATTR_CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.CURRENT,
+        value_fn=lambda data: data.get("current"),
+        attr_fn=lambda data: (
+            {"balance_current": [data.get("balance_current", 0.0)]}
+            if "balance_current" in data
+            else {}
+        )
+        | _attr_pack(data, "pack_currents", [0.0]),
     ),
-    SensorEntityDescription(
+    BmsEntityDescription(
         key=ATTR_CYCLE_CAP,
         translation_key=ATTR_CYCLE_CAP,
         native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.ENERGY_STORAGE,
         suggested_display_precision=1,
+        value_fn=lambda data: data.get("cycle_capacity"),
     ),
-    SensorEntityDescription(
+    BmsEntityDescription(
         key=ATTR_CYCLES,
         translation_key=ATTR_CYCLES,
         name="Cycles",
         state_class=SensorStateClass.TOTAL_INCREASING,
+        value_fn=lambda data: data.get("cycles"),
+        attr_fn=lambda data: _attr_pack(data, "pack_cycles", [0]),
     ),
-    SensorEntityDescription(
+    BmsEntityDescription(
         key=ATTR_POWER,
         translation_key=ATTR_POWER,
         native_unit_of_measurement=UnitOfPower.WATT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.POWER,
         suggested_display_precision=1,
+        value_fn=lambda data: data.get("power"),
     ),
-    SensorEntityDescription(
+    BmsEntityDescription(
         key=ATTR_RUNTIME,
         translation_key=ATTR_RUNTIME,
         name="Runtime",
@@ -108,8 +147,9 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
         suggested_unit_of_measurement=UnitOfTime.HOURS,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.DURATION,
+        value_fn=lambda data: data.get("runtime"),
     ),
-    SensorEntityDescription(
+    BmsEntityDescription(
         key=ATTR_DELTA_VOLTAGE,
         translation_key=ATTR_DELTA_VOLTAGE,
         name="Delta voltage",
@@ -118,8 +158,14 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
         device_class=SensorDeviceClass.VOLTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
         suggested_display_precision=3,
+        value_fn=lambda data: data.get("delta_voltage"),
+        attr_fn=lambda data: (
+            {"cell_voltages": data.get("cell_voltages", [])}
+            if "cell_voltages" in data
+            else {}
+        ),
     ),
-    SensorEntityDescription(
+    BmsEntityDescription(
         key=ATTR_RSSI,
         translation_key=ATTR_RSSI,
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
@@ -127,8 +173,9 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: None,  # RSSI is handled in a separate class
     ),
-    SensorEntityDescription(
+    BmsEntityDescription(
         key=ATTR_LQ,
         translation_key=ATTR_LQ,
         name="Link quality",
@@ -136,6 +183,7 @@ SENSOR_TYPES: Final[list[SensorEntityDescription]] = [
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=False,
         entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda data: None,  # LQ is handled in a separate class
     ),
 ]
 
@@ -163,58 +211,32 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
     """The generic BMS sensor implementation."""
 
     _attr_has_entity_name = True
+    entity_description: BmsEntityDescription
 
     def __init__(
-        self, bms: BTBmsCoordinator, descr: SensorEntityDescription, unique_id: str
+        self, bms: BTBmsCoordinator, descr: BmsEntityDescription, unique_id: str
     ) -> None:
         """Intitialize the BMS sensor."""
         self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
         self._attr_device_info = bms.device_info
-        self.entity_description = descr
+        self.entity_description = descr  # type: ignore[reportIncompatibleVariableOverride]
         super().__init__(bms)
 
-    def _get_attr_list(self, key_prefix: str) -> list[float]:
-        return [v for k, v in self.coordinator.data.items() if k.startswith(key_prefix)]
-
     @property
-    def extra_state_attributes(self) -> dict[str, list[float]] | None:  # type: ignore[reportIncompatibleVariableOverride]
+    def extra_state_attributes(self) -> dict[str, list[int | float]] | None:  # type: ignore[reportIncompatibleVariableOverride]
         """Return entity specific state attributes, e.g. cell voltages."""
-        sensor_key: Final[str] = self.entity_description.key
-        # add cell voltages to delta voltage sensor
-        if sensor_key == ATTR_DELTA_VOLTAGE:
-            return {ATTR_CELL_VOLTAGES: self._get_attr_list(KEY_CELL_VOLTAGE)}
-        # add individual temperature values to temperature sensor
-        if sensor_key == ATTR_TEMPERATURE:
-            if temp_sensors:= self._get_attr_list(KEY_TEMP_VALUE):
-                return {ATTR_TEMP_SENSORS: temp_sensors}
-            if temp := self.coordinator.data.get(ATTR_TEMPERATURE):
-                return {ATTR_TEMP_SENSORS: [temp]}
+        if self.entity_description.attr_fn:
+            return self.entity_description.attr_fn(self.coordinator.data)
 
-        result: dict[str, list[float]] = {}
-        # add balance current as attribute to current sensor
-        if sensor_key == ATTR_CURRENT:
-            if ATTR_BALANCE_CUR in self.coordinator.data:
-                result[ATTR_BALANCE_CUR] = [self.coordinator.data[ATTR_BALANCE_CUR]]
-        # add per-pack values as attributes to corresponding sensor
-        if self.coordinator.data.get(KEY_PACK_COUNT, 0) and sensor_key in [
-            ATTR_CURRENT,
-            ATTR_VOLTAGE,
-            ATTR_CYCLES,
-            ATTR_BATTERY_LEVEL,
-        ]:
-            result[f"{KEY_PACK}_{sensor_key}"] = self._get_attr_list(
-                f"{KEY_PACK}_{sensor_key}"
-            )
-
-        return result
+        return None
 
     @property
     def native_value(self) -> int | float | None:  # type: ignore[reportIncompatibleVariableOverride]
         """Return the sensor value."""
-        return self.coordinator.data.get(self.entity_description.key)
+        return self.entity_description.value_fn(self.coordinator.data)
 
 
-class RSSISensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverride]
+class RSSISensor(SensorEntity):
     """The Bluetooth RSSI sensor."""
 
     LIMIT: Final[int] = 127  # limit to +/- this range
@@ -243,7 +265,7 @@ class RSSISensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverri
         self.async_write_ha_state()
 
 
-class LQSensor(SensorEntity):  # type: ignore[reportIncompatibleVariableOverride]
+class LQSensor(SensorEntity):
     """The BMS link quality sensor."""
 
     _attr_has_entity_name = True

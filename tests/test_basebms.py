@@ -35,7 +35,7 @@ def test_calc_missing_values(bms_data_fixture: BMSsample) -> None:
         # battery is charging if current is positive
         "battery_charging": bms_data.get("current", 0) > 0,
         "temperature": -34.396,
-        "problem": False
+        "problem": False,
     }
     if bms_data.get("current", 0) < 0:
         ref |= {"runtime": 9415}

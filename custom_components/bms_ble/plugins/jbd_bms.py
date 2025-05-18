@@ -58,7 +58,6 @@ class BMS(BaseBMS):
                 "LT40AH",  # LionTron
                 "PKT*",  # Perfektium
                 "gokwh*",
-                "ECO????",  # ECO-WORTHY
                 "OGR-*",  # OGRPHY
             )
         ] + [

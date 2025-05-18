@@ -10,6 +10,7 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.uuids import normalize_uuid_str
 import pytest
 
+from custom_components.bms_ble.plugins.basebms import BMSsample
 from custom_components.bms_ble.plugins.felicity_bms import BMS
 
 from .bluetooth import generate_ble_device
@@ -53,26 +54,30 @@ def ref_value() -> dict:
         "cycle_capacity": 5227.2,
         "power": -5.28,
         "battery_charging": False,
-        "cell#0": 3.296,
-        "cell#1": 3.296,
-        "cell#2": 3.297,
-        "cell#3": 3.297,
-        "cell#4": 3.297,
-        "cell#5": 3.297,
-        "cell#6": 3.297,
-        "cell#7": 3.297,
-        "cell#8": 3.297,
-        "cell#9": 3.297,
-        "cell#10": 3.296,
-        "cell#11": 3.297,
-        "cell#12": 3.297,
-        "cell#13": 3.297,
-        "cell#14": 3.297,
-        "cell#15": 3.297,
-        "temp#0": 13.0,
-        "temp#1": 13.0,
-        "temp#2": 13.0,
-        "temp#3": 13.0,
+        "cell_voltages": [
+            3.296,
+            3.296,
+            3.297,
+            3.297,
+            3.297,
+            3.297,
+            3.297,
+            3.297,
+            3.297,
+            3.297,
+            3.296,
+            3.297,
+            3.297,
+            3.297,
+            3.297,
+            3.297,
+        ],
+        "temp_values": [
+            13.0,
+            13.0,
+            13.0,
+            13.0,
+        ],
         "delta_voltage": 0.001,
         "runtime": 3564000,
         "problem": False,
@@ -125,7 +130,7 @@ class MockFelicityBleakClient(MockBleakClient):
             self._notify_callback("MockFelicityBleakClient", notify_data)
 
 
-async def test_update(patch_bleak_client,reconnect_fixture) -> None:
+async def test_update(patch_bleak_client, reconnect_fixture) -> None:
     """Test Felicity BMS data update."""
 
     patch_bleak_client(MockFelicityBleakClient)
@@ -195,7 +200,7 @@ async def test_invalid_response(
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
-    result = {}
+    result: BMSsample = {}
     with pytest.raises(TimeoutError):
         result = await bms.async_update()
 

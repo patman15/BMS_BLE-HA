@@ -10,7 +10,24 @@ from custom_components.bms_ble.const import BMS_TYPES
 from custom_components.bms_ble.plugins.basebms import BaseBMS
 
 from .advertisement_data import ADVERTISEMENTS
+from .advertisement_ignore import ADVERTISEMENTS_IGNORE
 from .bluetooth import generate_ble_device
+
+
+def get_fct_bms_supported() -> (
+    list[tuple[str, Callable[[BluetoothServiceInfoBleak], bool]]]
+):
+    """Return supported() of all BMS types."""
+    return [
+        (
+            bms_type,
+            importlib.import_module(
+                f"custom_components.bms_ble.plugins.{bms_type}",
+                package=__name__[: __name__.rfind(".")],
+            ).BMS.supported,
+        )
+        for bms_type in BMS_TYPES
+    ]
 
 
 def test_device_info(plugin_fixture: ModuleType) -> None:
@@ -40,19 +57,8 @@ def test_advertisements_complete() -> None:
 
 def test_advertisements_unique() -> None:
     """Check that each advertisement only matches one, the right BMS."""
-    fct_bms_supported: list[tuple[str, Callable[[BluetoothServiceInfoBleak], bool]]] = [
-        (
-            bms_type,
-            importlib.import_module(
-                f"custom_components.bms_ble.plugins.{bms_type}",
-                package=__name__[: __name__.rfind(".")],
-            ).BMS.supported,
-        )
-        for bms_type in BMS_TYPES
-    ]
-
     for adv, bms_real in ADVERTISEMENTS:
-        for bms_test, fct_supported in fct_bms_supported:
+        for bms_test, fct_supported in get_fct_bms_supported():
             supported: bool = fct_supported(
                 BluetoothServiceInfoBleak.from_scan(
                     device=generate_ble_device(
@@ -68,3 +74,22 @@ def test_advertisements_unique() -> None:
             assert supported == (
                 bms_real == bms_test
             ), f"{adv} {"incorrectly matches"if supported else "does not match"} {bms_test}!"
+
+
+def test_advertisements_ignore() -> None:
+    """Check that each advertisement only matches one, the right BMS."""
+    for adv, reason in ADVERTISEMENTS_IGNORE:
+        for bms, fct_supported in get_fct_bms_supported():
+            supported: bool = fct_supported(
+                BluetoothServiceInfoBleak.from_scan(
+                    device=generate_ble_device(
+                        address="cc:cc:cc:cc:cc:cc",
+                        name="MockBLEDevice",
+                    ),
+                    advertisement_data=adv,
+                    source="test_advertisement_ignore",
+                    monotonic_time=0.0,
+                    connectable=True,
+                )
+            )
+            assert not supported, f"{adv} incorrectly matches {bms}! {reason=}"

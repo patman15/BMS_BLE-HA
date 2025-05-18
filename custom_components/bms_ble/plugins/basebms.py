@@ -41,9 +41,9 @@ type BMSvalue = Literal[
 ]
 
 type BMSpackvalue = Literal[
-    "pack_voltage",
-    "pack_current",
-    "pack_battery_level",
+    "pack_voltages",
+    "pack_currents",
+    "pack_battery_levels",
     "pack_cycles",
 ]
 
@@ -73,9 +73,9 @@ class BMSsample(TypedDict, total=False):
     temp_values: list[int | float]  # [°C]
     problem_code: int  # BMS specific code, 0 no problem
     # battery pack data
-    pack_voltage: list[float]  # [V]
-    pack_current: list[float]  # [A]
-    pack_battery_level: list[int | float]  # [%]
+    pack_voltages: list[float]  # [V]
+    pack_currents: list[float]  # [A]
+    pack_battery_levels: list[int | float]  # [%]
     pack_cycles: list[int]  # [#]
 
 
@@ -387,7 +387,7 @@ class BaseBMS(ABC):
     async def _async_update(self) -> BMSsample:
         """Return a dictionary of BMS values (keys need to come from the SENSOR_TYPES list)."""
 
-    async def async_update(self) -> dict[str, int | float | bool]:
+    async def async_update(self) -> BMSsample:
         """Retrieve updated values from the BMS using method of the subclass.
 
         Args:
@@ -407,30 +407,7 @@ class BaseBMS(ABC):
             # disconnect after data update to force reconnect next time (slow!)
             await self.disconnect()
 
-        old_data: dict[str, int | float | bool] = {
-            k: v
-            for k, v in data.items()
-            if isinstance(v, (int, float, bool)) and v is not None
-        }
-        old_data |= {
-            f"cell#{k}": v for k, v in enumerate(data.get("cell_voltages", []))
-        }
-        old_data |= {f"temp#{k}": v for k, v in enumerate(data.get("temp_values", []))}
-        old_data |= {
-            f"pack_voltage#{k}": v for k, v in enumerate(data.get("pack_voltage", []))
-        }
-        old_data |= {
-            f"pack_current#{k}": v for k, v in enumerate(data.get("pack_current", []))
-        }
-        old_data |= {
-            f"pack_battery_level#{k}": v
-            for k, v in enumerate(data.get("pack_battery_level", []))
-        }
-        old_data |= {
-            f"pack_cycles#{k}": v for k, v in enumerate(data.get("pack_cycles", []))
-        }
-
-        return old_data
+        return data
 
 
 def crc_modbus(data: bytearray) -> int:

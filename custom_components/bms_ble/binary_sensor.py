@@ -72,5 +72,5 @@ class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity): 
         """Return entity specific state attributes, e.g. problem code."""
         # add problem code to sensor attributes
         if self.entity_description.key == ATTR_PROBLEM:
-           return {KEY_PROBLEM: self.coordinator.data.get(self.entity_description.key)}
+            return {KEY_PROBLEM: self.coordinator.data.get(self.entity_description.key)}
         return None
