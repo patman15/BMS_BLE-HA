@@ -8,7 +8,7 @@ from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.const import BMSsample
+from custom_components.bms_ble.plugins.basebms import BMSsample
 from custom_components.bms_ble.plugins.seplos_bms import BMS
 
 from .bluetooth import generate_ble_device
@@ -28,55 +28,46 @@ REF_VALUE: BMSsample = {
     "battery_charging": False,
     "runtime": 72064,
     "pack_count": 2,  # last packet does not report data!
-    "cell#0": 3.272,
-    "cell#1": 3.272,
-    "cell#2": 3.272,
-    "cell#3": 3.271,
-    "cell#4": 3.271,
-    "cell#5": 3.271,
-    "cell#6": 3.271,
-    "cell#7": 3.27,
-    "cell#8": 3.27,
-    "cell#9": 3.271,
-    "cell#10": 3.271,
-    "cell#11": 3.271,
-    "cell#12": 3.271,
-    "cell#13": 3.272,
-    "cell#14": 3.272,
-    "cell#15": 3.272,
-    "cell#16": 3.528,
-    "cell#17": 3.528,
-    "cell#18": 3.528,
-    "cell#19": 3.527,
-    "cell#20": 3.527,
-    "cell#21": 3.527,
-    "cell#22": 3.527,
-    "cell#23": 3.526,
-    "cell#24": 3.526,
-    "cell#25": 3.527,
-    "cell#26": 3.527,
-    "cell#27": 3.527,
-    "cell#28": 3.527,
-    "cell#29": 3.528,
-    "cell#30": 3.528,
-    "cell#31": 3.529,
+    "cell_voltages": [
+        3.272,
+        3.272,
+        3.272,
+        3.271,
+        3.271,
+        3.271,
+        3.271,
+        3.27,
+        3.27,
+        3.271,
+        3.271,
+        3.271,
+        3.271,
+        3.272,
+        3.272,
+        3.272,
+        3.528,
+        3.528,
+        3.528,
+        3.527,
+        3.527,
+        3.527,
+        3.527,
+        3.526,
+        3.526,
+        3.527,
+        3.527,
+        3.527,
+        3.527,
+        3.528,
+        3.528,
+        3.529,
+    ],
     "delta_voltage": 0.003,
-    "temp#0": 24.95,
-    "temp#1": 23.75,
-    "temp#2": 23.85,
-    "temp#3": 24.85,
-    "temp#4": 24.95,
-    "temp#5": 23.75,
-    "temp#6": 23.85,
-    "temp#7": 24.85,
-    "pack_battery_level#0": 47.9,
-    "pack_battery_level#1": 48.0,
-    "pack_current#0": -7.2,
-    "pack_current#1": -7.19,
-    "pack_cycles#0": 9,
-    "pack_cycles#1": 10,
-    "pack_voltage#0": 52.34,
-    "pack_voltage#1": 52.35,
+    "temp_values": [24.95, 23.75, 23.85, 24.85, 24.95, 23.75, 23.85, 24.85],
+    "pack_battery_levels": [47.9,48.0],
+    "pack_currents": [-7.2,-7.19],
+    "pack_cycles": [9,10],
+    "pack_voltages": [52.34,52.35],
     "problem": False,
     "problem_code": 0,
 }
@@ -183,7 +174,7 @@ class MockSeplosBleakClient(MockBleakClient):
             self._notify_callback
         ), "write to characteristics but notification not enabled"
 
-        resp = self._response(data)
+        resp: bytearray = self._response(data)
         for notify_data in [
             resp[i : min(len(resp), i + BT_FRAME_SIZE)]
             for i in range(0, len(resp), BT_FRAME_SIZE)
@@ -302,7 +293,7 @@ async def test_wrong_crc(patch_bleak_client, patch_bms_timeout) -> None:
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
-    result = {}
+    result: BMSsample = {}
     with pytest.raises(TimeoutError):
         result = await bms.async_update()
 
@@ -320,7 +311,7 @@ async def test_error_response(patch_bleak_client, patch_bms_timeout) -> None:
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
-    result = {}
+    result: BMSsample = {}
     with pytest.raises(TimeoutError):
         result = await bms.async_update()
 
@@ -349,7 +340,7 @@ async def test_invalid_message(patch_bleak_client, patch_bms_timeout) -> None:
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
-    result = {}
+    result: BMSsample = {}
     with pytest.raises(TimeoutError):
         result = await bms.async_update()
 

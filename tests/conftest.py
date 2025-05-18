@@ -20,15 +20,12 @@ from hypothesis import HealthCheck, settings
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.bms_ble.const import (
-    ATTR_CURRENT,
-    ATTR_CYCLE_CHRG,
-    ATTR_CYCLES,
-    ATTR_VOLTAGE,
-    BMS_TYPES,
-    DOMAIN,
+from custom_components.bms_ble.const import ATTR_VOLTAGE, BMS_TYPES, DOMAIN
+from custom_components.bms_ble.plugins.basebms import (
+    AdvertisementPattern,
+    BaseBMS,
+    BMSsample,
 )
-from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 
 from .bluetooth import generate_advertisement_data, generate_ble_device
 
@@ -245,15 +242,15 @@ class MockBMS(BaseBMS):
             ret_value
             if ret_value is not None
             else {
-                ATTR_VOLTAGE: 13,
-                ATTR_CURRENT: 1.7,
-                ATTR_CYCLE_CHRG: 19,
-                ATTR_CYCLES: 23,
+                "voltage": 13,
+                "current": 1.7,
+                "cycle_charge": 19,
+                "cycles": 23,
             }
         )  # set fixed values for dummy battery
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[AdvertisementPattern]:
         """Provide BluetoothMatcher definition."""
         return [{"local_name": "mock", "connectable": True}]
 
@@ -356,7 +353,7 @@ class MockBleakClient(BleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # noqa: RUF013 # same as upstream
+        response: bool | None = None,
     ) -> None:
         """Mock write GATT characteristics."""
         LOGGER.debug(

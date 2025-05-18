@@ -14,7 +14,9 @@ from .advertisement_ignore import ADVERTISEMENTS_IGNORE
 from .bluetooth import generate_ble_device
 
 
-def get_fct_bms_supported() -> list[tuple[str, Callable[[BluetoothServiceInfoBleak], bool]]]:
+def get_fct_bms_supported() -> (
+    list[tuple[str, Callable[[BluetoothServiceInfoBleak], bool]]]
+):
     """Return supported() of all BMS types."""
     return [
         (
@@ -26,6 +28,7 @@ def get_fct_bms_supported() -> list[tuple[str, Callable[[BluetoothServiceInfoBle
         )
         for bms_type in BMS_TYPES
     ]
+
 
 def test_device_info(plugin_fixture: ModuleType) -> None:
     """Test that the BMS returns valid device information."""
@@ -71,6 +74,7 @@ def test_advertisements_unique() -> None:
             assert supported == (
                 bms_real == bms_test
             ), f"{adv} {"incorrectly matches"if supported else "does not match"} {bms_test}!"
+
 
 def test_advertisements_ignore() -> None:
     """Check that each advertisement only matches one, the right BMS."""

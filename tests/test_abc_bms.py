@@ -8,8 +8,8 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.const import BMSsample
 from custom_components.bms_ble.plugins.abc_bms import BMS
+from custom_components.bms_ble.plugins.basebms import BMSsample
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -71,7 +71,7 @@ class MockABCBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # noqa: RUF013 # same as upstream
+        response: bool | None = None,
     ) -> None:
         """Issue write command to GATT."""
         await super().write_gatt_char(char_specifier, data, response)
@@ -111,15 +111,8 @@ async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
         "cycle_charge": 106.048,
         "cycles": 7,
         "problem_code": 0,
-        "cell#0": 3.442,
-        "cell#1": 3.496,
-        "cell#2": 3.375,
-        "cell#3": 3.464,
-        "cell#4": 3.457,
-        "cell#5": 3.429,
-        "cell#6": 3.359,
-        "cell#7": 3.42,
-        "temp#0": 20,
+        "cell_voltages": [3.442, 3.496, 3.375, 3.464, 3.457, 3.429, 3.359, 3.42],
+        "temp_values": [20],
         "delta_voltage": 0.137,
         "cycle_capacity": 2922.047,
         "power": 0.0,
@@ -129,7 +122,7 @@ async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
     }
 
     # query again to check already connected state
-    result = await bms.async_update()
+    await bms.async_update()
     assert bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
@@ -157,7 +150,7 @@ async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
     ],
     ids=lambda param: param[1],
 )
-def response(request) -> bytearray:
+def fix_response(request) -> bytearray:
     """Return faulty response frame."""
     return bytearray(request.param[0])
 

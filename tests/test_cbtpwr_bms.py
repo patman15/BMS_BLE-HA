@@ -8,7 +8,7 @@ from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.const import BMSsample
+from custom_components.bms_ble.plugins.basebms import BMSsample
 from custom_components.bms_ble.plugins.cbtpwr_bms import BMS
 
 from .bluetooth import generate_ble_device
@@ -23,11 +23,7 @@ def ref_value() -> BMSsample:
         "battery_level": 100,
         "cycles": 3,
         "cycle_charge": 40.0,
-        "cell#0": 3.339,
-        "cell#1": 3.339,
-        "cell#2": 3.338,
-        "cell#3": 3.338,
-        "cell#4": 2.317,
+        "cell_voltages": [3.339, 3.339, 3.338, 3.338, 2.317],
         "delta_voltage": 1.022,
         "temperature": -2,
         "cycle_capacity": 536.0,
@@ -88,7 +84,7 @@ class MockCBTpwrBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # noqa: RUF013 # same as upstream
+        response: bool | None = None,
     ) -> None:
         """Issue write command to GATT."""
         await super().write_gatt_char(char_specifier, data, response)
@@ -211,6 +207,7 @@ async def test_invalid_response(patch_bleak_client, patch_bms_timeout) -> None:
         "current": -3.14,
         "power": -42.076,
         "voltage": 13.4,
+        "cell_voltages": [],
         "problem": False,
     }
 
@@ -231,6 +228,7 @@ async def test_partly_base_data(patch_bleak_client, patch_bms_timeout) -> None:
         "current": 0.0,
         "power": 0.0,
         "voltage": 13.4,
+        "cell_voltages": [],
         "problem": False,
     }
 
@@ -245,33 +243,34 @@ async def test_all_cell_voltages(patch_bleak_client, patch_bms_timeout) -> None:
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
-    result = await bms.async_update()
-    assert result == {
+    assert await bms.async_update() == {
         "voltage": 13.4,
         "current": -3.14,
         "battery_level": 100,
         "cycles": 3,
         "cycle_charge": 40.0,
-        "cell#0": 3.339,
-        "cell#1": 3.338,
-        "cell#2": 3.337,
-        "cell#3": 3.336,
-        "cell#4": 3.335,
-        "cell#5": 3.334,
-        "cell#6": 3.333,
-        "cell#7": 3.332,
-        "cell#8": 3.331,
-        "cell#9": 3.330,
-        "cell#10": 3.329,
-        "cell#11": 3.328,
-        "cell#12": 3.327,
-        "cell#13": 3.326,
-        "cell#14": 3.325,
-        "cell#15": 3.324,
-        "cell#16": 3.323,
-        "cell#17": 3.322,
-        "cell#18": 3.321,
-        "cell#19": 3.320,
+        "cell_voltages": [
+            3.339,
+            3.338,
+            3.337,
+            3.336,
+            3.335,
+            3.334,
+            3.333,
+            3.332,
+            3.331,
+            3.330,
+            3.329,
+            3.328,
+            3.327,
+            3.326,
+            3.325,
+            3.324,
+            3.323,
+            3.322,
+            3.321,
+            3.320,
+        ],
         "delta_voltage": 0.019,
         "temperature": 21,
         "cycle_capacity": 536.0,

@@ -13,7 +13,7 @@ from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str, uuidstr_to_str
 import pytest
 
-from custom_components.bms_ble.const import BMSsample
+from custom_components.bms_ble.plugins.basebms import BMSsample
 from custom_components.bms_ble.plugins.jikong_bms import BMS, crc_sum
 
 from .bluetooth import generate_ble_device
@@ -155,28 +155,28 @@ _RESULT_DEFS: Final[dict[str, BMSsample]] = {
         "battery_level": 56,
         "cycle_charge": 113.245,
         "cycles": 60,
-        "cell#0": 3.310,
-        "cell#1": 3.314,
-        "cell#2": 3.313,
-        "cell#3": 3.312,
-        "cell#4": 3.312,
-        "cell#5": 3.308,
-        "cell#6": 3.312,
-        "cell#7": 3.309,
-        "cell#8": 3.309,
-        "cell#9": 3.309,
-        "cell#10": 3.309,
-        "cell#11": 3.312,
-        "cell#12": 3.313,
-        "cell#13": 3.309,
-        "cell#14": 3.310,
-        "cell#15": 3.309,
+        "cell_voltages": [
+            3.310,
+            3.314,
+            3.313,
+            3.312,
+            3.312,
+            3.308,
+            3.312,
+            3.309,
+            3.309,
+            3.309,
+            3.309,
+            3.312,
+            3.313,
+            3.309,
+            3.310,
+            3.309,
+        ],
         "cycle_capacity": 5998.701,
         "power": 123.369,
         "battery_charging": True,
-        "temp#0": 18.1,
-        "temp#1": 18.6,
-        "temp#2": 22.8,
+        "temp_values": [18.1, 18.6, 22.8],
         "temp_sensors": 7,
         "problem": False,
         "problem_code": 0,
@@ -192,18 +192,8 @@ _RESULT_DEFS: Final[dict[str, BMSsample]] = {
         "balance_current": 0.0,
         "temp_sensors": 255,
         "problem_code": 0,
-        "temp#0": 31.0,
-        "temp#1": 28.4,
-        "temp#2": 29.2,
-        "temp#3": 31.0,
-        "cell#0": 3.315,
-        "cell#1": 3.315,
-        "cell#2": 3.315,
-        "cell#3": 3.312,
-        "cell#4": 3.313,
-        "cell#5": 3.312,
-        "cell#6": 3.313,
-        "cell#7": 3.313,
+        "temp_values": [31.0, 28.4, 29.2, 31.0],
+        "cell_voltages": [3.315, 3.315, 3.315, 3.312, 3.313, 3.312, 3.313, 3.313],
         "cycle_capacity": 3776.578,
         "power": -187.233,
         "battery_charging": False,
@@ -222,28 +212,25 @@ _RESULT_DEFS: Final[dict[str, BMSsample]] = {
         "balance_current": 0.0,
         "temp_sensors": 255,
         "problem_code": 0,
-        "temp#0": 18.6,
-        "temp#1": 19.1,
-        "temp#2": 19.1,
-        "temp#3": 18.6,
-        "temp#4": 18.6,
-        "temp#5": 19.5,
-        "cell#0": 3.409,
-        "cell#1": 3.408,
-        "cell#2": 3.41,
-        "cell#3": 3.41,
-        "cell#4": 3.411,
-        "cell#5": 3.409,
-        "cell#6": 3.411,
-        "cell#7": 3.415,
-        "cell#8": 3.416,
-        "cell#9": 3.41,
-        "cell#10": 3.412,
-        "cell#11": 3.412,
-        "cell#12": 3.411,
-        "cell#13": 3.41,
-        "cell#14": 3.411,
-        "cell#15": 3.411,
+        "temp_values": [18.6, 19.1, 19.1, 18.6, 18.6, 19.5],
+        "cell_voltages": [
+            3.409,
+            3.408,
+            3.41,
+            3.41,
+            3.411,
+            3.409,
+            3.411,
+            3.415,
+            3.416,
+            3.41,
+            3.412,
+            3.412,
+            3.411,
+            3.41,
+            3.411,
+            3.411,
+        ],
         "cycle_capacity": 14976.417,
         "power": 1424.899,
         "battery_charging": True,
@@ -298,7 +285,7 @@ class MockJikongBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # noqa: RUF013 # same as upstream
+        response: bool | None = None,
     ) -> None:
         """Issue write command to GATT."""
 
@@ -460,7 +447,7 @@ class MockStreamBleakClient(MockJikongBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # noqa: RUF013 # same as upstream
+        response: bool | None = None,
     ) -> None:
         """Issue write command to GATT."""
 
@@ -513,7 +500,9 @@ class MockOversizedBleakClient(MockJikongBleakClient):
 
 
 @pytest.mark.asyncio
-async def test_update(monkeypatch, patch_bleak_client, protocol_type, reconnect_fixture) -> None:
+async def test_update(
+    monkeypatch, patch_bleak_client, protocol_type, reconnect_fixture
+) -> None:
     """Test Jikong BMS data update."""
 
     monkeypatch.setattr(MockJikongBleakClient, "_FRAME", _PROTO_DEFS[protocol_type])
@@ -534,7 +523,9 @@ async def test_update(monkeypatch, patch_bleak_client, protocol_type, reconnect_
     await bms.disconnect()
 
 
-async def test_hide_temp_sensors(monkeypatch, patch_bleak_client, protocol_type) -> None:
+async def test_hide_temp_sensors(
+    monkeypatch, patch_bleak_client, protocol_type
+) -> None:
     """Test Jikong BMS data update with not connected temperature sensors."""
 
     temp12_hide: dict[str, bytearray] = deepcopy(_PROTO_DEFS[protocol_type])
@@ -564,21 +555,19 @@ async def test_hide_temp_sensors(monkeypatch, patch_bleak_client, protocol_type)
     elif protocol_type == "JK02_32S_v15":
         ref_result |= {"temp_sensors": 251, "temperature": 18.825}
 
-    del ref_result["temp#1"]
-    del ref_result["temp#2"]
-
-    # fill gap of removed temperature sensors
-    for i in range(3, 6):
-        if f"temp#{i}" not in ref_result:
-            break
-        ref_result[f"temp#{i-2}"] = ref_result.pop(f"temp#{i}")
+    temp_values: list[int | float] = ref_result.get("temp_values", [])
+    temp_values.pop(1)  # remove sensor 1
+    temp_values.pop(1)  # remove sensor 2
+    ref_result["temp_values"] = temp_values.copy()
 
     assert await bms.async_update() == ref_result
 
     await bms.disconnect()
 
 
-async def test_stream_update(monkeypatch, patch_bleak_client, protocol_type, reconnect_fixture) -> None:
+async def test_stream_update(
+    monkeypatch, patch_bleak_client, protocol_type, reconnect_fixture
+) -> None:
     """Test Jikong BMS data update."""
 
     monkeypatch.setattr(MockStreamBleakClient, "_FRAME", _PROTO_DEFS[protocol_type])
@@ -601,7 +590,9 @@ async def test_stream_update(monkeypatch, patch_bleak_client, protocol_type, rec
     await bms.disconnect()
 
 
-async def test_invalid_response(monkeypatch, patch_bleak_client, patch_bms_timeout) -> None:
+async def test_invalid_response(
+    monkeypatch, patch_bleak_client, patch_bms_timeout
+) -> None:
     """Test data update with BMS returning invalid data."""
 
     patch_bms_timeout("jikong_bms")
@@ -625,7 +616,9 @@ async def test_invalid_response(monkeypatch, patch_bleak_client, patch_bms_timeo
     await bms.disconnect()
 
 
-async def test_invalid_frame_type(monkeypatch, patch_bleak_client, patch_bms_timeout) -> None:
+async def test_invalid_frame_type(
+    monkeypatch, patch_bleak_client, patch_bms_timeout
+) -> None:
     """Test data update with BMS returning invalid data."""
 
     patch_bms_timeout("jikong_bms")
@@ -649,7 +642,9 @@ async def test_invalid_frame_type(monkeypatch, patch_bleak_client, patch_bms_tim
     await bms.disconnect()
 
 
-async def test_oversized_response(monkeypatch, patch_bleak_client, protocol_type) -> None:
+async def test_oversized_response(
+    monkeypatch, patch_bleak_client, protocol_type
+) -> None:
     """Test data update with BMS returning oversized data, result shall still be ok."""
 
     monkeypatch.setattr(MockOversizedBleakClient, "_FRAME", _PROTO_DEFS[protocol_type])
@@ -682,7 +677,9 @@ async def test_invalid_device(patch_bleak_client) -> None:
     await bms.disconnect()
 
 
-async def test_non_stale_data(monkeypatch, patch_bleak_client, patch_bms_timeout) -> None:
+async def test_non_stale_data(
+    monkeypatch, patch_bleak_client, patch_bms_timeout
+) -> None:
     """Test if BMS class is reset if connection is reset."""
 
     patch_bms_timeout("jikong_bms")

@@ -8,7 +8,7 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.const import BMSsample
+from custom_components.bms_ble.plugins.basebms import BMSsample
 from custom_components.bms_ble.plugins.redodo_bms import BMS
 
 from .bluetooth import generate_ble_device
@@ -17,14 +17,7 @@ from .conftest import MockBleakClient
 _RESULT_DEFS: Final[BMSsample] = {
     "voltage": 26.556,
     "current": -1.435,
-    "cell#0": 3.317,
-    "cell#1": 3.319,
-    "cell#2": 3.324,
-    "cell#3": 3.323,
-    "cell#4": 3.320,
-    "cell#5": 3.314,
-    "cell#6": 3.322,
-    "cell#7": 3.317,
+    "cell_voltages": [3.317, 3.319, 3.324, 3.323, 3.320, 3.314, 3.322, 3.317],
     "delta_voltage": 0.01,
     "power": -38.108,
     "battery_charging": False,
@@ -32,9 +25,7 @@ _RESULT_DEFS: Final[BMSsample] = {
     "cycle_charge": 68.89,
     "cycle_capacity": 1829.443,
     "runtime": 172825,
-    "temp#0": 23,
-    "temp#1": 22,
-    "temp#2": -2,
+    "temp_values": [23, 22, -2],
     "temperature": 14.333,
     "cycles": 3,
     "problem": False,
@@ -68,7 +59,7 @@ class MockRedodoBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # noqa: RUF013 # same as upstream
+        response: bool | None = None,
     ) -> None:
         """Issue write command to GATT."""
         await super().write_gatt_char(char_specifier, data, response)
@@ -144,7 +135,9 @@ def fix_response(request):
     return request.param[0]
 
 
-async def test_invalid_response(monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response) -> None:
+async def test_invalid_response(
+    monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response
+) -> None:
     """Test data up date with BMS returning invalid data."""
 
     patch_bms_timeout("redodo_bms")
@@ -157,7 +150,7 @@ async def test_invalid_response(monkeypatch, patch_bleak_client, patch_bms_timeo
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
-    result = {}
+    result: BMSsample = {}
     with pytest.raises(TimeoutError):
         result = await bms.async_update()
 
@@ -198,7 +191,9 @@ def prb_response(request):
     return request.param
 
 
-async def test_problem_response(monkeypatch, patch_bleak_client, problem_response) -> None:
+async def test_problem_response(
+    monkeypatch, patch_bleak_client, problem_response
+) -> None:
     """Test data up date with BMS returning protection flags."""
 
     monkeypatch.setattr(

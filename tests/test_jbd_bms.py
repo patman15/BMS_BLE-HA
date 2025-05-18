@@ -103,9 +103,7 @@ async def test_update(patch_bleak_client, reconnect_fixture) -> None:
         reconnect_fixture,
     )
 
-    result = await bms.async_update()
-
-    assert result == {
+    assert await bms.async_update() == {
         "temp_sensors": 3,
         "voltage": 15.6,
         "current": -2.87,
@@ -117,20 +115,15 @@ async def test_update(patch_bleak_client, reconnect_fixture) -> None:
         "power": -44.772,
         "battery_charging": False,
         "runtime": 6246,
-        "cell#0": 3.43,
-        "cell#1": 3.425,
-        "cell#2": 3.432,
-        "cell#3": 3.417,
-        "temp#0": 22.4,
-        "temp#1": 22.3,
-        "temp#2": 21.7,
+        "cell_voltages": [3.43, 3.425, 3.432, 3.417],
+        "temp_values": [22.4, 22.3, 21.7],
         "delta_voltage": 0.015,
         "problem": False,
         "problem_code": 0,
     }
 
     # query again to check already connected state
-    result = await bms.async_update()
+    await bms.async_update()
     assert bms._client and bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
@@ -155,7 +148,9 @@ def fix_response(request) -> bytearray:
     return request.param[0]
 
 
-async def test_invalid_response(monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response) -> None:
+async def test_invalid_response(
+    monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response
+) -> None:
     """Test data update with BMS returning invalid data (wrong CRC)."""
 
     patch_bms_timeout("jbd_bms")
@@ -195,13 +190,8 @@ async def test_oversized_response(patch_bleak_client) -> None:
         "power": -44.772,
         "battery_charging": False,
         "runtime": 6246,
-        "cell#0": 3.43,
-        "cell#1": 3.425,
-        "cell#2": 3.432,
-        "cell#3": 3.417,
-        "temp#0": 22.4,
-        "temp#1": 22.3,
-        "temp#2": 21.7,
+        "cell_voltages": [3.43, 3.425, 3.432, 3.417],
+        "temp_values": [22.4, 22.3, 21.7],
         "delta_voltage": 0.015,
         "problem": False,
         "problem_code": 0,
@@ -235,7 +225,9 @@ def prb_response(request) -> bytearray:
     return request.param
 
 
-async def test_problem_response(monkeypatch, patch_bleak_client, problem_response) -> None:
+async def test_problem_response(
+    monkeypatch, patch_bleak_client, problem_response
+) -> None:
     """Test data update with BMS returning invalid data (wrong CRC)."""
 
     def _response(
@@ -276,13 +268,8 @@ async def test_problem_response(monkeypatch, patch_bleak_client, problem_respons
         "power": -44.772,
         "battery_charging": False,
         "runtime": 6246,
-        "cell#0": 3.43,
-        "cell#1": 3.425,
-        "cell#2": 3.432,
-        "cell#3": 3.417,
-        "temp#0": 22.4,
-        "temp#1": 22.3,
-        "temp#2": 21.7,
+        "cell_voltages": [3.43, 3.425, 3.432, 3.417],
+        "temp_values": [22.4, 22.3, 21.7],
         "delta_voltage": 0.015,
         "problem": True,
         "problem_code": 1 << (0 if problem_response[1] == "first_bit" else 15),
