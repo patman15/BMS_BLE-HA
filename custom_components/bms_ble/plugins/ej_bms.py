@@ -61,6 +61,7 @@ class BMS(BaseBMS):
         return [  # Fliteboard, Electronix battery
             {"local_name": "libatt*", "manufacturer_id": 21320, "connectable": True},
             {"local_name": "LT-*", "manufacturer_id": 33384, "connectable": True},
+            {"local_name": "SV12V*", "manufacturer_id": 33384, "connectable": True},
         ] + [  # Lithtech Energy (2x), Volthium
             {"local_name": pattern, "connectable": True}
             for pattern in ("L-12V???AH-*", "LT-12V-*", "V-12V???Ah-*")
