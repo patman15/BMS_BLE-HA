@@ -271,7 +271,7 @@ class BaseBMS(ABC):
     ) -> None:
         """Send data to the BMS and wait for valid reply notification."""
 
-        write_mode: Final[Literal["W", "WNR"]] = "WNR" # self._write_mode(char or self.uuid_tx())
+        write_mode: Final[Literal["W", "WNR"]] = self._write_mode(char or self.uuid_tx())
         retries: Final[int] = 1 if write_mode == "W" else BaseBMS.MAX_RETRY
         timeout: Final[float] = self.TIMEOUT / ((2**retries) - 1)
 
