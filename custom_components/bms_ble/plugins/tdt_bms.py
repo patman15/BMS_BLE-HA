@@ -34,6 +34,7 @@ class BMS(BaseBMS):
 
     _UUID_CFG: Final[str] = "fffa"
     _HEAD: Final[int] = 0x7E
+    _CMD__HEAD: Final[int] = 0x1E
     _TAIL: Final[int] = 0x0D
     _CMD_VER: Final[int] = 0x00
     _RSP_VER: Final[int] = 0x00
@@ -166,7 +167,7 @@ class BMS(BaseBMS):
         """Assemble a TDT BMS command."""
         assert cmd in (0x8C, 0x8D, 0x92)  # allow only read commands
 
-        frame = bytearray([BMS._HEAD, BMS._CMD_VER, 0x1, 0x3, 0x0, cmd])
+        frame = bytearray([BMS._CMD_HEAD, BMS._CMD_VER, 0x1, 0x3, 0x0, cmd])
         frame += len(data).to_bytes(2, "big", signed=False) + data
         frame += crc_modbus(frame).to_bytes(2, "big") + bytes([BMS._TAIL])
 
