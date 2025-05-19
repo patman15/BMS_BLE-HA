@@ -22,7 +22,7 @@ class BMS(BaseBMS):
     MAX_TEMP: Final[int] = 8
     INFO_LEN: Final[int] = 84 + HEAD_LEN + CRC_LEN + MAX_CELLS + MAX_TEMP
     MOS_TEMP_POS: Final[int] = HEAD_LEN + 8
-    MOS_NOT_AVAILABLE: Final[tuple[str]] = ("DL-FB",)
+    MOS_NOT_AVAILABLE: Final[tuple[str]] = ("DL-FB4C2E0",)
     _FIELDS: Final[list[tuple[BMSvalue, int, int, Callable[[int], Any]]]] = [
         ("voltage", 80 + HEAD_LEN, 2, lambda x: float(x / 10)),
         ("current", 82 + HEAD_LEN, 2, lambda x: float((x - 30000) / 10)),
@@ -53,7 +53,7 @@ class BMS(BaseBMS):
                 manufacturer_id=m_id,
                 connectable=True,
             )
-            for m_id in (0x102, 0x104, 0x0302)
+            for m_id in (0x102, 0x104, 0x0302, 0x0303)
         ]
 
     @staticmethod

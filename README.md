@@ -46,7 +46,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Felicity ESS batteries (show up as `F10`&#x2026;)
 - JBD BMS, Jiabaida (show up as `AP2.S`&#x2026;, `SP..S`&#x2026;)
     - accurat batteries (show up as `GJ-`&#x2026;)
-    - DCHOUSE, ECO-WORTHY (show up as `DP04S`&#x2026;), Epoch batteries
+    - Bulltron, DCHOUSE, ECO-WORTHY (show up as `DP04S`&#x2026;), Epoch batteries
     - Eleksol, Liontron, Perfektium (show up as `PKT`&#x2026;), Ultimatron batteries (show up as `12??0`&#x2026;)
     - SBL batteries, Supervolt v3 batteries (show up as `SX1`&#x2026;)
 - JK BMS, Jikong, (HW version &ge; 6 required)
@@ -123,9 +123,6 @@ This integration follows standard integration removal. No extra steps are requir
 
 ## Known Issues
 
-<details><summary>Daly BMS with WiFi, e.g. Bulltron</summary>
-BMS incorrectly reports support of write-with-response operation. Requires a <a href="https://github.com/patman15/BMS_BLE-HA/issues/85#issuecomment-2887461988">work-around</a>.
-</details>
 <details><summary>Elektronicx, Lithtech batteries</summary>
 Bluetooth is turned off, when there is no current. Thus, device will get unavailble / cannot be added.
 </details>
