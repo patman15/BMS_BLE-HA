@@ -1,8 +1,16 @@
 """Test the BLE Battery Management System base class functions."""
 
+from collections.abc import Callable
+
 import pytest
 
-from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
+from custom_components.bms_ble.plugins.basebms import (
+    BaseBMS,
+    BMSsample,
+    crc8,
+    crc_modbus,
+    crc_xmodem,
+)
 
 
 def test_calc_missing_values(bms_data_fixture: BMSsample) -> None:
@@ -85,3 +93,20 @@ def test_problems(problem_samples: BMSsample) -> None:
     BaseBMS._add_missing_values(bms_data, frozenset({"runtime"}))
 
     assert bms_data == problem_samples | {"problem": True}
+
+
+def test_crc_calculations() -> None:
+    """Check if CRC calculations are correct."""
+    # Example data for CRC calculation
+    data: bytearray = bytearray([0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39])
+    test_fn: list[tuple[Callable[[bytearray], int], int]] = [
+        (crc_modbus, 0x4B37),
+        (crc8, 0xA1),
+        (crc_xmodem, 0x31C3),
+    ]
+
+    for crc_fn, expected_crc in test_fn:
+        calculated_crc: int = crc_fn(data)
+        assert (
+            calculated_crc == expected_crc
+        ), f"Expected {expected_crc}, got {calculated_crc}"
