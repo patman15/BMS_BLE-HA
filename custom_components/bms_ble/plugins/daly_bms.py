@@ -139,11 +139,9 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         data: BMSsample = {}
-        if (
-            not self.name
-            or not self.name.startswith(BMS.MOS_NOT_AVAILABLE)
+        if (  # do not query devices that do not support MOS temperature, e.g. Bulltron
+            not self.name or not self.name.startswith(BMS.MOS_NOT_AVAILABLE)
         ):
-            # do not query devices that do not support MOS temperature, e.g. Bulltron
             try:
                 # request MOS temperature (possible outcome: response, empty response, no response)
                 await self._await_reply(BMS.HEAD_READ + BMS.MOS_INFO)
