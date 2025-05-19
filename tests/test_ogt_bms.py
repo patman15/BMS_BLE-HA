@@ -255,7 +255,7 @@ async def test_invalid_response(
 ) -> None:
     """Test data up date with BMS returning invalid data."""
 
-    patch_bms_timeout("ogt_bms")
+    patch_bms_timeout()
 
     async def patch_resp(
         _self, char_specifier: BleakGATTCharacteristic | int | str | UUID, _data: Buffer
