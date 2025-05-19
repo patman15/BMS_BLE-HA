@@ -8,6 +8,7 @@ from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 import pytest
 
+from custom_components.bms_ble.plugins.basebms import BMSsample
 from custom_components.bms_ble.plugins.dpwrcore_bms import BMS
 
 from .bluetooth import generate_ble_device
@@ -64,7 +65,7 @@ class MockDPwrcoreBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # noqa: RUF013 # same as upstream
+        response: bool | None = None,
     ) -> None:
         """Issue write command to GATT."""
         data_ba = bytearray(data)
@@ -160,28 +161,28 @@ async def test_update(patch_bleak_client, dev_name, reconnect_fixture) -> None:
         reconnect_fixture,
     )
 
-    result = await bms.async_update()
-
-    assert result == {
+    assert await bms.async_update() == {
         "voltage": 53.1,
         "current": 0,
         "battery_level": 61.0,
         "cycles": 18,
         "cycle_charge": 17.806,
-        "cell#0": 3.799,
-        "cell#1": 3.798,
-        "cell#2": 3.798,
-        "cell#3": 3.797,
-        "cell#4": 3.797,
-        "cell#5": 3.798,
-        "cell#6": 3.793,
-        "cell#7": 3.794,
-        "cell#8": 3.797,
-        "cell#9": 3.798,
-        "cell#10": 3.796,
-        "cell#11": 3.800,
-        "cell#12": 3.799,
-        "cell#13": 3.803,
+        "cell_voltages": [
+            3.799,
+            3.798,
+            3.798,
+            3.797,
+            3.797,
+            3.798,
+            3.793,
+            3.794,
+            3.797,
+            3.798,
+            3.796,
+            3.800,
+            3.799,
+            3.803,
+        ],
         "cell_count": 14,
         "delta_voltage": 0.01,
         "temperature": 21.1,
@@ -193,13 +194,15 @@ async def test_update(patch_bleak_client, dev_name, reconnect_fixture) -> None:
     }
 
     # query again to check already connected state
-    result = await bms.async_update()
+    await bms.async_update()
     assert bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
 
 
-async def test_invalid_response(patch_bleak_client, patch_bms_timeout, dev_name) -> None:
+async def test_invalid_response(
+    patch_bleak_client, patch_bms_timeout, dev_name
+) -> None:
     """Test data update with BMS returning invalid data."""
 
     patch_bms_timeout("dpwrcore_bms")
@@ -207,7 +210,7 @@ async def test_invalid_response(patch_bleak_client, patch_bms_timeout, dev_name)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", dev_name, None, -73))
 
-    result = {}
+    result: BMSsample = {}
     with pytest.raises(TimeoutError):
         result = await bms.async_update()
 
@@ -224,7 +227,7 @@ async def test_wrong_crc(patch_bleak_client, patch_bms_timeout, dev_name) -> Non
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", dev_name, None, -73))
 
-    result = {}
+    result: BMSsample = {}
     with pytest.raises(TimeoutError):
         result = await bms.async_update()
 
@@ -246,20 +249,22 @@ async def test_problem_response(patch_bleak_client, dev_name) -> None:
         "battery_level": 61.0,
         "cycles": 18,
         "cycle_charge": 17.806,
-        "cell#0": 3.799,
-        "cell#1": 3.798,
-        "cell#2": 3.798,
-        "cell#3": 3.797,
-        "cell#4": 3.797,
-        "cell#5": 3.798,
-        "cell#6": 3.793,
-        "cell#7": 3.794,
-        "cell#8": 3.797,
-        "cell#9": 3.798,
-        "cell#10": 3.796,
-        "cell#11": 3.800,
-        "cell#12": 3.799,
-        "cell#13": 3.803,
+        "cell_voltages": [
+            3.799,
+            3.798,
+            3.798,
+            3.797,
+            3.797,
+            3.798,
+            3.793,
+            3.794,
+            3.797,
+            3.798,
+            3.796,
+            3.800,
+            3.799,
+            3.803,
+        ],
         "cell_count": 14,
         "delta_voltage": 0.01,
         "temperature": 21.1,

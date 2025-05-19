@@ -2,22 +2,6 @@
 
 import pytest
 
-from custom_components.bms_ble.const import (
-    ATTR_BATTERY_CHARGING,
-    ATTR_BATTERY_LEVEL,
-    ATTR_CURRENT,
-    ATTR_CYCLE_CAP,
-    ATTR_CYCLE_CHRG,
-    ATTR_DELTA_VOLTAGE,
-    ATTR_POWER,
-    ATTR_PROBLEM,
-    ATTR_RUNTIME,
-    ATTR_TEMPERATURE,
-    ATTR_VOLTAGE,
-    KEY_CELL_VOLTAGE,
-    KEY_DESIGN_CAP,
-    KEY_PROBLEM,
-)
 from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample
 
 
@@ -30,63 +14,62 @@ def test_calc_missing_values(bms_data_fixture: BMSsample) -> None:
         bms_data,
         frozenset(
             {
-                ATTR_BATTERY_CHARGING,
-                ATTR_CYCLE_CAP,
-                ATTR_POWER,
-                ATTR_RUNTIME,
-                ATTR_DELTA_VOLTAGE,
-                ATTR_TEMPERATURE,
-                ATTR_VOLTAGE,  # check that not overwritten
-                "invalid",
+                "battery_charging",
+                "cycle_capacity",
+                "power",
+                "runtime",
+                "delta_voltage",
+                "temperature",
+                "voltage",  # check that not overwritten
             }
         ),
     )
     ref = ref | {
-        ATTR_CYCLE_CAP: 238,
-        ATTR_DELTA_VOLTAGE: 0.111,
-        ATTR_POWER: (
+        "cycle_capacity": 238,
+        "delta_voltage": 0.111,
+        "power": (
             -91
-            if bms_data[ATTR_CURRENT] < 0
-            else 0 if bms_data[ATTR_CURRENT] == 0 else 147
+            if bms_data.get("current", 0) < 0
+            else 0 if bms_data.get("current") == 0 else 147
         ),
-        ATTR_BATTERY_CHARGING: bms_data[ATTR_CURRENT]
-        > 0,  # battery is charging if current is positive
-        ATTR_TEMPERATURE: -34.396,
-        ATTR_PROBLEM: False,
+        # battery is charging if current is positive
+        "battery_charging": bms_data.get("current", 0) > 0,
+        "temperature": -34.396,
+        "problem": False,
     }
-    if bms_data[ATTR_CURRENT] < 0:
-        ref |= {ATTR_RUNTIME: 9415}
+    if bms_data.get("current", 0) < 0:
+        ref |= {"runtime": 9415}
 
     assert bms_data == ref
 
 
 def test_calc_voltage() -> None:
     """Check if missing data is correctly calculated."""
-    bms_data: BMSsample = {f"{KEY_CELL_VOLTAGE}0": 3.456, f"{KEY_CELL_VOLTAGE}1": 3.567}
+    bms_data: BMSsample = {"cell_voltages": [3.456, 3.567]}
     ref: BMSsample = bms_data.copy()
-    BaseBMS._add_missing_values(bms_data, frozenset({ATTR_VOLTAGE}))
-    assert bms_data == ref | {ATTR_VOLTAGE: 7.023, ATTR_PROBLEM: False}
+    BaseBMS._add_missing_values(bms_data, frozenset({"voltage"}))
+    assert bms_data == ref | {"voltage": 7.023, "problem": False}
 
 
 def test_calc_cycle_chrg() -> None:
     """Check if missing data is correctly calculated."""
-    bms_data: BMSsample = {ATTR_BATTERY_LEVEL: 73, KEY_DESIGN_CAP: 125.0}
+    bms_data: BMSsample = {"battery_level": 73, "design_capacity": 125}
     ref: BMSsample = bms_data.copy()
-    BaseBMS._add_missing_values(bms_data, frozenset({ATTR_CYCLE_CHRG}))
-    assert bms_data == ref | {ATTR_CYCLE_CHRG: 91.25, ATTR_PROBLEM: False}
+    BaseBMS._add_missing_values(bms_data, frozenset({"cycle_charge"}))
+    assert bms_data == ref | {"cycle_charge": 91.25, "problem": False}
 
 
 @pytest.fixture(
     name="problem_samples",
     params=[
-        ({ATTR_VOLTAGE: -1}, "negative overall voltage"),
-        ({f"{KEY_CELL_VOLTAGE}0": 5.907}, "high cell voltage"),
-        ({f"{KEY_CELL_VOLTAGE}0": -0.001}, "negative cell voltage"),
-        ({ATTR_DELTA_VOLTAGE: 5.907}, "doubtful delta voltage"),
-        ({ATTR_CYCLE_CHRG: 0}, "doubtful cycle charge"),
-        ({ATTR_BATTERY_LEVEL: 101}, "doubtful SoC"),
-        ({KEY_PROBLEM: 0x1}, "BMS problem code"),
-        ({ATTR_PROBLEM: True}, "BMS problem report"),
+        ({"voltage": -1}, "negative overall voltage"),
+        ({"cell_voltages": [5.907]}, "high cell voltage"),
+        ({"cell_voltages": [-0.001]}, "negative cell voltage"),
+        ({"delta_voltage": 5.907}, "doubtful delta voltage"),
+        ({"cycle_charge": 0}, "doubtful cycle charge"),
+        ({"battery_level": 101}, "doubtful SoC"),
+        ({"problem_code": 0x1}, "BMS problem code"),
+        ({"problem": True}, "BMS problem report"),
     ],
     ids=lambda param: param[1],
 )
@@ -99,6 +82,6 @@ def test_problems(problem_samples: BMSsample) -> None:
     """Check if missing data is correctly calculated."""
     bms_data: BMSsample = problem_samples.copy()
 
-    BaseBMS._add_missing_values(bms_data, frozenset({ATTR_RUNTIME}))
+    BaseBMS._add_missing_values(bms_data, frozenset({"runtime"}))
 
     assert bms_data == problem_samples | {"problem": True}

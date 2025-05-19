@@ -9,7 +9,8 @@ from uuid import UUID
 from bleak.backends.characteristic import BleakGATTCharacteristic
 import pytest
 
-from custom_components.bms_ble.plugins.ecoworthy_bms import BMS, BMSsample
+from custom_components.bms_ble.plugins.basebms import BMSsample
+from custom_components.bms_ble.plugins.ecoworthy_bms import BMS
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -56,19 +57,14 @@ _RESULT_DEFS: Final[dict[str, BMSsample]] = {
         "current": -1.14,
         "battery_level": 72,
         "cycle_charge": 72.0,
-        "design_capacity": 100.0,
+        "design_capacity": 100,
         #        "cycles": 8,
         "temperature": 19.567,
         "cycle_capacity": 956.88,
         "power": -15.151,
         "battery_charging": False,
-        "cell#0": 3.323,
-        "cell#1": 3.325,
-        "cell#2": 3.323,
-        "cell#3": 3.322,
-        "temp#0": 20.5,
-        "temp#1": 19.2,
-        "temp#2": 19.0,
+        "cell_voltages": [3.323, 3.325, 3.323, 3.322],
+        "temp_values": [20.5, 19.2, 19.0],
         "delta_voltage": 0.003,
         "runtime": 227368,
         "problem": False,
@@ -81,17 +77,13 @@ _RESULT_DEFS: Final[dict[str, BMSsample]] = {
         "current": 0.0,
         "battery_level": 100,
         "cycle_charge": 100.0,
-        "design_capacity": 100.0,
+        "design_capacity": 100,
         "temperature": 12.65,
         "cycle_capacity": 1412.0,
         "power": 0.0,
         "battery_charging": False,
-        "cell#0": 3.469,
-        "cell#1": 3.564,
-        "cell#2": 3.556,
-        "cell#3": 3.539,
-        "temp#0": 13.5,
-        "temp#1": 11.8,
+        "cell_voltages": [3.469, 3.564, 3.556, 3.539],
+        "temp_values": [13.5, 11.8],
         "delta_voltage": 0.095,
         "problem": False,
         "problem_code": 0,

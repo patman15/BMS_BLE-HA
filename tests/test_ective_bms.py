@@ -6,7 +6,8 @@ from uuid import UUID
 from bleak.backends.characteristic import BleakGATTCharacteristic
 import pytest
 
-from custom_components.bms_ble.plugins.ective_bms import BMS, BMSsample
+from custom_components.bms_ble.plugins.basebms import BMSsample
+from custom_components.bms_ble.plugins.ective_bms import BMS
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -68,18 +69,13 @@ async def test_update(patch_bleak_client, reconnect_fixture) -> None:
         reconnect_fixture,
     )
 
-    result = await bms.async_update()
-
-    assert result == {
+    assert await bms.async_update() == {
         "voltage": 13.7,
         "current": -13.0,
         "battery_level": 98,
         "cycles": 407,
         "cycle_charge": 194.86,
-        "cell#0": 3.422,
-        "cell#1": 3.441,
-        "cell#2": 3.429,
-        "cell#3": 3.422,
+        "cell_voltages": [3.422, 3.441, 3.429, 3.422],
         "delta_voltage": 0.019,
         "temperature": 31.0,
         "cycle_capacity": 2669.582,
@@ -91,7 +87,7 @@ async def test_update(patch_bleak_client, reconnect_fixture) -> None:
     }
 
     # query again to check already connected state
-    result = await bms.async_update()
+    await bms.async_update()
     assert bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
@@ -176,7 +172,7 @@ async def test_invalid_response(
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
-    result = {}
+    result: BMSsample = {}
     with pytest.raises(TimeoutError):
         result = await bms.async_update()
 
@@ -241,10 +237,12 @@ async def test_problem_response(
         "battery_level": 98,
         "cycles": 407,
         "cycle_charge": 194.86,
-        "cell#0": 3.422,
-        "cell#1": 3.441,
-        "cell#2": 3.429,
-        "cell#3": 3.422,
+        "cell_voltages": [
+            3.422,
+            3.441,
+            3.429,
+            3.422,
+        ],
         "delta_voltage": 0.019,
         "temperature": 31.0,
         "cycle_capacity": 2669.582,

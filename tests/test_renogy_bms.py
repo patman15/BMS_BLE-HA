@@ -9,7 +9,8 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.plugins.renogy_bms import BMS, BMSsample
+from custom_components.bms_ble.plugins.basebms import BMSsample
+from custom_components.bms_ble.plugins.renogy_bms import BMS
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -22,22 +23,18 @@ def ref_value() -> BMSsample:
     return {
         "battery_charging": False,
         "battery_level": 97.2,
-        "cell#0": 3.5,
-        "cell#1": 3.3,
-        "cell#2": 3.3,
-        "cell#3": 3.3,
+        "cell_voltages": [3.5, 3.3, 3.3, 3.3],
         "cell_count": 4,
         "current": 0.0,
         "cycle_capacity": 1321.92,
         "cycle_charge": 97.2,
         "cycles": 15,
         "delta_voltage": 0.2,
-        "design_capacity": 100.0,
+        "design_capacity": 100,
         "power": 0.0,
         "problem": False,
         "problem_code": 0,
-        "temp#0": 17.0,
-        "temp#1": 17.0,
+        "temp_values": [17.0, 17.0],
         "temp_sensors": 2,
         "temperature": 17.0,
         "voltage": 13.6,
@@ -87,7 +84,7 @@ class MockRenogyBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # noqa: RUF013 # same as upstream
+        response: bool | None = None,
     ) -> None:
         """Issue write command to GATT."""
         await super().write_gatt_char(char_specifier, data, response)
@@ -141,7 +138,7 @@ async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
     ],
     ids=lambda param: param[1],
 )
-def response(request) -> bytearray:
+def fix_response(request) -> bytearray:
     """Return faulty response frame."""
     return bytearray(request.param[0])
 
@@ -192,7 +189,7 @@ async def test_problem_response(monkeypatch, patch_bleak_client) -> None:
     result: BMSsample = await bms.async_update()
     assert result == ref_value() | {
         "problem": True,
-        "problem_code": 0xFFFFFFFFFFFFFFFFFFFFFFFFFFF1
+        "problem_code": 0xFFFFFFFFFFFFFFFFFFFFFFFFFFF1,
     }
 
     await bms.disconnect()

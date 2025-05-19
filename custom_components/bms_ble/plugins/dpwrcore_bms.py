@@ -3,30 +3,13 @@
 from collections.abc import Callable
 from enum import IntEnum
 from string import hexdigits
-from typing import Final
+from typing import Any, Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from custom_components.bms_ble.const import (
-    ATTR_BATTERY_CHARGING,
-    ATTR_BATTERY_LEVEL,
-    ATTR_CURRENT,
-    ATTR_CYCLE_CAP,
-    ATTR_CYCLE_CHRG,
-    ATTR_CYCLES,
-    ATTR_DELTA_VOLTAGE,
-    ATTR_POWER,
-    ATTR_RUNTIME,
-    ATTR_TEMPERATURE,
-    ATTR_VOLTAGE,
-    KEY_CELL_COUNT,
-    KEY_CELL_VOLTAGE,
-    KEY_PROBLEM,
-)
-
-from .basebms import BaseBMS, BMSsample
+from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue
 
 
 class Cmd(IntEnum):
@@ -47,21 +30,21 @@ class BMS(BaseBMS):
 
     _PAGE_LEN: Final[int] = 20
     _MAX_CELLS: Final[int] = 32
-    _FIELDS: Final[list[tuple[str, Cmd, int, int, Callable[[int], int | float]]]] = [
-        (ATTR_VOLTAGE, Cmd.LEGINFO1, 6, 2, lambda x: float(x) / 10),
-        (ATTR_CURRENT, Cmd.LEGINFO1, 8, 2, lambda x: x),
-        (ATTR_BATTERY_LEVEL, Cmd.LEGINFO1, 14, 1, lambda x: x),
-        (ATTR_CYCLE_CHRG, Cmd.LEGINFO1, 12, 2, lambda x: float(x) / 1000),
+    _FIELDS: Final[list[tuple[BMSvalue, Cmd, int, int, Callable[[int], Any]]]] = [
+        ("voltage", Cmd.LEGINFO1, 6, 2, lambda x: float(x) / 10),
+        ("current", Cmd.LEGINFO1, 8, 2, lambda x: x),
+        ("battery_level", Cmd.LEGINFO1, 14, 1, lambda x: x),
+        ("cycle_charge", Cmd.LEGINFO1, 12, 2, lambda x: float(x) / 1000),
         (
-            ATTR_TEMPERATURE,
+            "temperature",
             Cmd.LEGINFO2,
             12,
             2,
             lambda x: round(float(x) * 0.1 - 273.15, 1),
         ),
-        (KEY_CELL_COUNT, Cmd.CELLVOLT, 6, 1, lambda x: min(x, BMS._MAX_CELLS)),
-        (ATTR_CYCLES, Cmd.LEGINFO2, 8, 2, lambda x: x),
-        (KEY_PROBLEM, Cmd.LEGINFO1, 15, 1, lambda x: x & 0xFF),
+        ("cell_count", Cmd.CELLVOLT, 6, 1, lambda x: min(x, BMS._MAX_CELLS)),
+        ("cycles", Cmd.LEGINFO2, 8, 2, lambda x: x),
+        ("problem_code", Cmd.LEGINFO1, 15, 1, lambda x: x & 0xFF),
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -71,7 +54,7 @@ class BMS(BaseBMS):
         self._data_final: bytearray = bytearray()
 
     @staticmethod
-    def matcher_dict_list() -> list[dict]:
+    def matcher_dict_list() -> list[AdvertisementPattern]:
         """Provide BluetoothMatcher definition."""
         return [
             {
@@ -103,14 +86,14 @@ class BMS(BaseBMS):
         return "fff3"
 
     @staticmethod
-    def _calc_values() -> frozenset[str]:
+    def _calc_values() -> frozenset[BMSvalue]:
         return frozenset(
             {
-                ATTR_BATTERY_CHARGING,
-                ATTR_CYCLE_CAP,
-                ATTR_DELTA_VOLTAGE,
-                ATTR_POWER,
-                ATTR_RUNTIME,
+                "battery_charging",
+                "cycle_capacity",
+                "delta_voltage",
+                "power",
+                "runtime",
             }
         )
 
@@ -200,15 +183,12 @@ class BMS(BaseBMS):
         )
 
     @staticmethod
-    def _cell_voltages(data: bytearray, cells: int) -> dict[str, float]:
+    def _cell_voltages(data: bytearray, cells: int) -> list[float]:
         """Return cell voltages from status message."""
-        return {
-            f"{KEY_CELL_VOLTAGE}{idx}": int.from_bytes(
-                data[7 + 2 * idx : 7 + 2 * idx + 2], byteorder="big"
-            )
-            / 1000
+        return [
+            int.from_bytes(data[7 + 2 * idx : 7 + 2 * idx + 2], byteorder="big") / 1000
             for idx in range(cells)
-        }
+        ]
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
@@ -216,18 +196,17 @@ class BMS(BaseBMS):
         for request in (Cmd.LEGINFO1, Cmd.LEGINFO2, Cmd.CELLVOLT):
             await self._await_reply(self._cmd_frame(request, b""))
 
-            data |= {
-                key: func(
-                    int.from_bytes(
-                        self._data[idx : idx + size], byteorder="big", signed=True
+            for key, cmd, idx, size, func in BMS._FIELDS:
+                if cmd == request:
+                    data[key] = func(
+                        int.from_bytes(
+                            self._data[idx : idx + size], byteorder="big", signed=True
+                        )
                     )
-                )
-                for key, cmd, idx, size, func in BMS._FIELDS
-                if cmd == request
-            }
-            if request == Cmd.CELLVOLT and data.get(KEY_CELL_COUNT):
-                data.update(
-                    BMS._cell_voltages(self._data_final, int(data[KEY_CELL_COUNT]))
+
+            if request == Cmd.CELLVOLT and data.get("cell_count"):
+                data["cell_voltages"] = BMS._cell_voltages(
+                    self._data_final, data.get("cell_count", 0)
                 )
 
         return data
