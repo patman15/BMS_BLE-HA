@@ -34,7 +34,7 @@ class BMS(BaseBMS):
 
     _UUID_CFG: Final[str] = "fffa"
     _HEAD: Final[int] = 0x7E
-    _CMD__HEAD: Final[int] = 0x1E
+    _CMD_HEAD: Final[int] = 0x1E
     _TAIL: Final[int] = 0x0D
     _CMD_VER: Final[int] = 0x00
     _RSP_VER: Final[int] = 0x00
