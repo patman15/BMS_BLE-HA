@@ -347,9 +347,8 @@ class BaseBMS(ABC):
         inv_wmode: bool = self._inv_wmode
         last_exception: Exception | None = None
 
-        self._data_event.clear()  # clear event before requesting new data
-
         for attempt in range(BaseBMS.MAX_RETRY + 1):
+            self._data_event.clear()  # clear event before requesting new data
             try:
                 for chunk in (
                     data[i : i + (max_size or len(data))]
@@ -381,7 +380,7 @@ class BaseBMS(ABC):
                 elif attempt == BaseBMS.MAX_RETRY:
                     raise last_exception or exc from exc
                 last_exception = exc
-                if isinstance(exc, BleakError):
+                if not isinstance(exc, TimeoutError):
                     await asyncio.sleep(
                         BLEAK_BACKOFF_TIME
                         * (min(2**attempt, BaseBMS._MAX_TIMEOUT_FACTOR) - 1)
