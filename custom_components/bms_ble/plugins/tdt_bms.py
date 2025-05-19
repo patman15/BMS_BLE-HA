@@ -34,9 +34,8 @@ class BMS(BaseBMS):
         ("cycle_charge", 0x8C, 4, 2, False, lambda x: float(x / 10)),
         ("battery_level", 0x8C, 13, 1, False, lambda x: x),
         ("cycles", 0x8C, 8, 2, False, lambda x: x),
-        ("problem_code", 0x8D, 36, 2, False, lambda x: x),
-    ]
-    _CMDS: Final[list[int]] = [*list({field[1] for field in _FIELDS})]
+    ]  # problem code is not included in the list, but extra
+    _CMDS: Final[list[int]] = [*list({field[1] for field in _FIELDS}), 0x8D]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
