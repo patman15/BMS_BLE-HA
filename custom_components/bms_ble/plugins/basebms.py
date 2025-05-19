@@ -371,7 +371,7 @@ class BaseBMS(ABC):
                     await asyncio.wait_for(
                         self._wait_event(),
                         BLEAK_BACKOFF_TIME
-                        * max(2**attempt, BaseBMS._MAX_TIMEOUT_FACTOR),
+                        * min(2**attempt, BaseBMS._MAX_TIMEOUT_FACTOR),
                     )
                     break
             except (BleakError, TimeoutError) as exc:
@@ -381,8 +381,13 @@ class BaseBMS(ABC):
                 elif attempt == BaseBMS.MAX_RETRY:
                     raise last_exception or exc from exc
                 last_exception = exc
-            else:
-                self._inv_wmode = inv_wmode
+                if isinstance(exc, BleakError):
+                    await asyncio.sleep(
+                        BLEAK_BACKOFF_TIME
+                        * (min(2**attempt, BaseBMS._MAX_TIMEOUT_FACTOR) - 1)
+                    )
+
+            self._inv_wmode = inv_wmode
 
     async def disconnect(self) -> None:
         """Disconnect the BMS, includes stoping notifications."""
