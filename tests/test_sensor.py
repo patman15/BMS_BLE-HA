@@ -24,6 +24,7 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
     UPDATE_INTERVAL,
 )
+from custom_components.bms_ble.plugins.basebms import BMSsample
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers.entity_component import async_update_entity
@@ -42,31 +43,26 @@ async def test_update(
 ) -> None:
     """Test sensor value updates through coordinator."""
 
-    async def patch_async_update(_self):
+    async def patch_async_update(_self) -> BMSsample:
         """Patch async_update to return a specific value."""
-        return {
-            "balance_current": -1.234,
-            "battery_level": 42,
-            "voltage": 17.0,
-            "current": 0,
-            "cell#0": 3,
-            "cell#1": 3.123,
-            "delta_voltage": 0.123,
-            "temperature": 43.86,
-        } | (
+        return BMSsample(
             {
-                "temp#0": 73,
-                "temp#1": 31.4,
-                "temp#2": 27.18,
-                "pack_battery_level#0": 1.0,
-                "pack_battery_level#1": 2.0,
+                "balance_current": -1.234,
+                "battery_level": 42,
+                "voltage": 17.0,
+                "current": 0,
+                "cell_voltages": [3, 3.123],
+                "delta_voltage": 0.123,
+                "temperature": 43.86,
+            }
+        ) | (
+            {
+                "temp_values": [73, 31.4, 27.18],
+                "pack_battery_levels": [1.0, 2.0],
                 "pack_count": 2,
-                "pack_current#0": -3.14,
-                "pack_current#1": 2.71,
-                "pack_cycles#0": 0,
-                "pack_cycles#1": 1,
-                "pack_voltage#0": 12.34,
-                "pack_voltage#1": 24.56,
+                "pack_currents": [-3.14, 2.71],
+                "pack_cycles": [0, 1],
+                "pack_voltages": [12.34, 24.56],
             }
             if bool_fixture
             else {}
@@ -165,10 +161,10 @@ async def test_update(
 
     # check battery pack attributes
     for sensor, attribute, ref_value in [
-        (ATTR_CURRENT, "pack_current", [-3.14, 2.71]),
+        (ATTR_CURRENT, "pack_currents", [-3.14, 2.71]),
         (ATTR_CYCLES, "pack_cycles", [0, 1]),
-        ("battery", "pack_battery_level", [1.0, 2.0]),
-        (ATTR_VOLTAGE, "pack_voltage", [12.34, 24.56]),
+        ("battery", "pack_battery_levels", [1.0, 2.0]),
+        (ATTR_VOLTAGE, "pack_voltages", [12.34, 24.56]),
     ]:
         pack_state: State | None = hass.states.get(f"sensor.smartbat_b12345_{sensor}")
         assert pack_state is not None, f"failed to get state of sensor '{sensor}'"

@@ -93,7 +93,7 @@ class MockOGTBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # noqa: RUF013 # same as upstream
+        response: bool | None = None,
     ) -> None:
         """Issue write command to GATT."""
         # await super().write_gatt_char(char_specifier, data, response)
@@ -131,7 +131,7 @@ class MockInvalidBleakClient(MockOGTBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # noqa: RUF013 # same as upstream
+        response: bool | None = None,
     ) -> None:
         """Issue write command to GATT."""
         # await super().write_gatt_char(char_specifier, data, response)
@@ -157,7 +157,7 @@ async def test_update(patch_bleak_client, ogt_bms_fixture, reconnect_fixture) ->
         reconnect_fixture,
     )
 
-    result = await bms.async_update()
+    result: BMSsample = await bms.async_update()
 
     # verify all sensors are reported
     if str(ogt_bms_fixture)[9] == "A":
@@ -173,10 +173,7 @@ async def test_update(patch_bleak_client, ogt_bms_fixture, reconnect_fixture) ->
             "delta_voltage": 0.003,
             "power": 56.188,
             "battery_charging": True,
-            "cell#0": 3.306,
-            "cell#1": 3.305,
-            "cell#2": 3.304,
-            "cell#3": 3.303,
+            "cell_voltages": [3.306, 3.305, 3.304, 3.303],
         }
 
     # query again to check already connected state
@@ -212,22 +209,24 @@ async def test_update_16s(monkeypatch, patch_bleak_client) -> None:
         "delta_voltage": 0.003,
         "power": 56.188,
         "battery_charging": True,
-        "cell#0": 3.306,
-        "cell#1": 3.305,
-        "cell#2": 3.304,
-        "cell#3": 3.303,
-        "cell#4": 3.306,
-        "cell#5": 3.305,
-        "cell#6": 3.304,
-        "cell#7": 3.303,
-        "cell#8": 3.306,
-        "cell#9": 3.305,
-        "cell#10": 3.304,
-        "cell#11": 3.303,
-        "cell#12": 3.306,
-        "cell#13": 3.305,
-        "cell#14": 3.304,
-        "cell#15": 3.303,
+        "cell_voltages": [
+            3.306,
+            3.305,
+            3.304,
+            3.303,
+            3.306,
+            3.305,
+            3.304,
+            3.303,
+            3.306,
+            3.305,
+            3.304,
+            3.303,
+            3.306,
+            3.305,
+            3.304,
+            3.303,
+        ],
     }
 
     # query again to check already connected state
@@ -240,7 +239,7 @@ async def test_update_16s(monkeypatch, patch_bleak_client) -> None:
         (bytearray(7), "critical_length"),
         (bytearray(b";AT< )'!R\"\x1d\x1a"), "wrong_SOP"),
         (bytearray(b";BT< )'!R\""), "wrong_EOP"),
-        (bytearray(b';BT<#RUN S\x1d\x1a'), "invalid_character"),
+        (bytearray(b";BT<#RUN S\x1d\x1a"), "invalid_character"),
         (bytearray(b";BT<Ubb\x7f\x10"), "BMS_error"),
         (bytearray(b"invalid\xf0value"), "invalid_value"),
     ],

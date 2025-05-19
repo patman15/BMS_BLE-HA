@@ -7,7 +7,8 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.plugins.ej_bms import BMS, BMSsample
+from custom_components.bms_ble.plugins.basebms import BMSsample
+from custom_components.bms_ble.plugins.ej_bms import BMS
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -39,7 +40,7 @@ class MockEJBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # noqa: RUF013 # same as upstream
+        response: bool | None = None,
     ) -> None:
         """Issue write command to GATT."""
         await super().write_gatt_char(char_specifier, data, response)
@@ -107,16 +108,18 @@ async def test_update(patch_bleak_client, reconnect_fixture) -> None:
         "battery_level": 1,
         "cycles": 0,
         "cycle_charge": 0.2,
-        "cell#0": 3.924,
-        "cell#1": 3.900,
-        "cell#2": 3.921,
-        "cell#3": 4.055,
-        "cell#4": 3.889,
-        "cell#5": 3.884,
-        "cell#6": 3.892,
-        "cell#7": 3.898,
-        "cell#8": 4.077,
-        "cell#9": 4.077,
+        "cell_voltages": [
+            3.924,
+            3.900,
+            3.921,
+            4.055,
+            3.889,
+            3.884,
+            3.892,
+            3.898,
+            4.077,
+            4.077,
+        ],
         "delta_voltage": 0.193,
         "temperature": 32,
         "cycle_capacity": 7.903,
@@ -152,10 +155,7 @@ async def test_update_single_frame(patch_bleak_client, reconnect_fixture) -> Non
         "battery_level": 75,
         "cycles": 1,
         "cycle_charge": 110.0,
-        "cell#0": 3.263,
-        "cell#1": 3.264,
-        "cell#2": 3.306,
-        "cell#3": 3.285,
+        "cell_voltages": [3.263, 3.264, 3.306, 3.285],
         "delta_voltage": 0.043,
         "temperature": 25,
         "cycle_capacity": 1442.98,
@@ -199,7 +199,9 @@ def fix_response(request):
     return request.param[0]
 
 
-async def test_invalid_response(monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response) -> None:
+async def test_invalid_response(
+    monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response
+) -> None:
     """Test data up date with BMS returning invalid data."""
 
     patch_bms_timeout("ej_bms")
@@ -212,7 +214,7 @@ async def test_invalid_response(monkeypatch, patch_bleak_client, patch_bms_timeo
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
-    result = {}
+    result: BMSsample = {}
     with pytest.raises(TimeoutError):
         result = await bms.async_update()
 
@@ -245,7 +247,9 @@ def prb_response(request):
     return request.param
 
 
-async def test_problem_response(monkeypatch, patch_bleak_client, problem_response) -> None:
+async def test_problem_response(
+    monkeypatch, patch_bleak_client, problem_response
+) -> None:
     """Test data update with BMS returning error flags."""
 
     monkeypatch.setattr(

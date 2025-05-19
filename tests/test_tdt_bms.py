@@ -9,7 +9,8 @@ from bleak.exc import BleakDeviceNotFoundError
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.plugins.tdt_bms import BMS, BMSsample
+from custom_components.bms_ble.plugins.basebms import BMSsample
+from custom_components.bms_ble.plugins.tdt_bms import BMS
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -32,28 +33,25 @@ def ref_value() -> dict:
             "cycle_capacity": 5222.57,
             "power": -300.39,
             "battery_charging": False,
-            "cell#0": 3.299,
-            "cell#1": 3.302,
-            "cell#2": 3.294,
-            "cell#3": 3.294,
-            "cell#4": 3.293,
-            "cell#5": 3.294,
-            "cell#6": 3.293,
-            "cell#7": 3.292,
-            "cell#8": 3.292,
-            "cell#9": 3.290,
-            "cell#10": 3.294,
-            "cell#11": 3.294,
-            "cell#12": 3.294,
-            "cell#13": 3.293,
-            "cell#14": 3.295,
-            "cell#15": 3.294,
-            "temp#0": 17.85,
-            "temp#1": 19.55,
-            "temp#2": 17.85,
-            "temp#3": 17.85,
-            "temp#4": 17.85,
-            "temp#5": 18.65,
+            "cell_voltages": [
+                3.299,
+                3.302,
+                3.294,
+                3.294,
+                3.293,
+                3.294,
+                3.293,
+                3.292,
+                3.292,
+                3.290,
+                3.294,
+                3.294,
+                3.294,
+                3.293,
+                3.295,
+                3.294,
+            ],
+            "temp_values": [17.85, 19.55, 17.85, 17.85, 17.85, 18.65],
             "delta_voltage": 0.012,
             "runtime": 62589,
             "problem": False,
@@ -71,14 +69,8 @@ def ref_value() -> dict:
             "cycle_capacity": 757.85,
             "power": 0.0,
             "battery_charging": False,
-            "cell#0": 3.297,
-            "cell#1": 3.295,
-            "cell#2": 3.297,
-            "cell#3": 3.292,
-            "temp#0": 23.15,
-            "temp#1": 23.95,
-            "temp#2": 22.55,
-            "temp#3": 22.45,
+            "cell_voltages": [3.297, 3.295, 3.297, 3.292],
+            "temp_values": [23.15, 23.95, 22.55, 22.45],
             "delta_voltage": 0.005,
             "problem": False,
             "problem_code": 0,
@@ -242,7 +234,9 @@ def fix_response(request):
     return request.param[0]
 
 
-async def test_invalid_response(monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response) -> None:
+async def test_invalid_response(
+    monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response
+) -> None:
     """Test data up date with BMS returning invalid data."""
 
     patch_bms_timeout("tdt_bms")
@@ -255,7 +249,7 @@ async def test_invalid_response(monkeypatch, patch_bleak_client, patch_bms_timeo
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
-    result = {}
+    result: BMSsample = {}
     with pytest.raises(TimeoutError):
         result = await bms.async_update()
 
@@ -366,7 +360,9 @@ def prb_response(request) -> list[tuple[dict[int, bytearray], str]]:
     return request.param
 
 
-async def test_problem_response(monkeypatch, patch_bleak_client, problem_response) -> None:
+async def test_problem_response(
+    monkeypatch, patch_bleak_client, problem_response
+) -> None:
     """Test data update with BMS returning error flags."""
 
     monkeypatch.setattr(MockTDTBleakClient, "RESP", problem_response[0])

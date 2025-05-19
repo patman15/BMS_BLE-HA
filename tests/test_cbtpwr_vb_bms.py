@@ -8,7 +8,8 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.plugins.cbtpwr_vb_bms import BMS, BMSsample
+from custom_components.bms_ble.plugins.basebms import BMSsample
+from custom_components.bms_ble.plugins.cbtpwr_vb_bms import BMS
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -25,14 +26,10 @@ def ref_value() -> BMSsample:
         "cycles": 0,
         "cycle_charge": 192.0,
         "cell_count": 4,
-        "cell#0": 3.328,
-        "cell#1": 3.326,
-        "cell#2": 3.326,
-        "cell#3": 3.326,
+        "cell_voltages": [3.328, 3.326, 3.326, 3.326],
         "delta_voltage": 0.002,
-        "design_capacity": 200.0,
-        "temp#0": 6.2,
-        "temp#1": 7.3,
+        "design_capacity": 200,
+        "temp_values": [6.2, 7.3],
         "temp_sensors": 2,
         "temperature": 6.75,
         "cycle_capacity": 2553.6,
@@ -69,7 +66,6 @@ class MockCBTpwrVBBleakClient(MockBleakClient):
             char_specifier
         ) != normalize_uuid_str("ffe9"):
             return bytearray()
-        # cmd: int = int(bytes(data)[7:9], 16)
 
         return self.RESP.get(bytes(data), bytearray())
 
@@ -77,7 +73,7 @@ class MockCBTpwrVBBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # noqa: RUF013 # same as upstream
+        response: bool | None = None,
     ) -> None:
         """Issue write command to GATT."""
         await super().write_gatt_char(char_specifier, data, response)

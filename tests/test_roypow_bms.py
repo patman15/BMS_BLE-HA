@@ -10,7 +10,8 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.plugins.roypow_bms import BMS, BMSsample
+from custom_components.bms_ble.plugins.basebms import BMSsample, BMSvalue
+from custom_components.bms_ble.plugins.roypow_bms import BMS
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -32,14 +33,8 @@ def ref_value() -> BMSsample:
         "cycle_capacity": 1321.795,
         "power": 4.718,
         "battery_charging": True,
-        "cell#0": 3.375,
-        "cell#1": 3.370,
-        "cell#2": 3.369,
-        "cell#3": 3.372,
-        "temp#0": 19,
-        "temp#1": 19,
-        "temp#2": 19,
-        "temp#3": 20,
+        "cell_voltages": [3.375, 3.370, 3.369, 3.372],
+        "temp_values": [19, 19, 19, 20],
         "delta_voltage": 0.006,
         "problem": False,
         "problem_code": 0,
@@ -116,12 +111,10 @@ async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
         reconnect_fixture,
     )
 
-    result = await bms.async_update()
-
-    assert result == ref_value()
+    assert await bms.async_update() == ref_value()
 
     # query again to check already connected state
-    result = await bms.async_update()
+    await bms.async_update()
     assert bms._client and bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
@@ -213,6 +206,44 @@ async def test_invalid_response(
         result = await bms.async_update()
 
     assert not result
+    await bms.disconnect()
+
+
+async def test_missing_message(
+    monkeypatch, patch_bleak_client, patch_bms_timeout
+) -> None:
+    """Test data up date with BMS returning no message type 4 but 8."""
+
+    patch_bms_timeout("roypow_bms")
+
+    monkeypatch.setattr(
+        MockRoyPowBleakClient,
+        "RESP",
+        MockRoyPowBleakClient.RESP
+        | {
+            0x4: bytearray(
+                b"\xea\xd1\x01\x0f\xff\x08\x04\x04\x04\x0d\x2f\x0d\x2a\x0d\x29\x0d\x2c\xfc\xf5"
+            )
+        },
+    )
+
+    patch_bleak_client(MockRoyPowBleakClient)
+
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+
+    # remove values from reference that are in 0x4 response (and dependent)
+    ref: BMSsample = ref_value()
+    key: BMSvalue
+    for key in (
+        "battery_level",
+        "cycle_capacity",
+        "cycle_charge",
+        "cycles",
+        "power",
+        "voltage",
+    ):
+        ref.pop(key)
+    assert await bms.async_update() == ref
     await bms.disconnect()
 
 

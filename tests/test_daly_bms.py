@@ -8,10 +8,31 @@ from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 import pytest
 
-from custom_components.bms_ble.plugins.daly_bms import BMS, BMSsample
+from custom_components.bms_ble.plugins.basebms import BMSsample
+from custom_components.bms_ble.plugins.daly_bms import BMS
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
+
+
+def ref_value() -> BMSsample:
+    """Return reference value for mock Daly BMS."""
+    return {
+        "voltage": 14.0,
+        "current": 3.0,
+        "battery_level": 90.0,
+        "cycles": 57,
+        "cycle_charge": 345.6,
+        "cell_voltages": [4.127, 4.137, 4.147, 4.157],
+        "cell_count": 4,
+        "delta_voltage": 0.321,
+        "temp_sensors": 4,
+        "cycle_capacity": 4838.4,
+        "power": 42.0,
+        "battery_charging": True,
+        "problem": False,
+        "problem_code": 0,
+    }
 
 
 class MockDalyBleakClient(MockBleakClient):
@@ -58,7 +79,7 @@ class MockDalyBleakClient(MockBleakClient):
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         data: Buffer,
-        response: bool = None,  # noqa: RUF013 # same as upstream
+        response: bool | None = None,
     ) -> None:
         """Issue write command to GATT."""
         await super().write_gatt_char(char_specifier, data, response)
@@ -105,49 +126,20 @@ async def test_update(
         reconnect_fixture,
     )
 
-    result = await bms.async_update()
-
-    assert (
-        result
-        == {
-            "voltage": 14.0,
-            "current": 3.0,
-            "battery_level": 90.0,
-            "cycles": 57,
-            "cycle_charge": 345.6,
-            "cell#0": 4.127,
-            "cell#1": 4.137,
-            "cell#2": 4.147,
-            "cell#3": 4.157,
-            "cell_count": 4,
-            "delta_voltage": 0.321,
-            "temp_sensors": 4,
-            "cycle_capacity": 4838.4,
-            "power": 42.0,
-            "battery_charging": True,
-            "problem": False,
-            "problem_code": 0,
-        }
-        | {
+    assert await bms.async_update() == ref_value() | (
+        {
             "temperature": 24.8,
-            "temp#0": 38.0,
-            "temp#1": 20.0,
-            "temp#2": 21.0,
-            "temp#3": 22.0,
-            "temp#4": 23.0,
+            "temp_values": [38.0, 20.0, 21.0, 22.0, 23.0],
         }
         if bool_fixture
         else {
             "temperature": 21.5,
-            "temp#0": 20.0,
-            "temp#1": 21.0,
-            "temp#2": 22.0,
-            "temp#3": 23.0,
+            "temp_values": [20.0, 21.0, 22.0, 23.0],
         }
     )
 
     # query again to check already connected state
-    result = await bms.async_update()
+    await bms.async_update()
     assert bms._client and bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
