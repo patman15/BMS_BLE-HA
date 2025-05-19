@@ -22,7 +22,7 @@ class BMS(BaseBMS):
     MAX_TEMP: Final[int] = 8
     INFO_LEN: Final[int] = 84 + HEAD_LEN + CRC_LEN + MAX_CELLS + MAX_TEMP
     MOS_TEMP_POS: Final[int] = HEAD_LEN + 8
-    MOS_NOT_AVAILABLE: Final[tuple[int]] = (0x303,)
+    MOS_NOT_AVAILABLE: Final[tuple[str]] = ("DL-FB",)
     _FIELDS: Final[list[tuple[BMSvalue, int, int, Callable[[int], Any]]]] = [
         ("voltage", 80 + HEAD_LEN, 2, lambda x: float(x / 10)),
         ("current", 82 + HEAD_LEN, 2, lambda x: float((x - 30000) / 10)),
@@ -140,9 +140,8 @@ class BMS(BaseBMS):
         """Update battery status information."""
         data: BMSsample = {}
         if (
-            not self._ble_device.details
-            or self._ble_device.details.get("manufacturer_id", 0)
-            not in BMS.MOS_NOT_AVAILABLE
+            not self.name
+            or not self.name.startswith(BMS.MOS_NOT_AVAILABLE)
         ):
             # do not query devices that do not support MOS temperature, e.g. Bulltron
             try:
