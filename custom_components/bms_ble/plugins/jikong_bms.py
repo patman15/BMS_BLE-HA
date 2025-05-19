@@ -181,7 +181,7 @@ class BMS(BaseBMS):
             -32 if int(self._bms_info.get("sw_version", "")[:2]) < 11 else 0
         )
         self._valid_reply = 0xC8  # BMS ready confirmation
-        await asyncio.wait_for(self._wait_event(), timeout=self.TIMEOUT)
+        await asyncio.wait_for(self._wait_event(), timeout=BMS.TIMEOUT)
         self._valid_reply = 0x02  # cell information
 
     @staticmethod
