@@ -386,7 +386,7 @@ class BaseBMS(ABC):
                         * (min(2**attempt, BaseBMS._MAX_TIMEOUT_FACTOR) - 1)
                     )
 
-            self._inv_wmode = inv_wmode
+        self._inv_wmode = inv_wmode
 
     async def disconnect(self) -> None:
         """Disconnect the BMS, includes stoping notifications."""
