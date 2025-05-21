@@ -640,7 +640,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/314)
         generate_advertisement_data(
             local_name="SV12V150224041",
-            manufacturer_data={33384:"01020007a030f7"},
+            manufacturer_data={33384: "01020007a030f7"},
             rssi=-39,
         ),
         "ej_bms",
@@ -659,5 +659,17 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             rssi=-81,
         ),
         "jbd_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/291)
+        generate_advertisement_data(
+            local_name="Backup BMS",
+            rssi=-88,
+            manufacturer_data={34952: "\x88\x88\xbf\x95\x01\x11\x36\x38"},
+            service_uuids=[
+                "0000ffe0-0000-1000-8000-00805f9b34fb",
+                "0000fee7-0000-1000-8000-00805f9b34fb",
+            ],
+        ),
+        "neey_bms",
     ),
 ]
