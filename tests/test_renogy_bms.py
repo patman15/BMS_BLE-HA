@@ -25,15 +25,16 @@ def ref_value() -> BMSsample:
         "battery_level": 97.2,
         "cell_voltages": [3.5, 3.3, 3.3, 3.3],
         "cell_count": 4,
-        "current": 0.0,
+        "current": -0.86,
         "cycle_capacity": 1321.92,
         "cycle_charge": 97.2,
         "cycles": 15,
         "delta_voltage": 0.2,
         "design_capacity": 100,
-        "power": 0.0,
+        "power": -11.696,
         "problem": False,
         "problem_code": 0,
+        "runtime": 406883,
         "temp_values": [17.0, 17.0],
         "temp_sensors": 2,
         "temperature": 17.0,
@@ -60,8 +61,8 @@ class MockRenogyBleakClient(MockBleakClient):
             b"\x31\x30\x30\x4c\x46\x50\x31\x32\x2d\x42\x54\x20\x20\x30\x31\x30\x30\x55\x2f"
         ),  # 08È20210526        RBT100LFP12-BT  0100
         BASE_VALUE_CMD: bytearray(
-            b"\x30\x03\x0e\x00\x00\x00\x88\x00\x01\x7b\xb0\x00\x01\x86\xa0\x00\x0f\x87\x4a"
-        ),  # 13.6V, 97.2% (4B), 100Ah [mAh], (15 cycles (generated))
+            b"\x30\x03\x0e\xFF\xAA\x00\x88\x00\x01\x7b\xb0\x00\x01\x86\xa0\x00\x0f\xe0\x1e"
+        ),  # -0.86A, 13.6V, 97.2% (4B), 100Ah [mAh], (15 cycles (generated))
         b"\x30\x03\x13\xec\x00\x07\xc5\x58": bytearray(
             b"\x30\x03\x0e\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xaa\x8a"
         ),  # alarm flags
