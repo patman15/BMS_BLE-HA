@@ -222,8 +222,7 @@ async def test_partly_base_data(patch_bleak_client, patch_bms_timeout) -> None:
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
-    result = await bms.async_update()
-    assert result == {
+    assert await bms.async_update() == {
         "battery_charging": False,
         "current": 0.0,
         "power": 0.0,

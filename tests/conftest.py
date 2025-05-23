@@ -91,7 +91,7 @@ def patch_bms_timeout(monkeypatch):
 
     def _patch_timeout(timeout: float = 0.001) -> None:
         monkeypatch.setattr(
-            "custom_components.bms_ble.plugins.basebms.BLEAK_BACKOFF_TIME", timeout
+            "custom_components.bms_ble.plugins.basebms.BLEAK_TRANSIENT_BACKOFF_TIME", timeout
         )
 
     return _patch_timeout
