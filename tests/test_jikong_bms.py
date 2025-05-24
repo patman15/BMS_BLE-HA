@@ -478,6 +478,8 @@ class MockInvalidBleakClient(MockJikongBleakClient):
 
     async def disconnect(self) -> bool:
         """Mock disconnect to raise BleakError."""
+        await asyncio.wait_for(self._task, 0.1)
+        assert self._task.done(), "send task still running!"
         raise BleakError
 
 
