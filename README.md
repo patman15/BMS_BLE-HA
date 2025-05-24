@@ -130,7 +130,7 @@ BMS incorrectly reports support of write-with-response operation. Requires a <a 
 Bluetooth is turned off, when there is no current. Thus, device will get unavailble / cannot be added.
 </details>
 <details><summary>Batteries with JBD BMS</summary>
-JBD BMS detection unfortunately needs to rely on name patterns. If you renamed your battery it most likely will not be detected. I do appreciate issues being raised for new vendor naming schemes to ease the life of other users. To help, please follow the instructions in the last list item for [non-detected devices](#if-your-device-is-not-recognized). 
+JBD BMS detection unfortunately needs to rely on name patterns. If you renamed your battery it most likely will not be detected. I do appreciate issues being raised for new vendor naming schemes to ease the life of other users. To help, please follow the instructions in the last list item for <a href="#if-your-device-is-not-recognized">non-detected devices</a>.
 </details>
 <details><summary>Liontron batteries</summary>
 These batteries need a shorter interval between queries. Be a bit patient to get them added and set a <a href="[custint-url]">custom interval</a> of about 9s to keep a stable connection.
