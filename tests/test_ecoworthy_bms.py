@@ -232,7 +232,7 @@ async def test_invalid_response(
 ) -> None:
     """Test data up date with BMS returning invalid data."""
 
-    patch_bms_timeout("ecoworthy_bms")
+    patch_bms_timeout()
 
     monkeypatch.setattr(MockECOWBleakClient, "RESP", _PROTO_DEFS[protocol_type])
     monkeypatch.setattr(

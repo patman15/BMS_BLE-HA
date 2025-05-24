@@ -166,7 +166,7 @@ async def test_invalid_response(
 ) -> None:
     """Test data up date with BMS returning invalid data."""
 
-    patch_bms_timeout("ective_bms")
+    patch_bms_timeout()
     monkeypatch.setattr(MockEctiveBleakClient, "_response", lambda _s: wrong_response)
     patch_bleak_client(MockEctiveBleakClient)
 

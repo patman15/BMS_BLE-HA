@@ -287,7 +287,7 @@ async def test_update(patch_bleak_client, reconnect_fixture) -> None:
 async def test_wrong_crc(patch_bleak_client, patch_bms_timeout) -> None:
     """Test data update with BMS returning invalid data (wrong CRC)."""
 
-    patch_bms_timeout("seplos_bms")
+    patch_bms_timeout()
 
     patch_bleak_client(MockWrongCRCBleakClient)
 
@@ -305,7 +305,7 @@ async def test_wrong_crc(patch_bleak_client, patch_bms_timeout) -> None:
 async def test_error_response(patch_bleak_client, patch_bms_timeout) -> None:
     """Test data update with BMS returning error message."""
 
-    patch_bms_timeout("seplos_bms")
+    patch_bms_timeout()
 
     patch_bleak_client(MockErrRespBleakClient)
 
@@ -335,7 +335,7 @@ async def test_oversized_response(patch_bleak_client) -> None:
 async def test_invalid_message(patch_bleak_client, patch_bms_timeout) -> None:
     """Test data update with BMS returning error message."""
 
-    patch_bms_timeout("seplos_bms")
+    patch_bms_timeout()
     patch_bleak_client(MockInvalidMessageBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))

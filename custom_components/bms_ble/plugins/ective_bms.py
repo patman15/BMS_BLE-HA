@@ -151,7 +151,7 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
-        await asyncio.wait_for(self._wait_event(), timeout=self.TIMEOUT)
+        await asyncio.wait_for(self._wait_event(), timeout=BMS.TIMEOUT)
         return self._decode_data(self._data_final) | {
             "cell_voltages": BMS._cell_voltages(self._data_final)
         }

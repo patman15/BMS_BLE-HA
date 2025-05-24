@@ -196,7 +196,7 @@ async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
 async def test_invalid_response(patch_bleak_client, patch_bms_timeout) -> None:
     """Test data update with BMS returning invalid data."""
 
-    patch_bms_timeout("cbtpwr_bms")
+    patch_bms_timeout()
     patch_bleak_client(MockInvalidBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
@@ -217,13 +217,12 @@ async def test_invalid_response(patch_bleak_client, patch_bms_timeout) -> None:
 async def test_partly_base_data(patch_bleak_client, patch_bms_timeout) -> None:
     """Test data update with BMS returning invalid data."""
 
-    patch_bms_timeout("cbtpwr_bms")
+    patch_bms_timeout()
     patch_bleak_client(MockPartBaseDatBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
-    result = await bms.async_update()
-    assert result == {
+    assert await bms.async_update() == {
         "battery_charging": False,
         "current": 0.0,
         "power": 0.0,
@@ -238,7 +237,7 @@ async def test_partly_base_data(patch_bleak_client, patch_bms_timeout) -> None:
 async def test_all_cell_voltages(patch_bleak_client, patch_bms_timeout) -> None:
     """Test data update with BMS returning invalid data."""
 
-    patch_bms_timeout("cbtpwr_bms")
+    patch_bms_timeout()
     patch_bleak_client(MockAllCellsBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))

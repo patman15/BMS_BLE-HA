@@ -153,7 +153,7 @@ async def test_invalid_response(
 ) -> None:
     """Test data update with BMS returning invalid data (wrong CRC)."""
 
-    patch_bms_timeout("jbd_bms")
+    patch_bms_timeout()
 
     monkeypatch.setattr(
         MockJBDBleakClient, "_response", lambda _s, _c, _d: wrong_response
