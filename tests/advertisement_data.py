@@ -602,7 +602,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/284)
         generate_advertisement_data(
             local_name="ECO-LFP48100-3U-8EC7",
-            manufacturer_data={49834: "37018ec700014c03"},  # MAC address correct
+            manufacturer_data={49834: "\x37\x01\x8e\xc7\x00\x01\x4c\x03"},  # MAC address correct
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
             rssi=-70,
         ),
@@ -620,7 +620,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         generate_advertisement_data(  # PowerQueen
             local_name="PQ-24100B-A00292",
             rssi=-65,
-            manufacturer_data={22618: "c8478010b79a"},
+            manufacturer_data={22618: "\xc8\x47\x80\x10\xb7\x9a"},
             service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
         ),
         "redodo_bms",
@@ -628,7 +628,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/302)
         generate_advertisement_data(
             local_name="OGR-48100-123456789",
-            manufacturer_data={13880: "13014e9a"},
+            manufacturer_data={13880: "\x13\x01\x4e\x9a"},
             service_uuids=[
                 "0000ff00-0000-1000-8000-00805f9b34fb",
                 "00000001-0000-1000-8000-00805f9b34fb",
@@ -640,7 +640,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/314)
         generate_advertisement_data(
             local_name="SV12V150224041",
-            manufacturer_data={33384:"01020007a030f7"},
+            manufacturer_data={33384: "\x01\x02\x00\x07\xa0\x30\xf7"},
             rssi=-39,
         ),
         "ej_bms",
@@ -648,7 +648,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/309)
         generate_advertisement_data(
             local_name="JBD-SP16S020-L8S",
-            manufacturer_data={13880: "13014e9a"},
+            manufacturer_data={13880: "\x13\x01\x4e\x9a"},
             service_uuids=[
                 "00001800-0000-1000-8000-00805f9b34fb",
                 "00001801-0000-1000-8000-00805f9b34fb",
@@ -657,6 +657,15 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
                 "00010203-0405-0607-0809-0a0b0c0d1912",
             ],
             rssi=-81,
+        ),
+        "jbd_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/329)
+        generate_advertisement_data(
+            local_name="DWCK00309J-029",  # Vatrer battery
+            manufacturer_data={49148: "\x34\x37\xc1\xa4"},  # MAC address, wrong
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            rssi=-46,
         ),
         "jbd_bms",
     ),
