@@ -229,8 +229,13 @@ def test_problems(problem_samples: BMSsample) -> None:
             [True] + [False] * BaseBMS.MAX_RETRY + [False] * BaseBMS.MAX_RETRY,
             [BleakError(), 0x15, 0x16],
         ),
+        (
+            [None] * (BaseBMS.MAX_RETRY-1) + [ValueError()],
+            [True] * (BaseBMS.MAX_RETRY),
+            [ValueError()],
+        ),
     ],
-    ids=["basic_test", "bleakerr_last", "retry_count-1", "retry_count", "exception"],
+    ids=["basic_test", "BleakError_last", "retry_count-1", "retry_count", "mode_switch", "unhandled_exc"],
 )
 async def test_write_mode(
     monkeypatch,

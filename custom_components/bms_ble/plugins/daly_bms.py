@@ -144,7 +144,7 @@ class BMS(BaseBMS):
         ):
             try:
                 # request MOS temperature (possible outcome: response, empty response, no response)
-                await self._await_reply(BMS.HEAD_READ + BMS.MOS_INFO, no_reconnect=True)
+                await self._await_reply(BMS.HEAD_READ + BMS.MOS_INFO)
 
                 if sum(self._data[BMS.MOS_TEMP_POS :][:2]):
                     self._log.debug("MOS info: %s", self._data)

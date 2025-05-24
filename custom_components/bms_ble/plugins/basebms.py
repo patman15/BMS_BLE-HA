@@ -339,21 +339,19 @@ class BaseBMS(ABC):
         char: int | str | None = None,
         wait_for_notify: bool = True,
         max_size: int = 0,
-        no_reconnect: bool = False,
     ) -> None:
         """Send data to the BMS and wait for valid reply notification."""
 
         write_mode: Final[Literal["W", "WNR"]] = self._write_mode(
             char or self.uuid_tx()
         )
+        chunk_size: Final[int] = max_size or len(data)
 
         for attempt in range(BaseBMS.MAX_RETRY):
             self._data_event.clear()  # clear event before requesting new data
             try:
-                for chunk in (
-                    data[i : i + (max_size or len(data))]
-                    for i in range(0, len(data), max_size or len(data))
-                ):
+                for i in range(0, len(data), chunk_size):
+                    chunk: bytes = data[i : i + chunk_size]
                     self._log.debug(
                         "TX BLE data #%i (%s%s): %s",
                         attempt + 1,
@@ -366,19 +364,24 @@ class BaseBMS(ABC):
                         chunk,
                         response=(write_mode == "W") != self._inv_wr_mode,
                     )
+            except BleakError:
+                self._inv_wr_mode = not self._inv_wr_mode
+                await self.disconnect()
+                raise
+            try:
                 if wait_for_notify:
                     await asyncio.wait_for(
                         self._wait_event(),
                         BLEAK_TRANSIENT_BACKOFF_TIME
                         * min(2**attempt, BaseBMS._MAX_TIMEOUT_FACTOR),
                     )
-                break # leave loop if no exception
-            except (BleakError, TimeoutError) as exc:
-                self._log.debug("TX BLE data failed (%s): %s", type(exc).__name__, exc)
-                if not isinstance(exc, TimeoutError) or attempt == BaseBMS.MAX_RETRY-1:
-                    self._inv_wr_mode = not self._inv_wr_mode
-                    self._reconnect_request = not no_reconnect
-                    raise
+            except TimeoutError:
+                self._log.debug("TX BLE request timed out.")
+                continue  # retry sending data
+            break  # leave loop if no exception
+        else:
+            # reset of write mode is handled BMS stale functionality
+            raise TimeoutError
 
     async def disconnect(self) -> None:
         """Disconnect the BMS, includes stoping notifications."""
