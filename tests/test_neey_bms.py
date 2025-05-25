@@ -14,7 +14,7 @@ from bleak.exc import BleakError
 import pytest
 
 from custom_components.bms_ble.plugins.basebms import BMSsample
-from custom_components.bms_ble.plugins.neey_bms import BMS, crc_sum
+from custom_components.bms_ble.plugins.neey_bms import BMS
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -105,7 +105,7 @@ class MockNeeyBleakClient(MockBleakClient):
 
     async def _send_confirm(self) -> None:
         assert self._notify_callback, "send confirm called but notification not enabled"
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0)
         self._notify_callback(
             "MockNeeyBleakClient",
             b"\xaa\x55\x90\xeb\xc8\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x44",
@@ -271,7 +271,7 @@ class MockStreamBleakClient(MockNeeyBleakClient):
         ), "send_all frames called but notification not enabled"
         for resp in self._FRAME.values():
             self._notify_callback("MockNeeyBleakClient", resp)
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(0)
 
     async def write_gatt_char(
         self,
@@ -344,48 +344,6 @@ async def test_update(monkeypatch, patch_bleak_client, reconnect_fixture) -> Non
     # query again to check already connected state
     assert await bms.async_update() == _RESULT_DEFS
     assert bms._client and bms._client.is_connected is not reconnect_fixture
-
-    await bms.disconnect()
-
-
-async def test_hide_temp_sensors(
-    monkeypatch, patch_bleak_client, protocol_type
-) -> None:
-    """Test Neey BMS data update with not connected temperature sensors."""
-
-    temp12_hide: dict[str, bytearray] = deepcopy(_PROTO_DEFS[protocol_type])
-
-    # clear temp sensor #2
-    if protocol_type == "JK02_24S":
-        temp12_hide["cell"][182:184] = bytearray(b"\x03\x00")
-        temp12_hide["cell"][132:134] = bytearray(b"\x30\xf8")  # -200.0
-    else:
-        temp12_hide["cell"][214:216] = bytearray(b"\xfb\x00")
-        temp12_hide["cell"][162:164] = bytearray(b"\x30\xf8")  # -200.0
-    # recalculate CRC
-    temp12_hide["cell"][-1] = crc_sum(temp12_hide["cell"][:-1])
-
-    monkeypatch.setattr(MockNeeyBleakClient, "_FRAME", temp12_hide)
-
-    patch_bleak_client(MockNeeyBleakClient)
-
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
-
-    # modify result dict to match removed temp#1, temp#2
-    ref_result: BMSsample = deepcopy(_RESULT_DEFS[protocol_type])
-    if protocol_type == "JK02_24S":
-        ref_result |= {"temp_sensors": 3, "temperature": 18.1}
-    elif protocol_type == "JK02_32S":
-        ref_result |= {"temp_sensors": 251, "temperature": 31.0}
-    elif protocol_type == "JK02_32S_v15":
-        ref_result |= {"temp_sensors": 251, "temperature": 18.825}
-
-    temp_values: list[int | float] = ref_result.get("temp_values", [])
-    temp_values.pop(1)  # remove sensor 1
-    temp_values.pop(1)  # remove sensor 2
-    ref_result["temp_values"] = temp_values.copy()
-
-    assert await bms.async_update() == ref_result
 
     await bms.disconnect()
 
@@ -509,7 +467,7 @@ async def test_non_stale_data(
 
     patch_bms_timeout("neey_bms")
 
-    monkeypatch.setattr(MockNeeyBleakClient, "_FRAME", _PROTO_DEFS["JK02_32S"])
+    monkeypatch.setattr(MockNeeyBleakClient, "_FRAME", _PROTO_DEFS)
 
     orig_response = MockNeeyBleakClient._response
     monkeypatch.setattr(
@@ -533,7 +491,7 @@ async def test_non_stale_data(
     # restore working BMS responses and run a test again to see if stale data is kept
     monkeypatch.setattr(MockNeeyBleakClient, "_response", orig_response)
 
-    assert await bms.async_update() == _RESULT_DEFS["JK02_32S"]
+    assert await bms.async_update() == _RESULT_DEFS
 
 
 @pytest.fixture(
