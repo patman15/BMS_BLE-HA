@@ -15,7 +15,7 @@ class BMS(BaseBMS):
 
     _UUID_CFG: Final[str] = "fffa"
     _HEAD: Final[int] = 0x7E
-    _CMD_HEAD: Final[int] = 0x1E
+    _CMD_HEADS: list[int] = [0x7E, 0x1E]  # alternative command head
     _TAIL: Final[int] = 0x0D
     _CMD_VER: Final[int] = 0x00
     _RSP_VER: Final[int] = 0x00
@@ -41,6 +41,7 @@ class BMS(BaseBMS):
         """Initialize BMS."""
         super().__init__(__name__, ble_device, reconnect)
         self._data_final: dict[int, bytearray] = {}
+        self._cmd_heads: list[int] = BMS._CMD_HEADS
         self._exp_len: int = BMS._INFO_LEN
 
     @staticmethod
@@ -101,7 +102,7 @@ class BMS(BaseBMS):
 
         if (
             len(data) > BMS._INFO_LEN
-            and data[0] == BMS._HEAD
+            and data[0] in self._cmd_heads
             and len(self._data) >= self._exp_len
         ):
             self._exp_len = BMS._INFO_LEN + int.from_bytes(data[6:8])
@@ -141,11 +142,11 @@ class BMS(BaseBMS):
         self._data_event.set()
 
     @staticmethod
-    def _cmd(cmd: int, data: bytearray = bytearray()) -> bytes:
+    def _cmd(cmd: int, data: bytearray = bytearray(), cmd_head: int = _HEAD) -> bytes:
         """Assemble a TDT BMS command."""
         assert cmd in (0x8C, 0x8D, 0x92)  # allow only read commands
 
-        frame = bytearray([BMS._CMD_HEAD, BMS._CMD_VER, 0x1, 0x3, 0x0, cmd])
+        frame = bytearray([cmd_head, BMS._CMD_VER, 0x1, 0x3, 0x0, cmd])
         frame += len(data).to_bytes(2, "big", signed=False) + data
         frame += crc_modbus(frame).to_bytes(2, "big") + bytes([BMS._TAIL])
 
@@ -193,8 +194,16 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
-        for cmd in BMS._CMDS:
-            await self._await_reply(BMS._cmd(cmd))
+        for head in self._cmd_heads:
+            try:
+                for cmd in BMS._CMDS:
+                    await self._await_reply(BMS._cmd(cmd, cmd_head=head))
+                self._cmd_heads = [head]  # set to single head for further commands
+                break
+            except TimeoutError:
+                ...  # try next command head
+        else:
+            raise TimeoutError
 
         result: BMSsample = {"cell_count": int(self._data_final[0x8C][BMS._CELL_POS])}
         result["temp_sensors"] = int(
