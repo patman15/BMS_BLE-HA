@@ -91,7 +91,8 @@ def patch_bms_timeout(monkeypatch):
 
     def _patch_timeout(timeout: float = 0.001) -> None:
         monkeypatch.setattr(
-            "custom_components.bms_ble.plugins.basebms.BLEAK_TRANSIENT_BACKOFF_TIME", timeout
+            "custom_components.bms_ble.plugins.basebms.BLEAK_TRANSIENT_BACKOFF_TIME",
+            timeout,
         )
 
     return _patch_timeout
@@ -279,8 +280,8 @@ class MockBMS(BaseBMS):
     ) -> None:
         """Retrieve BMS data update."""
 
-    async def disconnect(self) -> None:
-        """Disconnect connection to BMS if active."""
+    # async def disconnect(self) -> None:
+    #     """Disconnect connection to BMS if active."""
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""

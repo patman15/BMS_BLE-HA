@@ -1,7 +1,7 @@
 """Test the BLE Battery Management System base class functions."""
 
 from collections.abc import Buffer
-from typing import Final, Literal
+from typing import Final
 from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -99,8 +99,8 @@ class WMTestBMS(BaseBMS):
         """Return 16-bit UUID of characteristic that provides write property."""
         return "afe2"
 
-    def _write_mode(self, char: int | str) -> Literal["W", "WNR"]:
-        return "W" if "write" in self._char_tx_properties else "WNR"
+    def _wr_response(self, char: int | str) -> bool:
+        return bool("write" in self._char_tx_properties)
 
     def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
@@ -204,9 +204,9 @@ def test_problems(problem_samples: BMSsample) -> None:
     [
         ([b"\x12"], [True], [0x12]),
         (
-            [[None] * (BaseBMS.MAX_RETRY - 1), BleakError()],
-            [True] * (BaseBMS.MAX_RETRY),
-            [BleakError()],
+            [None] * 2 * (BaseBMS.MAX_RETRY),
+            [True] * (BaseBMS.MAX_RETRY) + [False] * (BaseBMS.MAX_RETRY),
+            [TimeoutError()],
         ),
         (
             [None] * (BaseBMS.MAX_RETRY - 1) + [b"\x13"],
@@ -215,27 +215,32 @@ def test_problems(problem_samples: BMSsample) -> None:
         ),
         (
             [None] * (BaseBMS.MAX_RETRY) + [b"\x14"],
-            [True] * (BaseBMS.MAX_RETRY + 1),
-            [TimeoutError()],
+            [True] * (BaseBMS.MAX_RETRY) + [False],
+            [0x14],
         ),
         (
-            [
-                BleakError(),
-                [None] * (BaseBMS.MAX_RETRY - 1),
-                b"\x15",
-                [None] * (BaseBMS.MAX_RETRY - 1),
-                b"\x16",
-            ],
+            [BleakError()]
+            + [None] * (BaseBMS.MAX_RETRY - 1)
+            + [b"\x15"]
+            + [None] * (BaseBMS.MAX_RETRY - 1)
+            + [b"\x16"],
             [True] + [False] * BaseBMS.MAX_RETRY + [False] * BaseBMS.MAX_RETRY,
-            [BleakError(), 0x15, 0x16],
+            [0x15, 0x16],
         ),
         (
-            [None] * (BaseBMS.MAX_RETRY-1) + [ValueError()],
+            [None] * (BaseBMS.MAX_RETRY - 1) + [ValueError()],
             [True] * (BaseBMS.MAX_RETRY),
             [ValueError()],
         ),
     ],
-    ids=["basic_test", "BleakError_last", "retry_count-1", "retry_count", "mode_switch", "unhandled_exc"],
+    ids=[
+        "basic_test",
+        "no_response",
+        "retry_count-1",
+        "retry_count",
+        "mode_switch",
+        "unhandled_exc",
+    ],
 )
 async def test_write_mode(
     monkeypatch,
@@ -247,6 +252,9 @@ async def test_write_mode(
 ) -> None:
     """Check if write mode selection works correctly."""
 
+    assert len(replies) == len(
+        exp_wr_response
+    ), "Replies and expected responses must match in length!"
     monkeypatch.setattr(MockWriteModeBleakClient, "PATTERN", replies)
     monkeypatch.setattr(MockWriteModeBleakClient, "EXP_WRITE_RESPONSE", exp_wr_response)
 
@@ -258,6 +266,7 @@ async def test_write_mode(
         False,
     )
 
+    # NOTE: the output must reflect the end result after one call, as the init of HA resets the whole BMS!
     for output in exp_output:
         if isinstance(output, Exception):
             with pytest.raises(type(output)):
