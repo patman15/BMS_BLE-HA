@@ -86,7 +86,7 @@
     {
       "local_name": "OGR-*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },    
+    },
     {
       "manufacturer_id": 123,
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
@@ -110,11 +110,11 @@
     {
       "local_name": "ECO-WORTHY*",
       "manufacturer_id": 57570
-    },    
+    },
     {
       "local_name": "ECO-WORTHY*",
       "manufacturer_id": 15996
-    },    
+    },
     {
       "local_name": "DP04S*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
@@ -122,7 +122,7 @@
     {
       "local_name": "ECO-LFP*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },    
+    },
     {
       "local_name": "SP0*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
@@ -179,7 +179,7 @@
     {
       "local_name": "SV12V*",
       "manufacturer_id": 33384
-    },    
+    },
     {
       "local_name": "L-12V???AH-*"
     },
@@ -234,6 +234,10 @@
     {
       "service_uuid": "0000ffd0-0000-1000-8000-00805f9b34fb",
       "manufacturer_id": 39008
+    },
+    {
+      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
+      "manufacturer_id": 34952
     }
   ],
   "codeowners": [
