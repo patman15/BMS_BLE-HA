@@ -35,7 +35,7 @@ class BMS(BaseBMS):
         self._bms_info: dict[str, str] = {}
         # self._prot_offset: int = 0
         # self._sw_version: int = 0
-        self._exp_len: int = 0
+        self._exp_len: int = BMS._MIN_FRAME
         self._valid_reply: int = 0x02
 
     @staticmethod
@@ -46,6 +46,7 @@ class BMS(BaseBMS):
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
                 "manufacturer_id": 0x8888,
+                "manufacturer_data_start": [0x88, 0x88],
             },
         ]
 
@@ -79,10 +80,13 @@ class BMS(BaseBMS):
         """Retrieve BMS data update."""
 
         if (
-            len(self._data) >= self._MIN_FRAME and (data.startswith(BMS._HEAD_RSP))
-        ) or not self._data.startswith(BMS._HEAD_RSP):
+            len(self._data) >= self._exp_len or not self._data.startswith(BMS._HEAD_RSP)
+        ) and data.startswith(BMS._HEAD_RSP):
             self._data = bytearray()
-            self._exp_len = int.from_bytes(data[6:8], byteorder="little", signed=False)
+            self._exp_len = min(
+                int.from_bytes(data[6:8], byteorder="little", signed=False),
+                BMS._MIN_FRAME,
+            )
 
         self._data += data
 
@@ -91,7 +95,11 @@ class BMS(BaseBMS):
         )
 
         # verify that data is long enough
-        if len(self._data) < self._exp_len and self._data.startswith(BMS._HEAD_RSP):
+        if len(self._data) < self._exp_len:
+            return
+
+        if not self._data.startswith(BMS._HEAD_RSP):
+            self._log.debug("incorrect frame start.")
             return
 
         if self._data[-1] != BMS._TAIL:
