@@ -245,6 +245,7 @@ def test_problems(problem_samples: BMSsample) -> None:
 async def test_write_mode(
     monkeypatch,
     patch_bleak_client,
+    patch_bms_timeout,
     replies: list[bytearray | Exception | None],
     exp_wr_response: list[bool],
     exp_output: list[int | Exception],
@@ -255,6 +256,7 @@ async def test_write_mode(
     assert len(replies) == len(
         exp_wr_response
     ), "Replies and expected responses must match in length!"
+    patch_bms_timeout()
     monkeypatch.setattr(MockWriteModeBleakClient, "PATTERN", replies)
     monkeypatch.setattr(MockWriteModeBleakClient, "EXP_WRITE_RESPONSE", exp_wr_response)
 
