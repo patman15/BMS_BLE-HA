@@ -13,7 +13,7 @@ from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue
 class BMS(BaseBMS):
     """Braun Power BMS class implementation."""
 
-    _HEAD: Final[int] = 0x7B  # header for responses
+    _HEAD: Final[bytes] = b"\x7b"  # header for responses
     _TAIL: Final[int] = 0x7D  # tail for command
     _MIN_LEN: Final[int] = 4  # minimum frame size
     _FIELDS: Final[list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]] = [
@@ -90,9 +90,9 @@ class BMS(BaseBMS):
     def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
     ) -> None:
-        # check if answer is a heading of basic info (0x3) or cell block info (0x4)
+        # check if answer is a heading of valid response type
         if (
-            data[0] == BMS._HEAD
+            data.startswith(BMS._HEAD)
             and len(self._data) >= BMS._MIN_LEN
             and data[1] in BMS._CMDS
             and len(self._data) >= BMS._MIN_LEN + self._data[2]
@@ -131,7 +131,7 @@ class BMS(BaseBMS):
     def _cmd(cmd: int, data: bytes = b"") -> bytes:
         """Assemble a Braun Power BMS command."""
         assert len(data) <= 255, "data length must be a single byte."
-        return bytes([BMS._HEAD, cmd, len(data), *data, BMS._TAIL])
+        return bytes([*BMS._HEAD, cmd, len(data), *data, BMS._TAIL])
 
     @staticmethod
     def _decode_data(data: dict[int, bytearray]) -> BMSsample:
