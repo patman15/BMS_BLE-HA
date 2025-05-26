@@ -172,9 +172,10 @@ class MockAllCellsBleakClient(MockCBTpwrBleakClient):
         return self.RESP.get(cmd, bytearray())
 
 
-async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
+async def test_update(patch_bleak_client, patch_bms_timeout, reconnect_fixture: bool) -> None:
     """Test CBT power BMS data update."""
 
+    patch_bms_timeout()
     patch_bleak_client(MockCBTpwrBleakClient)
 
     bms = BMS(
@@ -182,12 +183,10 @@ async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
         reconnect_fixture,
     )
 
-    result = await bms.async_update()
-
-    assert result == ref_value()
+    assert await bms.async_update() == ref_value()
 
     # query again to check already connected state
-    result = await bms.async_update()
+    await bms.async_update()
     assert bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()

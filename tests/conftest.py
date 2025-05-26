@@ -89,9 +89,10 @@ def bms_data_fixture(request) -> BMSsample:
 def patch_bms_timeout(monkeypatch):
     """Fixture to patch BMS.TIMEOUT for different BMS classes."""
 
-    def _patch_timeout(timeout: float = 0.001) -> None:
+    def _patch_timeout(bms_class: str | None = None, timeout: float = 0.001) -> None:
+        patch_class: str = f"{bms_class}.BMS.TIMEOUT" if bms_class else "basebms.BLEAK_TRANSIENT_BACKOFF_TIME"
         monkeypatch.setattr(
-            "custom_components.bms_ble.plugins.basebms.BLEAK_TRANSIENT_BACKOFF_TIME",
+            f"custom_components.bms_ble.plugins.{patch_class}",
             timeout,
         )
 

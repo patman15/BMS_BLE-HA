@@ -270,7 +270,7 @@ async def test_write_mode(
         False,
     )
 
-    # NOTE: the output must reflect the end result after one call, as the init of HA resets the whole BMS!
+    # NOTE: output must reflect the end result after one call, as init of HA resets the whole BMS!
     for output in exp_output:
         if isinstance(output, Exception):
             with pytest.raises(type(output)):
