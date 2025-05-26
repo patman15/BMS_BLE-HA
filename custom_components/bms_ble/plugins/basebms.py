@@ -346,10 +346,11 @@ class BaseBMS(ABC):
         for i in range(0, len(data), chunk_size):
             chunk: bytes = data[i : i + chunk_size]
             self._log.debug(
-                "TX BLE data #%i (%s%s): %s",
+                "TX BLE req #%i (%s%s%s): %s",
                 attempt + 1,
-                "!" if self._inv_wr_mode else "",
+                "!" if inv_wr_mode else "",
                 "W" if self._wr_response(char) else "WNR",
+                "." if self._inv_wr_mode is not None else "",
                 chunk.hex(" "),
             )
             await self._client.write_gatt_char(
@@ -389,11 +390,10 @@ class BaseBMS(ABC):
 
                     self._inv_wr_mode = inv_wr_mode
                     return  # leave loop if no exception
-            except BleakError:
-                # reconnect on communication errors for retrying
+            except BleakError as exc:
+                # reconnect on communication errors
                 self._log.warning(
-                    "TX BLE request error, retrying connection (%s)",
-                    type(self).__name__,
+                    "TX BLE request error, retrying connection (%s)", type(exc).__name__
                 )
                 await self.disconnect()
                 await self._connect()
