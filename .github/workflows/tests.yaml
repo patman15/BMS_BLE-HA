@@ -2,9 +2,6 @@ name: Run tests for integrations
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
   workflow_dispatch:
   schedule:
     - cron:  '0 5 * * 6'
