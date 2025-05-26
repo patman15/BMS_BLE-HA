@@ -1,6 +1,6 @@
 """Test the BLE Battery Management System base class functions."""
 
-from collections.abc import Buffer
+from collections.abc import Buffer, Callable
 from typing import Final
 from uuid import UUID
 
@@ -14,6 +14,9 @@ from custom_components.bms_ble.plugins.basebms import (
     AdvertisementPattern,
     BaseBMS,
     BMSsample,
+    crc8,
+    crc_modbus,
+    crc_xmodem,
 )
 
 from .bluetooth import generate_ble_device
@@ -115,7 +118,6 @@ class WMTestBMS(BaseBMS):
         await self._await_reply(b"mock_command")
 
         return {"problem_code": int.from_bytes(self._data, "big", signed=False)}
-
 
 def test_calc_missing_values(bms_data_fixture: BMSsample) -> None:
     """Check if missing data is correctly calculated."""
@@ -277,3 +279,18 @@ async def test_write_mode(
             assert await bms.async_update() == {
                 "problem_code": output
             }, f"{request.node.name} failed!"
+def test_crc_calculations() -> None:
+    """Check if CRC calculations are correct."""
+    # Example data for CRC calculation
+    data: bytearray = bytearray([0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39])
+    test_fn: list[tuple[Callable[[bytearray], int], int]] = [
+        (crc_modbus, 0x4B37),
+        (crc8, 0xA1),
+        (crc_xmodem, 0x31C3),
+    ]
+
+    for crc_fn, expected_crc in test_fn:
+        calculated_crc: int = crc_fn(data)
+        assert (
+            calculated_crc == expected_crc
+        ), f"Expected {expected_crc}, got {calculated_crc}"
