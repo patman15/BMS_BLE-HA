@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 import asyncio
 from collections.abc import Callable
+from enum import IntEnum
 import logging
 from statistics import fmean
 from typing import Any, Final, Literal, TypedDict
@@ -19,6 +20,7 @@ from homeassistant.loader import BluetoothMatcherOptional
 
 type BMSvalue = Literal[
     "battery_charging",
+    "battery_mode",
     "battery_level",
     "current",
     "power",
@@ -48,10 +50,24 @@ type BMSpackvalue = Literal[
 ]
 
 
+class BMSmode(IntEnum):
+    """Enumeration of BMS modes."""
+
+    UNKNOWN = -1
+    BULK = 0x00
+    ABSORPTION = 0x01
+    FLOAT = 0x02
+
+    def __str__(self) -> str:
+        """Return a string representation of the BMS mode."""
+        return self.name.lower()
+
+
 class BMSsample(TypedDict, total=False):
     """Dictionary representing a sample of battery management system (BMS) data."""
 
     battery_charging: bool  # True: battery charging
+    battery_mode: BMSmode  # BMS charging mode
     battery_level: int | float  # [%]
     current: float  # [A] (positive: charging)
     power: float  # [W] (positive: charging)

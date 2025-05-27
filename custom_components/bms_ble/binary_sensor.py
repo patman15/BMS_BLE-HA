@@ -1,5 +1,8 @@
 """Support for BMS_BLE binary sensors."""
 
+from collections.abc import Callable
+
+from custom_components.bms_ble.plugins.basebms import BMSmode, BMSsample
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
@@ -12,22 +15,39 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import BTBmsConfigEntry
-from .const import ATTR_PROBLEM, DOMAIN, KEY_PROBLEM
+from .const import ATTR_PROBLEM, DOMAIN
 from .coordinator import BTBmsCoordinator
 
 PARALLEL_UPDATES = 0
 
-BINARY_SENSOR_TYPES: list[BinarySensorEntityDescription] = [
-    BinarySensorEntityDescription(
+
+class BmsBinaryEntityDescription(BinarySensorEntityDescription, frozen_or_thawed=True):
+    """Describes BMS sensor entity."""
+
+    attr_fn: Callable[[BMSsample], dict[str, int | str]] | None = None
+
+
+BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
+    BmsBinaryEntityDescription(
         key=ATTR_BATTERY_CHARGING,
         translation_key=ATTR_BATTERY_CHARGING,
         device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
+        attr_fn=lambda data: (
+            {"battery_mode": data.get("battery_mode", BMSmode.UNKNOWN).name}
+            if "battery_mode" in data
+            else {}
+        ),
     ),
-    BinarySensorEntityDescription(
+    BmsBinaryEntityDescription(
         key=ATTR_PROBLEM,
         translation_key=ATTR_PROBLEM,
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
+        attr_fn=lambda data: (
+            {"problem_code": data.get("problem_code", 0)}
+            if "problem_code" in data
+            else {}
+        ),
     ),
 ]
 
@@ -49,17 +69,19 @@ async def async_setup_entry(
 class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity):  # type: ignore[reportIncompatibleMethodOverride]
     """The generic BMS binary sensor implementation."""
 
+    entity_description: BmsBinaryEntityDescription
+
     def __init__(
         self,
         bms: BTBmsCoordinator,
-        descr: BinarySensorEntityDescription,
+        descr: BmsBinaryEntityDescription,
         unique_id: str,
     ) -> None:
         """Intialize BMS binary sensor."""
         self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
         self._attr_device_info = bms.device_info
         self._attr_has_entity_name = True
-        self.entity_description = descr
+        self.entity_description: BmsBinaryEntityDescription = descr  # type: ignore[reportIncompatibleVariableOverride]
         super().__init__(bms)
 
     @property
@@ -68,9 +90,8 @@ class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity): 
         return bool(self.coordinator.data.get(self.entity_description.key))
 
     @property
-    def extra_state_attributes(self) -> dict | None:  # type: ignore[reportIncompatibleVariableOverride]
-        """Return entity specific state attributes, e.g. problem code."""
-        # add problem code to sensor attributes
-        if self.entity_description.key == ATTR_PROBLEM:
-            return {KEY_PROBLEM: self.coordinator.data.get(self.entity_description.key)}
+    def extra_state_attributes(self) -> dict[str, int | str] | None:  # type: ignore[reportIncompatibleVariableOverride]
+        """Return entity specific state attributes, e.g. cell voltages."""
+        if self.entity_description.attr_fn:
+            return self.entity_description.attr_fn(self.coordinator.data)
         return None

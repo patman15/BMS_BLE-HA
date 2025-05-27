@@ -14,7 +14,7 @@ from bleak.uuids import normalize_uuid_str, uuidstr_to_str
 import pytest
 
 from custom_components.bms_ble.plugins.basebms import BMSsample
-from custom_components.bms_ble.plugins.jikong_bms import BMS, crc_sum
+from custom_components.bms_ble.plugins.jikong_bms import BMS, BMSmode, crc_sum
 
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
@@ -234,6 +234,7 @@ _RESULT_DEFS: Final[dict[str, BMSsample]] = {
         "cycle_capacity": 14976.417,
         "power": 1424.899,
         "battery_charging": True,
+        "battery_mode": BMSmode.BULK,
         "temperature": 18.917,
         "problem": False,
     },
