@@ -17,24 +17,23 @@ class BMS(BaseBMS):
     _TAIL: Final[int] = 0x7D  # tail for command
     _MIN_LEN: Final[int] = 4  # minimum frame size
     _FIELDS: Final[list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]] = [
-        # ("temp_sensors", 0x1, 26, 1, False, lambda x: x),
+        ("cell_count", 0x2, 3, 1, False, lambda x: x),
+        ("temp_sensors", 0x3, 3, 1, False, lambda x: x),
         ("voltage", 0x1, 5, 2, False, lambda x: x / 100),
-        # ("current", 0x1, 6, 2, True, lambda x: x / 100),
-        # ("battery_level", 0x1, 23, 1, False, lambda x: x),
+        ("current", 0x1, 13, 2, True, lambda x: x / 100),
+        ("battery_level", 0x1, 4, 1, False, lambda x: x),
         ("cycle_charge", 0x1, 15, 2, False, lambda x: x / 100),
-        # ("design_capacity", 0x1, 17, 2, False, lambda x: x / 100),
-        # ("cycles", 0x1, 12, 2, False, lambda x: x),
+        ("design_capacity", 0x1, 17, 2, False, lambda x: x / 100),
+        ("cycles", 0x1, 23, 2, False, lambda x: x),
         # ("problem_code", 0x1, 20, 2, False, lambda x: x),
     ]
     _CMDS: Final[set[int]] = set({field[1] for field in _FIELDS}) | {
-        0x2,
-        0x3,
         0x8,
         0x9,
-        0x74,
+        0x74, # SW version
         0x78,
-        0xF4,
-        0xF5,
+        0xF4, # BMS program version
+        0xF5, # BMS boot version
     }
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -145,20 +144,21 @@ class BMS(BaseBMS):
         return result
 
     @staticmethod
-    def _cell_voltages(data: bytearray) -> list[float]:
+    def _cell_voltages(data: bytearray, cells: int) -> list[float]:
         return [
             int.from_bytes(
-                data[4 + idx * 2 : 4 + idx * 2 + 2], byteorder="big", signed=False
+                data[4 + idx * 2 : 6 + idx * 2], byteorder="big", signed=False
             )
             / 1000
-            for idx in range(int(data[3] / 2))
+            for idx in range(cells)
         ]
 
     @staticmethod
     def _temp_sensors(data: bytearray, sensors: int) -> list[float]:
         return [
-            (int.from_bytes(data[idx : idx + 2], byteorder="big") - 2731) / 10
-            for idx in range(27, 27 + sensors * 2, 2)
+            (int.from_bytes(data[4 + idx * 2 : 6 + idx * 2], byteorder="big") - 2731)
+            / 10
+            for idx in range(sensors)
         ]
 
     async def _async_update(self) -> BMSsample:
@@ -170,9 +170,7 @@ class BMS(BaseBMS):
         data: BMSsample = {}
         data = BMS._decode_data(self._data_final)
         data["problem"] = True  # FIXME!
-        # data["temp_values"] = BMS._temp_sensors(
-        #     self._data_final, int(data.get("temp_sensors", 0))
-        # )
-        # data["cell_voltages"] = BMS._cell_voltages(self._data_final)
+        data["cell_voltages"] = BMS._cell_voltages(self._data_final[0x2], data.get("cell_count", 0))
+        data["temp_values"] = BMS._temp_sensors(self._data_final[0x3], data.get("temp_sensors", 0))
 
         return data
