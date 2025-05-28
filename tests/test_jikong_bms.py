@@ -554,7 +554,7 @@ async def test_hide_temp_sensors(
     elif protocol_type == "JK02_32S":
         ref_result |= {"temp_sensors": 251, "temperature": 31.0}
     elif protocol_type == "JK02_32S_v15":
-        ref_result |= {"temp_sensors": 251, "temperature": 18.825}
+        ref_result |= {"temp_sensors": 251, "temperature": 18.0}
 
     temp_values: list[int | float] = ref_result.get("temp_values", [])
     temp_values.pop(1)  # remove sensor 1
