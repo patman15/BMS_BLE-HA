@@ -15,6 +15,52 @@ from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
 
+def ref_value() -> BMSsample:
+    """Return reference value for mock CBT power BMS."""
+    return {
+        "voltage": 53.31,
+        "current": -11.45,
+        "battery_level": 83,
+        "cell_count": 16,
+        "cycle_charge": 250.26,
+        "cycles": 8,
+        # "problem_code": 0,
+        "cell_voltages": [
+            3.327,
+            3.334,
+            3.333,
+            3.335,
+            3.333,
+            3.335,
+            3.333,
+            3.338,
+            3.332,
+            3.335,
+            3.334,
+            3.336,
+            3.333,
+            3.334,
+            3.336,
+            3.337,
+        ],
+        "design_capacity": 300,
+        "power": -610.399,
+        "temp_sensors": 4,
+        "temp_values": [
+            23.0,
+            23.0,
+            23.0,
+            23.0,
+        ],
+        "delta_voltage": 0.011,
+        "cycle_capacity": 13341.361,
+        "battery_charging": False,
+        "temperature": 23.0,
+        "runtime": 78684,
+        "problem": False,
+    }
+
+
 class MockBraunPWRBleakClient(MockBleakClient):
     """Emulate a Braun Power BMS BleakClient."""
 
@@ -29,7 +75,7 @@ class MockBraunPWRBleakClient(MockBleakClient):
             b"\x0d\x05\x0d\x0a\x0d\x04\x0d\x07\x0d\x06\x0d\x08\x0d\x05\x0d\x06"
             b"\x0d\x08\x0d\x09\x7d"
         ),
-        0x03: bytearray(b'{\x03\x09\x04\x0b\x91\x0b\x91\x0b\x91\x0b\x91}'),
+        0x03: bytearray(b"{\x03\x09\x04\x0b\x91\x0b\x91\x0b\x91\x0b\x91}"),
         0x08: bytearray(
             b"\x7b\x08\x16\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
             b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x7d"
@@ -81,23 +127,7 @@ async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
         reconnect_fixture,
     )
 
-    assert await bms.async_update() == {
-        # "temp_sensors": 1,
-        "voltage": 53.31,
-        # "current": 0.0,
-        # "battery_level": 99,
-        "cycle_charge": 250.26,
-        # "cycles": 7,
-        # "problem_code": 0,
-        # "cell_voltages": [3.442, 3.496, 3.375, 3.464, 3.457, 3.429, 3.359, 3.42],
-        # "temp_values": [20],
-        # "delta_voltage": 0.137,
-        "cycle_capacity": 13341.361,
-        # "power": 0.0,
-        # "battery_charging": False,
-        # "temperature": 20.0,
-        "problem": False,
-    }
+    assert await bms.async_update() == ref_value()
 
     # query again to check already connected state
     await bms.async_update()
@@ -109,20 +139,24 @@ async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
 @pytest.fixture(
     name="wrong_response",
     params=[
+        # (
+        #     b"!\x03\x09\x04\x0b\x91\x0b\x91\x0b\x91\x0b\x91}",
+        #     "wrong_SOF",
+        # ),
         (
-            b"\xcc\xf0\xa2\x6b\x00\x00\x00\x00\xa0\x86\x01\x40\x9e\x01\x07\x00\x63\x00\x00\x20",
-            "wrong_CRC",
+            b"!\x03\x09\x04\x0b\x91\x0b\x91\x0b\x91\x0b\x91",
+            "wrong_EOF",
         ),
         (
-            b"\xc0\xf0\xa2\x6b\x00\x00\x00\x00\xa0\x86\x01\x40\x9e\x01\x07\x00\x63\x00\x00\x21",
-            "wrong_SOF",
+            b"{\x04\x09\x04\x0b\x91\x0b\x91\x0b\x91\x0b\x91}",
+            "unknown_CMD",
         ),
         (
-            b"\xcc\xfe\xa2\x6b\x00\x00\x00\x00\xa0\x86\x01\x40\x9e\x01\x07\x00\x63\x00\x00\x4f",
+            b"{\x02\x09\x04\x0b\x91\x0b\x91\x0b\x91\x0b\x91}",
             "wrong_CMD",
         ),
         (
-            b"\xcc\xf0\xa2\x6b\x00\x00\x00\x00\xa0\x86\x01\x40\x9e\x01\x07\x00\x63\x00\x21",
+            b"{\x03\x08\x04\x0b\x91\x0b\x91\x0b\x91\x0b\x91}",
             "wrong_length",
         ),
     ],
@@ -138,12 +172,12 @@ async def test_invalid_response(
 ) -> None:
     """Test data up date with BMS returning invalid data."""
 
-    patch_bms_timeout("abc_bms")
+    patch_bms_timeout("braunpwr_bms")
 
     monkeypatch.setattr(
         MockBraunPWRBleakClient,
         "RESP",
-        MockBraunPWRBleakClient.RESP | {0xF0: wrong_response},
+        MockBraunPWRBleakClient.RESP | {0x03: wrong_response},
     )
 
     patch_bleak_client(MockBraunPWRBleakClient)

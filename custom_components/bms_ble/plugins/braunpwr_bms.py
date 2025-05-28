@@ -23,23 +23,24 @@ class BMS(BaseBMS):
         ("current", 0x1, 13, 2, True, lambda x: x / 100),
         ("battery_level", 0x1, 4, 1, False, lambda x: x),
         ("cycle_charge", 0x1, 15, 2, False, lambda x: x / 100),
-        ("design_capacity", 0x1, 17, 2, False, lambda x: x / 100),
+        ("design_capacity", 0x1, 17, 2, False, lambda x: x // 100),
         ("cycles", 0x1, 23, 2, False, lambda x: x),
         # ("problem_code", 0x1, 20, 2, False, lambda x: x),
     ]
     _CMDS: Final[set[int]] = set({field[1] for field in _FIELDS}) | {
         0x8,
         0x9,
-        0x74, # SW version
+        0x74,  # SW version
         0x78,
-        0xF4, # BMS program version
-        0xF5, # BMS boot version
+        0xF4,  # BMS program version
+        0xF5,  # BMS boot version
     }
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
         super().__init__(__name__, ble_device, reconnect)
         self._data_final: dict[int, bytearray] = {}
+        self._exp_reply: tuple[int] = (0x01,)
 
     @staticmethod
     def matcher_dict_list() -> list[AdvertisementPattern]:
@@ -113,15 +114,19 @@ class BMS(BaseBMS):
         # check correct frame ending
         if self._data[-1] != BMS._TAIL:
             self._log.debug("incorrect frame end (length: %i).", len(self._data))
+            self._data.clear()
             return
 
-        if self._data[1] not in BMS._CMDS:
-            self._log.debug("unknown command 0x%02X", self._data[1])
+        if self._data[1] not in self._exp_reply:
+            self._log.debug("unexpected command 0x%02X", self._data[1])
+            self._data.clear()
             return
 
         # check if response length matches expected length
         if len(self._data) != BMS._MIN_LEN + self._data[2]:
             self._log.debug("wrong data length (%i): %s", len(self._data), self._data)
+            self._data.clear()
+            return
 
         self._data_final[self._data[1]] = self._data
         self._data_event.set()
@@ -165,12 +170,17 @@ class BMS(BaseBMS):
         """Update battery status information."""
         self._data_final.clear()
         for cmd in BMS._CMDS:
+            self._exp_reply = (cmd,)
             await self._await_reply(BMS._cmd(cmd))
 
         data: BMSsample = {}
         data = BMS._decode_data(self._data_final)
-        data["problem"] = True  # FIXME!
-        data["cell_voltages"] = BMS._cell_voltages(self._data_final[0x2], data.get("cell_count", 0))
-        data["temp_values"] = BMS._temp_sensors(self._data_final[0x3], data.get("temp_sensors", 0))
+        data["problem_code"] = 0x42  # FIXME!
+        data["cell_voltages"] = BMS._cell_voltages(
+            self._data_final[0x2], data.get("cell_count", 0)
+        )
+        data["temp_values"] = BMS._temp_sensors(
+            self._data_final[0x3], data.get("temp_sensors", 0)
+        )
 
         return data
