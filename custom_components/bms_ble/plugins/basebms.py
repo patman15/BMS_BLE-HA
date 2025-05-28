@@ -58,11 +58,6 @@ class BMSmode(IntEnum):
     ABSORPTION = 0x01
     FLOAT = 0x02
 
-    def __str__(self) -> str:
-        """Return a string representation of the BMS mode."""
-        return self.name.lower()
-
-
 class BMSsample(TypedDict, total=False):
     """Dictionary representing a sample of battery management system (BMS) data."""
 

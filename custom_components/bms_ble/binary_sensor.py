@@ -33,7 +33,7 @@ BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
         translation_key=ATTR_BATTERY_CHARGING,
         device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
         attr_fn=lambda data: (
-            {"battery_mode": data.get("battery_mode", BMSmode.UNKNOWN).name}
+            {"battery_mode": data.get("battery_mode", BMSmode.UNKNOWN).name.lower()}
             if "battery_mode" in data
             else {}
         ),
@@ -92,6 +92,8 @@ class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity): 
     @property
     def extra_state_attributes(self) -> dict[str, int | str] | None:  # type: ignore[reportIncompatibleVariableOverride]
         """Return entity specific state attributes, e.g. cell voltages."""
-        if self.entity_description.attr_fn:
-            return self.entity_description.attr_fn(self.coordinator.data)
-        return None
+        return (
+            fn(self.coordinator.data)
+            if (fn := self.entity_description.attr_fn)
+            else None
+        )
