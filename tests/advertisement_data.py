@@ -570,7 +570,9 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/276)
         generate_advertisement_data(
             local_name="xxxxxxx20126\f",  # renamed
-            manufacturer_data={65535: b"\x30\x55\x44\x37\x92\xf2"},  # value: MAC address
+            manufacturer_data={
+                65535: b"\x30\x55\x44\x37\x92\xf2"
+            },  # value: MAC address
             service_uuids=[
                 "00001800-0000-1000-8000-00805f9b34fb",
                 "00001801-0000-1000-8000-00805f9b34fb",
@@ -602,7 +604,9 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/284)
         generate_advertisement_data(
             local_name="ECO-LFP48100-3U-8EC7",
-            manufacturer_data={49834: b"\x37\x01\x8e\xc7\x00\x01\x4c\x03"},  # MAC address correct
+            manufacturer_data={
+                49834: b"\x37\x01\x8e\xc7\x00\x01\x4c\x03"
+            },  # MAC address correct
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
             rssi=-70,
         ),
@@ -659,5 +663,14 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             rssi=-81,
         ),
         "jbd_bms",
+    ),
+    (  # source pcap (https://github.com/patman15/BMS_BLE-HA/issues/303)
+        generate_advertisement_data(
+            local_name="QQ7",
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            manufacturer_data={123: b"\x02\xff\xff"},
+            rssi=-70,
+        ),
+        "braunpwr_bms",
     ),
 ]
