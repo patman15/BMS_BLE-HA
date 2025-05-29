@@ -8,7 +8,14 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue, crc_sum
+from .basebms import (
+    AdvertisementPattern,
+    BaseBMS,
+    BMSmode,
+    BMSsample,
+    BMSvalue,
+    crc_sum,
+)
 
 
 class BMS(BaseBMS):
@@ -242,8 +249,9 @@ class BMS(BaseBMS):
         ]
 
     @staticmethod
-    def _decode_data(data: bytearray, offs: int) -> BMSsample:
+    def _decode_data(data: bytearray, offs: int, sw_majv: int) -> BMSsample:
         """Return BMS data from status message."""
+
         result: BMSsample = {}
         result["cell_count"] = int.from_bytes(
             data[70 + (offs >> 1) : 74 + (offs >> 1)], byteorder="little"
@@ -255,6 +263,13 @@ class BMS(BaseBMS):
             )
             / 1000
         )
+
+        if sw_majv >= 15:
+            result["battery_mode"] = (
+                BMSmode(data[280 + offs])
+                if data[280 + offs] in BMSmode
+                else BMSmode.UNKNOWN
+            )
 
         for key, idx, size, sign, func in BMS._FIELDS:
             result[key] = func(
@@ -276,7 +291,11 @@ class BMS(BaseBMS):
                 data=BMS._cmd(b"\x96"), char=self._char_write_handle
             )
 
-        data: BMSsample = self._decode_data(self._data_final, self._prot_offset)
+        data: BMSsample = self._decode_data(
+            self._data_final,
+            self._prot_offset,
+            int(self._bms_info.get("sw_version", "")[:2]),
+        )
         data["temp_values"] = BMS._temp_sensors(
             self._data_final, self._temp_pos(), int(data.get("temp_sensors", 0))
         )
