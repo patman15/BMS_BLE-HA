@@ -59,6 +59,7 @@ class BMS(BaseBMS):
                 "PKT*",  # Perfektium
                 "gokwh*",
                 "OGR-*",  # OGRPHY
+                "DWC*",  # Vatrer
             )
         ] + [
             AdvertisementPattern(

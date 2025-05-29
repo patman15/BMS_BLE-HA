@@ -660,4 +660,13 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "jbd_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/329)
+        generate_advertisement_data(
+            local_name="DWCK00309J-029",  # Vatrer battery
+            manufacturer_data={49148: "\x34\x37\xc1\xa4"},  # MAC address, wrong
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            rssi=-46,
+        ),
+        "jbd_bms",
+    ),
 ]
