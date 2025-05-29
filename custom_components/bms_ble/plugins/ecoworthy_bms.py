@@ -45,12 +45,12 @@ class BMS(BaseBMS):
             AdvertisementPattern(
                 local_name="ECO-WORTHY*", manufacturer_id=m_id, connectable=True
             )
-            for m_id in (0x3E7C, 0xBB28, 0xC2B4, 0xE0E2)
+            for m_id in (0x3E7C, 0xBB28, 0xC2B4)
         ] + [
             AdvertisementPattern(
-                local_name="DCHOUSE*", manufacturer_id=m_id, connectable=True
+                local_name=pattern, service_uuid=BMS.uuid_services()[0], connectable=True
             )
-            for m_id in (0xE0E2,)
+            for pattern in ("DCHOUSE*", "ECO-WORTHY*")
         ]
 
     @staticmethod
