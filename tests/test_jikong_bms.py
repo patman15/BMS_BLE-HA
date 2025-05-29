@@ -479,6 +479,8 @@ class MockInvalidBleakClient(MockJikongBleakClient):
 
     async def disconnect(self) -> bool:
         """Mock disconnect to raise BleakError."""
+        await asyncio.wait_for(self._task, 0.1)
+        assert self._task.done(), "send task still running!"
         raise BleakError
 
 
@@ -596,7 +598,7 @@ async def test_invalid_response(
 ) -> None:
     """Test data update with BMS returning invalid data."""
 
-    patch_bms_timeout("jikong_bms")
+    patch_bms_timeout()
 
     # return type 0x03 (first requested message) with incorrect CRC
     monkeypatch.setattr(
@@ -622,7 +624,7 @@ async def test_invalid_frame_type(
 ) -> None:
     """Test data update with BMS returning invalid data."""
 
-    patch_bms_timeout("jikong_bms")
+    patch_bms_timeout()
 
     monkeypatch.setattr(
         MockInvalidBleakClient,
@@ -683,7 +685,7 @@ async def test_non_stale_data(
 ) -> None:
     """Test if BMS class is reset if connection is reset."""
 
-    patch_bms_timeout("jikong_bms")
+    patch_bms_timeout()
 
     monkeypatch.setattr(MockJikongBleakClient, "_FRAME", _PROTO_DEFS["JK02_32S"])
 

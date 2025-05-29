@@ -205,7 +205,7 @@ async def test_invalid_response(
 ) -> None:
     """Test data update with BMS returning invalid data."""
 
-    patch_bms_timeout("dpwrcore_bms")
+    patch_bms_timeout()
     patch_bleak_client(MockInvalidBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", dev_name, None, -73))
@@ -222,7 +222,7 @@ async def test_invalid_response(
 async def test_wrong_crc(patch_bleak_client, patch_bms_timeout, dev_name) -> None:
     """Test data update with BMS returning invalid data."""
 
-    patch_bms_timeout("dpwrcore_bms")
+    patch_bms_timeout()
     patch_bleak_client(MockWrongCRCBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", dev_name, None, -73))

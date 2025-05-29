@@ -110,7 +110,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             and list(self._link_q)[-10:] == [False] * 10
         ):
             LOGGER.error(
-                "%s: BMS went silent, triggering reconnect%s!",
+                "%s: BMS is stale, triggering reconnect%s!",
                 self.name,
                 self._rssi_msg(),
             )
@@ -124,7 +124,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
         LOGGER.debug("%s: BMS data update", self.name)
 
         if self._device_stale():
-            await self._device.disconnect()
+            await self._device.disconnect(reset=True)
 
         start: Final[float] = monotonic()
         try:

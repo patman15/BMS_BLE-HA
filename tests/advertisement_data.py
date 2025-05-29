@@ -664,6 +664,16 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "jbd_bms",
     ),
+    (  # proxy LOG (https://github.com/patman15/BMS_BLE-HA/issues/85)
+        generate_advertisement_data( # Bulltron battery
+            local_name="DL-FB4C2E0000000", # MAC address (Bouffalo Lab)
+            manufacturer_data={771: " \x00\xB4\xC2\xE0\x00\x00\x00\x44\x4C\x00"},
+            service_uuids=[
+            ],
+            rssi=-81,
+        ),
+        "daly_bms",
+    ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/326)
         generate_advertisement_data(
             local_name="DCHOUSE 01_4F9F",
