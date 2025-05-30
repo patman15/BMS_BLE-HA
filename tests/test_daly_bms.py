@@ -145,6 +145,24 @@ async def test_update(
     await bms.disconnect()
 
 
+async def test_mos_excl(patch_bleak_client) -> None:
+    """Test Daly BMS data update."""
+
+    patch_bleak_client(MockDalyBleakClient)
+
+    for name_no_mos in BMS.MOS_NOT_AVAILABLE:
+        bms = BMS(
+            generate_ble_device("cc:cc:cc:cc:cc:cc", f"{name_no_mos}MockBLEdevice", rssi=-73),
+        )
+
+        assert await bms.async_update() == ref_value() | {
+            "temperature": 21.5,
+            "temp_values": [20.0, 21.0, 22.0, 23.0],
+        }
+
+        await bms.disconnect()
+
+
 async def test_too_short_frame(patch_bleak_client) -> None:
     """Test data update with BMS returning valid but too short data."""
 
@@ -187,7 +205,7 @@ async def test_invalid_response(
 ) -> None:
     """Test data update with BMS returning invalid data."""
 
-    patch_bms_timeout("daly_bms")
+    patch_bms_timeout()
 
     monkeypatch.setattr(
         MockDalyBleakClient, "_response", lambda _s, _c, _d: wrong_response

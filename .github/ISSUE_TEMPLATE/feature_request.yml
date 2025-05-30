@@ -5,7 +5,7 @@ labels: "enhancement"
 body:
 - type: markdown
   attributes:
-    value: Before you open a new feature request, search through the [existing feature requests](https://github.com/patman15/BMS_BLE-HA/issues?q=is%3Aissue) to see if others have had the same idea. Please select a proper title, i.e., **do not** use `No supported devices found via Bluetooth`. Instead, please put the type of the BMS and/or battery into the title, e.g. `<my_battery_type> not detected`.
+    value: Before you open a new feature request, search through the [existing feature requests](https://github.com/patman15/BMS_BLE-HA/issues?q=is%3Aissue%20label%3A%22enhancement%22) to see if others have had the same idea. Please select a proper title, i.e., **do not** use `No supported devices found via Bluetooth`. Instead, please put the type of the BMS and/or battery into the title, e.g. `<my_battery_type> not detected`.
 - type: checkboxes
   attributes:
     label: Checklist
@@ -16,7 +16,7 @@ body:
         required: true        
       - label: This only contains 1 feature request (if you have multiple feature requests, open one feature request for each feature request).
         required: true
-      - label: This issue is not a duplicate of any [previous feature requests](https://github.com/patman15/BMS_BLE-HA/issues?q=is%3Aissue+label%3A%22Feature+Request%22+).
+      - label: This issue is not a duplicate of any [previous enhancement requests](https://github.com/patman15/BMS_BLE-HA/issues?q=is%3Aissue%20label%3A%22enhancement%22).
         required: true
 
 - type: textarea
