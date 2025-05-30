@@ -13,8 +13,10 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 * [Features](#features)
 * [Installation](#installation)
 * [Removing the Integration](#removing-the-integration)
-* [Known Issues](#known-issues)
 * [Troubleshooting](#troubleshooting)
+    * [Known Issues](#known-issues)
+    * [Device is not Recognized](#if-your-device-is-not-recognized)
+    * [Support Issues](#in-case-you-have-troubles-youd-like-to-have-help-with)
 * [Energy Dashboard Integration](#energy-dashboard-integration)
 * [FAQ](FAQ)
 * [Outlook](#outlook)
@@ -86,16 +88,7 @@ Platform | Description | Unit | Decription | optional Attributes
 `sensor`* | link quality  | `%` | successful BMS queries from the last hundred update periods
 `sensor`* | RSSI          | `dBm`| received signal strength indicator
 
-*) In case sensors are reported `unavailable` please enable the diagnostic sensors, i.e. `RSSI` and `link quality` and check your connection quality. The value of `link quality` results from (temporarily) bad `RSSI` values, which are impacted by disturbances of the Bluetooth communication.
- 
-Quality | link quality [%] | RSSI [dBm]
---  | -- | --
-excellent | 98 to 100 | -50 to high
-good | 90 to 98 | -60 to -70
-fair | 80 to 90 | -70 to -80
-weak | 60 to 80 | -80 to -90
-bad | 0 to 60  | -90 to low
-
+*) sensors are disabled by default
 
 ## Installation
 BMS_BLE is a default repository in [HACS](https://hacs.xyz/). Please follow the [guidelines on how to use HACS](https://hacs.xyz/docs/use/) if you haven't installed it yet. To add the integration to your Home Assistant instance, use this My button:
@@ -122,7 +115,12 @@ This integration follows standard integration removal. No extra steps are requir
 1. Next to the entry, select the three-dot menu. Then, select Delete.
 </details>
 
-## Known Issues
+## Troubleshooting
+
+> [!NOTE]
+> A lot of transient issues are due to problems with Bluetooth adapters. Most prominent example is the performance limitation of the [internal Raspberry Pi BT adapter](https://www.home-assistant.io/integrations/bluetooth/#cypress-based-adapters), resulting in, e.g., sometimes wrong data, when you have multiple devices. Please check the Home Assistant [Bluetooth integration](https://www.home-assistant.io/integrations/bluetooth/) page for known issues and consider using a [recommended high-performance adapter](https://www.home-assistant.io/integrations/bluetooth/#known-working-high-performance-adapters).
+
+### Known Issues
 
 <details><summary>Elektronicx, Lithtech batteries</summary>
 Bluetooth is turned off, when there is no current. Thus, device will get unavailble / cannot be added.
@@ -137,11 +135,6 @@ These batteries need a shorter interval between queries. Be a bit patient to get
 The internal Bluetooth adapter issues <code>AT</code> commands in regular intervals which can interfer with BMS messages causing them to be corrupted. This impacts data availability (<code>link quality</code>).
 </details>
 
-## Troubleshooting
-
-> [!NOTE]
-> A lot of transient issues are due to problems with Bluetooth adapters. Most prominent example is the performance limitation of the [internal Raspberry Pi BT adapter](https://www.home-assistant.io/integrations/bluetooth/#cypress-based-adapters), resulting in, e.g., sometimes wrong data, when you have multiple devices. Please check the Home Assistant [Bluetooth integration](https://www.home-assistant.io/integrations/bluetooth/) page for known issues and consider using a [recommended high-performance adapter](https://www.home-assistant.io/integrations/bluetooth/#known-working-high-performance-adapters).
-
 ### If your device is not recognized
 
 1. Check that your BMS type is listed as [supported device](#supported-devices)
@@ -153,6 +146,23 @@ The internal Bluetooth adapter issues <code>AT</code> commands in regular interv
 1. If above points did not help, please go to the [bluetooth integration](https://my.home-assistant.io/redirect/integration/?domain=bluetooth). On your BT adapter select `configure`.
     1.  Verify that you have connection slots available.
     1.  Go to the [advertisement monitor](https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/) and click the device in question. Please provide the information via **`copy to clipboard`** to [a new issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) giving your BMS/battery type in the title.
+
+### Some/all sensors go `unavailable` temporarily or permanently
+In case sensors are reported `unavailable` please enable the diagnostic sensors, i.e. `RSSI` and `link quality` and check your connection quality. The value of `link quality` results from (temporarily) bad `RSSI` values, which are impacted by disturbances of the Bluetooth communication. Your quality should be at least *fair* according to the following table:
+ 
+Quality | link quality [%] | RSSI [dBm]
+--  | -- | --
+excellent | 98 to 100 | -60 to high
+good | 90 to 98 | -60 to -75
+fair | 80 to 90 | -75 to -80
+weak | 60 to 80 | -80 to -90
+bad | 0 to 60  | -90 to low
+
+Verify that you have a proper Bluetooth setup according to the recommendations for the Home Assistant Bluetooth Integrations, see [this note](#troubleshooting).
+In case your `RSSI` level is *fair* or better, but still the sensors show `unknown`, please follow the [instructions for opening an issue](#in-case-you-have-troubles-youd-like-to-have-help-with). Please attach
+- a debug log  as a file,
+- diagnosis data as a file, and
+- a 24hrs diagram of `RSSI` and `link quality` sensor.
 
 ### In case you have troubles you'd like to have help with
 
