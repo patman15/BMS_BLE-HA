@@ -42,14 +42,26 @@ class BMS(BaseBMS):
     @staticmethod
     def matcher_dict_list() -> list[AdvertisementPattern]:
         """Provide BluetoothMatcher definition."""
-        return [  # Lithtech Energy (2x), Volthium
-            AdvertisementPattern(local_name=pattern, connectable=True)
-            for pattern in ("L-12V???AH-*", "LT-12V-*", "V-12V???Ah-*")
-        ] + [  # Fliteboard, Electronix battery
-            {"local_name": "libatt*", "manufacturer_id": 21320, "connectable": True},
-            {"local_name": "LT-*", "manufacturer_id": 33384, "connectable": True},
-            {"local_name": "SV12V*", "manufacturer_id": 33384, "connectable": True},
-        ]
+        return (
+            [  # Lithtech Energy (2x), Volthium
+                AdvertisementPattern(local_name=pattern, connectable=True)
+                for pattern in ("L-12V???AH-*", "LT-12V-*", "V-12V???Ah-*")
+            ]
+            + [  # Fliteboard, Electronix battery
+                {
+                    "local_name": "libatt*",
+                    "manufacturer_id": 21320,
+                    "connectable": True,
+                },
+                {"local_name": "SV12V*", "manufacturer_id": 33384, "connectable": True},
+            ]
+            + [  # LiTime
+                AdvertisementPattern(
+                    local_name="LT-*", manufacturer_id=m_id, connectable=True
+                )
+                for m_id in (33384, 22618)
+            ]
+        )
 
     @staticmethod
     def device_info() -> dict[str, str]:
