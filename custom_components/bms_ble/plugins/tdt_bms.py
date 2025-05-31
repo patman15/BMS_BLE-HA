@@ -42,7 +42,7 @@ class BMS(BaseBMS):
         super().__init__(__name__, ble_device, reconnect)
         self._data_final: dict[int, bytearray] = {}
         self._cmd_heads: list[int] = BMS._CMD_HEADS
-        self._exp_len: int = BMS._INFO_LEN
+        self._exp_len: int = 0
 
     @staticmethod
     def matcher_dict_list() -> list[AdvertisementPattern]:
@@ -92,7 +92,6 @@ class BMS(BaseBMS):
             self._log.debug("error unlocking BMS: %X", ret)
 
         await super()._init_connection()
-        self._exp_len = BMS._INFO_LEN
 
     def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
