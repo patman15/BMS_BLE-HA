@@ -113,7 +113,7 @@ class BMS(BaseBMS):
         )
 
         # verify that data is long enough
-        if len(self._data) < self._exp_len:
+        if len(self._data) < max(BMS._INFO_LEN, self._exp_len):
             return
 
         if self._data[-1] != BMS._TAIL:
