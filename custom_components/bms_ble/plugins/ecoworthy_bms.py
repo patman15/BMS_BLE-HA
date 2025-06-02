@@ -32,7 +32,7 @@ class BMS(BaseBMS):
     _FIELDS_V2: Final[
         list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]
     ] = [
-        (*field[:-1], (lambda x: float(x / 10)) if field[0] == "current" else field[-1])
+        (*field[:-1], (lambda x: x / 10) if field[0] == "current" else field[-1])
         for field in _FIELDS_V1
     ]
 
