@@ -123,6 +123,10 @@ This integration follows standard integration removal. No extra steps are requir
 
 ### Known Issues
 
+<details><summary>ECO-WORTHY batteries "<code>ECOxxxx</code>"</summary>
+ECO-WORTHY batteries that show up as <code>ECOxxxx</code> use classic Bluetooth and do not support Bluetooth Low Energy (BLE). Thus, they unfortunately cannot be integrated.
+The advertisement contains <code>{"name":"ECOxxxx","service_uuids":["0000ff00-0000-1000-8000-00805f9b34fb","00000001-0000-1000-8000-00805f9b34fb"]</code>
+</details>
 <details><summary>Elektronicx, Lithtech batteries</summary>
 Bluetooth is turned off, when there is no current. Thus, device will get unavailble / cannot be added.
 </details>

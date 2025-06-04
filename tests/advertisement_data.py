@@ -391,7 +391,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source LOG, proxy (https://github.com/patman15/BMS_BLE-HA/issues/164#issue-2825586172)
         generate_advertisement_data(
             local_name="ECO-WORTHY 02_B8EF",
-            manufacturer_data={49844: b"\xe0\xfa\xb8\xf0"},  # MAC address, correct
+            manufacturer_data={49844: b"\xe0\xfa\xb8\xf0"},  # MAC address, correct, public
             service_uuids=[
                 "00001800-0000-1000-8000-00805f9b34fb",
                 "00001801-0000-1000-8000-00805f9b34fb",
@@ -544,7 +544,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source BTctl (https://github.com/patman15/BMS_BLE-HA/issues/253)
         generate_advertisement_data(
             local_name="ECO-WORTHY 02_50DB",
-            manufacturer_data={47912: b"\xed\x00\x50\xdc"},  # MAC address correct
+            manufacturer_data={47912: b"\xed\x00\x50\xdc"},  # MAC address, correct, public
             rssi=-49,
         ),
         "ecoworthy_bms",
@@ -595,7 +595,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/286)
         generate_advertisement_data(
             local_name="ECO-WORTHY 0B_5AD4",
-            manufacturer_data={57570: b"\x5a\x78\x3c\x31"},  # MAC address
+            manufacturer_data={57570: b"\x5a\x78\x3c\x31"},  # MAC address, correct, private
             service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
             rssi=-86,
         ),
@@ -615,7 +615,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source proxy LOG (https://github.com/patman15/BMS_BLE-HA/issues/295)
         generate_advertisement_data(
             local_name="ECO-WORTHY 02_3DDF",
-            manufacturer_data={15996: b"\x82\x1c\x3d\xe0"},  # MAC address correct
+            manufacturer_data={15996: b"\x82\x1c\x3d\xe0"},  # MAC address, correct, public
             rssi=-49,
         ),
         "ecoworthy_bms",

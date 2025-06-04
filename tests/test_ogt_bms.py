@@ -6,7 +6,6 @@ from typing import Final
 from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
-from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 import pytest
 
@@ -105,48 +104,6 @@ class MockOGTBleakClient(MockBleakClient):
         )
 
 
-class MockInvalidBleakClient(MockOGTBleakClient):
-    """Emulate an invalid BleakClient."""
-
-    async def _response(
-        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
-    ) -> bytearray:
-        if isinstance(char_specifier, str) and normalize_uuid_str(
-            char_specifier
-        ) == normalize_uuid_str("fff6"):
-            reg: Final[int] = int(
-                bytearray((bytearray(data)[x] ^ self.KEY) for x in range(4, 6)).decode(
-                    encoding="ascii"
-                ),
-                16,
-            )
-            if reg == 0x8:
-                return bytearray(b"")
-
-            return bytearray(b"invalid\xf0value")
-
-        return bytearray()
-
-    async def write_gatt_char(
-        self,
-        char_specifier: BleakGATTCharacteristic | int | str | UUID,
-        data: Buffer,
-        response: bool | None = None,
-    ) -> None:
-        """Issue write command to GATT."""
-        # await super().write_gatt_char(char_specifier, data, response)
-        assert self._notify_callback is not None
-        value = await self._response(char_specifier, data)
-
-        # test read timeout on register 8 (valid for A and B type BMS)
-        if bytearray(data)[4:6] != bytearray(b" ("):
-            self._notify_callback(MockRespChar(None, lambda: 0), value)
-
-    async def disconnect(self) -> bool:
-        """Mock disconnect to raise BleakError."""
-        raise BleakError
-
-
 async def test_update(patch_bleak_client, ogt_bms_fixture, reconnect_fixture) -> None:
     """Test OGT BMS data update."""
 
@@ -242,6 +199,7 @@ async def test_update_16s(monkeypatch, patch_bleak_client) -> None:
         (bytearray(b";BT<#RUN S\x1d\x1a"), "invalid_character"),
         (bytearray(b";BT<Ubb\x7f\x10"), "BMS_error"),
         (bytearray(b"invalid\xf0value"), "invalid_value"),
+        (bytearray(b";BT<UQ S\x1d\x1a"), "wrong_reg"),
     ],
     ids=lambda param: param[1],
 )
