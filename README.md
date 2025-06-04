@@ -60,6 +60,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Seplos v2 (show up as `BP0?`)
 - Seplos v3 (show up as `SP[0,1,4-6]`&#x2026;)
 - TDT BMS
+    - Wattcycle batteries
 
 > [!TIP]
 > New device types can be easily added via the plugin architecture of this integration. See the [contribution guidelines](CONTRIBUTING.md) for details.

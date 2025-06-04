@@ -84,9 +84,9 @@ class MockTDTBleakClient(MockBleakClient):
     HEAD_CMD: Final[int] = 0x7E
     TAIL_CMD: Final[int] = 0x0D
     CMDS: Final[dict[int, bytearray]] = {
-        0x8C: bytearray(b"\x00\x01\x03\x00\x8c\x00\x00\x99\x42"),
-        0x8D: bytearray(b"\x00\x01\x03\x00\x8d\x00\x00\x59\x13"),
-        0x92: bytearray(b"\x00\x01\x03\x00\x92\x00\x00\x9f\x22"),
+        0x8C: bytearray(b"\x00\x01\x03\x00\x8c\x00\x00"),
+        0x8D: bytearray(b"\x00\x01\x03\x00\x8d\x00\x00"),
+        0x92: bytearray(b"\x00\x01\x03\x00\x92\x00\x00"),
     }
     RESP: Final[dict[int, bytearray]] = {
         0x8C: bytearray(  # 16 celll message
@@ -145,7 +145,7 @@ class MockTDTBleakClient(MockBleakClient):
             self._notify_callback
         ), "write to characteristics but notification not enabled"
 
-        resp = self._response(char_specifier, data)
+        resp: bytearray = self._response(char_specifier, data)
         for notify_data in [
             resp[i : i + BT_FRAME_SIZE] for i in range(0, len(resp), BT_FRAME_SIZE)
         ]:
@@ -171,12 +171,10 @@ async def test_update_16s_6t(patch_bleak_client, reconnect_fixture) -> None:
         reconnect_fixture,
     )
 
-    result = await bms.async_update()
-
-    assert result == ref_value()["16S6T"]
+    assert await bms.async_update() == ref_value()["16S6T"]
 
     # query again to check already connected state
-    result = await bms.async_update()
+    await bms.async_update()
     assert bms._client and bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
@@ -207,11 +205,44 @@ async def test_update_4s_4t(monkeypatch, patch_bleak_client, reconnect_fixture) 
         reconnect_fixture,
     )
 
-    result = await bms.async_update()
-    assert result == ref_value()["4S4T"]
+    assert await bms.async_update() == ref_value()["4S4T"]
 
     # query again to check already connected state
-    _ = await bms.async_update()
+    await bms.async_update()
+    assert bms._client and bms._client.is_connected is not reconnect_fixture
+
+    await bms.disconnect()
+
+async def test_update_0x1e_head(monkeypatch, patch_bms_timeout, patch_bleak_client, reconnect_fixture) -> None:
+    """Test TDT BMS data update."""
+
+    resp_0x1e: Final[dict[int, bytearray]] = {
+        0x8C: bytearray(  # 4 cell message
+            b"\x1e\x00\x01\x03\x00\x8c\x00\x20\x04\x0c\xe1\x0c\xdf\x0c\xe1\x0c"
+            b"\xdc\x04\x0b\x93\x0b\x9b\x0b\x8d\x0b\x8c\x40\x00\x05\x26\x02\x3f"
+            b"\x04\x1c\x00\x08\x03\xe8\x00\x37\xaf\x12\x0d"
+        ),
+        0x8D: bytearray(
+            b"\x1e\x00\x41\x03\x00\x8d\x00\x18\x04\x00\x00\x00\x00\x04\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x06\x09\x00\x00\x18\x00\x00\x00"
+            b"\xdf\x5e\x0d"
+        ),
+    }
+
+    monkeypatch.setattr(MockTDTBleakClient, "HEAD_CMD", 0x1E)
+    monkeypatch.setattr(MockTDTBleakClient, "RESP", resp_0x1e)
+    patch_bms_timeout("tdt_bms")
+    patch_bleak_client(MockTDTBleakClient)
+
+    bms = BMS(
+        generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
+        reconnect_fixture,
+    )
+
+    assert await bms.async_update() == ref_value()["4S4T"]
+
+    # query again to check already connected state
+    await bms.async_update()
     assert bms._client and bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
