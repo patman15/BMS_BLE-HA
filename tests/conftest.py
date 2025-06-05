@@ -89,9 +89,11 @@ def bms_data_fixture(request) -> BMSsample:
 def patch_bms_timeout(monkeypatch):
     """Fixture to patch BMS.TIMEOUT for different BMS classes."""
 
-    def _patch_timeout(bms_class: str, timeout: float = 0.1) -> None:
+    def _patch_timeout(bms_class: str | None = None, timeout: float = 0.001) -> None:
+        patch_class: str = f"{bms_class}.BMS.TIMEOUT" if bms_class else "basebms.BLEAK_TRANSIENT_BACKOFF_TIME"
         monkeypatch.setattr(
-            f"custom_components.bms_ble.plugins.{bms_class}.BMS.TIMEOUT", timeout
+            f"custom_components.bms_ble.plugins.{patch_class}",
+            timeout,
         )
 
     return _patch_timeout
@@ -279,8 +281,8 @@ class MockBMS(BaseBMS):
     ) -> None:
         """Retrieve BMS data update."""
 
-    async def disconnect(self) -> None:
-        """Disconnect connection to BMS if active."""
+    # async def disconnect(self) -> None:
+    #     """Disconnect connection to BMS if active."""
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""

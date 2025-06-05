@@ -189,7 +189,7 @@ async def test_invalid_response(
 ) -> None:
     """Test data up date with BMS returning invalid data."""
 
-    patch_bms_timeout("roypow_bms")
+    patch_bms_timeout()
 
     monkeypatch.setattr(
         MockRoyPowBleakClient,
@@ -214,7 +214,7 @@ async def test_missing_message(
 ) -> None:
     """Test data up date with BMS returning no message type 4 but 8."""
 
-    patch_bms_timeout("roypow_bms")
+    patch_bms_timeout()
 
     monkeypatch.setattr(
         MockRoyPowBleakClient,
