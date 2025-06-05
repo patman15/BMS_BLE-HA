@@ -160,6 +160,14 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "ej_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/350)
+        generate_advertisement_data(
+            local_name="LT-24100B-A00249",
+            manufacturer_data= {22618:"\xc8\x47\x80\x0b\xb6\x54"},
+            rssi=-55,
+        ),
+        "ej_bms",
+    ),
     (  # source LOG, https://github.com/patman15/BMS_BLE-HA/issues/59
         generate_advertisement_data(
             local_name="170R000121",
@@ -302,7 +310,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         generate_advertisement_data(  # Supervolt battery
             local_name="SX100P-B230201",
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
-            manufacturer_data={31488: "\x02\xff\xff\x7d"},
+            manufacturer_data={31488: b"\x02\xff\xff\x7d"},
         ),
         "jbd_bms",
     ),
@@ -391,7 +399,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source LOG, proxy (https://github.com/patman15/BMS_BLE-HA/issues/164#issue-2825586172)
         generate_advertisement_data(
             local_name="ECO-WORTHY 02_B8EF",
-            manufacturer_data={49844: b"\xe0\xfa\xb8\xf0"},  # MAC address, correct
+            manufacturer_data={49844: b"\xe0\xfa\xb8\xf0"},  # MAC address, correct, public
             service_uuids=[
                 "00001800-0000-1000-8000-00805f9b34fb",
                 "00001801-0000-1000-8000-00805f9b34fb",
@@ -544,7 +552,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source BTctl (https://github.com/patman15/BMS_BLE-HA/issues/253)
         generate_advertisement_data(
             local_name="ECO-WORTHY 02_50DB",
-            manufacturer_data={47912: b"\xed\x00\x50\xdc"},  # MAC address correct
+            manufacturer_data={47912: b"\xed\x00\x50\xdc"},  # MAC address, correct, public
             rssi=-49,
         ),
         "ecoworthy_bms",
@@ -570,7 +578,9 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/276)
         generate_advertisement_data(
             local_name="xxxxxxx20126\f",  # renamed
-            manufacturer_data={65535: b"\x30\x55\x44\x37\x92\xf2"},  # value: MAC address
+            manufacturer_data={
+                65535: b"\x30\x55\x44\x37\x92\xf2"
+            },  # value: MAC address
             service_uuids=[
                 "00001800-0000-1000-8000-00805f9b34fb",
                 "00001801-0000-1000-8000-00805f9b34fb",
@@ -593,7 +603,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/286)
         generate_advertisement_data(
             local_name="ECO-WORTHY 0B_5AD4",
-            manufacturer_data={57570: b"\x5a\x78\x3c\x31"},  # MAC address
+            manufacturer_data={57570: b"\x5a\x78\x3c\x31"},  # MAC address, correct, private
             service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
             rssi=-86,
         ),
@@ -602,7 +612,9 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/284)
         generate_advertisement_data(
             local_name="ECO-LFP48100-3U-8EC7",
-            manufacturer_data={49834: b"\x37\x01\x8e\xc7\x00\x01\x4c\x03"},  # MAC address correct
+            manufacturer_data={
+                49834: b"\x37\x01\x8e\xc7\x00\x01\x4c\x03"
+            },  # MAC address correct
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
             rssi=-70,
         ),
@@ -611,7 +623,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source proxy LOG (https://github.com/patman15/BMS_BLE-HA/issues/295)
         generate_advertisement_data(
             local_name="ECO-WORTHY 02_3DDF",
-            manufacturer_data={15996: "\x82\x1c\x3d\xe0"},  # MAC address correct
+            manufacturer_data={15996: b"\x82\x1c\x3d\xe0"},  # MAC address, correct, public
             rssi=-49,
         ),
         "ecoworthy_bms",
@@ -671,5 +683,41 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             ],
         ),
         "neey_bms",
+    ),
+    (  # proxy LOG (https://github.com/patman15/BMS_BLE-HA/issues/85)
+        generate_advertisement_data(  # Bulltron battery
+            local_name="DL-FB4C2E0000000",  # MAC address (Bouffalo Lab)
+            manufacturer_data={771: " \x00\xb4\xc2\xe0\x00\x00\x00\x44\x4c\x00"},
+            service_uuids=[],
+            rssi=-81,
+        ),
+        "daly_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/326)
+        generate_advertisement_data(
+            local_name="DCHOUSE 01_4F9F",
+            rssi=-68,
+            manufacturer_data={57570: b"\x5a\x72\xa7\x45"},  # MAC address correct
+            service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
+        ),
+        "ecoworthy_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/329)
+        generate_advertisement_data(
+            local_name="DWCK00309J-029",  # Vatrer battery
+            manufacturer_data={49148: b"\x34\x37\xc1\xa4"},  # MAC address, wrong
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            rssi=-46,
+        ),
+        "jbd_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/346)
+        generate_advertisement_data(
+            local_name="LT-12100BG-A06359",
+            manufacturer_data={22618: b"\x36\x34\x24\x62\xa2\x6b"},
+            service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
+            rssi=-87,
+        ),
+        "ej_bms",
     ),
 ]

@@ -160,7 +160,7 @@ async def test_invalid_response(
 ) -> None:
     """Test data up date with BMS returning invalid data."""
 
-    patch_bms_timeout("abc_bms")
+    patch_bms_timeout()
 
     monkeypatch.setattr(
         MockABCBleakClient,

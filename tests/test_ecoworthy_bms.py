@@ -15,8 +15,8 @@ from custom_components.bms_ble.plugins.ecoworthy_bms import BMS
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
-_PROTO_DEFS: Final[dict[str, dict[int, bytearray]]] = {
-    "02": {  # protocol version 02
+_PROTO_DEFS: Final[dict[int, dict[int, bytearray]]] = {
+    0x1: {  # protocol version 1
         0xA1: bytearray(
             b"\xa1\x00\x00\x00\x65\x00\x00\x00\x00\x00\x18\x01\x03\x44\x00\x18\x00\x48\x00\x64\x05"
             b"\x31\xff\x8e\x00\x00\x27\x10\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01"
@@ -31,26 +31,26 @@ _PROTO_DEFS: Final[dict[str, dict[int, bytearray]]] = {
             b"\x00\xc0\x00\xbe\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18\x97\x6a"
         ),
     },
-    "0B": {  # protocol version 0B, MAC in front
+    0x2: {  # protocol version 2, MAC in front
         0xA1: bytearray(
-            b"\xe2\xe0\x5a\x78\x3c\x31\xa1\x00\x00\x08\x03\x44\x00\x08\x00\x64\x00\x64\x05\x84\x00"
-            b"\x00\x00\x00\x27\x10\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\xe2\xe7\x79\x8f\x4c\x66\xa1\x00\x00\x08\x03\x44\x00\x08\x00\x62\x00\x64\x05\x30\xff"
+            b"\xc4\x00\x00\x27\x10\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x02"
             b"\x00\x00\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xb4\xf2"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x3d\x87"
         ),
         0xA2: bytearray(  # 4 cells, 2 temp sensors
-            b"\xe2\xe0\x5a\x78\x3c\x31\xa2\x00\x00\x08\x03\x56\x00\x04\x0d\x8d\x0d\xec\x0d\xe4\x0d"
-            b"\xd3\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+            b"\xe2\xe7\x79\x8f\x4c\x66\xa2\x00\x00\x08\x03\x56\x00\x04\x0c\xfb\x0c\xfc\x0c\xfb\x0c"
+            b"\xf5\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
             b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
-            b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x02\x00\x87\x00\x76"
-            b"\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xcd\x72"
+            b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x02\x00\xdc\x00\xd6"
+            b"\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18\x30\x58"
         ),
     },
 }
 
 
-_RESULT_DEFS: Final[dict[str, BMSsample]] = {
-    "02": {
+_RESULT_DEFS: Final[dict[int, BMSsample]] = {
+    0x1: {
         "cell_count": 4,
         "temp_sensors": 3,
         "voltage": 13.29,
@@ -70,30 +70,31 @@ _RESULT_DEFS: Final[dict[str, BMSsample]] = {
         "problem": False,
         "problem_code": 0,
     },
-    "0B": {
+    0x2: {
         "cell_count": 4,
         "temp_sensors": 2,
-        "voltage": 14.12,
-        "current": 0.0,
-        "battery_level": 100,
-        "cycle_charge": 100.0,
+        "voltage": 13.28,
+        "current": -6.0,
+        "battery_level": 98,
+        "cycle_charge": 98.0,
         "design_capacity": 100,
-        "temperature": 12.65,
-        "cycle_capacity": 1412.0,
-        "power": 0.0,
+        "temperature": 21.7,
+        "cycle_capacity": 1301.44,
+        "power": -79.68,
         "battery_charging": False,
-        "cell_voltages": [3.469, 3.564, 3.556, 3.539],
-        "temp_values": [13.5, 11.8],
-        "delta_voltage": 0.095,
+        "cell_voltages": [3.323, 3.324, 3.323, 3.317],
+        "temp_values": [22.0, 21.4],
+        "delta_voltage": 0.007,
         "problem": False,
         "problem_code": 0,
+        "runtime": 58799,
     },
 }
 
 
 @pytest.fixture(
     name="protocol_type",
-    params=["02", "0B"],
+    params=[0x1, 0x2],
 )
 def proto(request: pytest.FixtureRequest) -> str:
     """Protocol fixture."""
@@ -153,16 +154,14 @@ async def test_update(
     patch_bleak_client(MockECOWBleakClient)
 
     bms = BMS(
-        generate_ble_device("E2:E0:5A:78:3C:31", "MockBLEdevice", None, -73),
+        generate_ble_device("e2:e7:79:8f:4c:66", "MockBLEdevice", None, -73),
         reconnect_fixture,
     )
 
-    result = await bms.async_update()
-
-    assert result == _RESULT_DEFS[protocol_type]
+    assert await bms.async_update() == _RESULT_DEFS[protocol_type]
 
     # query again to check already connected state
-    result = await bms.async_update()
+    await bms.async_update()
     assert bms._client and bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
@@ -289,7 +288,7 @@ async def test_problem_response(
 ) -> None:
     """Test data update with BMS returning error flags."""
 
-    monkeypatch.setattr(MockECOWBleakClient, "RESP", _PROTO_DEFS["02"])
+    monkeypatch.setattr(MockECOWBleakClient, "RESP", _PROTO_DEFS[0x1])
     monkeypatch.setattr(
         MockECOWBleakClient,
         "RESP",
@@ -304,7 +303,7 @@ async def test_problem_response(
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
     result: BMSsample = await bms.async_update()
-    assert result == _RESULT_DEFS["02"] | {
+    assert result == _RESULT_DEFS[0x1] | {
         "problem": True,
         "problem_code": 1 << (0 if problem_response[1] == "first_bit" else 15),
     }

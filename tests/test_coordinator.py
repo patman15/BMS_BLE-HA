@@ -1,5 +1,6 @@
 """Test the BLE Battery Management System update coordinator."""
 
+from collections.abc import Awaitable, Callable
 import contextlib
 from typing import Final
 
@@ -127,10 +128,15 @@ async def test_stale_recovery(
     flags: dict[str, bool] = {"disconnect_called": False}
     bms_data: Final[MockBMS] = MockBMS()
     bms_nodata: Final[MockBMS] = MockBMS(ret_value={})
+    bms_disconnect: Final[Callable[[MockBMS, bool], Awaitable[None]]] = (
+        MockBMS.disconnect
+    )
 
-    async def _mock_disconnect(_self) -> bool:
+    async def _mock_disconnect(self, reset: bool = False) -> bool:
         """Mock disconnect method."""
+        flags["reset"] = reset
         flags["disconnect_called"] = True
+        await bms_disconnect(self, reset)
         return True
 
     monkeypatch.setattr(MockBMS, "disconnect", _mock_disconnect)
@@ -172,3 +178,4 @@ async def test_stale_recovery(
     assert not coordinator.last_update_success
     assert coordinator.link_quality == 4
     assert flags["disconnect_called"]
+    assert flags["reset"] is True, "Reset flag should be set on stale recovery"

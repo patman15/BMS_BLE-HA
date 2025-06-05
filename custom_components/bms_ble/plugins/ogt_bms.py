@@ -45,6 +45,7 @@ class BMS(BaseBMS):
             self.name[10:],
             self._key,
         )
+        self._exp_reply: int = 0x0
         self._response: BMS._Response = BMS._Response(False, 0, 0)
         self._REGISTERS: dict[int, tuple[BMSvalue, int, Callable[[int], Any]]]
         if self._type == "A":
@@ -129,6 +130,11 @@ class BMS(BaseBMS):
             self._log.debug("response data is invalid")
             return
 
+        if self._response.reg not in (-1, self._exp_reply):
+            self._log.debug("wrong register response")
+            return
+
+        self._exp_reply = -1
         self._data_event.set()
 
     def _ogt_response(self, resp: bytearray) -> _Response:
@@ -171,6 +177,7 @@ class BMS(BaseBMS):
         result: BMSsample = {}
 
         for reg in list(self._REGISTERS):
+            self._exp_reply = reg
             await self._await_reply(
                 data=self._ogt_command(reg, self._REGISTERS[reg][BMS.IDX_LEN])
             )
@@ -190,6 +197,7 @@ class BMS(BaseBMS):
         # read cell voltages for type B battery
         if self._type == "B":
             for cell_reg in range(16):
+                self._exp_reply = 63 - cell_reg
                 await self._await_reply(data=self._ogt_command(63 - cell_reg, 2))
                 if self._response.reg < 0:
                     self._log.debug("cell count: %i", cell_reg)

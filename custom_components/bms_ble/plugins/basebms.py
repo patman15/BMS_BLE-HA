@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 import asyncio
 from collections.abc import Callable
+from enum import IntEnum
 import logging
 from statistics import fmean
 from typing import Any, Final, Literal, TypedDict
@@ -11,7 +12,7 @@ from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
-from bleak_retry_connector import establish_connection
+from bleak_retry_connector import BLEAK_TRANSIENT_BACKOFF_TIME, establish_connection
 
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.components.bluetooth.match import ble_device_matches
@@ -19,6 +20,7 @@ from homeassistant.loader import BluetoothMatcherOptional
 
 type BMSvalue = Literal[
     "battery_charging",
+    "battery_mode",
     "battery_level",
     "current",
     "power",
@@ -48,10 +50,19 @@ type BMSpackvalue = Literal[
 ]
 
 
+class BMSmode(IntEnum):
+    """Enumeration of BMS modes."""
+
+    UNKNOWN = -1
+    BULK = 0x00
+    ABSORPTION = 0x01
+    FLOAT = 0x02
+
 class BMSsample(TypedDict, total=False):
     """Dictionary representing a sample of battery management system (BMS) data."""
 
     battery_charging: bool  # True: battery charging
+    battery_mode: BMSmode  # BMS charging mode
     battery_level: int | float  # [%]
     current: float  # [A] (positive: charging)
     power: float  # [W] (positive: charging)
@@ -93,8 +104,9 @@ class AdvertisementPattern(TypedDict, total=False):
 class BaseBMS(ABC):
     """Abstract base class for battery management system."""
 
-    TIMEOUT: float = 5.0
-    MAX_RETRY: int = 3
+    MAX_RETRY: Final[int] = 3  # max number of retries for data requests
+    _MAX_TIMEOUT_FACTOR: Final[int] = 8  # limit timout increase to 8x
+    TIMEOUT: Final[float] = BLEAK_TRANSIENT_BACKOFF_TIME * _MAX_TIMEOUT_FACTOR
     _MAX_CELL_VOLT: Final[float] = 5.906  # max cell potential
     _HRS_TO_SECS: Final[int] = 60 * 60  # seconds in an hour
 
@@ -126,6 +138,7 @@ class BaseBMS(ABC):
             f"{logger_name.replace('.plugins', '')}::{self.name}:"
             f"{self._ble_device.address[-5:].replace(':','')})"
         )
+        self._inv_wr_mode: bool | None = None  # invert write mode (WNR <-> W)
 
         self._log.debug(
             "initializing %s, BT address: %s", self.device_id(), ble_device.address
@@ -324,11 +337,38 @@ class BaseBMS(ABC):
             await self.disconnect()
             raise
 
-    def _write_mode(self, char: int | str) -> Literal["W", "WNR"]:
+    def _wr_response(self, char: int | str) -> bool:
         char_tx: Final[BleakGATTCharacteristic | None] = (
             self._client.services.get_characteristic(char)
         )
-        return "W" if char_tx and "write" in char_tx.properties else "WNR"
+        return bool(char_tx and "write" in getattr(char_tx, "properties", []))
+
+    async def _send_msg(
+        self,
+        data: bytes,
+        max_size: int,
+        char: int | str,
+        attempt: int,
+        inv_wr_mode: bool = False,
+    ) -> None:
+        """Send message to the bms in chunks if needed."""
+        chunk_size: Final[int] = max_size or len(data)
+
+        for i in range(0, len(data), chunk_size):
+            chunk: bytes = data[i : i + chunk_size]
+            self._log.debug(
+                "TX BLE req #%i (%s%s%s): %s",
+                attempt + 1,
+                "!" if inv_wr_mode else "",
+                "W" if self._wr_response(char) else "WNR",
+                "." if self._inv_wr_mode is not None else "",
+                chunk.hex(" "),
+            )
+            await self._client.write_gatt_char(
+                char,
+                chunk,
+                response=(self._wr_response(char) != inv_wr_mode),
+            )
 
     async def _await_reply(
         self,
@@ -339,41 +379,46 @@ class BaseBMS(ABC):
     ) -> None:
         """Send data to the BMS and wait for valid reply notification."""
 
-        write_mode: Final[Literal["W", "WNR"]] = self._write_mode(
-            char or self.uuid_tx()
-        )
-        retries: Final[int] = 1 if write_mode == "W" else BaseBMS.MAX_RETRY
-        timeout: Final[float] = self.TIMEOUT / ((2**retries) - 1)
+        for inv_wr_mode in (
+            [False, True] if self._inv_wr_mode is None else [self._inv_wr_mode]
+        ):
+            try:
+                for attempt in range(BaseBMS.MAX_RETRY):
+                    self._data_event.clear()  # clear event before requesting new data
+                    await self._send_msg(
+                        data, max_size, char or self.uuid_tx(), attempt, inv_wr_mode
+                    )
+                    try:
+                        if wait_for_notify:
+                            await asyncio.wait_for(
+                                self._wait_event(),
+                                BLEAK_TRANSIENT_BACKOFF_TIME
+                                * min(2**attempt, BaseBMS._MAX_TIMEOUT_FACTOR),
+                            )
+                    except TimeoutError:
+                        self._log.debug("TX BLE request timed out.")
+                        continue  # retry sending data
 
-        self._data_event.clear()  # clear event before requesting new data
-
-        for attempt in range(retries):
-            for chunk in (
-                data[i : i + (max_size or len(data))]
-                for i in range(0, len(data), max_size or len(data))
-            ):
-                self._log.debug(
-                    "TX BLE data #%i (%s): %s", attempt + 1, write_mode, chunk.hex(" ")
+                    self._inv_wr_mode = inv_wr_mode
+                    return  # leave loop if no exception
+            except BleakError as exc:
+                # reconnect on communication errors
+                self._log.warning(
+                    "TX BLE request error, retrying connection (%s)", type(exc).__name__
                 )
-                await self._client.write_gatt_char(
-                    char or self.uuid_tx(), chunk, response=(write_mode == "W")
-                )
+                await self.disconnect()
+                await self._connect()
+        raise TimeoutError
 
-            if wait_for_notify:
-                try:
-                    await asyncio.wait_for(self._wait_event(), timeout * (2**attempt))
-                    break
-                except TimeoutError:
-                    if attempt == retries - 1:
-                        raise
-
-    async def disconnect(self) -> None:
+    async def disconnect(self, reset: bool = False) -> None:
         """Disconnect the BMS, includes stoping notifications."""
 
         if self._client.is_connected:
             self._log.debug("disconnecting BMS")
             try:
                 self._data_event.clear()
+                if reset:
+                    self._inv_wr_mode = None  # reset write mode
                 await self._client.disconnect()
             except BleakError:
                 self._log.warning("disconnect failed!")
