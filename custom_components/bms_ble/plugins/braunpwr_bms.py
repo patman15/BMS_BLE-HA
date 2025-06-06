@@ -25,10 +25,9 @@ class BMS(BaseBMS):
         ("cycle_charge", 0x1, 15, 2, False, lambda x: x / 100),
         ("design_capacity", 0x1, 17, 2, False, lambda x: x // 100),
         ("cycles", 0x1, 23, 2, False, lambda x: x),
-        # ("problem_code", 0x1, 20, 2, False, lambda x: x),
-    ]
+        ("problem_code", 0x8, 3, 23, False, lambda x: x >> 8),
+    ]  # problem code assumed max len 22 bytes (always cut last in case shorter)
     _CMDS: Final[set[int]] = set({field[1] for field in _FIELDS}) | {
-        0x8,
         0x9,
         0x74,  # SW version
         0x78,
@@ -175,7 +174,6 @@ class BMS(BaseBMS):
 
         data: BMSsample = {}
         data = BMS._decode_data(self._data_final)
-        data["problem_code"] = 0x42  # FIXME!
         data["cell_voltages"] = BMS._cell_voltages(
             self._data_final[0x2], data.get("cell_count", 0)
         )

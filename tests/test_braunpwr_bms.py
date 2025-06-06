@@ -57,6 +57,7 @@ def ref_value() -> BMSsample:
         "battery_charging": False,
         "temperature": 23.0,
         "runtime": 78684,
+        "problem_code": 0,
         "problem": False,
     }
 
@@ -172,7 +173,7 @@ async def test_invalid_response(
 ) -> None:
     """Test data up date with BMS returning invalid data."""
 
-    patch_bms_timeout("braunpwr_bms")
+    patch_bms_timeout()
 
     monkeypatch.setattr(
         MockBraunPWRBleakClient,
@@ -196,15 +197,32 @@ async def test_invalid_response(
     name="problem_response",
     params=[
         (
-            b"\xcc\xf9\x69\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1d",
-            "first_bit",
+            b"{\x08\x16\x00\x00\x00\x02\x00\x00\x01\x5d\x00\x01\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00}",
+            0x20000015D0001000100010000000000000000,
+            "real_value",
         ),
         (
-            b"\xcc\xf9\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x69\x00\x05",
-            "last_bit",
+            b"{\x08\x16" + bytes(21) + b"\x01}",
+            1,
+            "first_bit_full",
+        ),
+        (
+            b"{\x08\x16\x80" + bytes(21) + b"}",
+            0x80 << 168,
+            "last_bit_full",
+        ),
+        (
+            b"{\x08\x02\x00\x01}",
+            1,
+            "first_bit_short",
+        ),
+        (
+            b"{\x08\x02\x80\x00}",
+            32768,
+            "last_bit_short",
         ),
     ],
-    ids=lambda param: param[1],
+    ids=lambda param: param[2],
 )
 def prb_response(request) -> tuple[bytearray, str]:
     """Return faulty response frame."""
@@ -212,14 +230,14 @@ def prb_response(request) -> tuple[bytearray, str]:
 
 
 async def test_problem_response(
-    monkeypatch, patch_bleak_client, problem_response: tuple[bytearray, str]
+    monkeypatch, patch_bleak_client, problem_response: tuple[bytearray, int, str]
 ) -> None:
     """Test data update with BMS returning error flags."""
 
     monkeypatch.setattr(
         MockBraunPWRBleakClient,
         "RESP",
-        MockBraunPWRBleakClient.RESP | {0xF9: bytearray(problem_response[0])},
+        MockBraunPWRBleakClient.RESP | {0x8: bytearray(problem_response[0])},
     )
 
     patch_bleak_client(MockBraunPWRBleakClient)
@@ -228,8 +246,6 @@ async def test_problem_response(
 
     result: BMSsample = await bms.async_update()
     assert result.get("problem", False)  # expect a problem report
-    assert result.get("problem_code", 0) == (
-        0x1 if problem_response[1] == "first_bit" else 0x8000
-    )
+    assert result.get("problem_code", 0) == problem_response[1]
 
     await bms.disconnect()
