@@ -43,10 +43,8 @@ class BMS(BaseBMS):
         """Provide BluetoothMatcher definition."""
         return [
             {
-                "service_uuid": BMS.uuid_services()[0],
+                "service_uuid": normalize_uuid_str("fee7"),
                 "connectable": True,
-                "manufacturer_id": 0x8888,
-                "manufacturer_data_start": [0x88, 0x88],
             },
         ]
 
