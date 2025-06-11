@@ -40,7 +40,7 @@ class BMS(BaseBMS):
                 "manufacturer_id": 0x585A,
                 "connectable": True,
             }
-            for pattern in ("R-12*", "R-24*", "P-12*", "P-24*", "PQ-12*", "PQ-24*")
+            for pattern in ("R-12*", "R-24*", "P-12*", "P-24*", "PQ-12*", "PQ-24*", "L-12*")
         ]
 
     @staticmethod
