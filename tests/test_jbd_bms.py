@@ -1,5 +1,6 @@
 """Test the JBD BMS implementation."""
 
+import asyncio
 from collections.abc import Buffer
 from uuid import UUID
 
@@ -23,6 +24,8 @@ class MockJBDBleakClient(MockBleakClient):
     CMD_INFO = bytearray(b"\xa5\x03")
     CMD_CELL = bytearray(b"\xa5\x04")
 
+    _tasks: set[asyncio.Task] = set()
+
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
@@ -44,6 +47,22 @@ class MockJBDBleakClient(MockBleakClient):
 
         return bytearray()
 
+    async def _send_data(self, char_specifier, data) -> None:
+        assert (
+            self._notify_callback
+        ), "write to characteristics but notification not enabled"
+
+        # always send two responses, to test timeout behaviour
+        for resp in (
+            self._response(char_specifier, bytearray(b"\xdd\xa5\x03\x00\xff\xfd\x77")),
+            self._response(char_specifier, data),
+        ):
+            for notify_data in [
+                resp[i : i + BT_FRAME_SIZE] for i in range(0, len(resp), BT_FRAME_SIZE)
+            ]:
+                self._notify_callback("MockJBDBleakClient", notify_data)
+            await asyncio.sleep(0.5)
+
     async def write_gatt_char(
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
@@ -52,15 +71,14 @@ class MockJBDBleakClient(MockBleakClient):
     ) -> None:
         """Issue write command to GATT."""
 
-        assert (
-            self._notify_callback
-        ), "write to characteristics but notification not enabled"
+        _task: asyncio.Task = asyncio.create_task(self._send_data(char_specifier, data))
+        self._tasks.add(_task)
+        _task.add_done_callback(self._tasks.discard)
 
-        resp = self._response(char_specifier, data)
-        for notify_data in [
-            resp[i : i + BT_FRAME_SIZE] for i in range(0, len(resp), BT_FRAME_SIZE)
-        ]:
-            self._notify_callback("MockJBDBleakClient", notify_data)
+    async def disconnect(self) -> bool:
+        """Mock disconnect to raise BleakError."""
+        await asyncio.wait(self._tasks)
+        return await super().disconnect()
 
 
 class MockOversizedBleakClient(MockJBDBleakClient):

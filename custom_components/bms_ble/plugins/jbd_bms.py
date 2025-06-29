@@ -31,6 +31,7 @@ class BMS(BaseBMS):
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
         super().__init__(__name__, ble_device, reconnect)
+        self._valid_reply: int = 0x00
         self._data_final: bytearray = bytearray()
 
     @staticmethod
@@ -149,6 +150,10 @@ class BMS(BaseBMS):
         if len(self._data) != BMS.INFO_LEN + self._data[3]:
             self._log.debug("wrong data length (%i): %s", len(self._data), self._data)
 
+        if self._data[1] != self._valid_reply:
+            self._log.debug("unexpected response (type 0x%X)", self._data[1])
+            return
+
         self._data_final = self._data
         self._data_event.set()
 
@@ -190,16 +195,22 @@ class BMS(BaseBMS):
             for idx in range(27, 27 + sensors * 2, 2)
         ]
 
+    async def _await_cmd_resp(self, cmd: int) -> None:
+        msg: Final[bytes] = BMS._cmd(bytes([cmd]))
+        self._valid_reply = msg[2]
+        await self._await_reply(msg)
+        self._valid_reply = 0x00
+
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         data: BMSsample = {}
-        await self._await_reply(BMS._cmd(b"\x03"))
+        await self._await_cmd_resp(0x03)
         data = BMS._decode_data(self._data_final)
         data["temp_values"] = BMS._temp_sensors(
             self._data_final, int(data.get("temp_sensors", 0))
         )
 
-        await self._await_reply(BMS._cmd(b"\x04"))
+        await self._await_cmd_resp(0x04)
         data["cell_voltages"] = BMS._cell_voltages(self._data_final)
 
         return data
