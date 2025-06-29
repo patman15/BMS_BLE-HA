@@ -684,6 +684,17 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "neey_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/291)
+        generate_advertisement_data(
+            local_name="SR-LV-01",
+            rssi=-88,
+            service_uuids=[
+                "0000ffe0-0000-1000-8000-00805f9b34fb",
+                "0000fee7-0000-1000-8000-00805f9b34fb",
+            ],
+        ),
+        "neey_bms",
+    ),
     (  # proxy LOG (https://github.com/patman15/BMS_BLE-HA/issues/85)
         generate_advertisement_data(  # Bulltron battery
             local_name="DL-FB4C2E0000000",  # MAC address (Bouffalo Lab)
