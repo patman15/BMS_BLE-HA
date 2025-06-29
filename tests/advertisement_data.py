@@ -708,4 +708,13 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "ej_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/346)
+        generate_advertisement_data(
+            local_name="xiaoxiang BMS",
+            manufacturer_data={11313: b"\x20\x37\xc1\xa4"}, # MAC address, wrong
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            rssi=-43,
+        ),
+        "jbd_bms",
+    ),
 ]

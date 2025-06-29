@@ -60,6 +60,7 @@ class BMS(BaseBMS):
                 "gokwh*",
                 "OGR-*",  # OGRPHY
                 "DWC*",  # Vatrer
+                "xiaoxiang*",  # xiaoxiang BMS
             )
         ] + [
             AdvertisementPattern(
