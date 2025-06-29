@@ -69,7 +69,7 @@ async def test_update(
 
     for sensor, attribute, ref_state, ref_value in (
         ("charging", "battery_mode", STATE_OFF, "absorption"),
-        ("problem", "problem_code", STATE_ON, 0x73),
+        ("problem", "problem_code", STATE_ON, "0x73"),
     ):
         state = hass.states.get(f"{SEN_PREFIX}_{sensor}")
         assert state is not None

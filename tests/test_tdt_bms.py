@@ -213,19 +213,22 @@ async def test_update_4s_4t(monkeypatch, patch_bleak_client, reconnect_fixture) 
 
     await bms.disconnect()
 
-async def test_update_0x1e_head(monkeypatch, patch_bms_timeout, patch_bleak_client, reconnect_fixture) -> None:
+
+async def test_update_0x1e_head(
+    monkeypatch, patch_bms_timeout, patch_bleak_client, reconnect_fixture
+) -> None:
     """Test TDT BMS data update."""
 
     resp_0x1e: Final[dict[int, bytearray]] = {
         0x8C: bytearray(  # 4 cell message
-            b"\x1e\x00\x01\x03\x00\x8c\x00\x20\x04\x0c\xe1\x0c\xdf\x0c\xe1\x0c"
+            b"\x7e\x00\x01\x03\x00\x8c\x00\x20\x04\x0c\xe1\x0c\xdf\x0c\xe1\x0c"
             b"\xdc\x04\x0b\x93\x0b\x9b\x0b\x8d\x0b\x8c\x40\x00\x05\x26\x02\x3f"
-            b"\x04\x1c\x00\x08\x03\xe8\x00\x37\xaf\x12\x0d"
+            b"\x04\x1c\x00\x08\x03\xe8\x00\x37\x91\x91\x0d"
         ),
-        0x8D: bytearray(
-            b"\x1e\x00\x41\x03\x00\x8d\x00\x18\x04\x00\x00\x00\x00\x04\x00\x00"
+        0x8D: bytearray(  # independent of the query, reply header is always 0x7E
+            b"\x7e\x00\x41\x03\x00\x8d\x00\x18\x04\x00\x00\x00\x00\x04\x00\x00"
             b"\x00\x00\x00\x00\x00\x00\x00\x00\x06\x09\x00\x00\x18\x00\x00\x00"
-            b"\xdf\x5e\x0d"
+            b"\xdf\x68\x0d"
         ),
     }
 

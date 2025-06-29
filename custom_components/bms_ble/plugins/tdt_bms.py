@@ -101,7 +101,7 @@ class BMS(BaseBMS):
 
         if (
             len(data) > BMS._INFO_LEN
-            and data[0] in self._cmd_heads
+            and data[0] == BMS._HEAD
             and len(self._data) >= self._exp_len
         ):
             self._exp_len = BMS._INFO_LEN + int.from_bytes(data[6:8])
