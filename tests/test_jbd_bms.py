@@ -76,7 +76,7 @@ class MockJBDBleakClient(MockBleakClient):
         _task.add_done_callback(self._tasks.discard)
 
     async def disconnect(self) -> bool:
-        """Mock disconnect to raise BleakError."""
+        """Mock disconnect."""
         await asyncio.wait(self._tasks)
         return await super().disconnect()
 
@@ -108,6 +108,7 @@ class MockOversizedBleakClient(MockJBDBleakClient):
 
     async def disconnect(self) -> bool:
         """Mock disconnect to raise BleakError."""
+        await asyncio.wait(self._tasks)
         raise BleakError
 
 
@@ -194,9 +195,7 @@ async def test_oversized_response(patch_bleak_client) -> None:
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
-    result = await bms.async_update()
-
-    assert result == {
+    assert await bms.async_update() == {
         "temp_sensors": 3,
         "voltage": 15.6,
         "current": -2.87,
@@ -292,3 +291,5 @@ async def test_problem_response(
         "problem": True,
         "problem_code": 1 << (0 if problem_response[1] == "first_bit" else 15),
     }
+
+    await bms.disconnect()
