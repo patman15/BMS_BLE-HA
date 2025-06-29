@@ -22,6 +22,7 @@ class BMS(BaseBMS):
     """E&J Technology BMS implementation."""
 
     _BT_MODULE_MSG: Final[bytes] = bytes([0x41, 0x54, 0x0D, 0x0A])  # BLE module message
+    _IGNORE_CRC: Final[str] = "libattU"
     _HEAD: Final[bytes] = b"\x3a"
     _TAIL: Final[bytes] = b"\x7e"
     _MAX_CELLS: Final[int] = 16
@@ -146,7 +147,10 @@ class BMS(BaseBMS):
             self._data.clear()
             return
 
-        if (crc := BMS._crc(self._data[1:-3])) != int(self._data[-3:-1], 16):
+        if (crc := BMS._crc(self._data[1:-3])) != int(self._data[-3:-1], 16) and not (
+            self.name.startswith(BMS._IGNORE_CRC) and int(self._data[-3:-1], 16) == 0xFB
+        ):
+            # libattU firmware uses static CRC, so we ignore it
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X", int(self._data[-3:-1], 16), crc
             )
