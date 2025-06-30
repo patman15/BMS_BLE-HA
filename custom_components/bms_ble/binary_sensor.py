@@ -44,7 +44,7 @@ BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
         device_class=BinarySensorDeviceClass.PROBLEM,
         entity_category=EntityCategory.DIAGNOSTIC,
         attr_fn=lambda data: (
-            {"problem_code": hex(data.get("problem_code", 0))}
+            {"problem_code": data.get("problem_code", 0)}
             if "problem_code" in data
             else {}
         ),
