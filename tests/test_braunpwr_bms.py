@@ -198,28 +198,23 @@ async def test_invalid_response(
     params=[
         (
             b"{\x08\x16\x00\x00\x00\x02\x00\x00\x01\x5d\x00\x01\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00}",
-            0x20000015D0001000100010000000000000000,
+            0x8,
             "real_value",
         ),
         (
-            b"{\x08\x16" + bytes(21) + b"\x01}",
-            1,
-            "first_bit_full",
+            b"{\x08\x16\x00\x00\x00\x02\x00\x00\x80\x00\x00\x01\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00}",
+            0x8000,
+            "first_bit",
         ),
         (
-            b"{\x08\x16\x80" + bytes(21) + b"}",
-            0x80 << 168,
-            "last_bit_full",
+            b"{\x08\x16\x00\x00\x00\x02\x00\x00\x00\x02\x00\x01\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00}",
+            0x02,
+            "last_bit",
         ),
         (
-            b"{\x08\x02\x00\x01}",
-            1,
-            "first_bit_short",
-        ),
-        (
-            b"{\x08\x02\x80\x00}",
-            32768,
-            "last_bit_short",
+            b"{\x08\x16\x00\x00\x00\x02\x00\x00\xff\xff\x00\x01\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00}",
+            0xAAAA,
+            "all_bits_set",
         ),
     ],
     ids=lambda param: param[2],

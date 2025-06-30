@@ -58,6 +58,7 @@ class BMSmode(IntEnum):
     ABSORPTION = 0x01
     FLOAT = 0x02
 
+
 class BMSsample(TypedDict, total=False):
     """Dictionary representing a sample of battery management system (BMS) data."""
 
@@ -82,7 +83,7 @@ class BMSsample(TypedDict, total=False):
     pack_count: int  # [#]
     temp_sensors: int  # [#]
     temp_values: list[int | float]  # [°C]
-    problem_code: int  # BMS specific code, 0 no problem
+    problem_code: int  # BMS specific code, 0 no problem, max. 64bit
     # battery pack data
     pack_voltages: list[float]  # [V]
     pack_currents: list[float]  # [A]
