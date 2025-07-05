@@ -743,4 +743,14 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "redodo_bms",
     ),
+    (  # source LOG (https://github.com/patman15/BMS_BLE-HA/issues/337)
+        generate_advertisement_data(
+            local_name="EpochGC2-0184",
+            rssi=-83,
+            manufacturer_data={65535: b'30554438c16c'}, # MAC address
+            service_data={'00003333-0000-1000-8000-00805f9b34fb': b'456'},
+            service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
+        ),
+        "epoch_pro_bms",
+    ),
 ]
