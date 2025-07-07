@@ -7,7 +7,14 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue, crc_modbus
+from .basebms import (
+    AdvertisementPattern,
+    BaseBMS,
+    BMSpackvalue,
+    BMSsample,
+    BMSvalue,
+    crc_modbus,
+)
 
 
 class BMS(BaseBMS):
@@ -30,12 +37,12 @@ class BMS(BaseBMS):
         # ("problem_code", 100, 8, False, lambda x: x),
     ]
 
-    # _PFIELDS: Final[list[tuple[BMSpackvalue, int, bool, Callable[[int], Any]]]] = [
-    #     ("pack_voltages", 0, False, lambda x: float(x / 100)),
-    #     ("pack_currents", 2, True, lambda x: float(x / 100)),
-    #     ("pack_battery_levels", 10, False, lambda x: float(x / 10)),
-    #     ("pack_cycles", 14, False, lambda x: x),
-    # ]
+    _PFIELDS: Final[list[tuple[BMSpackvalue, int, bool, Callable[[int], Any]]]] = [
+        ("pack_voltages", 46, False, lambda x: float(x / 100)),
+        ("pack_currents", 48, True, lambda x: float(x / 100)),
+        # ("pack_battery_levels", 10, 2, False, lambda x: float(x / 10)),
+        ("pack_cycles", 16, False, lambda x: x),
+    ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -159,13 +166,27 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         # await self._await_reply(BMS._cmd(0, 0xf3, 0xea64, 0x1))
-        # await self._await_reply(BMS._cmd(1, 0xf3, 0x75f8, 0x52))
-        # await self._await_reply(BMS._cmd(2, 0xf3, 0x75f8, 0x52))
         await self._await_reply(BMS._cmd(1, 0xF3, 0x7654, 0x37))
         # #
         # # parse data from self._data here
 
         data: BMSsample = BMS._decode_data(self._data_final[0x016E])
+
+        for pack in range(1, 1 + data.get("pack_count", 0)):
+            await self._await_reply(BMS._cmd(pack, 0xF3, 0x75F8, 0x52))
+
+            for key, idx, sign, func in BMS._PFIELDS:
+                data.setdefault(key, []).append(
+                    func(
+                        int.from_bytes(
+                            self._data_final[pack << 8 | 0xA4][
+                                BMS._HEAD_LEN + idx : BMS._HEAD_LEN + idx + 2
+                            ],
+                            byteorder="big",
+                            signed=sign,
+                        )
+                    )
+                )
 
         self._data_final.clear()
 

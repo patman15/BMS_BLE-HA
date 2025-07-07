@@ -18,16 +18,16 @@ from .conftest import MockBleakClient
 BT_FRAME_SIZE = 32  # ATT maximum is 512, minimal 27
 REF_VALUE: BMSsample = {
     "voltage": 53.21,
-    # "current": -6.7,
-    # "battery_level": 47.9,
+    "current": 0,
+    "battery_level": 91,
     # "cycle_charge": 134.12,
     # "cycles": 9,
     # "temperature": 24.4,
     # "cycle_capacity": 7019.841,
-    # "power": -350.678,
-    # "battery_charging": False,
+    "power": 0.0,
+    "battery_charging": False,
     # "runtime": 72064,
-    # "pack_count": 2,  # last packet does not report data!
+    "pack_count": 2,
     # "cell_voltages": [
     #     3.272,
     #     3.272,
@@ -64,10 +64,11 @@ REF_VALUE: BMSsample = {
     # ],
     # "delta_voltage": 0.003,
     # "temp_values": [24.95, 23.75, 23.85, 24.85, 24.95, 23.75, 23.85, 24.85],
+    "temperature": 27.0,
     # "pack_battery_levels": [47.9, 48.0],
-    # "pack_currents": [-7.2, -7.19],
-    # "pack_cycles": [9, 10],
-    # "pack_voltages": [52.34, 52.35],
+    "pack_currents": [0.0, 0.0],
+    "pack_cycles": [10, 10],
+    "pack_voltages": [53.21, 53.21],
     "problem": False,
     # "problem_code": 0,
 }
@@ -78,7 +79,7 @@ class MockEpochProBleakClient(MockBleakClient):
 
     PKT_FRAME = 0x5  # header(3) + crc(2)
     RESP: dict[bytes, bytearray] = {
-        b"\xfa\xf3\x16\x76\x54\x01\x00\x37\xc7\x24": bytearray( # overall
+        b"\xfa\xf3\x16\x76\x54\x01\x00\x37\xc7\x24": bytearray(  # overall
             b"\xfa\xf3\x16\x01\x6e\x00\x00\x00\x00\x04\xb0\x00\x00\x00\x5b\x00\x64\x23\x8c\x14"
             b"\xc9\x00\x00\x01\x0e\x00\x00\x00\x00\x18\x7a\x00\x00\x00\x00\x00\x00\x00\x00\x00"
             b"\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x00\x00\x0c\xfd\x0c\xff\x00"
@@ -86,7 +87,7 @@ class MockEpochProBleakClient(MockBleakClient):
             b"\x30\x30\x2d\x00\x31\x00\x00\x31\x30\x30\x2d\x00\x31\x00\x00\x00\x00\x00\x00\x00"
             b"\x00\x00\x00\x00\x38\xaa\xa8\x02\xaa\xaa\xa8\x00\x82\x00\x3c\x6b\x2f"
         ),
-        b"\xfa\xf3\x16\x75\xf8\x01\x00\x52\x62\x5f" :bytearray( # pack 1
+        b"\xfa\xf3\x16\x75\xf8\x01\x00\x52\x62\x5f": bytearray(  # pack 1
             b"\xfa\xf3\x16\x01\xa4\x02\x40\x01\xe0\x02\x58\x01\x2c\xc8\x78\x00\x00\x00\x00\x75"
             b"\x30\x00\x0a\x00\x00\x0c\x2c\x00\x00\x00\x00\x79\x7c\x00\x10\x0c\xfe\x0c\xfd\x00"
             b"\x10\x00\x07\x00\x1b\x00\x1b\x00\x04\x00\x03\x14\xc9\x00\x00\x10\x04\x00\x00\x00"
@@ -97,7 +98,7 @@ class MockEpochProBleakClient(MockBleakClient):
             b"\x00\x00\x31\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x32\x33\x31"
             b"\x31\x33\x30\x30\x31\x30\x32\x38\x33\x75\xb5"
         ),
-        b"\xfa\xf3\x16\x75\xf8\x02\x00\x52\x92\x5f" :bytearray( # pack 2
+        b"\xfa\xf3\x16\x75\xf8\x02\x00\x52\x92\x5f": bytearray(  # pack 2
             b"\xfa\xf3\x16\x02\xa4\x02\x40\x01\xe0\x02\x58\x01\x2c\xc8\x78\x00\x00\x00\x00\x75"
             b"\x30\x00\x0a\x00\x00\x0c\x4e\x00\x00\x00\x00\x7b\x0c\x00\x10\x0c\xff\x0c\xfc\x00"
             b"\x10\x00\x02\x00\x1b\x00\x1b\x00\x04\x00\x03\x14\xc9\x00\x00\x10\x04\x00\x00\x00"
