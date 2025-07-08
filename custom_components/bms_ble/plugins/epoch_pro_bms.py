@@ -23,6 +23,10 @@ class BMS(BaseBMS):
     _HEAD: Final[bytes] = b"\xfa"
     _CMDS: Final[set[int]] = {0xF3}
     _VER: Final[bytes] = b"\x16"  # version 1.6?
+    _CELLNUM_POS: Final[int] = 55  # number of cells in pack
+    _CELL_POS: Final[int] = 77  # position of first cell voltage in pack
+    _TEMPNUM_POS: Final[int] = 56  # number of temperature sensors in pack
+    _TEMP_POS: Final[int] = 109  # position of first temperature sensor in pack
     _HEAD_LEN: Final[int] = 5
     _MIN_LEN: Final[int] = 7  # HEAD, CMD, VER, DEV, LEN, CRC (2 bytes)
 
@@ -33,14 +37,15 @@ class BMS(BaseBMS):
         ("pack_count", 42, 2, False, lambda x: x),
         # ("cycle_charge", 8, 4, False, lambda x: float(BMS._swap32(x) / 100)),
         # ("cycles", 46, 2, False, lambda x: x),
+        #("design_capacity", 4, 4, False, lambda x: float(x / 100)),
         ("battery_level", 8, 2, False, lambda x: x),
         # ("problem_code", 100, 8, False, lambda x: x),
     ]
 
     _PFIELDS: Final[list[tuple[BMSpackvalue, int, bool, Callable[[int], Any]]]] = [
-        ("pack_voltages", 46, False, lambda x: float(x / 100)),
-        ("pack_currents", 48, True, lambda x: float(x / 100)),
-        # ("pack_battery_levels", 10, 2, False, lambda x: float(x / 10)),
+        ("pack_voltages", 46, False, lambda x: x / 100),
+        ("pack_currents", 48, True, lambda x: x / 100),
+        ("pack_battery_levels", 66, False, lambda x: x / 10),
         ("pack_cycles", 16, False, lambda x: x),
     ]
 
@@ -174,12 +179,13 @@ class BMS(BaseBMS):
 
         for pack in range(1, 1 + data.get("pack_count", 0)):
             await self._await_reply(BMS._cmd(pack, 0xF3, 0x75F8, 0x52))
+            pack_response: bytearray = self._data_final[pack << 8 | 0xA4]
 
             for key, idx, sign, func in BMS._PFIELDS:
                 data.setdefault(key, []).append(
                     func(
                         int.from_bytes(
-                            self._data_final[pack << 8 | 0xA4][
+                            pack_response[
                                 BMS._HEAD_LEN + idx : BMS._HEAD_LEN + idx + 2
                             ],
                             byteorder="big",
@@ -187,6 +193,39 @@ class BMS(BaseBMS):
                         )
                     )
                 )
+            # get cell voltages
+            pack_cells: list[float] = [
+                float(
+                    int.from_bytes(
+                        pack_response[
+                            BMS._CELL_POS + idx * 2 : BMS._CELL_POS + idx * 2 + 2
+                        ],
+                        byteorder="big",
+                    )
+                    / 1000
+                )
+                for idx in range(pack_response[BMS._CELLNUM_POS])
+            ]
+            # update per pack delta voltage
+            data["delta_voltage"] = max(
+                data.get("delta_voltage", 0),
+                round(max(pack_cells) - min(pack_cells), 3),
+            )
+            # add individual cell voltages
+            data.setdefault("cell_voltages", []).extend(pack_cells)
+            # add temperature sensors (4x cell temperature + 4 reserved)
+            data.setdefault("temp_values", []).extend(
+                (
+                    int.from_bytes(
+                        pack_response[
+                            BMS._TEMP_POS + idx * 2 : BMS._TEMP_POS + idx * 2 + 2
+                        ],
+                        byteorder="big",
+                        signed=True,
+                    )
+                )
+                for idx in range(pack_response[BMS._TEMPNUM_POS])
+            )
 
         self._data_final.clear()
 
