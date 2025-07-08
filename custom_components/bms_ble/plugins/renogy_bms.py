@@ -37,7 +37,12 @@ class BMS(BaseBMS):
                 "service_uuid": BMS.uuid_services()[0],
                 "manufacturer_id": 0x9860,
                 "connectable": True,
-            }
+            },
+            {
+                "local_name": "RNG*",
+                "manufacturer_id": 0xE14C,
+                "connectable": True,
+            },
         ]
 
     @staticmethod
