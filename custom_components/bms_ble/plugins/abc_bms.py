@@ -26,11 +26,11 @@ class BMS(BaseBMS):
     }
     _FIELDS: Final[list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]] = [
         ("temp_sensors", 0xF2, 4, 1, False, lambda x: x),
-        ("voltage", 0xF0, 2, 3, False, lambda x: float(x / 1000)),
-        ("current", 0xF0, 5, 3, True, lambda x: float(x / 1000)),
-        # ("design_capacity", 0xF0, 8, 3, False, lambda x: float(x / 1000)),
+        ("voltage", 0xF0, 2, 3, False, lambda x: x / 1000),
+        ("current", 0xF0, 5, 3, True, lambda x: x / 1000),
+        # ("design_capacity", 0xF0, 8, 3, False, lambda x: x / 1000),
         ("battery_level", 0xF0, 16, 1, False, lambda x: x),
-        ("cycle_charge", 0xF0, 11, 3, False, lambda x: float(x / 1000)),
+        ("cycle_charge", 0xF0, 11, 3, False, lambda x: x / 1000),
         ("cycles", 0xF0, 14, 2, False, lambda x: x),
         (  # only first bit per byte is used
             "problem_code",
