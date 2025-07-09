@@ -24,13 +24,13 @@ class BMS(BaseBMS):
     CMD_POS: Final[int] = 2
     CELL_VOLTAGE_CMDS: Final[list[int]] = [0x5, 0x6, 0x7, 0x8]
     _FIELDS: Final[list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]] = [
-        ("voltage", 0x0B, 4, 4, False, lambda x: float(x / 1000)),
-        ("current", 0x0B, 8, 4, True, lambda x: float(x / 1000)),
+        ("voltage", 0x0B, 4, 4, False, lambda x: x / 1000),
+        ("current", 0x0B, 8, 4, True, lambda x: x / 1000),
         ("temperature", 0x09, 4, 2, True, lambda x: x),
         ("battery_level", 0x0A, 4, 1, False, lambda x: x),
         ("design_capacity", 0x15, 4, 2, False, lambda x: x),
         ("cycles", 0x15, 6, 2, False, lambda x: x),
-        ("runtime", 0x0C, 14, 2, False, lambda x: float(x * _HRS_TO_SECS / 100)),
+        ("runtime", 0x0C, 14, 2, False, lambda x: x * _HRS_TO_SECS / 100),
         ("problem_code", 0x21, 4, 4, False, lambda x: x),
     ]
     _CMDS: Final[list[int]] = list({field[1] for field in _FIELDS})

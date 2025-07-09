@@ -26,9 +26,9 @@ class BMS(BaseBMS):
     _TAIL: Final[bytes] = b"\x7e"
     _MAX_CELLS: Final[int] = 16
     _FIELDS: Final[list[tuple[BMSvalue, Cmd, int, int, Callable[[int], Any]]]] = [
-        ("current", Cmd.RT, 89, 8, lambda x: float((x >> 16) - (x & 0xFFFF)) / 100),
+        ("current", Cmd.RT, 89, 8, lambda x: ((x >> 16) - (x & 0xFFFF)) / 100),
         ("battery_level", Cmd.RT, 123, 2, lambda x: x),
-        ("cycle_charge", Cmd.CAP, 15, 4, lambda x: float(x) / 10),
+        ("cycle_charge", Cmd.CAP, 15, 4, lambda x: x / 10),
         ("temperature", Cmd.RT, 97, 2, lambda x: x - 40),  # only 1st sensor relevant
         ("cycles", Cmd.RT, 115, 4, lambda x: x),
         ("problem_code", Cmd.RT, 105, 4, lambda x: x & 0x0FFC),  # mask status bits

@@ -20,10 +20,10 @@ class BMS(BaseBMS):
     BASIC_INFO: Final[int] = 23  # basic info data length
     _FIELDS: Final[list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]]] = [
         ("temp_sensors", 26, 1, False, lambda x: x),  # count is not limited
-        ("voltage", 4, 2, False, lambda x: float(x / 100)),
-        ("current", 6, 2, True, lambda x: float(x / 100)),
+        ("voltage", 4, 2, False, lambda x: x / 100),
+        ("current", 6, 2, True, lambda x: x / 100),
         ("battery_level", 23, 1, False, lambda x: x),
-        ("cycle_charge", 8, 2, False, lambda x: float(x / 100)),
+        ("cycle_charge", 8, 2, False, lambda x: x / 100),
         ("cycles", 12, 2, False, lambda x: x),
         ("problem_code", 20, 2, False, lambda x: x),
     ]  # general protocol v4

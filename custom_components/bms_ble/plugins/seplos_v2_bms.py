@@ -25,11 +25,11 @@ class BMS(BaseBMS):
     _PFIELDS: Final[  # Seplos V2: single machine data
         list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]
     ] = [
-        ("voltage", 0x61, 2, 2, False, lambda x: float(x / 100)),
-        ("current", 0x61, 0, 2, True, lambda x: float(x / 100)),  # /10 for 0x62
-        ("cycle_charge", 0x61, 4, 2, False, lambda x: float(x / 100)),  # /10 for 0x62
+        ("voltage", 0x61, 2, 2, False, lambda x: x / 100),
+        ("current", 0x61, 0, 2, True, lambda x: x / 100),  # /10 for 0x62
+        ("cycle_charge", 0x61, 4, 2, False, lambda x: x / 100),  # /10 for 0x62
         ("cycles", 0x61, 13, 2, False, lambda x: x),
-        ("battery_level", 0x61, 9, 2, False, lambda x: float(x / 10)),
+        ("battery_level", 0x61, 9, 2, False, lambda x: x / 10),
     ]
     _CMDS: Final[list[tuple[int, bytes]]] = [(0x51, b""), (0x61, b"\x00"), (0x62, b"")]
 

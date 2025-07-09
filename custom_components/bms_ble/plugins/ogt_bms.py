@@ -52,12 +52,12 @@ class BMS(BaseBMS):
             self._REGISTERS = {
                 # SOC (State of Charge)
                 2: ("battery_level", 1, lambda x: x),
-                4: ("cycle_charge", 3, lambda x: float(x) / 1000),
-                8: ("voltage", 2, lambda x: float(x) / 1000),
+                4: ("cycle_charge", 3, lambda x: x / 1000),
+                8: ("voltage", 2, lambda x: x / 1000),
                 # MOS temperature
-                12: ("temperature", 2, lambda x: round(float(x) * 0.1 - 273.15, 1)),
+                12: ("temperature", 2, lambda x: round(x * 0.1 - 273.15, 1)),
                 # 3rd byte of current is 0 (should be 1 as for B version)
-                16: ("current", 3, lambda x: float(x) / 100),
+                16: ("current", 3, lambda x: x / 100),
                 24: ("runtime", 2, lambda x: int(x * 60)),
                 44: ("cycles", 2, lambda x: x),
                 # Type A batteries have no cell voltage registers
@@ -66,12 +66,12 @@ class BMS(BaseBMS):
         elif self._type == "B":
             self._REGISTERS = {
                 # MOS temperature
-                8: ("temperature", 2, lambda x: round(float(x) * 0.1 - 273.15, 1)),
-                9: ("voltage", 2, lambda x: float(x) / 1000),
-                10: ("current", 3, lambda x: float(x) / 1000),
+                8: ("temperature", 2, lambda x: round(x * 0.1 - 273.15, 1)),
+                9: ("voltage", 2, lambda x: x / 1000),
+                10: ("current", 3, lambda x: x / 1000),
                 # SOC (State of Charge)
                 13: ("battery_level", 1, lambda x: x),
-                15: ("cycle_charge", 3, lambda x: float(x) / 1000),
+                15: ("cycle_charge", 3, lambda x: x / 1000),
                 18: ("runtime", 2, lambda x: int(x * 60)),
                 23: ("cycles", 2, lambda x: x),
             }
