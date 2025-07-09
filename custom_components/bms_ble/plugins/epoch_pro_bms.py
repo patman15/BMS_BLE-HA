@@ -69,7 +69,7 @@ class BMS(BaseBMS):
     @staticmethod
     def device_info() -> dict[str, str]:
         """Return device information for the battery management system."""
-        return {"manufacturer": "Epoch", "model": "pro"}
+        return {"manufacturer": "Epoch", "model": "Pro"}
 
     @staticmethod
     def uuid_services() -> list[str]:
