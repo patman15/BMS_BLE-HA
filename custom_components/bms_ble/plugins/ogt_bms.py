@@ -14,9 +14,9 @@ from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue
 class BMS(BaseBMS):
     """Offgridtec LiFePO4 Smart Pro type A and type B BMS implementation."""
 
-    IDX_NAME: Final = 0
-    IDX_LEN: Final = 1
-    IDX_FCT: Final = 2
+    _IDX_NAME: Final = 0
+    _IDX_LEN: Final = 1
+    _IDX_FCT: Final = 2
     # magic crypt sequence of length 16
     _CRYPT_SEQ: Final[list[int]] = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
 
@@ -179,7 +179,7 @@ class BMS(BaseBMS):
         for reg in list(self._REGISTERS):
             self._exp_reply = reg
             await self._await_reply(
-                data=self._ogt_command(reg, self._REGISTERS[reg][BMS.IDX_LEN])
+                data=self._ogt_command(reg, self._REGISTERS[reg][BMS._IDX_LEN])
             )
             if self._response.reg < 0:
                 raise TimeoutError
