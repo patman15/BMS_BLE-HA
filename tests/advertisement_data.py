@@ -719,7 +719,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/346)
         generate_advertisement_data(
             local_name="xiaoxiang BMS",
-            manufacturer_data={11313: b"\x20\x37\xc1\xa4"}, # MAC address, wrong
+            manufacturer_data={11313: b"\x20\x37\xc1\xa4"},  # MAC address, wrong
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
             rssi=-43,
         ),
@@ -742,5 +742,13 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
         ),
         "redodo_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/390)
+        generate_advertisement_data(
+            local_name="RNGRBP1228000830",
+            rssi=-44,
+            manufacturer_data={57676: b"\x74\x57\x94\x7b"}, # MAC address, correct
+        ),
+        "renogy_bms",
     ),
 ]
