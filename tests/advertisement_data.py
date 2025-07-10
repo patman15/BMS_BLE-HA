@@ -719,7 +719,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/346)
         generate_advertisement_data(
             local_name="xiaoxiang BMS",
-            manufacturer_data={11313: b"\x20\x37\xc1\xa4"}, # MAC address, wrong
+            manufacturer_data={11313: b"\x20\x37\xc1\xa4"},  # MAC address, wrong
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
             rssi=-43,
         ),
@@ -739,6 +739,15 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             local_name="RO-24100B-A00162",
             rssi=-45,
             manufacturer_data={22618: b"\xc8\x47\x80\x12\xd5\xe7"},
+            service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
+        ),
+        "redodo_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/360)
+        generate_advertisement_data(
+            local_name="LT-51230BGC-A00229",
+            rssi=-64,
+            manufacturer_data={22618: b"\xc8\x47\x80\x12\xd6\x4e"},  # MAC address
             service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
         ),
         "redodo_bms",

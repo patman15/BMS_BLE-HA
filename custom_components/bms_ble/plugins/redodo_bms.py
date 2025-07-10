@@ -51,6 +51,7 @@ class BMS(BaseBMS):
                 "PQ-24*",
                 "L-12*",  # LiTime
                 "L-24*",  # LiTime
+                "LT-51*",  # LiTime
             )
         ]
 
