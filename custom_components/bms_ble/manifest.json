@@ -111,24 +111,15 @@
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
-      "local_name": "ECO-WORTHY*",
-      "manufacturer_id": 49844
+      "local_name": "ECO-WORTHY 02_*"
     },
     {
       "local_name": "ECO-WORTHY*",
-      "manufacturer_id": 47912
-    },
-    {
-      "local_name": "ECO-WORTHY*",
-      "manufacturer_id": 57570
-    },
-    {
-      "local_name": "ECO-WORTHY*",
-      "manufacturer_id": 15996
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
       "local_name": "DCHOUSE*",
-      "manufacturer_id": 57570
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
       "local_name": "DP04S*",
@@ -271,5 +262,5 @@
   ],
   "quality_scale": "silver",
   "requirements": [],
-  "version": "1.18.0"
+  "version": "1.18.1"
 }
