@@ -383,8 +383,8 @@ class BaseBMS(ABC):
             [False, True] if self._inv_wr_mode is None else [self._inv_wr_mode]
         ):
             try:
+                self._data_event.clear()  # clear event before requesting new data
                 for attempt in range(BaseBMS.MAX_RETRY):
-                    self._data_event.clear()  # clear event before requesting new data
                     await self._send_msg(
                         data, max_size, char or self.uuid_tx(), attempt, inv_wr_mode
                     )
