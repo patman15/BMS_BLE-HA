@@ -61,7 +61,7 @@ class MockJBDBleakClient(MockBleakClient):
                 resp[i : i + BT_FRAME_SIZE] for i in range(0, len(resp), BT_FRAME_SIZE)
             ]:
                 self._notify_callback("MockJBDBleakClient", notify_data)
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.01)
 
     async def write_gatt_char(
         self,
@@ -77,7 +77,7 @@ class MockJBDBleakClient(MockBleakClient):
 
     async def disconnect(self) -> bool:
         """Mock disconnect."""
-        await asyncio.wait(self._tasks)
+        await asyncio.gather(*self._tasks)
         return await super().disconnect()
 
 
