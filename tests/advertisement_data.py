@@ -440,6 +440,22 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "abc_bms",
     ),
+    (  # source log (https://github.com/patman15/BMS_BLE-HA/issues/394)
+        generate_advertisement_data(
+            local_name="SOK-AA02120",
+            service_uuids=[
+                "00001800-0000-1000-8000-00805f9b34fb",
+                "00001801-0000-1000-8000-00805f9b34fb",
+                "0000180a-0000-1000-8000-00805f9b34fb",
+                "0000180f-0000-1000-8000-00805f9b34fb",
+                "0000ffe0-0000-1000-8000-00805f9b34fb",
+                "0000fff0-0000-1000-8000-00805f9b34fb",
+                "f000ffc0-0451-4000-b000-000000000000",
+            ],
+            rssi=-62,
+        ),
+        "abc_bms",
+    ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/204)
         generate_advertisement_data(  # 16S LiFePo 250A BMS
             local_name="DL-40160901534C",
