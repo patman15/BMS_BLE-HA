@@ -324,10 +324,8 @@ class BaseBMS(ABC):
 
         try:
             await self._client.disconnect()  # ensure no stale connection exists
-        except BleakError:
-            pass
-        except TimeoutError:
-            self._log.debug("timeout disconnecting stale connection")
+        except (BleakError, TimeoutError) as exc:
+            self._log.debug("failed to disconnect stale connection (%s)", type(exc).__name__)
 
         self._log.debug("connecting BMS")
         self._client = await establish_connection(
@@ -340,9 +338,9 @@ class BaseBMS(ABC):
 
         try:
             await self._init_connection()
-        except Exception as err:
+        except Exception as exc:
             self._log.info(
-                "failed to initialize BMS connection (%s)", type(err).__name__
+                "failed to initialize BMS connection (%s)", type(exc).__name__
             )
             await self.disconnect()
             raise
