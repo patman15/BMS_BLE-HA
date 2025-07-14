@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 import asyncio
 from collections.abc import Callable
+import contextlib
 from enum import IntEnum
 import logging
 from statistics import fmean
@@ -323,6 +324,7 @@ class BaseBMS(ABC):
             return
 
         self._log.debug("connecting BMS")
+        await self.disconnect()
         self._client = await establish_connection(
             client_class=BleakClient,
             device=self._ble_device,
@@ -416,15 +418,17 @@ class BaseBMS(ABC):
     async def disconnect(self, reset: bool = False) -> None:
         """Disconnect the BMS, includes stoping notifications."""
 
-        if self._client.is_connected:
-            self._log.debug("disconnecting BMS")
-            try:
-                self._data_event.clear()
-                if reset:
-                    self._inv_wr_mode = None  # reset write mode
-                await self._client.disconnect()
-            except BleakError:
-                self._log.warning("disconnect failed!")
+        self._log.debug("disconnecting BMS (%s)", str(self._client.is_connected))
+        with contextlib.suppress(BleakError):
+            # stop_notify fails if not connected (e.g. connection lost)
+            await self._client.stop_notify(self.uuid_rx())
+        try:
+            self._data_event.clear()
+            if reset:
+                self._inv_wr_mode = None  # reset write mode
+            await self._client.disconnect()
+        except BleakError:
+            self._log.warning("disconnect failed!")
 
     async def _wait_event(self) -> None:
         """Wait for data event and clear it."""
