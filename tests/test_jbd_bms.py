@@ -108,7 +108,8 @@ class MockOversizedBleakClient(MockJBDBleakClient):
 
     async def disconnect(self) -> bool:
         """Mock disconnect to raise BleakError."""
-        await asyncio.wait(self._tasks)
+        if self._tasks:
+            await asyncio.wait(self._tasks)
         raise BleakError
 
 
