@@ -376,7 +376,7 @@ class MockBleakClient(BleakClient):
 
     async def disconnect(self) -> bool:
         """Mock disconnect."""
-        assert self._connected, "Disconnect called, but client not connected."
+
         LOGGER.debug("MockBleakClient disconnecting %s", self._ble_device.address)
         self._connected = False
         if self._disconnect_callback is not None:

@@ -322,6 +322,11 @@ class BaseBMS(ABC):
             self._log.debug("BMS already connected")
             return
 
+        try:
+            await self._client.disconnect()  # ensure no stale connection exists
+        except (BleakError, TimeoutError) as exc:
+            self._log.debug("failed to disconnect stale connection (%s)", type(exc).__name__)
+
         self._log.debug("connecting BMS")
         self._client = await establish_connection(
             client_class=BleakClient,
@@ -333,9 +338,9 @@ class BaseBMS(ABC):
 
         try:
             await self._init_connection()
-        except Exception as err:
+        except Exception as exc:
             self._log.info(
-                "failed to initialize BMS connection (%s)", type(err).__name__
+                "failed to initialize BMS connection (%s)", type(exc).__name__
             )
             await self.disconnect()
             raise
@@ -416,15 +421,14 @@ class BaseBMS(ABC):
     async def disconnect(self, reset: bool = False) -> None:
         """Disconnect the BMS, includes stoping notifications."""
 
-        if self._client.is_connected:
-            self._log.debug("disconnecting BMS")
-            try:
-                self._data_event.clear()
-                if reset:
-                    self._inv_wr_mode = None  # reset write mode
-                await self._client.disconnect()
-            except BleakError:
-                self._log.warning("disconnect failed!")
+        self._log.debug("disconnecting BMS (%s)", str(self._client.is_connected))
+        try:
+            self._data_event.clear()
+            if reset:
+                self._inv_wr_mode = None  # reset write mode
+            await self._client.disconnect()
+        except BleakError:
+            self._log.warning("disconnect failed!")
 
     async def _wait_event(self) -> None:
         """Wait for data event and clear it."""
