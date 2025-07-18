@@ -732,6 +732,19 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "ej_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/358)
+        generate_advertisement_data(
+            local_name="libattU12E9",
+            manufacturer_data={21320: b"8428089d12e96400"},
+            service_uuids=[
+                "00001800-0000-1000-8000-00805f9b34fb",
+                "00001801-0000-1000-8000-00805f9b34fb",
+                "6e400001-b5a3-f393-e0a9-e50e24dcca9e",
+            ],
+            rssi=-62,
+        ),
+        "ej_bms",
+    ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/346)
         generate_advertisement_data(
             local_name="xiaoxiang BMS",
@@ -778,5 +791,5 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             rssi=-50,
         ),
         "ecoworthy_bms",
-    )
+    ),
 ]

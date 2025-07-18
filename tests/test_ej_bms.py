@@ -64,13 +64,43 @@ class MockEJsfBleakClient(MockEJBleakClient):
             char_specifier
         ) != normalize_uuid_str("6e400002-b5a3-f393-e0a9-e50e24dcca9e"):
             return bytearray()
-        cmd: int = int(bytearray(data)[3:5], 16)
-        if cmd == 0x02:
+
+        if int(bytearray(data)[3:5], 16) == 0x02:
             return bytearray(
                 b":008231008C000000000000000CBF0CC00CEA0CD50000000000000000000000000000000000000000"
                 b"00000000008C000041282828F000000000000100004B044C05DC05DCB2~"
-            )  # TODO: put numbers
+            )
         return bytearray()
+
+    @staticmethod
+    def values() -> BMSsample:
+        """Return correct data sample values for single frame protocol sample."""
+        return {
+            "voltage": 13.118,
+            "current": 1.4,
+            "battery_level": 75,
+            "cycles": 1,
+            "cycle_charge": 110.0,
+            "cell_voltages": [3.263, 3.264, 3.306, 3.285],
+            "delta_voltage": 0.043,
+            "temperature": 25,
+            "cycle_capacity": 1442.98,
+            "power": 18.365,
+            "battery_charging": True,
+            "problem": False,
+            "problem_code": 0,
+        }
+
+
+class MockEJsfnoCRCBleakClient(MockEJsfBleakClient):
+    """Emulate a E&J technology BMS BleakClient with single frame protocol and uncalculated CRC."""
+
+    def _response(
+        self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
+    ) -> bytearray:
+        ret: bytearray = MockEJsfBleakClient._response(self, char_specifier, data)
+        ret[-3:-1] = b"00"  # patch to wrong CRC
+        return ret
 
 
 class MockEJinvalidBleakClient(MockEJBleakClient):
@@ -100,9 +130,7 @@ async def test_update(patch_bleak_client, reconnect_fixture) -> None:
         reconnect_fixture,
     )
 
-    result = await bms.async_update()
-
-    assert result == {
+    assert await bms.async_update() == {
         "voltage": 39.517,
         "current": -0.02,
         "battery_level": 1,
@@ -131,7 +159,7 @@ async def test_update(patch_bleak_client, reconnect_fixture) -> None:
     }
 
     # query again to check already connected state
-    result = await bms.async_update()
+    await bms.async_update()
     assert bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
@@ -147,27 +175,26 @@ async def test_update_single_frame(patch_bleak_client, reconnect_fixture) -> Non
         reconnect_fixture,
     )
 
-    result = await bms.async_update()
-
-    assert result == {
-        "voltage": 13.118,
-        "current": 1.4,
-        "battery_level": 75,
-        "cycles": 1,
-        "cycle_charge": 110.0,
-        "cell_voltages": [3.263, 3.264, 3.306, 3.285],
-        "delta_voltage": 0.043,
-        "temperature": 25,
-        "cycle_capacity": 1442.98,
-        "power": 18.365,
-        "battery_charging": True,
-        "problem": False,
-        "problem_code": 0,
-    }
+    assert await bms.async_update() == MockEJsfBleakClient.values()
 
     # query again to check already connected state
-    result = await bms.async_update()
+    await bms.async_update()
     assert bms._client.is_connected is not reconnect_fixture
+
+    await bms.disconnect()
+
+
+async def test_update_sf_no_crc(patch_bleak_client) -> None:
+    """Test E&J technology BMS data update with no CRC."""
+
+    patch_bleak_client(MockEJsfnoCRCBleakClient)
+
+    bms = BMS(
+        generate_ble_device("cc:cc:cc:cc:cc:cc", "libattU_MockBLEDevice", None, -73),
+        True,
+    )
+
+    assert await bms.async_update() == MockEJsfnoCRCBleakClient.values()
 
     await bms.disconnect()
 
