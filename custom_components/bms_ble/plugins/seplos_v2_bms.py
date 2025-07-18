@@ -25,11 +25,11 @@ class BMS(BaseBMS):
     _PFIELDS: Final[  # Seplos V2: single machine data
         list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]
     ] = [
-        ("voltage", 0x61, 2, 2, False, lambda x: float(x / 100)),
-        ("current", 0x61, 0, 2, True, lambda x: float(x / 100)),  # /10 for 0x62
-        ("cycle_charge", 0x61, 4, 2, False, lambda x: float(x / 100)),  # /10 for 0x62
+        ("voltage", 0x61, 2, 2, False, lambda x: x / 100),
+        ("current", 0x61, 0, 2, True, lambda x: x / 100),  # /10 for 0x62
+        ("cycle_charge", 0x61, 4, 2, False, lambda x: x / 100),  # /10 for 0x62
         ("cycles", 0x61, 13, 2, False, lambda x: x),
-        ("battery_level", 0x61, 9, 2, False, lambda x: float(x / 10)),
+        ("battery_level", 0x61, 9, 2, False, lambda x: x / 10),
     ]
     _CMDS: Final[list[tuple[int, bytes]]] = [(0x51, b""), (0x61, b"\x00"), (0x62, b"")]
 
@@ -38,6 +38,7 @@ class BMS(BaseBMS):
         super().__init__(__name__, ble_device, reconnect)
         self._data_final: dict[int, bytearray] = {}
         self._exp_len: int = BMS._MIN_LEN
+        self._exp_reply: set[int] = set()
 
     @staticmethod
     def matcher_dict_list() -> list[AdvertisementPattern]:
@@ -132,7 +133,11 @@ class BMS(BaseBMS):
         )
 
         self._data_final[self._data[3]] = self._data
-        self._data_event.set()
+        try:
+            self._exp_reply.remove(self._data[3])
+            self._data_event.set()
+        except KeyError:
+            self._log.debug("unexpected reply: 0x%X", self._data[3])
 
     async def _init_connection(self) -> None:
         """Initialize protocol state."""
@@ -190,6 +195,7 @@ class BMS(BaseBMS):
         """Update battery status information."""
 
         for cmd, data in BMS._CMDS:
+            self._exp_reply.add(cmd)
             await self._await_reply(BMS._cmd(cmd, data=bytearray(data)))
 
         result: BMSsample = {}

@@ -31,17 +31,11 @@ class BMS(BaseBMS):
     _PAGE_LEN: Final[int] = 20
     _MAX_CELLS: Final[int] = 32
     _FIELDS: Final[list[tuple[BMSvalue, Cmd, int, int, Callable[[int], Any]]]] = [
-        ("voltage", Cmd.LEGINFO1, 6, 2, lambda x: float(x) / 10),
+        ("voltage", Cmd.LEGINFO1, 6, 2, lambda x: x / 10),
         ("current", Cmd.LEGINFO1, 8, 2, lambda x: x),
         ("battery_level", Cmd.LEGINFO1, 14, 1, lambda x: x),
-        ("cycle_charge", Cmd.LEGINFO1, 12, 2, lambda x: float(x) / 1000),
-        (
-            "temperature",
-            Cmd.LEGINFO2,
-            12,
-            2,
-            lambda x: round(float(x) * 0.1 - 273.15, 1),
-        ),
+        ("cycle_charge", Cmd.LEGINFO1, 12, 2, lambda x: x / 1000),
+        ("temperature", Cmd.LEGINFO2, 12, 2, lambda x: round(x * 0.1 - 273.15, 1)),
         ("cell_count", Cmd.CELLVOLT, 6, 1, lambda x: min(x, BMS._MAX_CELLS)),
         ("cycles", Cmd.LEGINFO2, 8, 2, lambda x: x),
         ("problem_code", Cmd.LEGINFO1, 15, 1, lambda x: x & 0xFF),
