@@ -93,13 +93,13 @@ class MockEJsfBleakClient(MockEJBleakClient):
 
 
 class MockEJsfnoCRCBleakClient(MockEJsfBleakClient):
-    """Emulate a E&J technology BMS BleakClient with single frame protocol."""
+    """Emulate a E&J technology BMS BleakClient with single frame protocol and uncalculated CRC."""
 
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
         ret: bytearray = MockEJsfBleakClient._response(self, char_specifier, data)
-        ret[-3:-1] = b"FB"  # patch to static CRC
+        ret[-3:-1] = b"00"  # patch to wrong CRC
         return ret
 
 
@@ -185,7 +185,7 @@ async def test_update_single_frame(patch_bleak_client, reconnect_fixture) -> Non
 
 
 async def test_update_sf_no_crc(patch_bleak_client) -> None:
-    """Test E&J technology BMS data update."""
+    """Test E&J technology BMS data update with no CRC."""
 
     patch_bleak_client(MockEJsfnoCRCBleakClient)
 
