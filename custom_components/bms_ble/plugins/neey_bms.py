@@ -14,6 +14,7 @@ from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue, crc_sum
 class BMS(BaseBMS):
     """Neey Smart BMS class implementation."""
 
+    _BT_MODULE_MSG: Final = bytes([0x41, 0x54, 0x0D, 0x0A])  # AT\r\n from BLE module
     _HEAD_RSP: Final = bytes([0x55, 0xAA, 0x11, 0x01])  # start, dev addr, read cmd
     _HEAD_CMD: Final = bytes(
         [0xAA, 0x55, 0x11, 0x01]
@@ -24,6 +25,7 @@ class BMS(BaseBMS):
     _FIELDS: Final[list[tuple[BMSvalue, int, str, Callable[[int], Any]]]] = [
         ("voltage", 201, "<f", lambda x: round(x, 3)),
         ("delta_voltage", 209, "<f", lambda x: round(x, 3)),
+        ("problem_code", 216, "B", lambda x: x if x in {1, 3, 7, 8, 9, 10, 11} else 0),
         ("balance_current", 217, "<f", lambda x: round(x, 3)),
     ]
 
@@ -81,7 +83,7 @@ class BMS(BaseBMS):
             len(self._data) >= self._exp_len or not self._data.startswith(BMS._HEAD_RSP)
         ) and data.startswith(BMS._HEAD_RSP):
             self._data = bytearray()
-            self._exp_len = min(
+            self._exp_len = max(
                 int.from_bytes(data[6:8], byteorder="little", signed=False),
                 BMS._MIN_FRAME,
             )
@@ -99,6 +101,11 @@ class BMS(BaseBMS):
         if not self._data.startswith(BMS._HEAD_RSP):
             self._log.debug("incorrect frame start.")
             return
+
+        # trim message in case oversized
+        if len(self._data) > self._exp_len:
+            self._log.debug("wrong data length (%i): %s", len(self._data), self._data)
+            self._data = self._data[: self._exp_len]
 
         if self._data[-1] != BMS._TAIL:
             self._log.debug("incorrect frame end.")
@@ -131,8 +138,6 @@ class BMS(BaseBMS):
         self._bms_info = BMS._dec_devinfo(self._data_final or bytearray())
         self._log.debug("device information: %s", self._bms_info)
 
-        #        self._valid_reply = 0xC8  # BMS ready confirmation
-        #        await asyncio.wait_for(self._wait_event(), timeout=self.TIMEOUT)
         self._valid_reply = 0x02  # cell information
 
     @staticmethod
@@ -191,10 +196,6 @@ class BMS(BaseBMS):
 
         data: BMSsample = self._decode_data(self._data_final)
         data["temp_values"] = BMS._temp_sensors(self._data_final, 2)
-
-        data["problem_code"] = int.from_bytes(
-            self._data_final[229:248], byteorder="little", signed=False
-        )
 
         data["cell_voltages"] = BMS._cell_voltages(self._data_final, 24)
 

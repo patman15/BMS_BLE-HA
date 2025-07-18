@@ -7,7 +7,6 @@ from typing import Final
 from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
-from bleak.backends.service import BleakGATTServiceCollection
 from bleak.exc import BleakError
 
 # from bleak.uuids import normalize_uuid_str, uuidstr_to_str
@@ -89,7 +88,7 @@ class MockNeeyBleakClient(MockBleakClient):
     CELL_INFO: Final = bytearray(b"\x02")
     _FRAME: dict[str, bytearray] = {}
 
-    # _task: asyncio.Task
+    _task: asyncio.Task | None = None
 
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
@@ -122,144 +121,12 @@ class MockNeeyBleakClient(MockBleakClient):
         assert (
             self._notify_callback
         ), "write to characteristics but notification not enabled"
-        # self._notify_callback(
-        #     "MockNeeyBleakClient", bytearray(b"\x41\x54\x0d\x0a")
-        # )  # interleaved AT\r\n command
-        resp = self._response(char_specifier, data)
+
+        resp: Final[bytearray] = self._response(char_specifier, data)
         for notify_data in [
             resp[i : i + BT_FRAME_SIZE] for i in range(0, len(resp), BT_FRAME_SIZE)
         ]:
             self._notify_callback("MockNeeyBleakClient", notify_data)
-        # if (
-        #     bytearray(data)[0:5] == self.HEAD_CMD + self.DEV_INFO
-        # ):  # JK BMS confirms commands with a command in reply
-        #     self._task = asyncio.create_task(self._send_confirm())
-
-    # async def disconnect(self) -> bool:
-    #     """Mock disconnect and wait for send task."""
-    #     await asyncio.wait_for(self._task, 0.1)
-    #     assert self._task.done(), "send task still running!"
-    #     return await super().disconnect()
-
-    # class JKservice(BleakGATTService):
-    #     """Mock the main battery info service from Neey BMS."""
-
-    #     class CharBase(BleakGATTCharacteristic):
-    #         """Basic characteristic for common properties.
-
-    #         Note that Neey BMS has two characteristics with same UUID!
-    #         """
-
-    #         @property
-    #         def service_handle(self) -> int:
-    #             """The integer handle of the Service containing this characteristic."""
-    #             return 0
-
-    #         @property
-    #         def handle(self) -> int:
-    #             """The handle for this characteristic."""
-    #             return 3
-
-    #         @property
-    #         def service_uuid(self) -> str:
-    #             """The UUID of the Service containing this characteristic."""
-    #             return normalize_uuid_str("ffe0")
-
-    #         @property
-    #         def uuid(self) -> str:
-    #             """The UUID for this characteristic."""
-    #             return normalize_uuid_str("ffe1")
-
-    #         @property
-    #         def descriptors(self) -> list[BleakGATTDescriptor]:
-    #             """List of descriptors for this service."""
-    #             return []
-
-    #         def get_descriptor(
-    #             self, specifier: int | str | UUID
-    #         ) -> BleakGATTDescriptor | None:
-    #             """Get a descriptor by handle (int) or UUID (str or uuid.UUID)."""
-    #             raise NotImplementedError
-
-    #         def add_descriptor(self, descriptor: BleakGATTDescriptor) -> None:
-    #             """Add a :py:class:`~BleakGATTDescriptor` to the characteristic.
-
-    #             Should not be used by end user, but rather by `bleak` itself.
-    #             """
-    #             raise NotImplementedError
-
-    #     class CharNotify(CharBase):
-    #         """Characteristic for notifications."""
-
-    #         @property
-    #         def properties(self) -> list[str]:
-    #             """Properties of this characteristic."""
-    #             return ["notify"]
-
-    #     class CharWrite(CharBase):
-    #         """Characteristic for writing."""
-
-    #         @property
-    #         def properties(self) -> list[str]:
-    #             """Properties of this characteristic."""
-    #             return ["write", "write-without-response"]
-
-    #     class CharFaulty(CharBase):
-    #         """Characteristic for writing."""
-
-    #         @property
-    #         def uuid(self) -> str:
-    #             """The UUID for this characteristic."""
-    #             return normalize_uuid_str("0000")
-
-    #         @property
-    #         def properties(self) -> list[str]:
-    #             """Properties of this characteristic."""
-    #             return ["write", "write-without-response"]
-
-    #     @property
-    #     def handle(self) -> int:
-    #         """The handle of this service."""
-
-    #         return 2
-
-    #     @property
-    #     def uuid(self) -> str:
-    #         """The UUID to this service."""
-
-    #         return normalize_uuid_str("ffe0")
-
-    #     @property
-    #     def description(self) -> str:
-    #         """String description for this service."""
-
-    #         return uuidstr_to_str(self.uuid)
-
-    #     @property
-    #     def characteristics(self) -> list[BleakGATTCharacteristic]:
-    #         """List of characteristics for this service."""
-
-    #         return [
-    #             self.CharNotify(None, lambda: 350),
-    #             self.CharWrite(None, lambda: 350),
-    #             self.CharFaulty(None, lambda: 350),  # leave last!
-    #         ]
-
-    #     def add_characteristic(self, characteristic: BleakGATTCharacteristic) -> None:
-    #         """Add a :py:class:`~BleakGATTCharacteristic` to the service.
-
-    #         Should not be used by end user, but rather by `bleak` itself.
-    #         """
-    #         raise NotImplementedError
-
-    # @property
-    # def services(self) -> BleakGATTServiceCollection:
-    #     """Emulate Neey BT service setup."""
-
-    #     serv_col = BleakGATTServiceCollection()
-    #     serv_col.add_service(self.JKservice(None))
-
-    #     return serv_col
 
 
 class MockStreamBleakClient(MockNeeyBleakClient):
@@ -289,16 +156,12 @@ class MockStreamBleakClient(MockNeeyBleakClient):
         ):  # send all responses as a series
             self._task = asyncio.create_task(self._send_all())
 
-
-class MockWrongBleakClient(MockBleakClient):
-    """Mock invalid service for Neey BMS."""
-
-    @property
-    def services(self) -> BleakGATTServiceCollection:
-        """Emulate Neey BT service setup."""
-
-        return BleakGATTServiceCollection()
-
+    async def disconnect(self) -> bool:
+        """Mock disconnect and wait for send task."""
+        if self._task and not self._task.done():
+            await asyncio.wait_for(self._task, 0.1)
+            assert self._task.done(), "send task still running!"
+        return await super().disconnect()
 
 class MockInvalidBleakClient(MockNeeyBleakClient):
     """Emulate a Neey BMS BleakClient with disconnect error."""
@@ -314,16 +177,8 @@ class MockOversizedBleakClient(MockNeeyBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if char_specifier != 3:
-            return bytearray()
-        if bytearray(data)[0:5] == self.HEAD_CMD + self.CELL_INFO:
-            return (  # added AT\r\n command and oversized
-                bytearray(b"\x41\x54\x0d\x0a") + self._FRAME["cell"] + bytearray(6)
-            )
-        if bytearray(data)[0:5] == self.HEAD_CMD + self.DEV_INFO:
-            return self._FRAME["dev"] + bytearray(6)  # oversized
 
-        return bytearray()
+        return super()._response(char_specifier, data) + bytearray(6)
 
 
 @pytest.mark.asyncio
@@ -349,11 +204,11 @@ async def test_update(monkeypatch, patch_bleak_client, reconnect_fixture) -> Non
 
 
 async def test_stream_update(
-    monkeypatch, patch_bleak_client, protocol_type, reconnect_fixture
+    monkeypatch, patch_bleak_client, reconnect_fixture
 ) -> None:
     """Test Neey BMS data update."""
 
-    monkeypatch.setattr(MockStreamBleakClient, "_FRAME", _PROTO_DEFS[protocol_type])
+    monkeypatch.setattr(MockStreamBleakClient, "_FRAME", _PROTO_DEFS)
     patch_bleak_client(MockStreamBleakClient)
     monkeypatch.setattr(  # mock that response has already been received
         "custom_components.bms_ble.plugins.basebms.asyncio.Event.is_set", lambda _: True
@@ -364,10 +219,10 @@ async def test_stream_update(
         reconnect_fixture,
     )
 
-    assert await bms.async_update() == _RESULT_DEFS[protocol_type]
+    assert await bms.async_update() == _RESULT_DEFS
 
     # query again to check already connected state
-    assert await bms.async_update() == _RESULT_DEFS[protocol_type]
+    assert await bms.async_update() == _RESULT_DEFS
     assert bms._client and bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
@@ -425,37 +280,16 @@ async def test_invalid_frame_type(
     await bms.disconnect()
 
 
-async def test_oversized_response(
-    monkeypatch, patch_bleak_client, protocol_type
-) -> None:
+async def test_oversized_response(monkeypatch, patch_bleak_client) -> None:
     """Test data update with BMS returning oversized data, result shall still be ok."""
 
-    monkeypatch.setattr(MockOversizedBleakClient, "_FRAME", _PROTO_DEFS[protocol_type])
+    monkeypatch.setattr(MockOversizedBleakClient, "_FRAME", _PROTO_DEFS)
 
     patch_bleak_client(MockOversizedBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
-    assert await bms.async_update() == _RESULT_DEFS[protocol_type]
-
-    await bms.disconnect()
-
-
-async def test_invalid_device(patch_bleak_client) -> None:
-    """Test data update with BMS returning invalid data."""
-
-    patch_bleak_client(MockWrongBleakClient)
-
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
-
-    result: BMSsample = {}
-
-    with pytest.raises(
-        ConnectionError, match=r"^Failed to detect characteristics from.*"
-    ):
-        result = await bms.async_update()
-
-    assert not result
+    assert await bms.async_update() == _RESULT_DEFS
 
     await bms.disconnect()
 
@@ -497,8 +331,18 @@ async def test_non_stale_data(
 @pytest.fixture(
     name="problem_response",
     params=[
-        (bytearray(b"\x01\x00"), "first_bit"),
-        (bytearray(b"\x00\x80"), "last_bit"),
+        (0x01, "Wrong cell count"),
+        # (0x02, "AcqLine Res test"),
+        (0x03, "AcqLine Res exceed"),
+        # (0x04, "Systest Completed"),
+        # (0x05, "Balancing"),
+        # (0x06, "Balancing finished"),
+        (0x07, "Low voltage"),
+        (0x08, "System Overtemp"),
+        (0x09, "Host fails"),
+        (0x0A, "Low battery voltage - balancing stopped"),
+        (0x0B, "Temperature too high - balancing stopped"),
+        # (0x0C, "Self-test completed"),
     ],
     ids=lambda param: param[1],
 )
@@ -508,24 +352,23 @@ def prb_response(request) -> bytearray:
 
 
 async def test_problem_response(
-    monkeypatch, patch_bleak_client, protocol_type: str, problem_response
+    monkeypatch, patch_bleak_client, problem_response
 ) -> None:
     """Test data update with BMS returning system problem flags."""
 
-    def frame_update(data: bytearray, update: bytearray, pos: int) -> None:
-        data[pos : pos + 2] = update
-        data[-1] = (int(data[-1]) + sum(update)) & 0xFF
+    def frame_update(data: bytearray, update: int) -> None:
+        data[-2] = (data[-2] + update - data[216]) & 0xFF
+        data[216] = update
 
-    protocol_def: dict[str, dict[str, bytearray]] = deepcopy(_PROTO_DEFS)
+    protocol_def: dict[str, bytearray] = deepcopy(_PROTO_DEFS)
     # set error flags in the copy
 
     frame_update(
-        protocol_def[protocol_type]["cell"],
+        protocol_def["cell"],
         problem_response[0],
-        136 if protocol_type == "JK02_24S" else 166,
     )
 
-    monkeypatch.setattr(MockNeeyBleakClient, "_FRAME", protocol_def[protocol_type])
+    monkeypatch.setattr(MockNeeyBleakClient, "_FRAME", protocol_def)
 
     patch_bleak_client(MockNeeyBleakClient)
 
@@ -533,9 +376,9 @@ async def test_problem_response(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73), False
     )
 
-    assert await bms.async_update() == _RESULT_DEFS[protocol_type] | {
+    assert await bms.async_update() == _RESULT_DEFS | {
         "problem": True,
-        "problem_code": 1 << (0 if problem_response[1] == "first_bit" else 15),
+        "problem_code": problem_response[0],
     }
 
     await bms.disconnect()
