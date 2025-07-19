@@ -46,7 +46,7 @@ class BMS(BaseBMS):
         """Provide BluetoothMatcher definition."""
         return [
             AdvertisementPattern(
-                local_name="QQ7",  # FIXME!
+                local_name="HSKS-*",
                 service_uuid=BMS.uuid_services()[0],
                 manufacturer_id=0x7B,  # Hanlynn Technologies
                 connectable=True,

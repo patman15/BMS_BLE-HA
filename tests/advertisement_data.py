@@ -682,7 +682,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     ),
     (  # source pcap (https://github.com/patman15/BMS_BLE-HA/issues/303)
         generate_advertisement_data(
-            local_name="QQ7",
+            local_name="HSKS-25A-118",
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
             manufacturer_data={123: b"\x02\xff\xff"},
             rssi=-70,
