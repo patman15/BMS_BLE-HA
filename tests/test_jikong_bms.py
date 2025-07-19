@@ -19,7 +19,7 @@ from custom_components.bms_ble.plugins.jikong_bms import BMS, BMSmode, crc_sum
 from .bluetooth import generate_ble_device
 from .conftest import MockBleakClient
 
-BT_FRAME_SIZE = 29
+BT_FRAME_SIZE = 128
 
 _PROTO_DEFS: Final[dict[str, dict[str, bytearray]]] = {
     "JK02_24S": {
@@ -142,6 +142,44 @@ _PROTO_DEFS: Final[dict[str, dict[str, bytearray]]] = {
             b"\xb0\xcf\x07\x00\x00\xbb"
         ),  # 53.224V, 25%, 31.881A, cycles:9, 16.367°C, Float, timer: 677s,
     },
+    "JK02_32S_v19": {  # JK02_32 (SW: V19.05)
+        "dev": bytearray(
+            b"\x55\xaa\xeb\x90\x03\x98\x4a\x4b\x5f\x50\x42\x32\x41\x31\x36\x53\x32\x30\x50\x00\x00"
+            b"\x00\x31\x39\x41\x00\x00\x00\x00\x00\x31\x39\x2e\x30\x35\x00\x00\x00\x48\x73\x08\x00"
+            b"\x0b\x00\x00\x00\x42\x61\x74\x65\x72\x69\x65\x20\x31\x00\x00\x00\x00\x00\x00\x00\x31"
+            b"\x32\x33\x34\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x32\x35\x30\x35\x32\x34"
+            b"\x00\x00\x35\x30\x33\x32\x31\x34\x38\x34\x39\x30\x30\x30\x36\x34\x33\x00\x4a\x4b\x2d"
+            b"\x42\x4d\x53\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x33\x31\x34\x31\x35\x39\x32\x37"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x4a\x4b\x2d\x42\x4d\x53\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\xff\xff\xff\xff\x8f\xe9\x8d\x03\x00\x00\x00\x00\x90\x1f\x00\x00\x00\x00"
+            b"\xc0\xd8\xf7\xfe\x7f\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x04\xff\xe7\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\x0f\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x09\x08\x00\x01\x64\x00\x00\x00\x5f\x00\x00\x00\x3c\x00\x00\x00\x32\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x10\x0e\x00\x00\x0a\x3c\x01\x1e\x0f\x03\xa4"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xfe\x9f\xe9\xfe\x1b\x00\x00"
+            b"\x00\x00\x00\x00\x00\xc5\xaa\x55\x90\xeb\xc8\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x44\x41\x54\x0d\x0a"
+        ),  # Vendor_ID: JK_B2A16S20P, SN: 50321489000643, HW: V19.XA, SW: V19.05, power-on: 11, Version: 4.28.0
+        "ack": bytearray(),  # ACKnowledge is contained at end of dev msg, with AT cmd
+        "cell": bytearray(  # copy from v15
+            b"\x55\xaa\xeb\x90\x02\xac\x05\x0d\xfe\x0c\xfe\x0c\x01\x0d\x01\x0d\xfd\x0c\xfb\x0c\x01"
+            b"\x0d\xfc\x0c\xfb\x0c\xfe\x0c\xfb\x0c\xf8\x0c\xfb\x0c\xfb\x0c\x09\x0d\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\x00\xff\x0c\x10\x00\x0f\x0c\x40\x00\x3d\x00"
+            b"\x40\x00\x3d\x00\x41\x00\x3f\x00\x41\x00\x3e\x00\x41\x00\x3e\x00\x41\x00\x3d\x00\x40"
+            b"\x00\x3e\x00\x41\x00\x3f\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x81\x00\x00"
+            b"\x00\x00\x00\xe8\xcf\x00\x00\x4a\xe4\x19\x00\x89\x7c\x00\x00\x86\x00\x80\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x19\x86\xc0\x00\x00\x40\x0d\x03\x00\x09\x00\x00\x00\xb1\x5f\x1c"
+            b"\x00\x64\x00\x00\x00\x8c\x4c\x76\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\xff\x00\x01\x00\x00\x00\x05\x04\x52\x00\x00\x00\xd4\x4e\x40\x40\x00"
+            b"\x00\x00\x00\xca\x14\x00\x00\x00\x01\x01\x01\x00\x06\x00\x00\xea\x67\x00\x00\x00\x00"
+            b"\x00\x00\xcd\x00\xc3\x00\xbf\x00\xbd\x03\x28\x7f\x03\x0a\x1d\x00\x00\x00\x80\x51\x01"
+            b"\x00\x00\x00\x01\x00\xa5\x02\x02\x00\x00\x00\x00\x00\x00\xfe\xff\x7f\xdc\x2f\x01\x01"
+            b"\xb0\xcf\x07\x00\x00\xbb"
+        ),  # 53.224V, 25%, 31.881A, cycles:9, 16.367°C, Float, timer: 677s,
+    },
 }
 
 _RESULT_DEFS: Final[dict[str, BMSsample]] = {
@@ -238,12 +276,49 @@ _RESULT_DEFS: Final[dict[str, BMSsample]] = {
         "temperature": 16.367,
         "problem": False,
     },
+    "JK02_32S_v19": {
+        "cell_count": 16,
+        "delta_voltage": 0.016,
+        "battery_mode": BMSmode.FLOAT,
+        "voltage": 53.224,
+        "current": 31.881,
+        "battery_level": 25,
+        "cycle_charge": 49.286,
+        "cycles": 9,
+        "balance_current": 0.0,
+        "temp_sensors": 255,
+        "problem_code": 0,
+        "temp_values": [12.9, 13.4, 12.8, 20.5, 19.5, 19.1],
+        "cell_voltages": [
+            3.333,
+            3.326,
+            3.326,
+            3.329,
+            3.329,
+            3.325,
+            3.323,
+            3.329,
+            3.324,
+            3.323,
+            3.326,
+            3.323,
+            3.32,
+            3.323,
+            3.323,
+            3.337,
+        ],
+        "cycle_capacity": 2623.198,
+        "power": 1696.834,
+        "battery_charging": True,
+        "temperature": 16.367,
+        "problem": False,
+    },
 }
 
 
 @pytest.fixture(
     name="protocol_type",
-    params=["JK02_24S", "JK02_32S", "JK02_32S_v15"],
+    params=["JK02_24S", "JK02_32S", "JK02_32S_v15", "JK02_32S_v19"],
 )
 def proto(request: pytest.FixtureRequest) -> str:
     """Protocol fixture."""
@@ -258,7 +333,7 @@ class MockJikongBleakClient(MockBleakClient):
     DEV_INFO: Final = bytearray(b"\x97")
     _FRAME: dict[str, bytearray] = {}
 
-    _task: asyncio.Task
+    _task: asyncio.Task | None = None
 
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
@@ -277,10 +352,7 @@ class MockJikongBleakClient(MockBleakClient):
     async def _send_confirm(self) -> None:
         assert self._notify_callback, "send confirm called but notification not enabled"
         await asyncio.sleep(0.01)
-        self._notify_callback(
-            "MockJikongBleakClient",
-            b"\xaa\x55\x90\xeb\xc8\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x44",
-        )
+        self._notify_callback("MockJikongBleakClient", self._FRAME.get("ack", bytearray()))
 
     async def write_gatt_char(
         self,
@@ -308,8 +380,9 @@ class MockJikongBleakClient(MockBleakClient):
 
     async def disconnect(self) -> bool:
         """Mock disconnect and wait for send task."""
-        await asyncio.wait_for(self._task, 0.1)
-        assert self._task.done(), "send task still running!"
+        if self._task is not None:
+            await asyncio.wait_for(self._task, 0.1)
+            assert self._task.done(), "send task still running!"
         return await super().disconnect()
 
     class JKservice(BleakGATTService):
@@ -479,8 +552,9 @@ class MockInvalidBleakClient(MockJikongBleakClient):
 
     async def disconnect(self) -> bool:
         """Mock disconnect to raise BleakError."""
-        await asyncio.wait_for(self._task, 0.1)
-        assert self._task.done(), "send task still running!"
+        if self._task is not None:
+            await asyncio.wait_for(self._task, 0.1)
+            assert self._task.done(), "send task still running!"
         raise BleakError
 
 
@@ -555,7 +629,7 @@ async def test_hide_temp_sensors(
         ref_result |= {"temp_sensors": 3, "temperature": 18.1}
     elif protocol_type == "JK02_32S":
         ref_result |= {"temp_sensors": 251, "temperature": 31.0}
-    elif protocol_type == "JK02_32S_v15":
+    elif protocol_type in ("JK02_32S_v15", "JK02_32S_v19"):
         ref_result |= {"temp_sensors": 251, "temperature": 18.0}
 
     temp_values: list[int | float] = ref_result.get("temp_values", [])

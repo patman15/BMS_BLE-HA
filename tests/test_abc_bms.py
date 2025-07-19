@@ -49,9 +49,9 @@ class MockABCBleakClient(MockBleakClient):
         0xF8: bytearray(
             b"\xcc\xf8\x00\x64\x00\x80\x57\x00\x80\x70\x00\x10\x27\x00\x00\x00\x00\x00\x00\x3e"
         ),
-        0xF9: bytearray(
-            b"\xcc\xf9\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xed"
-        ),
+        # 0xF9: bytearray(
+        #     b"\xcc\xf9\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xed"
+        # ),  # some BMS do not report this, so test without it (separate problem response test)
         0xFA: bytearray(
             b"\xcc\xfa\x48\x0d\x14\x00\x0f\x27\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xd6"
         ),
@@ -91,9 +91,12 @@ class MockABCBleakClient(MockBleakClient):
             await asyncio.sleep(0)
 
 
-async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
+async def test_update(
+    patch_bleak_client, patch_bms_timeout, reconnect_fixture: bool
+) -> None:
     """Test ABC BMS data update."""
 
+    patch_bms_timeout()  # required for optional F9 response
     patch_bleak_client(MockABCBleakClient)
 
     bms = BMS(

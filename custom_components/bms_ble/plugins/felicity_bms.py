@@ -21,14 +21,14 @@ class BMS(BaseBMS):
     _CMD_DT: Final[bytes] = b"get Date"
     _CMD_RT: Final[bytes] = b"get dev real infor"
     _FIELDS: Final[list[tuple[BMSvalue, str, Callable[[list], Any]]]] = [
-        ("voltage", "Batt", lambda x: float(x[0][0] / 1000)),
-        ("current", "Batt", lambda x: float(x[1][0] / 10)),
+        ("voltage", "Batt", lambda x: x[0][0] / 1000),
+        ("current", "Batt", lambda x: x[1][0] / 10),
         (
             "cycle_charge",
             "BatsocList",
             lambda x: (int(x[0][0]) * int(x[0][2])) / 1e7,
         ),
-        ("battery_level", "BatsocList", lambda x: float(x[0][0] / 100)),
+        ("battery_level", "BatsocList", lambda x: x[0][0] / 100),
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:

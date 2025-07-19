@@ -12,7 +12,7 @@ from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
-from bleak_retry_connector import BLEAK_TRANSIENT_BACKOFF_TIME, establish_connection
+from bleak_retry_connector import BLEAK_TIMEOUT, establish_connection
 
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.components.bluetooth.match import ble_device_matches
@@ -106,8 +106,10 @@ class BaseBMS(ABC):
     """Abstract base class for battery management system."""
 
     MAX_RETRY: Final[int] = 3  # max number of retries for data requests
+    TIMEOUT: Final[float] = BLEAK_TIMEOUT / 4  # default timeout for BMS operations
+    # calculate time between retries to complete all retries (2 modes) in TIMEOUT seconds
+    _RETRY_TIMEOUT: Final[float] = TIMEOUT / (2**MAX_RETRY - 1)
     _MAX_TIMEOUT_FACTOR: Final[int] = 8  # limit timout increase to 8x
-    TIMEOUT: Final[float] = BLEAK_TRANSIENT_BACKOFF_TIME * _MAX_TIMEOUT_FACTOR
     _MAX_CELL_VOLT: Final[float] = 5.906  # max cell potential
     _HRS_TO_SECS: Final[int] = 60 * 60  # seconds in an hour
 
@@ -320,6 +322,11 @@ class BaseBMS(ABC):
             self._log.debug("BMS already connected")
             return
 
+        try:
+            await self._client.disconnect()  # ensure no stale connection exists
+        except (BleakError, TimeoutError) as exc:
+            self._log.debug("failed to disconnect stale connection (%s)", type(exc).__name__)
+
         self._log.debug("connecting BMS")
         self._client = await establish_connection(
             client_class=BleakClient,
@@ -331,9 +338,9 @@ class BaseBMS(ABC):
 
         try:
             await self._init_connection()
-        except Exception as err:
+        except Exception as exc:
             self._log.info(
-                "failed to initialize BMS connection (%s)", type(err).__name__
+                "failed to initialize BMS connection (%s)", type(exc).__name__
             )
             await self.disconnect()
             raise
@@ -384,8 +391,8 @@ class BaseBMS(ABC):
             [False, True] if self._inv_wr_mode is None else [self._inv_wr_mode]
         ):
             try:
+                self._data_event.clear()  # clear event before requesting new data
                 for attempt in range(BaseBMS.MAX_RETRY):
-                    self._data_event.clear()  # clear event before requesting new data
                     await self._send_msg(
                         data, max_size, char or self.uuid_tx(), attempt, inv_wr_mode
                     )
@@ -393,7 +400,7 @@ class BaseBMS(ABC):
                         if wait_for_notify:
                             await asyncio.wait_for(
                                 self._wait_event(),
-                                BLEAK_TRANSIENT_BACKOFF_TIME
+                                BaseBMS._RETRY_TIMEOUT
                                 * min(2**attempt, BaseBMS._MAX_TIMEOUT_FACTOR),
                             )
                     except TimeoutError:
@@ -414,15 +421,14 @@ class BaseBMS(ABC):
     async def disconnect(self, reset: bool = False) -> None:
         """Disconnect the BMS, includes stoping notifications."""
 
-        if self._client.is_connected:
-            self._log.debug("disconnecting BMS")
-            try:
-                self._data_event.clear()
-                if reset:
-                    self._inv_wr_mode = None  # reset write mode
-                await self._client.disconnect()
-            except BleakError:
-                self._log.warning("disconnect failed!")
+        self._log.debug("disconnecting BMS (%s)", str(self._client.is_connected))
+        try:
+            self._data_event.clear()
+            if reset:
+                self._inv_wr_mode = None  # reset write mode
+            await self._client.disconnect()
+        except BleakError:
+            self._log.warning("disconnect failed!")
 
     async def _wait_event(self) -> None:
         """Wait for data event and clear it."""
