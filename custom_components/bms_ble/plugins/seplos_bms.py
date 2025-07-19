@@ -40,26 +40,19 @@ class BMS(BaseBMS):
         "PIB": (0x4, 0x1100, PIB_LEN),
     }
     _FIELDS: Final[list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]] = [
-        ("temperature", EIB_LEN, 20, 2, True, lambda x: float(x / 10)),  # avg. ctemp
-        ("voltage", EIA_LEN, 0, 4, False, lambda x: float(BMS._swap32(x) / 100)),
-        (
-            "current",
-            EIA_LEN,
-            4,
-            4,
-            True,
-            lambda x: float((BMS._swap32(x, True)) / 10),
-        ),
-        ("cycle_charge", EIA_LEN, 8, 4, False, lambda x: float(BMS._swap32(x) / 100)),
+        ("temperature", EIB_LEN, 20, 2, True, lambda x: x / 10),  # avg. ctemp
+        ("voltage", EIA_LEN, 0, 4, False, lambda x: BMS._swap32(x) / 100),
+        ("current", EIA_LEN, 4, 4, True, lambda x: BMS._swap32(x, True) / 10),
+        ("cycle_charge", EIA_LEN, 8, 4, False, lambda x: BMS._swap32(x) / 100),
         ("pack_count", EIA_LEN, 44, 2, False, lambda x: x),
         ("cycles", EIA_LEN, 46, 2, False, lambda x: x),
-        ("battery_level", EIA_LEN, 48, 2, False, lambda x: float(x / 10)),
+        ("battery_level", EIA_LEN, 48, 2, False, lambda x: x / 10),
         ("problem_code", EIC_LEN, 1, 9, False, lambda x: x & 0xFFFF00FF00FF0000FF),
     ]  # Protocol Seplos V3
     _PFIELDS: Final[list[tuple[BMSpackvalue, int, bool, Callable[[int], Any]]]] = [
-        ("pack_voltages", 0, False, lambda x: float(x / 100)),
-        ("pack_currents", 2, True, lambda x: float(x / 100)),
-        ("pack_battery_levels", 10, False, lambda x: float(x / 10)),
+        ("pack_voltages", 0, False, lambda x: x / 100),
+        ("pack_currents", 2, True, lambda x: x / 100),
+        ("pack_battery_levels", 10, False, lambda x: x / 10),
         ("pack_cycles", 14, False, lambda x: x),
     ]  # Protocol Seplos V3
     _CMDS: Final[set[int]] = {field[2] for field in QUERY.values()} | {
@@ -243,15 +236,13 @@ class BMS(BaseBMS):
 
             # get cell voltages
             pack_cells: list[float] = [
-                float(
-                    int.from_bytes(
-                        self._data_final[pack << 8 | BMS.PIB_LEN * 2][
-                            BMS.HEAD_LEN + idx * 2 : BMS.HEAD_LEN + idx * 2 + 2
-                        ],
-                        byteorder="big",
-                    )
-                    / 1000
+                int.from_bytes(
+                    self._data_final[pack << 8 | BMS.PIB_LEN * 2][
+                        BMS.HEAD_LEN + idx * 2 : BMS.HEAD_LEN + idx * 2 + 2
+                    ],
+                    byteorder="big",
                 )
+                / 1000
                 for idx in range(16)
             ]
             # update per pack delta voltage

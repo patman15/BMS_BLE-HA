@@ -24,8 +24,8 @@ class BMS(BaseBMS):
     _CELL_POS: Final[int] = 6
 
     _FIELDS: Final[list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]]] = [
-        ("voltage", 2, 2, False, lambda x: float(x) / 10),
-        ("current", 0, 2, True, lambda x: float(x) / 10),
+        ("voltage", 2, 2, False, lambda x: x / 10),
+        ("current", 0, 2, True, lambda x: x / 10),
         ("battery_level", 4, 2, False, lambda x: min(x, 100)),
         ("cycles", 7, 2, False, lambda x: x),
         ("problem_code", 15, 6, False, lambda x: x & 0xFFF000FF000F),

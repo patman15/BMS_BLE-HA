@@ -18,10 +18,10 @@ class BMS(BaseBMS):
     _TEMP_POS: Final[int] = 37
     _CELL_POS: Final[int] = 3
     _FIELDS: Final[list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]]] = [
-        ("voltage", 5, 2, False, lambda x: float(x / 10)),
-        ("current", 3, 2, True, lambda x: float(x / 100)),
+        ("voltage", 5, 2, False, lambda x: x / 10),
+        ("current", 3, 2, True, lambda x: x / 100),
         ("design_capacity", 11, 4, False, lambda x: x / 1000),
-        ("cycle_charge", 7, 4, False, lambda x: float(x / 1000)),
+        ("cycle_charge", 7, 4, False, lambda x: x / 1000),
         ("cycles", 15, 2, False, lambda x: x),
     ]
 
