@@ -333,7 +333,7 @@ class MockJikongBleakClient(MockBleakClient):
     DEV_INFO: Final = bytearray(b"\x97")
     _FRAME: dict[str, bytearray] = {}
 
-    _task: asyncio.Task
+    _task: asyncio.Task | None = None
 
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
@@ -380,8 +380,9 @@ class MockJikongBleakClient(MockBleakClient):
 
     async def disconnect(self) -> bool:
         """Mock disconnect and wait for send task."""
-        await asyncio.wait_for(self._task, 0.1)
-        assert self._task.done(), "send task still running!"
+        if self._task is not None:
+            await asyncio.wait_for(self._task, 0.1)
+            assert self._task.done(), "send task still running!"
         return await super().disconnect()
 
     class JKservice(BleakGATTService):
@@ -551,8 +552,9 @@ class MockInvalidBleakClient(MockJikongBleakClient):
 
     async def disconnect(self) -> bool:
         """Mock disconnect to raise BleakError."""
-        await asyncio.wait_for(self._task, 0.1)
-        assert self._task.done(), "send task still running!"
+        if self._task is not None:
+            await asyncio.wait_for(self._task, 0.1)
+            assert self._task.done(), "send task still running!"
         raise BleakError
 
 

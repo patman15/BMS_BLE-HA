@@ -232,9 +232,9 @@ async def test_update_0x1e_head(
         ),
     }
 
+    patch_bms_timeout()
     monkeypatch.setattr(MockTDTBleakClient, "HEAD_CMD", 0x1E)
     monkeypatch.setattr(MockTDTBleakClient, "RESP", resp_0x1e)
-    patch_bms_timeout("tdt_bms")
     patch_bleak_client(MockTDTBleakClient)
 
     bms = BMS(
