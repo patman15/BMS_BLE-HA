@@ -52,7 +52,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - accurat batteries (show up as `GJ-`&#x2026;)
     - Bulltron, DCHOUSE, ECO-WORTHY (show up as `DP04S`&#x2026;, `ECO-LFP`&#x2026;), Epoch batteries
     - Eleksol, Liontron, Perfektium (show up as `PKT`&#x2026;), Ultimatron batteries (show up as `12??0`&#x2026;)
-    - SBL batteries, Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries (show up as `DWC`&#x2026;)
+    - SBL batteries (show up as `SBL-`&#x2026;), Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries (show up as `DWC`&#x2026;)
 - JK BMS, Jikong, (HW version &ge; 6 required)
 - LiTime, Power Queen, and Redodo batteries
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
