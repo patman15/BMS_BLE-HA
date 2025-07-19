@@ -14,9 +14,9 @@ from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue
 class BMS(BaseBMS):
     """Offgridtec LiFePO4 Smart Pro type A and type B BMS implementation."""
 
-    IDX_NAME: Final = 0
-    IDX_LEN: Final = 1
-    IDX_FCT: Final = 2
+    _IDX_NAME: Final = 0
+    _IDX_LEN: Final = 1
+    _IDX_FCT: Final = 2
     # magic crypt sequence of length 16
     _CRYPT_SEQ: Final[list[int]] = [2, 5, 4, 3, 1, 4, 1, 6, 8, 3, 7, 2, 5, 8, 9, 3]
 
@@ -52,12 +52,12 @@ class BMS(BaseBMS):
             self._REGISTERS = {
                 # SOC (State of Charge)
                 2: ("battery_level", 1, lambda x: x),
-                4: ("cycle_charge", 3, lambda x: float(x) / 1000),
-                8: ("voltage", 2, lambda x: float(x) / 1000),
+                4: ("cycle_charge", 3, lambda x: x / 1000),
+                8: ("voltage", 2, lambda x: x / 1000),
                 # MOS temperature
-                12: ("temperature", 2, lambda x: round(float(x) * 0.1 - 273.15, 1)),
+                12: ("temperature", 2, lambda x: round(x * 0.1 - 273.15, 1)),
                 # 3rd byte of current is 0 (should be 1 as for B version)
-                16: ("current", 3, lambda x: float(x) / 100),
+                16: ("current", 3, lambda x: x / 100),
                 24: ("runtime", 2, lambda x: int(x * 60)),
                 44: ("cycles", 2, lambda x: x),
                 # Type A batteries have no cell voltage registers
@@ -66,12 +66,12 @@ class BMS(BaseBMS):
         elif self._type == "B":
             self._REGISTERS = {
                 # MOS temperature
-                8: ("temperature", 2, lambda x: round(float(x) * 0.1 - 273.15, 1)),
-                9: ("voltage", 2, lambda x: float(x) / 1000),
-                10: ("current", 3, lambda x: float(x) / 1000),
+                8: ("temperature", 2, lambda x: round(x * 0.1 - 273.15, 1)),
+                9: ("voltage", 2, lambda x: x / 1000),
+                10: ("current", 3, lambda x: x / 1000),
                 # SOC (State of Charge)
                 13: ("battery_level", 1, lambda x: x),
-                15: ("cycle_charge", 3, lambda x: float(x) / 1000),
+                15: ("cycle_charge", 3, lambda x: x / 1000),
                 18: ("runtime", 2, lambda x: int(x * 60)),
                 23: ("cycles", 2, lambda x: x),
             }
@@ -179,7 +179,7 @@ class BMS(BaseBMS):
         for reg in list(self._REGISTERS):
             self._exp_reply = reg
             await self._await_reply(
-                data=self._ogt_command(reg, self._REGISTERS[reg][BMS.IDX_LEN])
+                data=self._ogt_command(reg, self._REGISTERS[reg][BMS._IDX_LEN])
             )
             if self._response.reg < 0:
                 raise TimeoutError

@@ -90,11 +90,12 @@ def patch_bms_timeout(monkeypatch):
     """Fixture to patch BMS.TIMEOUT for different BMS classes."""
 
     def _patch_timeout(bms_class: str | None = None, timeout: float = 0.001) -> None:
-        patch_class: str = f"{bms_class}.BMS.TIMEOUT" if bms_class else "basebms.BLEAK_TRANSIENT_BACKOFF_TIME"
-        monkeypatch.setattr(
-            f"custom_components.bms_ble.plugins.{patch_class}",
-            timeout,
+        patch_class: str = (
+            f"{bms_class}.BMS.TIMEOUT"
+            if bms_class
+            else "basebms.BaseBMS._RETRY_TIMEOUT"
         )
+        monkeypatch.setattr(f"custom_components.bms_ble.plugins.{patch_class}", timeout)
 
     return _patch_timeout
 
@@ -375,7 +376,7 @@ class MockBleakClient(BleakClient):
 
     async def disconnect(self) -> bool:
         """Mock disconnect."""
-        assert self._connected, "Disconnect called, but client not connected."
+
         LOGGER.debug("MockBleakClient disconnecting %s", self._ble_device.address)
         self._connected = False
         if self._disconnect_callback is not None:

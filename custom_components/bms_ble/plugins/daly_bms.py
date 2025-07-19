@@ -24,14 +24,14 @@ class BMS(BaseBMS):
     MOS_TEMP_POS: Final[int] = HEAD_LEN + 8
     MOS_NOT_AVAILABLE: Final[tuple[str]] = ("DL-FB4C2E0",)
     _FIELDS: Final[list[tuple[BMSvalue, int, int, Callable[[int], Any]]]] = [
-        ("voltage", 80 + HEAD_LEN, 2, lambda x: float(x / 10)),
-        ("current", 82 + HEAD_LEN, 2, lambda x: float((x - 30000) / 10)),
-        ("battery_level", 84 + HEAD_LEN, 2, lambda x: float(x / 10)),
-        ("cycle_charge", 96 + HEAD_LEN, 2, lambda x: float(x / 10)),
+        ("voltage", 80 + HEAD_LEN, 2, lambda x: x / 10),
+        ("current", 82 + HEAD_LEN, 2, lambda x: (x - 30000) / 10),
+        ("battery_level", 84 + HEAD_LEN, 2, lambda x: x / 10),
+        ("cycle_charge", 96 + HEAD_LEN, 2, lambda x: x / 10),
         ("cell_count", 98 + HEAD_LEN, 2, lambda x: min(x, BMS.MAX_CELLS)),
         ("temp_sensors", 100 + HEAD_LEN, 2, lambda x: min(x, BMS.MAX_TEMP)),
         ("cycles", 102 + HEAD_LEN, 2, lambda x: x),
-        ("delta_voltage", 112 + HEAD_LEN, 2, lambda x: float(x / 1000)),
+        ("delta_voltage", 112 + HEAD_LEN, 2, lambda x: x / 1000),
         ("problem_code", 116 + HEAD_LEN, 8, lambda x: x % 2**64),
     ]
 

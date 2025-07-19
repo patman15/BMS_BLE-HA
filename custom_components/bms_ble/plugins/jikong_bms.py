@@ -29,12 +29,12 @@ class BMS(BaseBMS):
     INFO_LEN: Final[int] = 300
     _FIELDS: Final[list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]]] = (
         [  # Protocol: JK02_32S; JK02_24S has offset -32
-            ("voltage", 150, 4, False, lambda x: float(x / 1000)),
-            ("current", 158, 4, True, lambda x: float(x / 1000)),
+            ("voltage", 150, 4, False, lambda x: x / 1000),
+            ("current", 158, 4, True, lambda x: x / 1000),
             ("battery_level", 173, 1, False, lambda x: x),
-            ("cycle_charge", 174, 4, False, lambda x: float(x / 1000)),
+            ("cycle_charge", 174, 4, False, lambda x: x / 1000),
             ("cycles", 182, 4, False, lambda x: x),
-            ("balance_current", 170, 2, True, lambda x: float(x / 1000)),
+            ("balance_current", 170, 2, True, lambda x: x / 1000),
             ("temp_sensors", 214, 2, True, lambda x: x),
             ("problem_code", 166, 4, False, lambda x: x),
         ]

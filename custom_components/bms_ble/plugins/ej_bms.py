@@ -26,9 +26,9 @@ class BMS(BaseBMS):
     _TAIL: Final[bytes] = b"\x7e"
     _MAX_CELLS: Final[int] = 16
     _FIELDS: Final[list[tuple[BMSvalue, Cmd, int, int, Callable[[int], Any]]]] = [
-        ("current", Cmd.RT, 89, 8, lambda x: float((x >> 16) - (x & 0xFFFF)) / 100),
+        ("current", Cmd.RT, 89, 8, lambda x: ((x >> 16) - (x & 0xFFFF)) / 100),
         ("battery_level", Cmd.RT, 123, 2, lambda x: x),
-        ("cycle_charge", Cmd.CAP, 15, 4, lambda x: float(x) / 10),
+        ("cycle_charge", Cmd.CAP, 15, 4, lambda x: x / 10),
         ("temperature", Cmd.RT, 97, 2, lambda x: x - 40),  # only 1st sensor relevant
         ("cycles", Cmd.RT, 115, 4, lambda x: x),
         ("problem_code", Cmd.RT, 105, 4, lambda x: x & 0x0FFC),  # mask status bits
@@ -54,10 +54,11 @@ class BMS(BaseBMS):
                     "connectable": True,
                 },
                 {"local_name": "SV12V*", "manufacturer_id": 33384, "connectable": True},
+                {"local_name": "LT-24*", "manufacturer_id": 22618, "connectable": True},
             ]
             + [  # LiTime
                 AdvertisementPattern(
-                    local_name="LT-*", manufacturer_id=m_id, connectable=True
+                    local_name="LT-12*", manufacturer_id=m_id, connectable=True
                 )
                 for m_id in (33384, 22618)
             ]
