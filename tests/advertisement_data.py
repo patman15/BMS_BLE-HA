@@ -765,7 +765,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             rssi=-44,
             manufacturer_data={57676: b"\x74\x57\x94\x7b"},  # MAC address, correct
         ),
-        "renogy_bms",
+        "renogy_pro_bms",
     ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/360)
         generate_advertisement_data(
