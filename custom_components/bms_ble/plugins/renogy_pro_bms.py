@@ -1,6 +1,7 @@
 """Module to support Renogy Pro BMS."""
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
+from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
 from .basebms import AdvertisementPattern
@@ -11,6 +12,11 @@ class BMS(RenogyBMS):
     """Renogy Pro battery class implementation."""
 
     HEAD: bytes = b"\xff\x03"  # SOP, read fct (x03)
+
+    def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
+        """Intialize private BMS members."""
+        super().__init__(ble_device, reconnect)
+        self._char_write_handle: int = -1
 
     @staticmethod
     def matcher_dict_list() -> list[AdvertisementPattern]:
@@ -33,13 +39,32 @@ class BMS(RenogyBMS):
     ) -> None:
         """Initialize RX/TX characteristics and protocol state."""
         char_notify_handle: int = -1
+        self._char_write_handle = -1
         assert char_notify is None, "char_notify not used for Renogy Pro BMS"
 
         for service in self._client.services:
+            self._log.debug(
+                "service %s (#%i): %s",
+                service.uuid,
+                service.handle,
+                service.description,
+            )
             for char in service.characteristics:
                 self._log.debug(
-                    "discovered %s (#%i): %s", char.uuid, char.handle, char.properties
+                    "characteristic %s (#%i): %s",
+                    char.uuid,
+                    char.handle,
+                    char.properties,
                 )
+                if (
+                    service.uuid == BMS.uuid_services()[0]
+                    and char.uuid == normalize_uuid_str(BMS.uuid_tx())
+                    and any(
+                        prop in char.properties
+                        for prop in ("write", "write-without-response")
+                    )
+                ):
+                    char_notify_handle = char.handle
                 if (
                     service.uuid == BMS.uuid_services()[1]
                     and char.uuid == normalize_uuid_str(BMS.uuid_rx())
@@ -47,13 +72,27 @@ class BMS(RenogyBMS):
                 ):
                     char_notify_handle = char.handle
 
-        if char_notify_handle == -1:
+        if char_notify_handle == -1 or self._char_write_handle == -1:
             self._log.debug("failed to detect characteristics.")
             await self._client.disconnect()
             raise ConnectionError(f"Failed to detect characteristics from {self.name}.")
         self._log.debug(
-            "using characteristics handle #%i (notify).",
+            "using characteristics handle #%i (notify), #%i (write).",
             char_notify_handle,
+            self._char_write_handle,
         )
 
         await super()._init_connection(char_notify_handle)
+
+    async def _await_reply(
+        self,
+        data: bytes,
+        char: int | str | None = None,
+        wait_for_notify: bool = True,
+        max_size: int = 0,
+    ) -> None:
+        """Send data to the BMS and wait for valid reply notification."""
+
+        await super()._await_reply(
+            data, self._char_write_handle, wait_for_notify, max_size
+        )
