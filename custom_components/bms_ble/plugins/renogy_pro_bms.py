@@ -64,7 +64,7 @@ class BMS(RenogyBMS):
                         for prop in ("write", "write-without-response")
                     )
                 ):
-                    char_notify_handle = char.handle
+                    self._char_write_handle = char.handle
                 if (
                     service.uuid == BMS.uuid_services()[1]
                     and char.uuid == normalize_uuid_str(BMS.uuid_rx())
