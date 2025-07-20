@@ -99,7 +99,6 @@ class BMS(BaseBMS):
             return
 
         self._data = data.copy()
-
         self._data_event.set()
 
     @staticmethod
@@ -119,22 +118,14 @@ class BMS(BaseBMS):
     def _cell_voltages(data: bytearray, cells: int) -> list[float]:
         """Return cell voltages from status message."""
         return [
-            int.from_bytes(
-                data[BMS._CELL_POS + 2 + 2 * idx : BMS._CELL_POS + 4 + 2 * idx],
-                byteorder="big",
-            )
-            / 10
+            BMS._read_int16(data, BMS._CELL_POS + 2 + 2 * idx) / 10
             for idx in range(cells)
         ]
 
     @staticmethod
     def _temp_sensors(data: bytearray, sensors: int) -> list[int | float]:
         return [
-            int.from_bytes(
-                data[BMS._TEMP_POS + 2 + 2 * idx : BMS._TEMP_POS + 4 + 2 * idx],
-                byteorder="big",
-            )
-            / 10
+            BMS._read_int16(data, BMS._TEMP_POS + 2 + 2 * idx, signed=True) / 10
             for idx in range(sensors)
         ]
 
