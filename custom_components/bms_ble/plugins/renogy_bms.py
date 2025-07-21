@@ -104,7 +104,7 @@ class BMS(BaseBMS):
     @staticmethod
     def _decode_data(data: bytearray) -> BMSsample:
         result: BMSsample = {}
-        for key, idx, size, sign, func in BMS._FIELDS:
+        for key, idx, size, sign, func in BMS.FIELDS:
             result[key] = func(
                 int.from_bytes(data[idx : idx + size], byteorder="big", signed=sign)
             )
