@@ -1,10 +1,13 @@
 """Module to support Renogy Pro BMS."""
 
+from collections.abc import Callable
+from typing import Any
+
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern
+from .basebms import AdvertisementPattern, BMSvalue
 from .renogy_bms import BMS as RenogyBMS
 
 
@@ -12,11 +15,19 @@ class BMS(RenogyBMS):
     """Renogy Pro battery class implementation."""
 
     HEAD: bytes = b"\xff\x03"  # SOP, read fct (x03)
+    FIELDS: list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]] = [
+        ("voltage", 5, 2, False, lambda x: x / 10),
+        ("current", 3, 2, True, lambda x: x / 10),
+        ("design_capacity", 11, 4, False, lambda x: x // 1000),
+        ("cycle_charge", 7, 4, False, lambda x: x / 1000),
+        ("cycles", 15, 2, False, lambda x: x),
+    ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
         super().__init__(ble_device, reconnect)
         self._char_write_handle: int = -1
+
 
     @staticmethod
     def matcher_dict_list() -> list[AdvertisementPattern]:
