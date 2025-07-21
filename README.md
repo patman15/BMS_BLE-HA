@@ -55,6 +55,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - JK BMS, Jikong, (HW version &ge; 6 required)
 - LiTime, Power Queen, and Redodo batteries
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
+- Pro BMS Smart Shunt (shows up as `Pro BMS`)
 - Renogy BMS
 - RoyPow batteries
 - Seplos v2 (show up as `BP0?`)
@@ -82,6 +83,7 @@ Platform | Description | Unit | Decription | optional Attributes
 `sensor` | delta voltage | `V` | maximum difference between any two cells | cell voltages
 `sensor` | power | `W` | positive for charging, negative for discharging
 `sensor` | runtime | `s` | remaining discharge time till SoC 0%, `unavailable` during idle/charging
+`sensor` | charge time | `s` | remaining time until full charge, `unavailable` when not charging
 `sensor` | SoC | `%` | state of charge, range 100% (full) to 0% (battery empty) | package SoC
 `sensor` | stored energy | `Wh` | currently stored energy
 `sensor` | temperature | `°C` | (average) battery temperature | individual temperature values
@@ -286,6 +288,7 @@ for helping with making the integration better.
 - Jikong BMS: [esphome-jk-bms](https://github.com/syssi/esphome-jk-bms)
 - JBD BMS: [esphome-jbd-bms](https://github.com/syssi/esphome-jbd-bms)
 - D-powercore BMS: [Strom BMS monitor](https://github.com/majonessyltetoy/strom)
+- Pro BMS: [Documentation](docs/pro_bms.md)
 - Redodo BMS: [LiTime BMS bluetooth](https://github.com/calledit/LiTime_BMS_bluetooth)
 
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=86400

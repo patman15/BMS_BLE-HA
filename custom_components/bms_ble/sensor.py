@@ -150,6 +150,16 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         value_fn=lambda data: data.get("runtime"),
     ),
     BmsEntityDescription(
+        key="charge_time",
+        translation_key="charge_time",
+        name="Charge time",
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        suggested_unit_of_measurement=UnitOfTime.HOURS,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.DURATION,
+        value_fn=lambda data: data.get("charge_time"),
+    ),
+    BmsEntityDescription(
         key=ATTR_DELTA_VOLTAGE,
         translation_key=ATTR_DELTA_VOLTAGE,
         name="Delta voltage",

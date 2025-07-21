@@ -197,6 +197,30 @@ class BaseBMS(ABC):
     def uuid_tx() -> str:
         """Return 16-bit UUID of characteristic that provides write property."""
 
+    def _calculate_charge_time(self, data: dict[str, Any], current: float) -> int | None:
+        """Calculate time to full charge when charging."""
+        if current <= 0:
+            return None
+            
+        design_capacity = data.get("design_capacity", 0)
+        cycle_charge = data.get("cycle_charge", 0)
+        
+        if design_capacity <= 0 or cycle_charge >= design_capacity:
+            return None
+            
+        remaining_capacity = design_capacity - cycle_charge
+        charge_time_hours = remaining_capacity / abs(current)
+        charge_time_seconds = int(charge_time_hours * BaseBMS._HRS_TO_SECS)
+        
+        self._log.debug(
+            f"Charge time calculation: design_capacity={design_capacity:.2f}Ah, "
+            f"cycle_charge={cycle_charge:.2f}Ah, current={current:.2f}A, "
+            f"remaining_capacity={remaining_capacity:.2f}Ah, "
+            f"charge_time={charge_time_seconds}s ({charge_time_hours:.2f}h)"
+        )
+        
+        return charge_time_seconds
+
     @staticmethod
     def _calc_values() -> frozenset[BMSvalue]:
         """Return values that the BMS cannot provide and need to be calculated.
@@ -270,6 +294,20 @@ class BaseBMS(ABC):
                     else None
                 ),
             ),
+            "charge_time": (
+                {"current", "cycle_charge", "design_capacity"},
+                lambda: (
+                    int(
+                        (data.get("design_capacity", 0) - data.get("cycle_charge", 0))
+                        / abs(current)
+                        * BaseBMS._HRS_TO_SECS
+                    )
+                    if current > 0
+                    and data.get("design_capacity", 0) > 0
+                    and data.get("cycle_charge", 0) < data.get("design_capacity", 0)
+                    else None
+                ),
+            ),
             "temperature": (
                 {"temp_values"},
                 lambda: (
@@ -327,20 +365,31 @@ class BaseBMS(ABC):
         except (BleakError, TimeoutError) as exc:
             self._log.debug("failed to disconnect stale connection (%s)", type(exc).__name__)
 
-        self._log.debug("connecting BMS")
-        self._client = await establish_connection(
-            client_class=BleakClient,
-            device=self._ble_device,
-            name=self._ble_device.address,
-            disconnected_callback=self._on_disconnect,
-            services=[*self.uuid_services()],
-        )
+        self._log.info("Connecting to BMS at %s", self._ble_device.address)
+        try:
+            self._client = await establish_connection(
+                client_class=BleakClient,
+                device=self._ble_device,
+                name=self._ble_device.address,
+                disconnected_callback=self._on_disconnect,
+                services=[*self.uuid_services()],
+            )
+            self._log.info("BMS connected successfully")
+        except Exception as err:
+            self._log.error(
+                "Failed to establish BMS connection: %s (%s)",
+                err,
+                type(err).__name__
+            )
+            raise
 
         try:
             await self._init_connection()
-        except Exception as exc:
-            self._log.info(
-                "failed to initialize BMS connection (%s)", type(exc).__name__
+        except Exception as err:
+            self._log.error(
+                "Failed to initialize BMS connection: %s (%s)",
+                err,
+                type(err).__name__
             )
             await self.disconnect()
             raise
@@ -450,13 +499,24 @@ class BaseBMS(ABC):
             BMSsample: dictionary with BMS values
 
         """
+        self._log.debug("Starting BMS update")
+        
+        # Establish connection if needed
         await self._connect()
 
+        # Get data from the BMS
+        self._log.debug("Calling _async_update to get BMS data")
         data: BMSsample = await self._async_update()
-        self._add_missing_values(data, self._calc_values())
+        
+        if data:
+            self._log.debug("Received data from BMS: %d values", len(data))
+            self._add_missing_values(data, self._calc_values())
+        else:
+            self._log.warning("No data received from BMS")
 
         if self._reconnect:
             # disconnect after data update to force reconnect next time (slow!)
+            self._log.debug("Disconnecting due to reconnect mode")
             await self.disconnect()
 
         return data
