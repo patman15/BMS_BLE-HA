@@ -1,8 +1,8 @@
 """Test the BLE Battery Management System integration config flow."""
 
+import sys
 from typing import Final
 from unittest.mock import MagicMock
-import sys
 
 from bleak.backends.scanner import AdvertisementData
 from home_assistant_bluetooth import BluetoothServiceInfoBleak

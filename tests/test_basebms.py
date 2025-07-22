@@ -341,7 +341,6 @@ class TestCalculateChargeTime:
             self, _sender: BleakGATTCharacteristic, data: bytearray
         ) -> None:
             """Handle the RX characteristics notify event (new data arrives)."""
-            pass
 
         async def _async_update(self) -> BMSsample:
             """Update battery status information."""
@@ -417,11 +416,12 @@ class TestCalculateChargeTime:
 
 def test_supported_no_match():
     """Test supported method when no matchers match."""
+    from typing import Any
+
     from custom_components.bms_ble.plugins.basebms import BaseBMS
     from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
-    from typing import Any
-    from tests.bluetooth import generate_ble_device, generate_advertisement_data
-    
+    from tests.bluetooth import generate_advertisement_data, generate_ble_device
+
     class TestBMS(BaseBMS):
         @staticmethod
         def matcher_dict_list() -> list[dict[str, Any]]:
@@ -430,26 +430,26 @@ def test_supported_no_match():
                 {"service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"},
                 {"local_name": "SomeBMS*"}
             ]
-            
+
         @staticmethod
         def device_info() -> dict[str, str]:
             return {"manufacturer": "Test", "model": "BMS"}
-            
+
         @staticmethod
         def uuid_services() -> list[str]:
             return ["0000fff0-0000-1000-8000-00805f9b34fb"]
-            
+
         @staticmethod
         def uuid_rx() -> str:
             return "0000fff1-0000-1000-8000-00805f9b34fb"
-            
+
         @staticmethod
         def uuid_tx() -> str:
             return "0000fff2-0000-1000-8000-00805f9b34fb"
-            
+
         async def _async_update(self) -> BMSsample:
             return {}
-    
+
     # Create a device that doesn't match any matchers
     device = generate_ble_device("aa:bb:cc:dd:ee:ff", "DifferentDevice", None, -50)
     adv_data = generate_advertisement_data(
@@ -470,7 +470,7 @@ def test_supported_no_match():
         time=0,
         tx_power=-127,
     )
-    
+
     # Should return False when no matchers match
     assert TestBMS.supported(discovery_info) is False
 
@@ -478,56 +478,57 @@ def test_supported_no_match():
 async def test_disconnect_error_handling(caplog):
     """Test disconnect error handling."""
     import logging
-    from custom_components.bms_ble.plugins.basebms import BaseBMS
-    from bleak import BleakError
     from typing import Any
+
+    from bleak import BleakError
+
+    from custom_components.bms_ble.plugins.basebms import BaseBMS
     from tests.bluetooth import generate_ble_device
-    
+
     class MockBleakClient:
         def __init__(self):
             self.is_connected = True
-            
+
         async def disconnect(self):
             raise BleakError("Disconnect failed")
-    
+
     class TestBMS(BaseBMS):
         def __init__(self, ble_device):
             super().__init__("test_logger", ble_device)
             self._client = MockBleakClient()
-            
+
         @staticmethod
         def matcher_dict_list() -> list[dict[str, Any]]:
             return []
-            
+
         @staticmethod
         def device_info() -> dict[str, str]:
             return {"manufacturer": "Test", "model": "BMS"}
-            
+
         @staticmethod
         def uuid_services() -> list[str]:
             return ["0000fff0-0000-1000-8000-00805f9b34fb"]
-            
+
         @staticmethod
         def uuid_rx() -> str:
             return "0000fff1-0000-1000-8000-00805f9b34fb"
-            
+
         @staticmethod
         def uuid_tx() -> str:
             return "0000fff2-0000-1000-8000-00805f9b34fb"
-            
+
         def _notification_handler(self, sender, data: bytearray) -> None:
             """Handle notifications."""
-            pass
-            
+
         async def _async_update(self) -> BMSsample:
             return {}
-    
+
     ble_device = generate_ble_device("cc:cc:cc:cc:cc:cc", "TestBMS")
     bms = TestBMS(ble_device)
-    
+
     with caplog.at_level(logging.DEBUG):
         await bms.disconnect()
-    
+
     # Should log the disconnect error
     assert "disconnect failed!" in caplog.text
 
@@ -535,45 +536,45 @@ async def test_disconnect_error_handling(caplog):
 async def test_connect_max_attempts_exceeded(caplog):
     """Test connection when max attempts are exceeded."""
     import logging
-    from custom_components.bms_ble.plugins.basebms import BaseBMS
     from typing import Any
-    
+
+    from custom_components.bms_ble.plugins.basebms import BaseBMS
+
     class TestBMS(BaseBMS):
         def __init__(self, ble_device):
             super().__init__("test_logger", ble_device)
             self._reconnect_attempts = 4  # Already at max
-            
+
         @staticmethod
         def matcher_dict_list() -> list[dict[str, Any]]:
             return []
-            
+
         @staticmethod
         def device_info() -> dict[str, str]:
             return {"manufacturer": "Test", "model": "BMS"}
-            
+
         @staticmethod
         def uuid_services() -> list[str]:
             return ["0000fff0-0000-1000-8000-00805f9b34fb"]
-            
+
         @staticmethod
         def uuid_rx() -> str:
             return "0000fff1-0000-1000-8000-00805f9b34fb"
-            
+
         @staticmethod
         def uuid_tx() -> str:
             return "0000fff2-0000-1000-8000-00805f9b34fb"
-            
+
         def _notification_handler(self, sender, data: bytearray) -> None:
             """Handle notifications."""
-            pass
-            
+
         async def _async_update(self) -> BMSsample:
             return {}
-    
+
     from tests.bluetooth import generate_ble_device
     ble_device = generate_ble_device("cc:cc:cc:cc:cc:cc", "TestBMS")
     bms = TestBMS(ble_device)
-    
+
     # Directly test the condition without calling _connect
     with caplog.at_level(logging.WARNING):
         # The _connect method checks reconnect_attempts >= 4
@@ -582,7 +583,7 @@ async def test_connect_max_attempts_exceeded(caplog):
             result = False
         else:
             result = True
-    
+
     assert result is False
     assert "Max reconnection attempts reached" in caplog.text
 
@@ -590,58 +591,57 @@ async def test_connect_max_attempts_exceeded(caplog):
 async def test_connect_bleak_error(monkeypatch, caplog):
     """Test connection with BleakError."""
     import logging
-    from custom_components.bms_ble.plugins.basebms import BaseBMS
-    from bleak import BleakError
     from typing import Any
-    
+
+    from bleak import BleakError
+
+    from custom_components.bms_ble.plugins.basebms import BaseBMS
+
     async def mock_establish_connection(*args, **kwargs):
         raise BleakError("Connection failed")
-    
+
     # Patch at the module level where it's imported
     monkeypatch.setattr("custom_components.bms_ble.plugins.basebms.establish_connection", mock_establish_connection)
-    
+
     class TestBMS(BaseBMS):
         def __init__(self, ble_device):
             super().__init__("test_logger", ble_device)
-            
+
         @staticmethod
         def matcher_dict_list() -> list[dict[str, Any]]:
             return []
-            
+
         @staticmethod
         def device_info() -> dict[str, str]:
             return {"manufacturer": "Test", "model": "BMS"}
-            
+
         @staticmethod
         def uuid_services() -> list[str]:
             return ["0000fff0-0000-1000-8000-00805f9b34fb"]
-            
+
         @staticmethod
         def uuid_rx() -> str:
             return "0000fff1-0000-1000-8000-00805f9b34fb"
-            
+
         @staticmethod
         def uuid_tx() -> str:
             return "0000fff2-0000-1000-8000-00805f9b34fb"
-            
+
         def _notification_handler(self, sender, data: bytearray) -> None:
             """Handle notifications."""
-            pass
-            
+
         async def _async_update(self) -> BMSsample:
             return {}
-    
+
     from tests.bluetooth import generate_ble_device
     ble_device = generate_ble_device("cc:cc:cc:cc:cc:cc", "TestBMS")
     bms = TestBMS(ble_device)
-    
-    from bleak import BleakError
-    
-    with caplog.at_level(logging.ERROR):
-        # The _connect method will log the error and re-raise it
-        with pytest.raises(BleakError):
-            await bms._connect()
-    
+
+
+    # The _connect method will log the error and re-raise it
+    with caplog.at_level(logging.ERROR), pytest.raises(BleakError):
+        await bms._connect()
+
     assert "Failed to establish BMS connection" in caplog.text
     # The _reconnect_attempts is not incremented when establish_connection fails
 
@@ -649,70 +649,69 @@ async def test_connect_bleak_error(monkeypatch, caplog):
 async def test_start_notify_error(monkeypatch, caplog):
     """Test error during notification setup."""
     import logging
-    from custom_components.bms_ble.plugins.basebms import BaseBMS
-    from bleak import BleakError
     from typing import Any
-    
+
+    from bleak import BleakError
+
+    from custom_components.bms_ble.plugins.basebms import BaseBMS
+
     class MockBleakClient:
         def __init__(self, *args, **kwargs):
             self.is_connected = True
-            
+
         async def start_notify(self, char, callback):
             raise BleakError("Notify setup failed")
-            
+
         async def disconnect(self):
             pass
-    
+
     async def mock_establish_connection(*args, **kwargs):
         return MockBleakClient()
-    
+
     # Patch at the module level
     monkeypatch.setattr("custom_components.bms_ble.plugins.basebms.establish_connection", mock_establish_connection)
-    
+
     class TestBMS(BaseBMS):
         def __init__(self, ble_device):
             super().__init__("test_logger", ble_device)
             # Set the CHAR_UUID to match uuid_rx
             self.CHAR_UUID = self.uuid_rx()
-            
+
         @staticmethod
         def matcher_dict_list() -> list[dict[str, Any]]:
             return []
-            
+
         @staticmethod
         def device_info() -> dict[str, str]:
             return {"manufacturer": "Test", "model": "BMS"}
-            
+
         @staticmethod
         def uuid_services() -> list[str]:
             return ["0000fff0-0000-1000-8000-00805f9b34fb"]
-            
+
         @staticmethod
         def uuid_rx() -> str:
             return "0000fff1-0000-1000-8000-00805f9b34fb"
-            
+
         @staticmethod
         def uuid_tx() -> str:
             return "0000fff2-0000-1000-8000-00805f9b34fb"
-            
+
         def _notification_handler(self, sender, data: bytearray) -> None:
             """Handle notifications."""
-            pass
-            
+
         async def _async_update(self) -> BMSsample:
             return {}
-    
+
     from tests.bluetooth import generate_ble_device
     ble_device = generate_ble_device("cc:cc:cc:cc:cc:cc", "TestBMS")
     bms = TestBMS(ble_device)
-    
-    from bleak import BleakError
-    
-    with caplog.at_level(logging.ERROR):
-        # The _connect method will log the error and re-raise it
-        with pytest.raises(BleakError):
-            await bms._connect()
-    
+
+
+    # The _connect method will log the error and re-raise it
+    with caplog.at_level(logging.ERROR), pytest.raises(BleakError):
+        await bms._connect()
+
     # Check for the actual log message
     assert "Failed to initialize BMS connection" in caplog.text
 
@@ -720,57 +719,56 @@ async def test_start_notify_error(monkeypatch, caplog):
 async def test_async_update_connection_error(monkeypatch, caplog):
     """Test async_update when connection fails."""
     import logging
-    from custom_components.bms_ble.plugins.basebms import BaseBMS
     from typing import Any
-    
+
+    from custom_components.bms_ble.plugins.basebms import BaseBMS
+
     # Mock establish_connection to fail
     async def mock_establish_connection(*args, **kwargs):
         from bleak import BleakError
         raise BleakError("Connection failed")
-    
+
     monkeypatch.setattr("custom_components.bms_ble.plugins.basebms.establish_connection", mock_establish_connection)
-    
+
     class TestBMS(BaseBMS):
         def __init__(self, ble_device):
             super().__init__("test_logger", ble_device)
-            
+
         @staticmethod
         def matcher_dict_list() -> list[dict[str, Any]]:
             return []
-            
+
         @staticmethod
         def device_info() -> dict[str, str]:
             return {"manufacturer": "Test", "model": "BMS"}
-            
+
         @staticmethod
         def uuid_services() -> list[str]:
             return ["0000fff0-0000-1000-8000-00805f9b34fb"]
-            
+
         @staticmethod
         def uuid_rx() -> str:
             return "0000fff1-0000-1000-8000-00805f9b34fb"
-            
+
         @staticmethod
         def uuid_tx() -> str:
             return "0000fff2-0000-1000-8000-00805f9b34fb"
-            
+
         def _notification_handler(self, sender, data: bytearray) -> None:
             """Handle notifications."""
-            pass
-            
+
         async def _async_update(self) -> BMSsample:
             return {"voltage": 12.0}
-    
+
     from tests.bluetooth import generate_ble_device
     ble_device = generate_ble_device("cc:cc:cc:cc:cc:cc", "TestBMS")
     bms = TestBMS(ble_device)
-    
+
     from bleak import BleakError
-    
+
     # The async_update method will try to connect and fail, propagating the BleakError
-    with caplog.at_level(logging.ERROR):
-        with pytest.raises(BleakError, match="Connection failed"):
-            await bms.async_update()
-    
+    with caplog.at_level(logging.ERROR), pytest.raises(BleakError, match="Connection failed"):
+        await bms.async_update()
+
     # Check that connection failed
     assert "Failed to establish BMS connection" in caplog.text
