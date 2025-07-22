@@ -101,10 +101,11 @@ class BMS(BaseBMS):
         self._data = data.copy()
         self._data_event.set()
 
-    @staticmethod
-    def _decode_data(data: bytearray) -> BMSsample:
+    @classmethod
+    def decode_data(cls, data: bytearray) -> BMSsample:
+        """Decode the data from the BMS using the defined fields."""
         result: BMSsample = {}
-        for key, idx, size, sign, func in BMS.FIELDS:
+        for key, idx, size, sign, func in cls.FIELDS:
             result[key] = func(
                 int.from_bytes(data[idx : idx + size], byteorder="big", signed=sign)
             )
@@ -145,7 +146,7 @@ class BMS(BaseBMS):
         """Update battery status information."""
 
         await self._await_reply(self._cmd(0x13B2, 0x7))
-        result: BMSsample = BMS._decode_data(self._data)
+        result: BMSsample = type(self).decode_data(self._data)
 
         await self._await_reply(self._cmd(0x1388, 0x22))
         result["cell_count"] = BMS._read_int16(self._data, BMS._CELL_POS)

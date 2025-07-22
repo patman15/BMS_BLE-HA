@@ -19,26 +19,26 @@ BT_FRAME_SIZE = 512  # ATT max is 512 bytes
 
 
 def ref_value() -> BMSsample:
-    """Return reference value for mock Seplos BMS."""
+    """Return reference value for mock Renogy Pro BMS."""
     return {
         "battery_charging": False,
-        "battery_level": 97.2,
-        "cell_voltages": [3.5, 3.3, 3.3, 3.3],
+        "battery_level": 99.0,
+        "cell_voltages": [3.3, 3.3, 3.3, 3.3],
         "cell_count": 4,
-        "current": -0.86,
-        "cycle_capacity": 1321.92,
-        "cycle_charge": 97.2,
-        "cycles": 15,
-        "delta_voltage": 0.2,
-        "design_capacity": 100,
-        "power": -11.696,
+        "current": -1.2,
+        "cycle_capacity": 2779.195,
+        "cycle_charge": 208.962,
+        "cycles": 6,
+        "delta_voltage": 0.0,
+        "design_capacity": 211,
+        "power": -15.96,
         "problem": False,
         "problem_code": 0,
-        "runtime": 406883,
-        "temp_values": [17.0, 17.0],
-        "temp_sensors": 2,
-        "temperature": 17.0,
-        "voltage": 13.6,
+        "runtime": 626886,
+        "temp_values": [27.3, 26.8, 27.5],
+        "temp_sensors": 3,
+        "temperature": 27.2,
+        "voltage": 13.3,
     }
 
 
@@ -50,13 +50,16 @@ class MockRenogyProBleakClient(MockBleakClient):
 
     RESP: dict[bytes, bytearray] = {
         b"\x30\x03\x13\x88\x00\x22\x45\x5c": bytearray(
-            b"0\x03D\x00\x04\x00!\x00!\x00!\x00!\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x01\x11\x01\x0c\x01\x13\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00eJ"
+            b"\x30\x03\x44\x00\x04\x00\x21\x00\x21\x00\x21\x00\x21\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x01\x11\x01"
+            b"\x0c\x01\x13\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x65\x4a"
         ),
         BASE_VALUE_CMD: bytearray(
             b"\x30\x03\x0e\xff\xf4\x00\x85\x00\x03\x30\x42\x00\x03\x3b\xda\x00\x06\x3e\x33"
-        ), # -1.2A, 13.3V, #### 97.2% (4B), 100Ah [mAh], (15 cycles (generated))
+        ),  # -1.2A, 13.3V, 208.9Ah [mAh], 211.9Ah [mAh], 6 cycles
         b"\x30\x03\x13\xec\x00\x07\xc5\x58": bytearray(
-            b"0\x03\x0e\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x0e+N"
+            b"\x30\x03\x0e\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x0e\x2b\x4e"
         ),
     }
 
@@ -97,7 +100,7 @@ class MockRenogyProBleakClient(MockBleakClient):
         class CharBase(BleakGATTCharacteristic):
             """Basic characteristic for common properties.
 
-            Note that Jikong BMS has two characteristics with same UUID!
+            Note that Renogy Pro BMS has two characteristics with same UUID!
             """
 
             @property
@@ -113,12 +116,12 @@ class MockRenogyProBleakClient(MockBleakClient):
             @property
             def service_uuid(self) -> str:
                 """The UUID of the Service containing this characteristic."""
-                return normalize_uuid_str("ffe0")
+                return self.obj.uuid
 
             @property
             def uuid(self) -> str:
-                """The UUID for this characteristic."""
-                return normalize_uuid_str("ffe1")
+                """The UUID for this characteristic, derived from service UUID."""
+                return normalize_uuid_str(f"{self.obj.uuid[4:7]!s}1")
 
             @property
             def descriptors(self) -> list[BleakGATTDescriptor]:
@@ -171,7 +174,7 @@ class MockRenogyProBleakClient(MockBleakClient):
         def handle(self) -> int:
             """The handle of this service."""
 
-            return 2
+            return hash(self.uuid) & 0xFFFF
 
         @property
         def uuid(self) -> str:
@@ -190,9 +193,9 @@ class MockRenogyProBleakClient(MockBleakClient):
             """List of characteristics for this service."""
 
             return [
-                self.CharNotify(None, lambda: 350),
-                self.CharWrite(None, lambda: 350),
-                self.CharFaulty(None, lambda: 350),  # leave last!
+                self.CharNotify(self, lambda: 350),
+                self.CharWrite(self, lambda: 350),
+                self.CharFaulty(self, lambda: 350),  # leave last!
             ]
 
         def add_characteristic(self, characteristic: BleakGATTCharacteristic) -> None:

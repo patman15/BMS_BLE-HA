@@ -19,7 +19,7 @@ BT_FRAME_SIZE = 512  # ATT max is 512 bytes
 
 
 def ref_value() -> BMSsample:
-    """Return reference value for mock Seplos BMS."""
+    """Return reference value for mock Renogy BMS."""
     return {
         "battery_charging": False,
         "battery_level": 97.2,
