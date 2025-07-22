@@ -201,24 +201,24 @@ class BaseBMS(ABC):
         """Calculate time to full charge when charging."""
         if current <= 0:
             return None
-            
+
         design_capacity = data.get("design_capacity", 0)
         cycle_charge = data.get("cycle_charge", 0)
-        
+
         if design_capacity <= 0 or cycle_charge >= design_capacity:
             return None
-            
+
         remaining_capacity = design_capacity - cycle_charge
         charge_time_hours = remaining_capacity / abs(current)
         charge_time_seconds = int(charge_time_hours * BaseBMS._HRS_TO_SECS)
-        
+
         self._log.debug(
             f"Charge time calculation: design_capacity={design_capacity:.2f}Ah, "
             f"cycle_charge={cycle_charge:.2f}Ah, current={current:.2f}A, "
             f"remaining_capacity={remaining_capacity:.2f}Ah, "
             f"charge_time={charge_time_seconds}s ({charge_time_hours:.2f}h)"
         )
-        
+
         return charge_time_seconds
 
     @staticmethod
@@ -500,14 +500,14 @@ class BaseBMS(ABC):
 
         """
         self._log.debug("Starting BMS update")
-        
+
         # Establish connection if needed
         await self._connect()
 
         # Get data from the BMS
         self._log.debug("Calling _async_update to get BMS data")
         data: BMSsample = await self._async_update()
-        
+
         if data:
             self._log.debug("Received data from BMS: %d values", len(data))
             self._add_missing_values(data, self._calc_values())
