@@ -48,7 +48,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Ective, Topband batteries (show up as `$PFLAC`&#x2026;, `NWJ20`&#x2026;, `ZM20`&#x2026;)
 - Felicity ESS batteries (show up as `F10`&#x2026;)
 - JBD BMS, Jiabaida (show up as `JBD-`&#x2026;, `AP2.S`&#x2026;, `SP..S`&#x2026;)
-    - accurat batteries (show up as `GJ-`&#x2026;)
+    - accurat batteries (show up as `GJ-`&#x2026;), Aolithium batteries (show up as `AL12-`&#x2026;)
     - Bulltron, DCHOUSE, ECO-WORTHY (show up as `DP04S`&#x2026;, `ECO-LFP`&#x2026;), Epoch batteries
     - Eleksol, Liontron, Perfektium (show up as `PKT`&#x2026;), Ultimatron batteries (show up as `12??0`&#x2026;)
     - SBL batteries, Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries (show up as `DWC`&#x2026;)
