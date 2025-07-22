@@ -62,6 +62,7 @@ class BMS(BaseBMS):
                 "OGR-*",  # OGRPHY
                 "DWC*",  # Vatrer
                 "xiaoxiang*",  # xiaoxiang BMS
+                "AL12-*",  # Aolithium
             )
         ] + [
             AdvertisementPattern(

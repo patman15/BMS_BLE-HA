@@ -15,7 +15,7 @@
     },
     {
       "manufacturer_id": 771
-    },    
+    },
     {
       "manufacturer_id": 258
     },
@@ -97,7 +97,11 @@
     {
       "local_name": "xiaoxiang*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },    
+    },
+    {
+      "local_name": "AL12-*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
     {
       "manufacturer_id": 123,
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
@@ -185,7 +189,7 @@
     {
       "local_name": "LT-*",
       "manufacturer_id": 22618
-    },    
+    },
     {
       "local_name": "SV12V*",
       "manufacturer_id": 33384
@@ -262,5 +266,5 @@
   ],
   "quality_scale": "silver",
   "requirements": [],
-  "version": "1.18.2"
+  "version": "1.18.3-beta.1"
 }
