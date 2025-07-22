@@ -55,6 +55,9 @@ def generate_ble_device(
         new["name"] = name
     if details is not None:
         new["details"] = details
+    else:
+        # Provide default details with path for BleakClient
+        new["details"] = {"path": f"/org/bluez/hci0/dev_{(address or 'AA_BB_CC_DD_EE_FF').replace(':', '_')}"}
     if rssi is not None:
         new["rssi"] = rssi
     for key, value in BLE_DEVICE_DEFAULTS.items():
@@ -104,7 +107,7 @@ def inject_bluetooth_service_info_bleak(
     device: BLEDevice = generate_ble_device(
         address=info.address,
         name=info.name,
-        details={},
+        details=info.device.details if hasattr(info.device, 'details') and info.device.details else None,
     )
     inject_advertisement_with_time_and_source_connectable(
         hass,
