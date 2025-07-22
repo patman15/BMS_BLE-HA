@@ -180,3 +180,154 @@ async def test_update(
         assert pack_state.attributes.get(attribute, None) == (
             ref_value if bool_fixture else None
         ), f"faild to verify sensor '{sensor}' attribute '{attribute}'"
+
+
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+async def test_rssi_sensor_update(
+    monkeypatch,
+    bt_discovery: BluetoothServiceInfoBleak,
+    hass: HomeAssistant,
+) -> None:
+    """Test RSSI sensor async_update method directly."""
+    from custom_components.bms_ble.sensor import RSSISensor
+    from custom_components.bms_ble.coordinator import BTBmsCoordinator
+    from homeassistant.components.sensor import SensorEntityDescription
+    
+    # Set up the BMS coordinator
+    config: MockConfigEntry = mock_config(bms="dummy_bms")
+    config.add_to_hass(hass)
+    
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
+    
+    assert await hass.config_entries.async_setup(config.entry_id)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    
+    # Get the coordinator from runtime_data
+    coordinator = config.runtime_data
+    
+    # Create RSSI sensor
+    rssi_descr = SensorEntityDescription(
+        key="signal_strength",
+        name="Signal strength",
+    )
+    rssi_sensor = RSSISensor(coordinator, rssi_descr, "test-rssi")
+    
+    # Set up the sensor properly
+    rssi_sensor.hass = hass
+    
+    # Mock async_write_ha_state to avoid entity registration issues
+    write_state_called = False
+    def mock_write_state():
+        nonlocal write_state_called
+        write_state_called = True
+    rssi_sensor.async_write_ha_state = mock_write_state
+    
+    # Mock the coordinator's rssi property
+    def mock_rssi_getter(value):
+        return lambda self: value
+    
+    # Test with valid RSSI value
+    monkeypatch.setattr(type(coordinator), 'rssi', property(mock_rssi_getter(-75)))
+    await rssi_sensor.async_update()
+    assert rssi_sensor._attr_native_value == -75
+    assert rssi_sensor._attr_available is True
+    assert write_state_called
+    
+    # Test with RSSI at upper limit
+    write_state_called = False
+    monkeypatch.setattr(type(coordinator), 'rssi', property(mock_rssi_getter(-20)))
+    await rssi_sensor.async_update()
+    assert rssi_sensor._attr_native_value == -20
+    assert write_state_called
+    
+    # Test with RSSI within normal range
+    write_state_called = False
+    monkeypatch.setattr(type(coordinator), 'rssi', property(mock_rssi_getter(-10)))
+    await rssi_sensor.async_update()
+    assert rssi_sensor._attr_native_value == -10  # -10 is within [-127, 127] range, so not clamped
+    assert write_state_called
+
+    # Test with RSSI beyond lower limit (weaker than -127)
+    write_state_called = False
+    monkeypatch.setattr(type(coordinator), 'rssi', property(mock_rssi_getter(-150)))
+    await rssi_sensor.async_update()
+    assert rssi_sensor._attr_native_value == -127  # Clamped to lower limit
+    assert write_state_called
+
+    # Test with RSSI beyond upper limit (stronger than 127)
+    write_state_called = False
+    monkeypatch.setattr(type(coordinator), 'rssi', property(mock_rssi_getter(150)))
+    await rssi_sensor.async_update()
+    assert rssi_sensor._attr_native_value == 127  # Clamped to upper limit
+    assert write_state_called
+    
+    # Test with None RSSI
+    write_state_called = False
+    monkeypatch.setattr(type(coordinator), 'rssi', property(mock_rssi_getter(None)))
+    await rssi_sensor.async_update()
+    assert rssi_sensor._attr_native_value == -127  # Uses -LIMIT when None
+    assert rssi_sensor._attr_available is False
+    assert write_state_called
+
+
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+async def test_lq_sensor_update(
+    monkeypatch,
+    bt_discovery: BluetoothServiceInfoBleak,
+    hass: HomeAssistant,
+) -> None:
+    """Test LQ sensor async_update method directly."""
+    from custom_components.bms_ble.sensor import LQSensor
+    from custom_components.bms_ble.coordinator import BTBmsCoordinator
+    from homeassistant.components.sensor import SensorEntityDescription
+    
+    # Set up the BMS coordinator
+    config: MockConfigEntry = mock_config(bms="dummy_bms")
+    config.add_to_hass(hass)
+    
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
+    
+    assert await hass.config_entries.async_setup(config.entry_id)
+    await hass.async_block_till_done(wait_background_tasks=True)
+    
+    # Get the coordinator from runtime_data
+    coordinator = config.runtime_data
+    
+    # Create LQ sensor
+    lq_descr = SensorEntityDescription(
+        key="link_quality",
+        name="Link quality",
+    )
+    lq_sensor = LQSensor(coordinator, lq_descr, "test-lq")
+    
+    # Set up the sensor properly
+    lq_sensor.hass = hass
+    
+    # Mock async_write_ha_state to avoid entity registration issues
+    write_state_called = False
+    def mock_write_state():
+        nonlocal write_state_called
+        write_state_called = True
+    lq_sensor.async_write_ha_state = mock_write_state
+    
+    # Mock the coordinator's link_quality property
+    def mock_lq_getter(value):
+        return lambda self: value
+    
+    # Test with various link quality values
+    monkeypatch.setattr(type(coordinator), 'link_quality', property(mock_lq_getter(0)))
+    await lq_sensor.async_update()
+    assert lq_sensor._attr_native_value == 0
+    assert write_state_called
+    
+    write_state_called = False
+    monkeypatch.setattr(type(coordinator), 'link_quality', property(mock_lq_getter(50)))
+    await lq_sensor.async_update()
+    assert lq_sensor._attr_native_value == 50
+    assert write_state_called
+    
+    write_state_called = False
+    monkeypatch.setattr(type(coordinator), 'link_quality', property(mock_lq_getter(100)))
+    await lq_sensor.async_update()
+    assert lq_sensor._attr_native_value == 100
+    assert write_state_called
