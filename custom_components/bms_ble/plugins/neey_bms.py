@@ -45,6 +45,7 @@ class BMS(BaseBMS):
         """Provide BluetoothMatcher definition."""
         return [
             {
+                "local_name": "GW-*",
                 "service_uuid": normalize_uuid_str("fee7"),
                 "connectable": True,
             },

@@ -682,7 +682,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/291)
         generate_advertisement_data(
-            local_name="Backup BMS",
+            local_name="GW-24Srenamed1",
             rssi=-88,
             manufacturer_data={34952: b"\x88\x88\xbf\x95\x01\x11\x36\x38"},
             service_uuids=[
@@ -694,7 +694,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/291)
         generate_advertisement_data(
-            local_name="SR-LV-01",
+            local_name="GW-24Srenamed2",
             rssi=-88,
             service_uuids=[
                 "0000ffe0-0000-1000-8000-00805f9b34fb",
@@ -705,7 +705,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/291)
         generate_advertisement_data(
-            local_name="SR-LV-02",
+            local_name="GW-24Srenamed3",
             rssi=-73,
             manufacturer_data={
                 55769: b"\x88\xa0\x2b\x80\x03\xf2\xfc\x9b"
