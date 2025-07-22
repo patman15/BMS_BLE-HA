@@ -1,6 +1,8 @@
 """Test the BLE Battery Management System integration config flow."""
 
 from typing import Final
+from unittest.mock import MagicMock
+import sys
 
 from bleak.backends.scanner import AdvertisementData
 from home_assistant_bluetooth import BluetoothServiceInfoBleak
@@ -24,6 +26,9 @@ from homeassistant.helpers import entity_registry as er
 from .advertisement_data import ADVERTISEMENTS
 from .bluetooth import generate_ble_device, inject_bluetooth_service_info_bleak
 from .conftest import mock_config, mock_update_min
+
+# Mock the ibeacon_ble module to prevent import errors
+sys.modules['ibeacon_ble'] = MagicMock()
 
 
 @pytest.fixture(
