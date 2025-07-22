@@ -110,7 +110,7 @@ class MockECOWBleakClient(MockBleakClient):
     }
     RESP: Final[dict[int, bytearray]] = {}
 
-    _task: asyncio.Task
+    _task: asyncio.Task | None = None
 
     async def _notify(self) -> None:
         """Notify function."""
@@ -139,9 +139,10 @@ class MockECOWBleakClient(MockBleakClient):
 
     async def disconnect(self) -> bool:
         """Mock disconnect and wait for send task."""
-        self._task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await self._task
+        if self._task is not None:
+            self._task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await self._task
         return await super().disconnect()
 
 

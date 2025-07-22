@@ -22,13 +22,14 @@ class BMS(BaseBMS):
     """E&J Technology BMS implementation."""
 
     _BT_MODULE_MSG: Final[bytes] = bytes([0x41, 0x54, 0x0D, 0x0A])  # BLE module message
+    _IGNORE_CRC: Final[str] = "libattU"
     _HEAD: Final[bytes] = b"\x3a"
     _TAIL: Final[bytes] = b"\x7e"
     _MAX_CELLS: Final[int] = 16
     _FIELDS: Final[list[tuple[BMSvalue, Cmd, int, int, Callable[[int], Any]]]] = [
-        ("current", Cmd.RT, 89, 8, lambda x: float((x >> 16) - (x & 0xFFFF)) / 100),
+        ("current", Cmd.RT, 89, 8, lambda x: ((x >> 16) - (x & 0xFFFF)) / 100),
         ("battery_level", Cmd.RT, 123, 2, lambda x: x),
-        ("cycle_charge", Cmd.CAP, 15, 4, lambda x: float(x) / 10),
+        ("cycle_charge", Cmd.CAP, 15, 4, lambda x: x / 10),
         ("temperature", Cmd.RT, 97, 2, lambda x: x - 40),  # only 1st sensor relevant
         ("cycles", Cmd.RT, 115, 4, lambda x: x),
         ("problem_code", Cmd.RT, 105, 4, lambda x: x & 0x0FFC),  # mask status bits
@@ -54,10 +55,11 @@ class BMS(BaseBMS):
                     "connectable": True,
                 },
                 {"local_name": "SV12V*", "manufacturer_id": 33384, "connectable": True},
+                {"local_name": "LT-24*", "manufacturer_id": 22618, "connectable": True},
             ]
             + [  # LiTime
                 AdvertisementPattern(
-                    local_name="LT-*", manufacturer_id=m_id, connectable=True
+                    local_name="LT-12*", manufacturer_id=m_id, connectable=True
                 )
                 for m_id in (33384, 22618)
             ]
@@ -146,7 +148,10 @@ class BMS(BaseBMS):
             self._data.clear()
             return
 
-        if (crc := BMS._crc(self._data[1:-3])) != int(self._data[-3:-1], 16):
+        if not self.name.startswith(BMS._IGNORE_CRC) and (
+            crc := BMS._crc(self._data[1:-3])
+        ) != int(self._data[-3:-1], 16):
+            # libattU firmware uses no CRC, so we ignore it
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X", int(self._data[-3:-1], 16), crc
             )

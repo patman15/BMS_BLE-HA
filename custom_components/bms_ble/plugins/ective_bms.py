@@ -20,10 +20,10 @@ class BMS(BaseBMS):
     _INFO_LEN: Final[int] = 113
     _CRC_LEN: Final[int] = 4
     _FIELDS: Final[list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]]] = [
-        ("voltage", 1, 8, False, lambda x: float(x / 1000)),
-        ("current", 9, 8, True, lambda x: float(x / 1000)),
+        ("voltage", 1, 8, False, lambda x: x / 1000),
+        ("current", 9, 8, True, lambda x: x / 1000),
         ("battery_level", 29, 4, False, lambda x: x),
-        ("cycle_charge", 17, 8, False, lambda x: float(x / 1000)),
+        ("cycle_charge", 17, 8, False, lambda x: x / 1000),
         ("cycles", 25, 4, False, lambda x: x),
         ("temperature", 33, 4, False, lambda x: round(x * 0.1 - 273.15, 1)),
         ("problem_code", 37, 2, False, lambda x: x),

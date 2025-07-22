@@ -172,7 +172,9 @@ class MockAllCellsBleakClient(MockCBTpwrBleakClient):
         return self.RESP.get(cmd, bytearray())
 
 
-async def test_update(patch_bleak_client, patch_bms_timeout, reconnect_fixture: bool) -> None:
+async def test_update(
+    patch_bleak_client, patch_bms_timeout, reconnect_fixture: bool
+) -> None:
     """Test CBT power BMS data update."""
 
     patch_bms_timeout()
@@ -303,7 +305,10 @@ def prb_response(request) -> tuple[dict[int, bytearray], str]:
 
 
 async def test_problem_response(
-    monkeypatch, patch_bleak_client, problem_response: tuple[dict[int, bytearray], str]
+    monkeypatch,
+    patch_bleak_client,
+    patch_bms_timeout,
+    problem_response: tuple[dict[int, bytearray], str],
 ) -> None:
     """Test data update with BMS returning error flags."""
 
@@ -311,6 +316,7 @@ async def test_problem_response(
         MockCBTpwrBleakClient, "RESP", MockCBTpwrBleakClient.RESP | problem_response[0]
     )
 
+    patch_bms_timeout()
     patch_bleak_client(MockCBTpwrBleakClient)
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))

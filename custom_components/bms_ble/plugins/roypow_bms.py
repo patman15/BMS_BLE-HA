@@ -19,14 +19,14 @@ class BMS(BaseBMS):
     _MIN_LEN: Final[int] = len(_HEAD) + 1
     _FIELDS: Final[list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]] = [
         ("battery_level", 0x4, 7, 1, False, lambda x: x),
-        ("voltage", 0x4, 47, 2, False, lambda x: float(x / 100)),
+        ("voltage", 0x4, 47, 2, False, lambda x: x / 100),
         (
             "current",
             0x3,
             6,
             3,
             False,
-            lambda x: float((x & 0xFFFF) * (-1 if (x >> 16) & 0x1 else 1) / 100),
+            lambda x: (x & 0xFFFF) * (-1 if (x >> 16) & 0x1 else 1) / 100,
         ),
         ("problem_code", 0x3, 9, 3, False, lambda x: x),
         (
@@ -35,9 +35,7 @@ class BMS(BaseBMS):
             24,
             4,
             False,
-            lambda x: float(
-                ((x & 0xFFFF0000) | (x & 0xFF00) >> 8 | (x & 0xFF) << 8) / 1000
-            ),
+            lambda x: ((x & 0xFFFF0000) | (x & 0xFF00) >> 8 | (x & 0xFF) << 8) / 1000,
         ),
         ("runtime", 0x4, 30, 2, False, lambda x: x * 60),
         ("temp_sensors", 0x3, 13, 1, False, lambda x: x),

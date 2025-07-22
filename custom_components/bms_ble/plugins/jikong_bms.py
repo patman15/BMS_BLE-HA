@@ -23,17 +23,18 @@ class BMS(BaseBMS):
 
     HEAD_RSP: Final = bytes([0x55, 0xAA, 0xEB, 0x90])  # header for responses
     HEAD_CMD: Final = bytes([0xAA, 0x55, 0x90, 0xEB])  # header for commands (endiness!)
+    _READY_MSG: Final = HEAD_CMD + bytes([0xC8, 0x01, 0x01] + [0x00] * 12 + [0x44])
     _BT_MODULE_MSG: Final = bytes([0x41, 0x54, 0x0D, 0x0A])  # AT\r\n from BLE module
     TYPE_POS: Final[int] = 4  # frame type is right after the header
     INFO_LEN: Final[int] = 300
     _FIELDS: Final[list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]]] = (
         [  # Protocol: JK02_32S; JK02_24S has offset -32
-            ("voltage", 150, 4, False, lambda x: float(x / 1000)),
-            ("current", 158, 4, True, lambda x: float(x / 1000)),
+            ("voltage", 150, 4, False, lambda x: x / 1000),
+            ("current", 158, 4, True, lambda x: x / 1000),
             ("battery_level", 173, 1, False, lambda x: x),
-            ("cycle_charge", 174, 4, False, lambda x: float(x / 1000)),
+            ("cycle_charge", 174, 4, False, lambda x: x / 1000),
             ("cycles", 182, 4, False, lambda x: x),
-            ("balance_current", 170, 2, True, lambda x: float(x / 1000)),
+            ("balance_current", 170, 2, True, lambda x: x / 1000),
             ("temp_sensors", 214, 2, True, lambda x: x),
             ("problem_code", 166, 4, False, lambda x: x),
         ]
@@ -48,6 +49,7 @@ class BMS(BaseBMS):
         self._prot_offset: int = 0
         self._sw_version: int = 0
         self._valid_reply: int = 0x02
+        self._bms_ready: bool = False
 
     @staticmethod
     def matcher_dict_list() -> list[AdvertisementPattern]:
@@ -135,6 +137,12 @@ class BMS(BaseBMS):
             self._log.debug("trimming AT cmd")
             self._data = self._data.removesuffix(BMS._BT_MODULE_MSG)
 
+        # set BMS ready if msg is attached to last responses (v19.05)
+        if self._data[BMS.INFO_LEN :].startswith(BMS._READY_MSG):
+            self._log.debug("BMS ready.")
+            self._bms_ready = True
+            self._data = self._data[: BMS.INFO_LEN]
+
         # trim message in case oversized
         if len(self._data) > BMS.INFO_LEN:
             self._log.debug("wrong data length (%i): %s", len(self._data), self._data)
@@ -151,6 +159,7 @@ class BMS(BaseBMS):
         """Initialize RX/TX characteristics and protocol state."""
         char_notify_handle: int = -1
         self._char_write_handle = -1
+        self._bms_ready = False
 
         for service in self._client.services:
             for char in service.characteristics:
@@ -187,8 +196,9 @@ class BMS(BaseBMS):
         self._prot_offset = (
             -32 if int(self._bms_info.get("sw_version", "")[:2]) < 11 else 0
         )
-        self._valid_reply = 0xC8  # BMS ready confirmation
-        await asyncio.wait_for(self._wait_event(), timeout=BMS.TIMEOUT)
+        if not self._bms_ready:
+            self._valid_reply = 0xC8  # BMS ready confirmation
+            await asyncio.wait_for(self._wait_event(), timeout=BMS.TIMEOUT)
         self._valid_reply = 0x02  # cell information
 
     @staticmethod

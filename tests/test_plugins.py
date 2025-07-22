@@ -3,6 +3,7 @@
 from collections.abc import Callable
 import importlib
 from types import ModuleType
+from typing import Final
 
 from home_assistant_bluetooth import BluetoothServiceInfoBleak
 
@@ -13,21 +14,18 @@ from .advertisement_data import ADVERTISEMENTS
 from .advertisement_ignore import ADVERTISEMENTS_IGNORE
 from .bluetooth import generate_ble_device
 
-
-def get_fct_bms_supported() -> (
-    list[tuple[str, Callable[[BluetoothServiceInfoBleak], bool]]]
-):
-    """Return supported() of all BMS types."""
-    return [
-        (
-            bms_type,
-            importlib.import_module(
-                f"custom_components.bms_ble.plugins.{bms_type}",
-                package=__name__[: __name__.rfind(".")],
-            ).BMS.supported,
-        )
-        for bms_type in BMS_TYPES
-    ]
+BMS_SUPPORTED_FCTS: Final[
+    set[tuple[str, Callable[[BluetoothServiceInfoBleak], bool]]]
+] = {
+    (
+        bms_type,
+        importlib.import_module(
+            f"custom_components.bms_ble.plugins.{bms_type}",
+            package=__name__[: __name__.rfind(".")],
+        ).BMS.supported,
+    )
+    for bms_type in BMS_TYPES
+}
 
 
 def test_device_info(plugin_fixture: ModuleType) -> None:
@@ -57,8 +55,9 @@ def test_advertisements_complete() -> None:
 
 def test_advertisements_unique() -> None:
     """Check that each advertisement only matches one, the right BMS."""
+
     for adv, bms_real in ADVERTISEMENTS:
-        for bms_test, fct_supported in get_fct_bms_supported():
+        for bms_test, fct_supported in BMS_SUPPORTED_FCTS:
             supported: bool = fct_supported(
                 BluetoothServiceInfoBleak.from_scan(
                     device=generate_ble_device(
@@ -79,7 +78,7 @@ def test_advertisements_unique() -> None:
 def test_advertisements_ignore() -> None:
     """Check that each advertisement only matches one, the right BMS."""
     for adv, reason in ADVERTISEMENTS_IGNORE:
-        for bms, fct_supported in get_fct_bms_supported():
+        for bms, fct_supported in BMS_SUPPORTED_FCTS:
             supported: bool = fct_supported(
                 BluetoothServiceInfoBleak.from_scan(
                     device=generate_ble_device(
