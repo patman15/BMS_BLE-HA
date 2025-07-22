@@ -87,7 +87,7 @@ async def test_update(
 
     assert config in hass.config_entries.async_entries()
     assert config.state is ConfigEntryState.LOADED
-    assert len(hass.states.async_all(["sensor"])) == 11
+    assert len(hass.states.async_all(["sensor"])) == 12
     data: dict[str, str] = {
         entity.entity_id: entity.state for entity in hass.states.async_all(["sensor"])
     }
@@ -103,6 +103,7 @@ async def test_update(
         f"{DEV_NAME}_{ATTR_POWER}": "18.0",
         f"{DEV_NAME}_signal_strength": "-127",
         f"{DEV_NAME}_{ATTR_RUNTIME}": "unknown",
+        f"{DEV_NAME}_charge_time": "unknown",
     }
 
     monkeypatch.setattr(
@@ -138,6 +139,7 @@ async def test_update(
         f"{DEV_NAME}_{ATTR_POWER}": "unknown",
         f"{DEV_NAME}_signal_strength": "-61",
         f"{DEV_NAME}_{ATTR_RUNTIME}": "unknown",
+        f"{DEV_NAME}_charge_time": "unknown",
     }
 
     # check that attributes to sensors were updated

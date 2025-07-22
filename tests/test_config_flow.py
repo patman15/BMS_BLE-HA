@@ -128,10 +128,10 @@ async def test_device_setup(
     result_detail = result.get("result")
     assert result_detail is not None
     assert result_detail.unique_id == "cc:cc:cc:cc:cc:cc"
-    assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 11
+    assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 12
 
     entities: er.EntityRegistryItems = er.async_get(hass).entities
-    assert len(entities) == 13  # sensors, binary_sensors, rssi
+    assert len(entities) == 14  # sensors, binary_sensors, rssi, link_quality
 
     # check correct unique_id format of all sensor entries
     for entry in entities.get_entries_for_config_entry_id(result_detail.entry_id):
@@ -280,7 +280,7 @@ async def test_user_setup(
     result_detail = result.get("result")
     assert result_detail is not None
     assert result_detail.unique_id == "cc:cc:cc:cc:cc:cc"
-    assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 11
+    assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 12
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
