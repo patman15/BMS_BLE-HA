@@ -111,7 +111,9 @@ class MockRenogyProBleakClient(MockBleakClient):
             @property
             def handle(self) -> int:
                 """The handle for this characteristic."""
-                return 3
+                return (
+                    hash(self.obj.uuid) + hash(self.uuid) + hash(self.properties[0])
+                ) & 0xFF
 
             @property
             def service_uuid(self) -> str:
