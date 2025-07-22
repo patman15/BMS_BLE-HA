@@ -792,4 +792,22 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "ecoworthy_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/406)
+        generate_advertisement_data(
+            local_name="AL12-100-4S-B01",
+            manufacturer_data={36783: b"\x30\x37\xc1\xa4"},  # MAC address, wrong
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            rssi=-63,
+        ),
+        "jbd_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/406)
+        generate_advertisement_data(
+            local_name="AL12-100-4S-B02",
+            manufacturer_data={21516: b"\x50\x37\xc1\xa4"},  # MAC address, wrong
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            rssi=-62,
+        ),
+        "jbd_bms",
+    ),
 ]
