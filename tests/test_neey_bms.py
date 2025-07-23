@@ -7,7 +7,6 @@ from typing import Final
 from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
-from bleak.exc import BleakError
 
 # from bleak.uuids import normalize_uuid_str, uuidstr_to_str
 import pytest
@@ -163,13 +162,6 @@ class MockStreamBleakClient(MockNeeyBleakClient):
             assert self._task.done(), "send task still running!"
         return await super().disconnect()
 
-class MockInvalidBleakClient(MockNeeyBleakClient):
-    """Emulate a Neey BMS BleakClient with disconnect error."""
-
-    async def disconnect(self) -> bool:
-        """Mock disconnect to raise BleakError."""
-        raise BleakError
-
 
 class MockOversizedBleakClient(MockNeeyBleakClient):
     """Emulate a Neey BMS BleakClient returning wrong data length."""
@@ -228,55 +220,38 @@ async def test_stream_update(
     await bms.disconnect()
 
 
+@pytest.fixture(
+    name="wrong_response",
+    params=[
+        (_PROTO_DEFS["dev"][:-2] + b"\x00\xff", "wrong_CRC"),
+        (b"\x55\xaa\xeb\x90\x05" + bytes(295), "wrong_frame_type"),
+        (_PROTO_DEFS["dev"][:-1] + b"\x00", "wrong_EOF"),
+    ],
+    ids=lambda param: param[1],
+)
+def faulty_response(request) -> bytearray:
+    """Return faulty response frame."""
+    return request.param[0]
+
+
 async def test_invalid_response(
-    monkeypatch, patch_bleak_client, patch_bms_timeout
+    monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response
 ) -> None:
-    """Test data update with BMS returning invalid data."""
+    """Test data up date with BMS returning invalid data."""
 
-    patch_bms_timeout("neey_bms")
-
-    # return type 0x03 (first requested message) with incorrect CRC
+    patch_bms_timeout()
     monkeypatch.setattr(
-        MockInvalidBleakClient,
-        "_response",
-        lambda _s, _c, _d: bytearray(b"\x55\xaa\xeb\x90\x03") + bytearray(295),
+        MockNeeyBleakClient, "_response", lambda _s, _c, _d: wrong_response
     )
+    patch_bleak_client(MockNeeyBleakClient)
 
-    patch_bleak_client(MockInvalidBleakClient)
-
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
     result: BMSsample = {}
     with pytest.raises(TimeoutError):
         result = await bms.async_update()
+
     assert not result
-
-    await bms.disconnect()
-
-
-async def test_invalid_frame_type(
-    monkeypatch, patch_bleak_client, patch_bms_timeout
-) -> None:
-    """Test data update with BMS returning invalid data."""
-
-    patch_bms_timeout("neey_bms")
-
-    monkeypatch.setattr(
-        MockInvalidBleakClient,
-        "_response",
-        lambda _s, _c, _d: bytearray(b"\x55\xaa\xeb\x90\x05")
-        + bytearray(295),  # invalid frame type (0x5)
-    )
-
-    patch_bleak_client(MockInvalidBleakClient)
-
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
-
-    result: BMSsample = {}
-    with pytest.raises(TimeoutError):
-        result = await bms.async_update()
-    assert not result
-
     await bms.disconnect()
 
 
@@ -299,7 +274,7 @@ async def test_non_stale_data(
 ) -> None:
     """Test if BMS class is reset if connection is reset."""
 
-    patch_bms_timeout("neey_bms")
+    patch_bms_timeout()
 
     monkeypatch.setattr(MockNeeyBleakClient, "_FRAME", _PROTO_DEFS)
 
