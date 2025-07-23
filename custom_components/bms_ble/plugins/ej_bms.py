@@ -58,8 +58,10 @@ class BMS(BaseBMS):
                 {"local_name": "LT-24*", "manufacturer_id": 22618, "connectable": True},
             ]
             + [  # LiTime
-                AdvertisementPattern(
-                    local_name="LT-12*", manufacturer_id=m_id, connectable=True
+                AdvertisementPattern(  # LiTime based on ser#
+                    local_name="LT-12???BG-A0[0-6]*",
+                    manufacturer_id=m_id,
+                    connectable=True,
                 )
                 for m_id in (33384, 22618)
             ]
