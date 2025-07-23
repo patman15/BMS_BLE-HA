@@ -33,10 +33,7 @@ class BMS(BaseBMS):
         """Intialize private BMS members."""
         super().__init__(__name__, ble_device, reconnect)
         self._data_final: bytearray = bytearray()
-        # self._char_write_handle: int = -1
         self._bms_info: dict[str, str] = {}
-        # self._prot_offset: int = 0
-        # self._sw_version: int = 0
         self._exp_len: int = BMS._MIN_FRAME
         self._valid_reply: int = 0x02
 
