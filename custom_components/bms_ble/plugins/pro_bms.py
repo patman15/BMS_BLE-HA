@@ -48,7 +48,8 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize private BMS members."""
-        # Ensure unique device naming
+        # Ensure unique device naming before calling super().__init__
+        # Note: We can't use self._log here as it's not initialized yet
         self._ensure_unique_device_name(ble_device)
 
         super().__init__(__name__, ble_device, reconnect)
@@ -99,17 +100,15 @@ class BMS(BaseBMS):
         """Return 16-bit UUID of characteristic that provides write property."""
         return "fff3"
 
-    @staticmethod
-    def _calc_values() -> frozenset[BMSvalue]:
-        """Return values that the BMS cannot provide and need to be calculated."""
-        return frozenset({"cycle_capacity"})
-
     def _ensure_unique_device_name(self, ble_device: BLEDevice) -> None:
         """Ensure device has unique name with MAC suffix."""
         mac_suffix = ble_device.address[-5:].replace(":", "")
 
         if mac_suffix in (ble_device.name or ""):
             # Device name already contains MAC suffix
+            # Can't use self._log here as it's not initialized yet
+            import logging
+            logging.getLogger(__name__).debug("Device name already contains MAC suffix")
             return
 
         if ble_device.name and "Pro BMS" in ble_device.name and ble_device.name != "Pro BMS":
@@ -150,6 +149,10 @@ class BMS(BaseBMS):
         """Update battery status information."""
         self._log.debug("Starting Pro BMS update")
 
+        # Check connection status
+        if not self._client or not self._client.is_connected:
+            raise ConnectionError("BMS is not connected")
+
         # Reset state
         self._buffer.clear()
         self._init_data.clear()
@@ -166,7 +169,13 @@ class BMS(BaseBMS):
         # Send initialization sequence
         for i, (cmd, cmd_name) in enumerate(zip(self.INIT_COMMANDS, self.INIT_COMMAND_NAMES, strict=False)):
             self._log.debug("Sending init command %d/%d (%s)", i + 1, len(self.INIT_COMMANDS), cmd_name)
-            await self._client.write_gatt_char(self.uuid_tx(), cmd, response=False)
+            try:
+                await self._client.write_gatt_char(self.uuid_tx(), cmd, response=False)
+            except Exception as e:
+                from bleak.exc import BleakError
+                if isinstance(e, BleakError):
+                    raise BleakError(f"Init command {i+1} ({cmd_name}) failed: {e}") from e
+                raise
 
             # Wait for response
             await self._wait_for_response(self.INIT_COMMAND_TIMEOUT)
@@ -178,13 +187,28 @@ class BMS(BaseBMS):
             self._log.debug("Received %d init responses", self._init_responses_received)
 
             # Send acknowledgment
-            await self._client.write_gatt_char(self.uuid_tx(), self.INIT_ACK_COMMAND, response=False)
+            self._log.debug("sending acknowledgment")
+            try:
+                await self._client.write_gatt_char(self.uuid_tx(), self.INIT_ACK_COMMAND, response=False)
+            except Exception as e:
+                from bleak.exc import BleakError
+                if isinstance(e, BleakError):
+                    self._log.warning("Failed to send init acknowledgment: %s", e)
+                else:
+                    raise
             await self._wait_for_response(0.2)
 
             self._waiting_for_init = False
 
             # Send data start command
-            await self._client.write_gatt_char(self.uuid_tx(), self.DATA_START_COMMAND, response=False)
+            try:
+                await self._client.write_gatt_char(self.uuid_tx(), self.DATA_START_COMMAND, response=False)
+            except Exception as e:
+                from bleak.exc import BleakError
+                if isinstance(e, BleakError):
+                    self._log.warning("Failed to send data start command: %s", e)
+                    raise
+                raise
             await self._wait_for_response(0.6)
 
         # Wait for data packets
@@ -251,6 +275,8 @@ class BMS(BaseBMS):
             else:
                 self._packet_stats["unknown_types"][packet_type] = \
                     self._packet_stats["unknown_types"].get(packet_type, 0) + 1
+                if len(self._packet_stats["unknown_types"]) == 1:  # Log only on first unknown type
+                    self._log.debug("Unknown packet types: %s", self._packet_stats["unknown_types"])
 
     def _process_init_response(self, packet: bytes) -> None:
         """Process initialization response packet."""

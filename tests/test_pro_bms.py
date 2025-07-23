@@ -159,6 +159,9 @@ class MockProBMSBleakClient(MockBleakClient):
         ]
 
         if data in init_commands:
+            # Reset init count if we're starting a new sequence
+            if data == init_commands[0] and self._init_count >= 4:
+                self._init_count = 0
             self._init_count += 1
             # Respond to first 3 init commands only
             if self._init_count <= 3:
@@ -180,7 +183,7 @@ async def test_update(patch_bleak_client, reconnect_fixture) -> None:
     patch_bleak_client(MockProBMSBleakClient)
 
     bms = BMS(
-        generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73),
+        generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73),
         reconnect_fixture,
     )
 
@@ -258,7 +261,7 @@ async def test_invalid_checksum(patch_bleak_client, patch_bms_timeout) -> None:
 
     patch_bleak_client(MockInvalidChecksumClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     # Should still process packet due to checksum bypass
     result = await bms.async_update()
@@ -291,7 +294,7 @@ async def test_temperature_out_of_range(patch_bleak_client) -> None:
 
     patch_bleak_client(MockOutOfRangeTempClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     result = await bms.async_update()
 
@@ -315,7 +318,7 @@ async def test_charging_current(patch_bleak_client) -> None:
 
     patch_bleak_client(MockChargingClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     result = await bms.async_update()
 
@@ -369,7 +372,7 @@ async def test_invalid_response(
 
     patch_bleak_client(MockInvalidClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     result: BMSsample = {}
     with pytest.raises(TimeoutError):
@@ -391,7 +394,7 @@ async def test_runtime_invalid(patch_bleak_client) -> None:
 
     patch_bleak_client(MockInvalidRuntimeClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     result = await bms.async_update()
 
@@ -406,11 +409,16 @@ def test_uuid_tx() -> None:
     assert BMS.uuid_tx() == "fff3"
 
 
+def test_calc_values() -> None:
+    """Test _calc_values static method."""
+    assert BMS._calc_values() == frozenset({"cycle_capacity"})
+
+
 async def test_wait_for_response_init_mode(patch_bleak_client) -> None:
     """Test _wait_for_response method in init mode."""
     patch_bleak_client(MockProBMSBleakClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     # Connect first
     await bms.async_update()
@@ -438,7 +446,7 @@ async def test_wait_for_response_data_mode(patch_bleak_client) -> None:
     """Test _wait_for_response method in data mode."""
     patch_bleak_client(MockProBMSBleakClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     # Connect first
     await bms.async_update()
@@ -471,9 +479,9 @@ async def test_connection_error(patch_bleak_client) -> None:
 
     patch_bleak_client(MockDisconnectedClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
-    with pytest.raises(ConnectionError, match="BLE client is not connected"):
+    with pytest.raises(ConnectionError, match="BMS is not connected"):
         await bms.async_update()
 
 
@@ -494,7 +502,7 @@ async def test_bleak_error_during_init(patch_bleak_client) -> None:
 
     patch_bleak_client(MockBleakErrorClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     with pytest.raises(BleakError, match="Init command.*failed.*Mock write error"):
         await bms.async_update()
@@ -525,7 +533,7 @@ async def test_quick_init_response(patch_bleak_client) -> None:
 
     patch_bleak_client(MockQuickResponseClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     # Monkey patch to ensure quick response is detected
     original_wait = bms._wait_for_response
@@ -575,7 +583,7 @@ async def test_bleak_error_acknowledgment(patch_bleak_client, caplog) -> None:
 
     patch_bleak_client(MockAckErrorClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     with caplog.at_level(logging.WARNING):
         result = await bms.async_update()
@@ -610,9 +618,9 @@ async def test_bleak_error_data_start(patch_bleak_client, caplog) -> None:
 
     patch_bleak_client(MockDataStartErrorClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
-    with caplog.at_level(logging.WARNING), pytest.raises(TimeoutError):
+    with caplog.at_level(logging.WARNING), pytest.raises(BleakError, match="Mock data start error"):
         await bms.async_update()
 
     assert "Failed to send data start command" in caplog.text
@@ -641,7 +649,7 @@ async def test_data_flow_started_quickly(patch_bleak_client) -> None:
 
     patch_bleak_client(MockQuickDataFlowClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     # Monkey patch wait_for_response to simulate quick data arrival after data start
     original_wait = bms._wait_for_response
@@ -687,7 +695,7 @@ async def test_unknown_packet_types(patch_bleak_client, caplog) -> None:
 
     patch_bleak_client(MockUnknownPacketClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     with caplog.at_level(logging.DEBUG):
         result = await bms.async_update()
@@ -712,7 +720,7 @@ async def test_buffer_too_short(patch_bleak_client) -> None:
 
     patch_bleak_client(MockShortBufferClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     result = await bms.async_update()
     assert result["voltage"] > 0
@@ -734,7 +742,7 @@ async def test_soc_zero(patch_bleak_client, caplog) -> None:
 
     patch_bleak_client(MockZeroSocClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     with caplog.at_level(logging.DEBUG):
         result = await bms.async_update()
@@ -785,7 +793,7 @@ async def test_runtime_parsing_error(patch_bleak_client, caplog) -> None:
 
     patch_bleak_client(MockRuntimeErrorClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     with caplog.at_level(logging.ERROR):
         result = await bms.async_update()
@@ -828,7 +836,7 @@ async def test_packet_too_short_for_runtime(patch_bleak_client, caplog) -> None:
 
     patch_bleak_client(MockShortPacketClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     with caplog.at_level(logging.WARNING):
         result = await bms.async_update()
@@ -870,7 +878,7 @@ async def test_parse_packet_exception(patch_bleak_client, caplog) -> None:
 
     patch_bleak_client(MockExceptionClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     with caplog.at_level(logging.ERROR):
         result = await bms.async_update()
@@ -885,7 +893,7 @@ async def test_parse_packet_exception(patch_bleak_client, caplog) -> None:
 
 def test_verify_checksum() -> None:
     """Test the _verify_checksum method."""
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     # Create any packet
     packet = create_test_packet()
@@ -913,7 +921,7 @@ async def test_device_name_already_contains_mac_suffix(patch_bleak_client, caplo
 
     # Create device with name that already contains MAC suffix
     # The MAC suffix is the last 5 chars without colons: "cc:cc" -> "cccc"
-    device = generate_ble_device("cc:cc:cc:cc:cc:cc", "Pro BMS cccc", None, -73)
+    device = generate_ble_device("cc:cc:cc:cc:cc:cc", "Pro BMS cccc", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
 
     with caplog.at_level(logging.DEBUG):
         # The normalize_device_name is called during __init__
@@ -977,7 +985,7 @@ async def test_runtime_struct_error(patch_bleak_client, caplog) -> None:
 
     patch_bleak_client(MockRuntimeStructErrorClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     with caplog.at_level(logging.WARNING):
         result = await bms.async_update()
@@ -1019,7 +1027,7 @@ async def test_init_connection_wait_returns_true(patch_bleak_client, caplog) -> 
 
     patch_bleak_client(MockAllResponsesClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     # Patch _wait_for_response to return True when waiting for init responses
     original_wait = bms._wait_for_response
@@ -1075,7 +1083,7 @@ async def test_async_update_returns_false(patch_bleak_client) -> None:
 
     patch_bleak_client(MockNoDataClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     # This should raise TimeoutError since no data is received
     with pytest.raises(TimeoutError, match="No valid data received from Pro BMS"):
@@ -1107,7 +1115,7 @@ async def test_buffer_less_than_4_bytes(patch_bleak_client, caplog) -> None:
 
     patch_bleak_client(MockTinyBufferClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     with caplog.at_level(logging.DEBUG):
         result = await bms.async_update()
@@ -1159,7 +1167,7 @@ async def test_notification_handler_buffer_accumulation(patch_bleak_client) -> N
 
     patch_bleak_client(MockFragmentedPacketClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     result = await bms.async_update()
     # Should successfully process the fragmented packet
@@ -1203,7 +1211,7 @@ async def test_runtime_value_error(patch_bleak_client, caplog) -> None:
 
     patch_bleak_client(MockRuntimeValueErrorClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     with caplog.at_level(logging.DEBUG):
         result = await bms.async_update()
@@ -1262,7 +1270,7 @@ async def test_parse_packet_general_exception(patch_bleak_client, caplog) -> Non
 
     patch_bleak_client(MockGeneralExceptionClient)
 
-    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73))
 
     with caplog.at_level(logging.ERROR):
         result = await bms.async_update()
