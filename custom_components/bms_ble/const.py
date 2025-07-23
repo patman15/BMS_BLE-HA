@@ -11,6 +11,7 @@ from homeassistant.const import (  # noqa: F401  # pylint: disable=unused-import
 )
 
 BMS_TYPES: Final[list[str]] = [
+    "pro_bms",  # Check Pro BMS first as it has specific manufacturer data pattern
     "abc_bms",
     "cbtpwr_bms",
     "cbtpwr_vb_bms",
