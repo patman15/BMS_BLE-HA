@@ -139,7 +139,9 @@ class BMS(BaseBMS):
         except KeyError:
             self._log.debug("unexpected reply: 0x%X", self._data[3])
 
-    async def _init_connection(self) -> None:
+    async def _init_connection(
+        self, char_notify: BleakGATTCharacteristic | int | str | None = None
+    ) -> None:
         """Initialize protocol state."""
         await super()._init_connection()
         self._exp_len = BMS._MIN_LEN

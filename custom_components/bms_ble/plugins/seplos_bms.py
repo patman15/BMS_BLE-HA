@@ -168,7 +168,9 @@ class BMS(BaseBMS):
         self._data = bytearray()
         self._data_event.set()
 
-    async def _init_connection(self) -> None:
+    async def _init_connection(
+        self, char_notify: BleakGATTCharacteristic | int | str | None = None
+    ) -> None:
         """Initialize RX/TX characteristics."""
         await super()._init_connection()
         self._pack_count = 0
