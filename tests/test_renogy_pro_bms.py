@@ -8,6 +8,7 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.descriptor import BleakGATTDescriptor
 from bleak.backends.service import BleakGATTService, BleakGATTServiceCollection
 from bleak.uuids import normalize_uuid_str, uuidstr_to_str
+import pytest
 
 from custom_components.bms_ble.plugins.basebms import BMSsample
 from custom_components.bms_ble.plugins.renogy_pro_bms import BMS
@@ -91,7 +92,7 @@ class MockRenogyProBleakClient(MockBleakClient):
             self._notify_callback("MockRenogyProBleakClient", notify_data)
 
     class RenogyProService(BleakGATTService):
-        """Mock the main battery info service from JiKong BMS."""
+        """Mock the main battery info service from Renogy BMS."""
 
         def __init__(self, uuid: str) -> None:
             """Initialize the service."""
@@ -209,13 +210,23 @@ class MockRenogyProBleakClient(MockBleakClient):
 
     @property
     def services(self) -> BleakGATTServiceCollection:
-        """Emulate JiKong BT service setup."""
+        """Emulate Renogy BT service setup."""
 
         serv_col = BleakGATTServiceCollection()
         serv_col.add_service(self.RenogyProService(uuid="ffd0"))
         serv_col.add_service(self.RenogyProService(uuid="fff0"))
 
         return serv_col
+
+
+class MockWrongBleakClient(MockBleakClient):
+    """Mock client with invalid service for Renogy BMS."""
+
+    @property
+    def services(self) -> BleakGATTServiceCollection:
+        """Emulate Renogy BT service setup."""
+
+        return BleakGATTServiceCollection()
 
 
 async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
@@ -235,5 +246,24 @@ async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
     # query again to check already connected state
     result = await bms.async_update()
     assert bms._client.is_connected is not reconnect_fixture
+
+    await bms.disconnect()
+
+
+async def test_invalid_device(patch_bleak_client) -> None:
+    """Test data update with BMS returning invalid data."""
+
+    patch_bleak_client(MockWrongBleakClient)
+
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
+
+    result: BMSsample = {}
+
+    with pytest.raises(
+        ConnectionError, match=r"^Failed to detect characteristics from.*"
+    ):
+        result = await bms.async_update()
+
+    assert not result
 
     await bms.disconnect()
