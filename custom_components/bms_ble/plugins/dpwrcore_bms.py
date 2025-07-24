@@ -155,7 +155,9 @@ class BMS(BaseBMS):
 
         return bytes(frame)
 
-    async def _init_connection(self) -> None:
+    async def _init_connection(
+        self, char_notify: BleakGATTCharacteristic | int | str | None = None
+    ) -> None:
         """Connect to the BMS and setup notification if not connected."""
         await super()._init_connection()
 
