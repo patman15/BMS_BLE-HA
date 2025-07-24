@@ -19,7 +19,7 @@ BT_FRAME_SIZE = 512  # ATT max is 512 bytes
 
 
 def ref_value() -> BMSsample:
-    """Return reference value for mock Seplos BMS."""
+    """Return reference value for mock Renogy BMS."""
     return {
         "battery_charging": False,
         "battery_level": 97.2,
@@ -62,7 +62,7 @@ class MockRenogyBleakClient(MockBleakClient):
         ),  # 08È20210526        RBT100LFP12-BT  0100
         BASE_VALUE_CMD: bytearray(
             b"\x30\x03\x0e\xFF\xAA\x00\x88\x00\x01\x7b\xb0\x00\x01\x86\xa0\x00\x0f\xe0\x1e"
-        ),  # -0.86A, 13.6V, 97.2% (4B), 100Ah [mAh], (15 cycles (generated))
+        ),  # -0.86A, 13.6V, 97.2Ah [mAh], 100Ah [mAh], (15 cycles (generated))
         b"\x30\x03\x13\xec\x00\x07\xc5\x58": bytearray(
             b"\x30\x03\x0e\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xaa\x8a"
         ),  # alarm flags

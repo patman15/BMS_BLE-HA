@@ -82,7 +82,9 @@ class BMS(BaseBMS):
             }
         )  # calculate further values from BMS provided set ones
 
-    async def _init_connection(self) -> None:
+    async def _init_connection(
+        self, char_notify: BleakGATTCharacteristic | int | str | None = None
+    ) -> None:
         await self._await_reply(
             data=b"HiLink", char=BMS._UUID_CFG, wait_for_notify=False
         )
