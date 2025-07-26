@@ -1,10 +1,9 @@
 """Module to support Pro BMS Smart Shunt devices."""
 
 import asyncio
-import logging
-import struct
-
 from collections.abc import Callable
+import contextlib
+import logging
 from typing import Any, Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -23,19 +22,19 @@ class BMS(BaseBMS):
     _HEAD: Final[bytes] = bytes([0x55, 0xAA])
     _TYPE_INIT_RESPONSE: Final[int] = 0x03
     _TYPE_REALTIME_DATA: Final[int] = 0x04
-    
-    # Commands (from successful test results)
+
+    # Commands (original hardcoded values that work with the device)
     _CMD_EXTENDED_INFO: Final[bytes] = bytes.fromhex("55aa070101558042000097")
     _CMD_ACK: Final[bytes] = bytes.fromhex("55aa070101558006000055")
     _CMD_DATA_STREAM: Final[bytes] = bytes.fromhex("55aa0901015580430000120084")
-    
+
     # Timing constants (seconds)
     _INIT_TIMEOUT: Final[float] = 0.5  # Short timeout for init
     _DATA_TIMEOUT: Final[float] = 2.0  # Longer timeout for data
-    
+
     # Expected packet length
     _REALTIME_PACKET_LEN: Final[int] = 50
-    
+
     # Data field definitions with offsets relative to data section (not full packet)
     _FIELDS: Final[list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]]] = [
         # (name, offset_in_data, size, signed, conversion_func)
@@ -48,7 +47,7 @@ class BMS(BaseBMS):
         # Design capacity at offset 36-37 in data section
         ("design_capacity_raw", 36, 2, False, lambda x: x / 100.0),
     ]
-    
+
     # Protection/error status bit definitions (if available in byte 15 of data section)
     _PROTECTION_BITS: Final[dict[int, str]] = {
         0x01: "overvoltage",
@@ -63,9 +62,31 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize private BMS members."""
+        # Debug logging for device name issues
+        _LOGGER.debug(
+            "Pro BMS init - device name: %s, address: %s",
+            ble_device.name,
+            ble_device.address
+        )
         
+        # If device name is None or just MAC address, set it to "Pro BMS"
+        if not ble_device.name or ble_device.name == ble_device.address:
+            _LOGGER.warning(
+                "Pro BMS device %s has no name or MAC as name, setting to 'Pro BMS'",
+                ble_device.address
+            )
+            # Create a new BLEDevice with the proper name
+            from bleak.backends.device import BLEDevice as BLEDeviceClass
+            ble_device = BLEDeviceClass(
+                address=ble_device.address,
+                name="Pro BMS",
+                details=ble_device.details,
+                rssi=ble_device.rssi,
+            )
+            _LOGGER.debug("Created new BLEDevice with name: %s", ble_device.name)
+
         super().__init__(__name__, ble_device, reconnect)
-        
+
         # Initialize buffers and state
         self._buffer: bytearray = bytearray()
         self._result: dict[str, Any] = {}
@@ -88,7 +109,7 @@ class BMS(BaseBMS):
     @staticmethod
     def matcher_dict_list() -> list[AdvertisementPattern]:
         """Provide BluetoothMatcher definition."""
-        
+
         return [
             # Exact match for "Pro BMS" with service UUID only
             AdvertisementPattern(
@@ -118,10 +139,9 @@ class BMS(BaseBMS):
         """Return values that the BMS cannot provide and need to be calculated."""
         return frozenset({"cycle_capacity"})
 
-
     async def _wait_for_data(self, timeout: float, wait_for_any_packet: bool = False) -> bool:
         """Wait for data packets with timeout.
-        
+
         Args:
             timeout: Maximum time to wait
             wait_for_any_packet: If True, return when any packet is received (not just data)
@@ -129,18 +149,18 @@ class BMS(BaseBMS):
         loop = asyncio.get_event_loop()
         start_time = loop.time()
         last_packet_count = self._packet_stats["total"]
-        
+
         while loop.time() - start_time < timeout:
             # Check if we received data packets
             if self._data_received:
                 return True
-                
+
             # If waiting for any packet, check if we received anything
             if wait_for_any_packet and self._packet_stats["total"] > last_packet_count:
                 return True
-                
+
             await asyncio.sleep(0.05)
-        
+
         return False
 
     async def _send_ack_and_data_stream(self) -> None:
@@ -148,37 +168,37 @@ class BMS(BaseBMS):
         # Check if already sent
         if self._ack_sent:
             return
-            
+
         # Send ACK command
         try:
             self._log.debug("Sending ACK command")
             await self._client.write_gatt_char(self.uuid_tx(), self._CMD_ACK, response=False)
-        except Exception as e:
+        except OSError as e:
             self._log.error("Failed to send ACK command: %s", e)
             return
-            
+
         # Small delay between commands
         await asyncio.sleep(0.1)
-        
+
         # Send Data Stream request
         try:
             self._log.debug("Sending Data Stream request")
             await self._client.write_gatt_char(self.uuid_tx(), self._CMD_DATA_STREAM, response=False)
             # Mark as sent only after successful completion
             self._ack_sent = True
-        except Exception as e:
+        except OSError as e:
             self._log.error("Failed to send Data Stream command: %s", e)
 
     def _notification_handler(self, _sender: BleakGATTCharacteristic, data: bytearray) -> None:
         """Handle BMS data notifications."""
         self._log.debug("RX BLE data (%d bytes): %s", len(data), data.hex())
-        
+
         # Log buffer state before adding new data
         if self._buffer:
             self._log.debug("Buffer before: %d bytes, first 10: %s",
                           len(self._buffer),
                           self._buffer[:min(10, len(self._buffer))].hex())
-        
+
         self._buffer.extend(data)
         self._packet_stats["total"] += 1
         self._process_buffer()
@@ -239,33 +259,44 @@ class BMS(BaseBMS):
             # Skip checksum validation for Pro BMS compatibility
             self._log.debug("Skipping checksum validation for Pro BMS compatibility")
 
-            # Process packet based on type
-            if packet_type == self._TYPE_INIT_RESPONSE:
-                self._log.debug("Received init response")
-                self._packet_stats["init_responses"] += 1
-                # Send ACK and Data Stream commands after init response (only once)
-                if not self._ack_sent and not self._ack_task:
-                    self._ack_task = asyncio.create_task(self._send_ack_and_data_stream())
-            elif packet_type == self._TYPE_REALTIME_DATA:
-                self._log.debug("Received realtime data packet, length: %d", len(packet))
-                if self._parse_realtime_packet(packet):
-                    self._data_received = True
-            else:
-                self._packet_stats["unknown_types"][packet_type] = \
-                    self._packet_stats["unknown_types"].get(packet_type, 0) + 1
+            # Process packet based on type using handler mapping
+            handler = self._get_packet_handler(packet_type)
+            handler(packet, packet_type)
+
+    def _get_packet_handler(self, packet_type: int):
+        """Get the appropriate handler for a packet type."""
+        handlers = {
+            self._TYPE_INIT_RESPONSE: self._handle_init_response,
+            self._TYPE_REALTIME_DATA: self._handle_realtime_data,
+        }
+        return handlers.get(packet_type, lambda p, t: self._packet_stats["unknown_types"].__setitem__(t, self._packet_stats["unknown_types"].get(t, 0) + 1))
+
+    def _handle_init_response(self, packet: bytearray, packet_type: int) -> None:
+        """Handle init response packet."""
+        self._log.debug("Received init response")
+        self._packet_stats["init_responses"] += 1
+        # Send ACK and Data Stream commands after init response (only once)
+        if not self._ack_sent and not self._ack_task:
+            self._ack_task = asyncio.create_task(self._send_ack_and_data_stream())
+
+    def _handle_realtime_data(self, packet: bytearray, packet_type: int) -> None:
+        """Handle realtime data packet."""
+        self._log.debug("Received realtime data packet, length: %d", len(packet))
+        if self._parse_realtime_packet(packet):
+            self._data_received = True
+
 
     def _parse_current_sign(self, current_bytes: bytearray) -> float:
         """Parse current value with sign bit handling."""
         # Extract the raw value (lower 15 bits)
         raw_value = int.from_bytes(current_bytes, byteorder="little") & 0x7FFF
-        
+
         # Check sign bit (bit 15)
         if current_bytes[1] & 0x80:
             # Negative current (discharging)
             return -raw_value / 100.0
-        else:
-            # Positive current (charging)
-            return raw_value / 100.0
+        # Positive current (charging)
+        return raw_value / 100.0
 
     def _parse_realtime_packet(self, packet: bytes) -> bool:
         """Parse real-time data packet and store the result."""
@@ -282,10 +313,9 @@ class BMS(BaseBMS):
 
         # Extract data section (skip header, length, type, and checksum)
         data_section = packet[4:-1]
-        
-        # Parse fields according to _FIELDS definition
-        result = {}
-        
+
+        # Parse fields according to _FIELDS
+        result: BMSsample = {}
         for key, offset, size, signed, func in self._FIELDS:
             if offset + size <= len(data_section):
                 value = int.from_bytes(
@@ -298,7 +328,7 @@ class BMS(BaseBMS):
                     result[key] = converted
 
         # Handle current sign based on discharge flag (bit 7 of byte 15 in data section)
-        if "current" in result:
+        if "current" in result and len(data_section) > 11:
             byte15 = data_section[11]  # Byte 15 in full packet = offset 11 in data section
             discharge_flag = (byte15 & 0x80) != 0
             # Negative current = discharging, Positive current = charging
@@ -306,54 +336,53 @@ class BMS(BaseBMS):
                 result["current"] = -result["current"]
             result["battery_charging"] = not discharge_flag
 
-        # Check for protection/error status in lower bits of byte 15
-        protection_byte = data_section[11] & 0x7F  # Mask out discharge flag
-        if protection_byte:
-            problems = []
-            for bit, problem in self._PROTECTION_BITS.items():
-                if protection_byte & bit:
-                    problems.append(problem)
-            # All non-zero protection_byte values will have at least one matching bit
-            self._log.debug("Protection status detected: %s", ", ".join(problems))
-            result["problem_code"] = protection_byte
-            result["problem"] = True
-        else:
-            result["problem"] = False
+            # Check for protection/error status in lower bits of byte 15
+            protection_byte = byte15 & 0x7F  # Mask out discharge flag
+            if protection_byte:
+                result["problem_code"] = protection_byte
+                result["problem"] = True
+                # Log protection status
+                problems = []
+                for bit, problem in self._PROTECTION_BITS.items():
+                    if protection_byte & bit:
+                        problems.append(problem)
+                # Always log if we have a protection byte
+                self._log.debug("Protection status detected: %s", ", ".join(problems) if problems else "Unknown protection code")
+            else:
+                result["problem"] = False
 
         # Use design capacity from packet if available
         if "design_capacity_raw" in result:
             result["design_capacity"] = int(result["design_capacity_raw"])
             del result["design_capacity_raw"]  # Remove raw field
-        else:
-            # Fallback to calculation if design capacity not in packet
-            if "remaining_capacity" in result and "battery_level" in result:
-                soc = result["battery_level"]
-                if soc > 0:
-                    total_capacity_ah = (result["remaining_capacity"] / soc) * 100
-                    result["design_capacity"] = int(total_capacity_ah)
-                    self._log.debug(
-                        "Calculated total capacity: (%.2f / %d) * 100 = %.1f Ah",
-                        result["remaining_capacity"],
-                        soc,
-                        total_capacity_ah
-                    )
-                else:
-                    # If SoC is 0, we cannot calculate capacity
-                    self._log.debug(
-                        "Cannot calculate design capacity with SOC=%d",
-                        soc
-                    )
-        
+        # Fallback to calculation if design capacity not in packet
+        elif "remaining_capacity" in result and "battery_level" in result:
+            soc = result["battery_level"]
+            if soc > 0:
+                total_capacity_ah = (result["remaining_capacity"] / soc) * 100
+                result["design_capacity"] = int(total_capacity_ah)
+                self._log.debug(
+                    "Calculated total capacity: (%.2f / %d) * 100 = %d Ah",
+                    result["remaining_capacity"],
+                    soc,
+                    int(total_capacity_ah)
+                )
+            else:
+                self._log.debug("Cannot calculate design capacity with SOC=%d", soc)
+
         # Set cycle charge
         if "remaining_capacity" in result:
             result["cycle_charge"] = result["remaining_capacity"]
 
-        # Temperature values array
+        # Calculate power
+        if "voltage" in result and "current" in result:
+            result["power"] = round(result["voltage"] * result["current"], 2)
+
+        # Calculate temperature values array
         if "temperature" in result:
+            result["temp_values"] = [result["temperature"]]
             # Validate temperature range (0-25.5°C due to unsigned byte limitation)
-            if result["temperature"] <= 25.5:
-                result["temp_values"] = [result["temperature"]]
-            else:
+            if result["temperature"] > 25.5:
                 self._log.warning("Temperature out of range: %.1f°C", result["temperature"])
                 result["temperature"] = 20.0
                 result["temp_values"] = [20.0]
@@ -361,10 +390,6 @@ class BMS(BaseBMS):
         # Only include runtime when discharging
         if "runtime" in result and result.get("current", 0) >= 0:
             del result["runtime"]  # Remove runtime when charging
-
-        # Calculate power
-        if "voltage" in result and "current" in result:
-            result["power"] = result["voltage"] * result["current"]
 
         # Log parsed values for debugging
         self._log.debug(
@@ -374,7 +399,7 @@ class BMS(BaseBMS):
             result.get("voltage", 0),
             result.get("current", 0),
             result.get("battery_level", 0),
-            result.get("temperature", 25.0),
+            result.get("temperature", 0),
             result.get("remaining_capacity", 0),
             result.get("power", 0)
         )
@@ -382,7 +407,7 @@ class BMS(BaseBMS):
         # Store the result
         self._result = result
         self._packet_stats["data_packets"] += 1
-        
+
         return True
 
     async def _async_update(self) -> BMSsample:
@@ -420,7 +445,7 @@ class BMS(BaseBMS):
         except Exception as e:
             self._log.error("Failed to send Extended info command: %s", e)
             raise
-        
+
         # Wait for any response (init responses or data)
         if not await self._wait_for_data(self._DATA_TIMEOUT, wait_for_any_packet=True):
             self._log.warning(
@@ -429,7 +454,7 @@ class BMS(BaseBMS):
                 self._packet_stats
             )
             raise TimeoutError("No response from Pro BMS")
-        
+
         # Now wait for actual data packets (device may send multiple init responses first)
         # Use a longer timeout since we know the device is responding
         extended_timeout = self._DATA_TIMEOUT * 2
@@ -437,25 +462,18 @@ class BMS(BaseBMS):
             "Waiting for data packets (received %d init responses so far)",
             self._packet_stats["init_responses"]
         )
-        
+
         if await self._wait_for_data(extended_timeout):
             self._log.debug("Received data after init command. Stats: %s", self._packet_stats)
             return self._process_data()
 
-        # If we got init responses but no data, it might be a communication issue
-        if self._packet_stats["init_responses"] > 0:
-            self._log.warning(
-                "Received %d init responses but no data packets after %s seconds. Stats: %s",
-                self._packet_stats["init_responses"],
-                extended_timeout,
-                self._packet_stats
-            )
-        else:
-            self._log.warning(
-                "No valid packets received after %s seconds. Stats: %s",
-                extended_timeout,
-                self._packet_stats
-            )
+        # Log appropriate warning based on what we received
+        warning_msg = (
+            f"Received {self._packet_stats['init_responses']} init responses but no data packets after {extended_timeout} seconds. Stats: {self._packet_stats}"
+            if self._packet_stats["init_responses"] > 0
+            else f"No valid packets received after {extended_timeout} seconds. Stats: {self._packet_stats}"
+        )
+        self._log.warning(warning_msg)
         raise TimeoutError("No valid data received from Pro BMS")
 
     def _process_data(self) -> BMSsample | None:
@@ -490,19 +508,17 @@ class BMS(BaseBMS):
         """Disconnect from the BMS."""
         self._log.debug("disconnecting BMS (%s)", self._reconnect)
         self._log.debug("Packet stats: %s", self._packet_stats)
-        
+
         # Cancel any pending ACK task
         if self._ack_task and not self._ack_task.done():
             self._ack_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._ack_task
-            except asyncio.CancelledError:
-                pass
             self._ack_task = None
-        
+
         # Clear buffer and reset state for clean reconnection
         self._buffer.clear()
         self._ack_sent = False
         self._data_received = False
-        
+
         await super().disconnect()

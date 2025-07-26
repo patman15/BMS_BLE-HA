@@ -27,7 +27,7 @@ class MockProBMSBleakClient(MockBleakClient):
     PACKET_TYPE_INIT_RESPONSE: Final = 0x03
     PACKET_TYPE_REALTIME_DATA: Final = 0x04
     
-    # Commands
+    # Commands - must match the actual BMS class
     CMD_EXTENDED_INFO: Final = bytes.fromhex("55aa070101558042000097")
     CMD_ACK: Final = bytes.fromhex("55aa070101558006000055")
     CMD_DATA_STREAM: Final = bytes.fromhex("55aa0901015580430000120084")
@@ -184,7 +184,7 @@ async def test_device_name_consistency(patch_bleak_client) -> None:
     bms_with_mac = BMS(
         generate_ble_device("E0:4E:7A:AF:5E:06", "E0:4E:7A:AF:5E:06", {"path": "/org/bluez/hci0/dev_E0_4E_7A_AF_5E_06"}, -73)
     )
-    assert bms_with_mac.name == "E0:4E:7A:AF:5E:06"  # Pro BMS uses the device name as-is
+    assert bms_with_mac.name == "Pro BMS"  # Pro BMS now sets name to "Pro BMS" when device name is MAC address
 
     # Test with device advertising "Pro BMS" as name
     bms_with_name = BMS(
@@ -192,17 +192,17 @@ async def test_device_name_consistency(patch_bleak_client) -> None:
     )
     assert bms_with_name.name == "Pro BMS"  # Pro BMS uses the device name as-is
 
+    # Test with device having None as name
+    bms_with_none = BMS(
+        generate_ble_device("E0:4E:7A:AF:5E:06", None, {"path": "/org/bluez/hci0/dev_E0_4E_7A_AF_5E_06"}, -73)
+    )
+    assert bms_with_none.name == "Pro BMS"  # Pro BMS sets name to "Pro BMS" when device name is None
+
     # Test with device advertising custom name
     bms_with_custom = BMS(
         generate_ble_device("E0:4E:7A:AF:5E:06", "Pro BMS Living Room", {"path": "/org/bluez/hci0/dev_E0_4E_7A_AF_5E_06"}, -73)
     )
     assert bms_with_custom.name == "Pro BMS Living Room"  # Pro BMS uses the device name as-is
-
-    # Test with no name
-    bms_no_name = BMS(
-        generate_ble_device("E0:4E:7A:AF:5E:06", None, {"path": "/org/bluez/hci0/dev_E0_4E_7A_AF_5E_06"}, -73)
-    )
-    assert bms_no_name.name == "undefined"  # Base class default when device has no name
 
 
 async def test_device_name_with_existing_suffix() -> None:
@@ -293,8 +293,8 @@ async def test_bleak_error_during_init(patch_bleak_client) -> None:
             self._command_count = 0
 
         async def write_gatt_char(self, char_specifier, data, response=None):
-            self._command_count += 1
-            if self._command_count == 2:  # Error on second command
+            # Raise error on Extended Info command
+            if data == bytes.fromhex("55aa070101558042000097"):
                 raise BleakError("Mock write error")
             await super().write_gatt_char(char_specifier, data, response)
 
@@ -304,7 +304,8 @@ async def test_bleak_error_during_init(patch_bleak_client) -> None:
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
     )
 
-    with pytest.raises(TimeoutError, match="No response from Pro BMS"):
+    # The BleakError should be re-raised
+    with pytest.raises(BleakError, match="Mock write error"):
         await bms.async_update()
 
 
@@ -498,8 +499,8 @@ async def test_design_capacity_calculation_fallback(patch_bleak_client, caplog) 
         # Restore original fields
         pro_bms_module.BMS._FIELDS = original_fields
     
-    # Check debug log
-    assert "Calculated total capacity: (40.00 / 50) * 100 = 80.0 Ah" in caplog.text
+    # Check debug log - the format is slightly different
+    assert "Calculated total capacity: (40.00 / 50) * 100 = 80 Ah" in caplog.text
 
     await bms.disconnect()
 
@@ -922,7 +923,7 @@ async def test_unknown_packet_types(patch_bleak_client) -> None:
     """Test handling of unknown packet types."""
     class MockUnknownPacketClient(MockProBMSBleakClient):
         async def write_gatt_char(self, char_specifier, data, response=None):
-            if self._notify_callback and data == self.CMD_EXTENDED_INFO:
+            if self._notify_callback and data == bytes.fromhex("55aa070101558042000097"):
                 # Send init response
                 self._notify_callback("MockUnknownPacketClient", self._create_init_response())
                 # Send unknown packet type
@@ -1085,7 +1086,7 @@ async def test_ack_sending_error(patch_bleak_client) -> None:
             
         async def write_gatt_char(self, char, data, response=None):
             if data == bms._CMD_ACK:
-                raise Exception("ACK write failed")
+                raise OSError("ACK write failed")
                 
         async def disconnect(self):
             self.is_connected = False
@@ -1115,7 +1116,7 @@ async def test_ack_error_handling(patch_bleak_client) -> None:
                 self._notify_callback("MockAckErrorClient", self._create_init_response())
             elif data == self.CMD_ACK:
                 # Simulate error during ACK
-                raise Exception("ACK send failed")
+                raise OSError("ACK send failed")
 
     patch_bleak_client(MockAckErrorClient)
 
@@ -1157,10 +1158,28 @@ async def test_multiple_data_packets(patch_bleak_client) -> None:
     await bms.disconnect()
 
 
-async def test_no_data_after_init(patch_bleak_client) -> None:
-    """Test timeout when no data arrives after init."""
-    # This test already exists as test_update_timeout
-    pass
+async def test_no_data_after_init(patch_bleak_client, patch_bms_timeout) -> None:
+    """Test warning when no init responses received."""
+    patch_bms_timeout()
+    
+    class MockProBMSNoInitBleakClient(MockBleakClient):
+        """Mock client that doesn't send any init response."""
+        
+        async def write_gatt_char(self, char_specifier, data, response=None):
+            # Don't send any response - this should trigger the warning
+            pass
+    
+    patch_bleak_client(MockProBMSNoInitBleakClient)
+
+    bms = BMS(
+        generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
+    )
+
+    # Should timeout with no init responses
+    with pytest.raises(TimeoutError):
+        await bms.async_update()
+
+    await bms.disconnect()
 
 
 async def test_disconnect_cleanup(patch_bleak_client) -> None:
@@ -1350,7 +1369,7 @@ async def test_data_stream_sending_error(patch_bleak_client) -> None:
                 self._ack_sent = True
             elif data == self.CMD_DATA_STREAM and self._ack_sent:
                 # Data Stream fails
-                raise Exception("Data Stream send failed")
+                raise OSError("Data Stream send failed")
 
     patch_bleak_client(MockDataStreamErrorClient)
 
@@ -1375,7 +1394,7 @@ async def test_send_ack_and_data_stream_exception(patch_bleak_client):
     
     # Mock the client to raise an exception on write
     mock_client = AsyncMock()
-    mock_client.write_gatt_char.side_effect = Exception("Write failed")
+    mock_client.write_gatt_char.side_effect = OSError("Write failed")
     bms._client = mock_client
     
     # This should catch and log the exception
@@ -1397,7 +1416,7 @@ async def test_send_ack_and_data_stream_data_stream_exception(patch_bleak_client
     # Create a side effect function that only fails on data stream command
     def write_side_effect(char, data, response=None):
         if data == bms._CMD_DATA_STREAM:
-            raise Exception("Data stream write failed")
+            raise OSError("Data stream write failed")
         # ACK command succeeds
         return None
     
