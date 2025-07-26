@@ -126,7 +126,9 @@ class BMS(BaseBMS):
         self._data_final = self._data.copy()
         self._data_event.set()
 
-    async def _init_connection(self) -> None:
+    async def _init_connection(
+        self, char_notify: BleakGATTCharacteristic | int | str | None = None
+    ) -> None:
         """Initialize RX/TX characteristics and protocol state."""
         await super()._init_connection()
 
