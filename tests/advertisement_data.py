@@ -864,4 +864,11 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "redodo_bms",
     ),
+    (  # source PCAP (https://github.com/patman15/BMS_BLE-HA/issues/412)
+        generate_advertisement_data(  # OUI: 90:a6:bf
+            local_name="TP_123456",
+            rssi=-87,
+        ),
+        "tianpwr_bms",
+    ),
 ]
