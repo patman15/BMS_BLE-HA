@@ -1,7 +1,10 @@
 """Module to support Pro BMS Smart Shunt devices."""
 
 import asyncio
+import logging
 import struct
+
+from collections.abc import Callable
 from typing import Any, Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -9,57 +12,66 @@ from bleak.backends.device import BLEDevice
 
 from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue
 
+# Debug logger
+_LOGGER = logging.getLogger(__name__)
+
 
 class BMS(BaseBMS):
     """Pro BMS Smart Shunt class implementation."""
 
     # Protocol constants
-    PACKET_HEADER: Final[bytes] = bytes([0x55, 0xAA])
-    PACKET_TYPE_REALTIME: Final[int] = 0x04
-    PACKET_TYPE_INIT_RESPONSE: Final[int] = 0x03
-
-    # Initialization commands
-    INIT_COMMANDS: Final[list[bytes]] = [
-        bytes.fromhex("55aa0a0101558004077be16968"),    # General init (Function 0x04)
-        bytes.fromhex("55aa070101558040000095"),        # Get info (Function 0x40)
-        bytes.fromhex("55aa070101558042000097"),        # Extended info (Function 0x42)
-        bytes.fromhex("55aa0901015580430000120084"),    # Function 0x43 with 18 data points
-    ]
-
-    # Command names for logging
-    INIT_COMMAND_NAMES: Final[list[str]] = [
-        "General init (0x04)",
-        "Get info (0x40)",
-        "Extended info (0x42)",
-        "Data stream setup (0x43)"
-    ]
-
-    # Transition commands
-    INIT_ACK_COMMAND: Final[bytes] = bytes.fromhex("55aa070101558006000055")
-    DATA_START_COMMAND: Final[bytes] = bytes.fromhex("55aa09010155804300550000c1")
-
+    _HEAD: Final[bytes] = bytes([0x55, 0xAA])
+    _TYPE_INIT_RESPONSE: Final[int] = 0x03
+    _TYPE_REALTIME_DATA: Final[int] = 0x04
+    
+    # Commands (from successful test results)
+    _CMD_EXTENDED_INFO: Final[bytes] = bytes.fromhex("55aa070101558042000097")
+    _CMD_ACK: Final[bytes] = bytes.fromhex("55aa070101558006000055")
+    _CMD_DATA_STREAM: Final[bytes] = bytes.fromhex("55aa0901015580430000120084")
+    
     # Timing constants (seconds)
-    INIT_COMMAND_TIMEOUT: Final[float] = 0.5
-    INIT_RESPONSE_TIMEOUT: Final[float] = 1.5
-    DATA_FLOW_CHECK_TIMEOUT: Final[float] = 0.5
-
-    # Expected packet length for real-time data
-    REALTIME_PACKET_LEN: Final[int] = 50
+    _INIT_TIMEOUT: Final[float] = 0.5  # Short timeout for init
+    _DATA_TIMEOUT: Final[float] = 2.0  # Longer timeout for data
+    
+    # Expected packet length
+    _REALTIME_PACKET_LEN: Final[int] = 50
+    
+    # Data field definitions with offsets relative to data section (not full packet)
+    _FIELDS: Final[list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]]] = [
+        # (name, offset_in_data, size, signed, conversion_func)
+        ("voltage", 4, 2, False, lambda x: x * 0.01),
+        ("current", 8, 2, False, lambda x: x / 1000.0),  # Magnitude only
+        ("battery_level", 20, 1, False, lambda x: x),
+        ("temperature", 12, 1, False, lambda x: x / 10.0),
+        ("remaining_capacity", 16, 2, False, lambda x: x * 10 / 1000.0),  # mAh to Ah
+        ("runtime", 24, 2, False, lambda x: x * 60 if 0 < x < 65535 else None),  # minutes to seconds
+        # Design capacity at offset 36-37 in data section
+        ("design_capacity_raw", 36, 2, False, lambda x: x / 100.0),
+    ]
+    
+    # Protection/error status bit definitions (if available in byte 15 of data section)
+    _PROTECTION_BITS: Final[dict[int, str]] = {
+        0x01: "overvoltage",
+        0x02: "undervoltage",
+        0x04: "overcurrent",
+        0x08: "overtemperature",
+        0x10: "undertemperature",
+        0x20: "short_circuit",
+        0x40: "cell_imbalance",
+        # 0x80 is used for discharge flag
+    }
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize private BMS members."""
-        # Ensure unique device naming before calling super().__init__
-        # Note: We can't use self._log here as it's not initialized yet
-        self._ensure_unique_device_name(ble_device)
-
+        
         super().__init__(__name__, ble_device, reconnect)
-
+        
         # Initialize buffers and state
         self._buffer: bytearray = bytearray()
-        self._init_data: dict[str, Any] = {}
-        self._waiting_for_init: bool = True
-        self._init_responses_received: int = 0
-        self._expected_init_responses: int = 3
+        self._result: dict[str, Any] = {}
+        self._data_received: bool = False
+        self._ack_sent: bool = False  # Prevent multiple ACK/Data Stream sequences
+        self._ack_task: asyncio.Task | None = None  # Track the ACK task
         self._packet_stats: dict[str, Any] = {
             "total": 0,
             "init_responses": 0,
@@ -76,13 +88,14 @@ class BMS(BaseBMS):
     @staticmethod
     def matcher_dict_list() -> list[AdvertisementPattern]:
         """Provide BluetoothMatcher definition."""
+        
         return [
+            # Exact match for "Pro BMS" with service UUID only
             AdvertisementPattern(
-                local_name="Pro BMS*",
+                local_name="Pro BMS",
                 service_uuid=BMS.uuid_services()[0],
-                manufacturer_id=0x004C,
                 connectable=True,
-            )
+            ),
         ]
 
     @staticmethod
@@ -100,132 +113,72 @@ class BMS(BaseBMS):
         """Return 16-bit UUID of characteristic that provides write property."""
         return "fff3"
 
-    def _ensure_unique_device_name(self, ble_device: BLEDevice) -> None:
-        """Ensure device has unique name with MAC suffix."""
-        mac_suffix = ble_device.address[-5:].replace(":", "")
+    @staticmethod
+    def _calc_values() -> frozenset[BMSvalue]:
+        """Return values that the BMS cannot provide and need to be calculated."""
+        return frozenset({"cycle_capacity"})
 
-        if mac_suffix in (ble_device.name or ""):
-            # Device name already contains MAC suffix
-            # Can't use self._log here as it's not initialized yet
-            import logging
-            logging.getLogger(__name__).debug("Device name already contains MAC suffix")
-            return
 
-        if ble_device.name and "Pro BMS" in ble_device.name and ble_device.name != "Pro BMS":
-            custom_name = f"{ble_device.name} {mac_suffix}"
-        else:
-            custom_name = f"Pro BMS {mac_suffix}"
-
-        ble_device.name = custom_name
-
-    async def _wait_for_response(self, timeout: float, check_interval: float = 0.05) -> bool:
-        """Wait for a response with timeout, checking periodically.
-
+    async def _wait_for_data(self, timeout: float, wait_for_any_packet: bool = False) -> bool:
+        """Wait for data packets with timeout.
+        
         Args:
-            timeout: Maximum time to wait in seconds
-            check_interval: How often to check for response (default 50ms)
-
-        Returns:
-            True if response received, False if timeout
-
+            timeout: Maximum time to wait
+            wait_for_any_packet: If True, return when any packet is received (not just data)
         """
         loop = asyncio.get_event_loop()
         start_time = loop.time()
-        initial_responses = self._init_responses_received
-        initial_data_packets = self._packet_stats['data_packets']
-
+        last_packet_count = self._packet_stats["total"]
+        
         while loop.time() - start_time < timeout:
-            await asyncio.sleep(check_interval)
-
-            # Check if we got new responses
-            if self._waiting_for_init and self._init_responses_received > initial_responses:
+            # Check if we received data packets
+            if self._data_received:
                 return True
-            if not self._waiting_for_init and self._packet_stats['data_packets'] > initial_data_packets:
+                
+            # If waiting for any packet, check if we received anything
+            if wait_for_any_packet and self._packet_stats["total"] > last_packet_count:
                 return True
-
+                
+            await asyncio.sleep(0.05)
+        
         return False
 
-    async def _async_update(self) -> BMSsample:
-        """Update battery status information."""
-        self._log.debug("Starting Pro BMS update")
+    async def _send_ack_and_data_stream(self) -> None:
+        """Send ACK and Data Stream commands after init response."""
+        # Check if already sent
+        if self._ack_sent:
+            return
+            
+        # Send ACK command
+        try:
+            self._log.debug("Sending ACK command")
+            await self._client.write_gatt_char(self.uuid_tx(), self._CMD_ACK, response=False)
+        except Exception as e:
+            self._log.error("Failed to send ACK command: %s", e)
+            return
+            
+        # Small delay between commands
+        await asyncio.sleep(0.1)
+        
+        # Send Data Stream request
+        try:
+            self._log.debug("Sending Data Stream request")
+            await self._client.write_gatt_char(self.uuid_tx(), self._CMD_DATA_STREAM, response=False)
+            # Mark as sent only after successful completion
+            self._ack_sent = True
+        except Exception as e:
+            self._log.error("Failed to send Data Stream command: %s", e)
 
-        # Check connection status
-        if not self._client or not self._client.is_connected:
-            raise ConnectionError("BMS is not connected")
-
-        # Reset state
-        self._buffer.clear()
-        self._init_data.clear()
-        self._waiting_for_init = True
-        self._init_responses_received = 0
-        self._packet_stats = {
-            "total": 0,
-            "init_responses": 0,
-            "data_packets": 0,
-            "invalid": 0,
-            "unknown_types": {},
-        }
-
-        # Send initialization sequence
-        for i, (cmd, cmd_name) in enumerate(zip(self.INIT_COMMANDS, self.INIT_COMMAND_NAMES, strict=False)):
-            self._log.debug("Sending init command %d/%d (%s)", i + 1, len(self.INIT_COMMANDS), cmd_name)
-            try:
-                await self._client.write_gatt_char(self.uuid_tx(), cmd, response=False)
-            except Exception as e:
-                from bleak.exc import BleakError
-                if isinstance(e, BleakError):
-                    raise BleakError(f"Init command {i+1} ({cmd_name}) failed: {e}") from e
-                raise
-
-            # Wait for response
-            await self._wait_for_response(self.INIT_COMMAND_TIMEOUT)
-
-        # Wait for init responses
-        await self._wait_for_response(self.INIT_RESPONSE_TIMEOUT)
-
-        if self._init_responses_received > 0:
-            self._log.debug("Received %d init responses", self._init_responses_received)
-
-            # Send acknowledgment
-            self._log.debug("sending acknowledgment")
-            try:
-                await self._client.write_gatt_char(self.uuid_tx(), self.INIT_ACK_COMMAND, response=False)
-            except Exception as e:
-                from bleak.exc import BleakError
-                if isinstance(e, BleakError):
-                    self._log.warning("Failed to send init acknowledgment: %s", e)
-                else:
-                    raise
-            await self._wait_for_response(0.2)
-
-            self._waiting_for_init = False
-
-            # Send data start command
-            try:
-                await self._client.write_gatt_char(self.uuid_tx(), self.DATA_START_COMMAND, response=False)
-            except Exception as e:
-                from bleak.exc import BleakError
-                if isinstance(e, BleakError):
-                    self._log.warning("Failed to send data start command: %s", e)
-                    raise
-                raise
-            await self._wait_for_response(0.6)
-
-        # Wait for data packets
-        await self._wait_for_response(self.DATA_FLOW_CHECK_TIMEOUT)
-
-        if self._packet_stats['data_packets'] > 0:
-            self._log.debug("Received %d data packets", self._packet_stats['data_packets'])
-            return self._process_data()
-
-        raise TimeoutError("No valid data received from Pro BMS")
-
-    def _notification_handler(
-        self, _sender: BleakGATTCharacteristic, data: bytearray
-    ) -> None:
-        """Retrieve BMS data update."""
+    def _notification_handler(self, _sender: BleakGATTCharacteristic, data: bytearray) -> None:
+        """Handle BMS data notifications."""
         self._log.debug("RX BLE data (%d bytes): %s", len(data), data.hex())
-
+        
+        # Log buffer state before adding new data
+        if self._buffer:
+            self._log.debug("Buffer before: %d bytes, first 10: %s",
+                          len(self._buffer),
+                          self._buffer[:min(10, len(self._buffer))].hex())
+        
         self._buffer.extend(data)
         self._packet_stats["total"] += 1
         self._process_buffer()
@@ -234,26 +187,44 @@ class BMS(BaseBMS):
         """Process data in buffer looking for complete packets."""
         while len(self._buffer) >= 5:
             # Look for packet header
-            header_pos = self._buffer.find(self.PACKET_HEADER)
+            header_pos = self._buffer.find(self._HEAD)
             if header_pos == -1:
+                # No header found - clear buffer if it's just garbage
                 if len(self._buffer) > 10:
                     self._buffer = self._buffer[-10:]
+                else:
+                    # Small buffer with no header - clear it
+                    self._buffer.clear()
                 return
 
             # Remove data before header
             if header_pos > 0:
+                self._log.debug("Removing %d bytes before header", header_pos)
                 self._buffer = self._buffer[header_pos:]
 
             # Check if we have enough data for length and type fields
             if len(self._buffer) < 4:
                 return
 
-            # Get packet length and type
+            # Get packet length and type - ensure we're reading from the correct position
             length_byte = self._buffer[2]
             packet_type = self._buffer[3]
 
             # Calculate total packet length
             total_length = 4 + length_byte + 1
+
+            # Validate packet type before processing
+            if packet_type not in [self._TYPE_INIT_RESPONSE, self._TYPE_REALTIME_DATA]:
+                self._log.warning(
+                    "Invalid packet type 0x%02x at position 3, buffer: %s",
+                    packet_type,
+                    self._buffer[:min(20, len(self._buffer))].hex()
+                )
+                # Track unknown packet types
+                self._packet_stats["unknown_types"][packet_type] = self._packet_stats["unknown_types"].get(packet_type, 0) + 1
+                # Skip this byte and try again
+                self._buffer = self._buffer[1:]
+                continue
 
             self._log.debug("Processing packet type 0x%02x, length %d", packet_type, total_length)
 
@@ -265,214 +236,231 @@ class BMS(BaseBMS):
             packet = self._buffer[:total_length]
             self._buffer = self._buffer[total_length:]
 
+            # Skip checksum validation for Pro BMS compatibility
+            self._log.debug("Skipping checksum validation for Pro BMS compatibility")
+
             # Process packet based on type
-            if packet_type == self.PACKET_TYPE_INIT_RESPONSE:
-                self._log.debug("Init response #%d received", self._init_responses_received + 1)
-                self._process_init_response(packet)
-            elif packet_type == self.PACKET_TYPE_REALTIME:
-                self._log.debug("Data packet received, length %d", len(packet))
-                self._parse_realtime_packet(packet)
+            if packet_type == self._TYPE_INIT_RESPONSE:
+                self._log.debug("Received init response")
+                self._packet_stats["init_responses"] += 1
+                # Send ACK and Data Stream commands after init response (only once)
+                if not self._ack_sent and not self._ack_task:
+                    self._ack_task = asyncio.create_task(self._send_ack_and_data_stream())
+            elif packet_type == self._TYPE_REALTIME_DATA:
+                self._log.debug("Received realtime data packet, length: %d", len(packet))
+                if self._parse_realtime_packet(packet):
+                    self._data_received = True
             else:
                 self._packet_stats["unknown_types"][packet_type] = \
                     self._packet_stats["unknown_types"].get(packet_type, 0) + 1
-                if len(self._packet_stats["unknown_types"]) == 1:  # Log only on first unknown type
-                    self._log.debug("Unknown packet types: %s", self._packet_stats["unknown_types"])
 
-    def _process_init_response(self, packet: bytes) -> None:
-        """Process initialization response packet."""
-        self._init_responses_received += 1
-        self._packet_stats["init_responses"] += 1
-        self._log.debug("Processing init response %d", self._init_responses_received)
+    def _parse_current_sign(self, current_bytes: bytearray) -> float:
+        """Parse current value with sign bit handling."""
+        # Extract the raw value (lower 15 bits)
+        raw_value = int.from_bytes(current_bytes, byteorder="little") & 0x7FFF
+        
+        # Check sign bit (bit 15)
+        if current_bytes[1] & 0x80:
+            # Negative current (discharging)
+            return -raw_value / 100.0
+        else:
+            # Positive current (charging)
+            return raw_value / 100.0
 
-    def _parse_realtime_packet(self, packet: bytes) -> bool:  # noqa: PLR0912, PLR0915
-        """Parse real-time data packet and store the result.
-
-        Args:
-            packet: The complete 50-byte data packet
-
-        Returns:
-            True if packet was successfully parsed, False otherwise
-
-        """
+    def _parse_realtime_packet(self, packet: bytes) -> bool:
+        """Parse real-time data packet and store the result."""
         packet_len = len(packet)
 
         # We expect 50-byte packets from Function 0x43
-        if packet_len != 50:
+        if packet_len != self._REALTIME_PACKET_LEN:
             self._log.warning(
-                "Unexpected packet length: %d bytes (expected 50)",
-                packet_len
+                "Unexpected packet length: %d bytes (expected %d)",
+                packet_len,
+                self._REALTIME_PACKET_LEN
             )
             return False
 
-        try:
-            # Parse with FIXED field locations from original working version
-            result = {}
+        # Extract data section (skip header, length, type, and checksum)
+        data_section = packet[4:-1]
+        
+        # Parse fields according to _FIELDS definition
+        result = {}
+        
+        for key, offset, size, signed, func in self._FIELDS:
+            if offset + size <= len(data_section):
+                value = int.from_bytes(
+                    data_section[offset:offset + size],
+                    byteorder="little",
+                    signed=signed
+                )
+                converted = func(value)
+                if converted is not None:
+                    result[key] = converted
 
-            # Voltage at bytes 8-9 (multiply by 0.01)
-            voltage_raw = struct.unpack("<H", packet[8:10])[0]
-            voltage = voltage_raw * 0.01
-            result["voltage"] = voltage
-            self._log.debug("Voltage: %.2fV (raw: %d)", voltage, voltage_raw)
-
-            # Current at bytes 12-13 as UNSIGNED int16
-            current_raw = struct.unpack("<H", packet[12:14])[0]
-            current_magnitude = current_raw / 1000.0  # Convert mA to A
-
-            # Current direction from byte 15 bit 7 (FIXED: proper interpretation)
-            discharge_flag = (packet[15] & 0x80) != 0
-
-            # Apply sign based on discharge flag
+        # Handle current sign based on discharge flag (bit 7 of byte 15 in data section)
+        if "current" in result:
+            byte15 = data_section[11]  # Byte 15 in full packet = offset 11 in data section
+            discharge_flag = (byte15 & 0x80) != 0
             # Negative current = discharging, Positive current = charging
-            current = -current_magnitude if discharge_flag else current_magnitude
-            result["current"] = current
-
-            # Determine charging status based on discharge flag
+            if discharge_flag:
+                result["current"] = -result["current"]
             result["battery_charging"] = not discharge_flag
 
-            # State of Charge at byte 24
-            result["battery_level"] = packet[24]
+        # Check for protection/error status in lower bits of byte 15
+        protection_byte = data_section[11] & 0x7F  # Mask out discharge flag
+        if protection_byte:
+            problems = []
+            for bit, problem in self._PROTECTION_BITS.items():
+                if protection_byte & bit:
+                    problems.append(problem)
+            # All non-zero protection_byte values will have at least one matching bit
+            self._log.debug("Protection status detected: %s", ", ".join(problems))
+            result["problem_code"] = protection_byte
+            result["problem"] = True
+        else:
+            result["problem"] = False
 
-            # Temperature at byte 16 (divide by 10 for °C)
-            # Note: Since this is an unsigned byte (0-255), the temperature range is 0-25.5°C
-            # The device cannot report negative temperatures with this encoding
-            temp_raw = packet[16]
-            temperature = temp_raw / 10.0
+        # Use design capacity from packet if available
+        if "design_capacity_raw" in result:
+            result["design_capacity"] = int(result["design_capacity_raw"])
+            del result["design_capacity_raw"]  # Remove raw field
+        else:
+            # Fallback to calculation if design capacity not in packet
+            if "remaining_capacity" in result and "battery_level" in result:
+                soc = result["battery_level"]
+                if soc > 0:
+                    total_capacity_ah = (result["remaining_capacity"] / soc) * 100
+                    result["design_capacity"] = int(total_capacity_ah)
+                    self._log.debug(
+                        "Calculated total capacity: (%.2f / %d) * 100 = %.1f Ah",
+                        result["remaining_capacity"],
+                        soc,
+                        total_capacity_ah
+                    )
+                else:
+                    # If SoC is 0, we cannot calculate capacity
+                    self._log.debug(
+                        "Cannot calculate design capacity with SOC=%d",
+                        soc
+                    )
+        
+        # Set cycle charge
+        if "remaining_capacity" in result:
+            result["cycle_charge"] = result["remaining_capacity"]
 
+        # Temperature values array
+        if "temperature" in result:
             # Validate temperature range (0-25.5°C due to unsigned byte limitation)
-            # While the protocol documentation mentions -40°C to 100°C, the actual
-            # implementation is limited by the unsigned byte encoding
-            if temperature <= 25.5:  # Always true for unsigned byte, but kept for clarity
-                result["temperature"] = temperature
-                result["temp_values"] = [temperature]
+            if result["temperature"] <= 25.5:
+                result["temp_values"] = [result["temperature"]]
             else:
-                # This branch is unreachable with unsigned byte, but kept for completeness
-                self._log.warning("Temperature out of range: %.1f°C (raw: %d)", temperature, temp_raw)
+                self._log.warning("Temperature out of range: %.1f°C", result["temperature"])
                 result["temperature"] = 20.0
                 result["temp_values"] = [20.0]
 
-            # Remaining capacity at bytes 20-21 (multiply by 10 for mAh)
-            capacity_raw = struct.unpack("<H", packet[20:22])[0]
-            actual_capacity_mah = capacity_raw * 10
-            remaining_capacity_ah = actual_capacity_mah / 1000.0
+        # Only include runtime when discharging
+        if "runtime" in result and result.get("current", 0) >= 0:
+            del result["runtime"]  # Remove runtime when charging
 
-            # Calculate total capacity from remaining capacity and SOC
-            soc = result["battery_level"]
-            if soc > 0:
-                total_capacity_ah = (remaining_capacity_ah / soc) * 100
-                self._log.debug(
-                    "Calculated total capacity: (%.2f / %d) * 100 = %.1f Ah",
-                    remaining_capacity_ah,
-                    soc,
-                    total_capacity_ah
-                )
-            else:
-                total_capacity_ah = 129.0  # Default for this battery setup
-                self._log.debug(
-                    "SOC is %d, using default total capacity: %.1f Ah",
-                    soc,
-                    total_capacity_ah
-                )
+        # Calculate power
+        if "voltage" in result and "current" in result:
+            result["power"] = result["voltage"] * result["current"]
 
-            result["remaining_capacity"] = remaining_capacity_ah
-            result["cycle_charge"] = remaining_capacity_ah
-            result["design_capacity"] = int(total_capacity_ah)
-
-            # Calculate power from voltage and current
-            result["power"] = voltage * current
-
-            # Check for runtime in bytes 28-29 (if available)
-            # Note: Runtime is only valid when discharging (current < 0)
-            # When charging (current > 0), charge_time is calculated by base class
-            if packet_len >= 30:  # Need at least 30 bytes to read bytes 28-29
-                try:
-                    runtime_bytes = packet[28:30]  # Bytes 28-29 contain runtime in minutes
-                    runtime_minutes = struct.unpack("<H", runtime_bytes)[0]
-                    self._log.debug(
-                        "Runtime bytes (28-29): %s, value: %d minutes",
-                        runtime_bytes.hex(),
-                        runtime_minutes
-                    )
-
-                    # Only set runtime if it's a reasonable value
-                    # 0 means no runtime data, 65535 (0xFFFF) often means invalid/not available
-                    if 0 < runtime_minutes < 65535:
-                        # Only set runtime when discharging (current < 0)
-                        # This ensures runtime and charge_time are mutually exclusive
-                        if current < 0:
-                            result["runtime"] = runtime_minutes * 60  # Convert to seconds
-                            self._log.debug(
-                                "Runtime (discharging): %d minutes (%d seconds)",
-                                runtime_minutes,
-                                runtime_minutes * 60
-                            )
-                        else:
-                            self._log.debug(
-                                "Runtime value %d minutes ignored (battery is charging)",
-                                runtime_minutes
-                            )
-                    else:
-                        self._log.debug(
-                            "Runtime value %d is out of valid range (1-65534)",
-                            runtime_minutes
-                        )
-                except (struct.error, ValueError) as e:
-                    self._log.warning("Error parsing runtime: %s", e)
-            else:
-                self._log.debug(
-                    "Packet too short for runtime data (len=%d, need>=30)",
-                    packet_len
-                )
-
-            # Log parsed values for debugging
-            self._log_parsed_values(result, voltage, current, remaining_capacity_ah)
-
-            # Store the result
-            self._result = result
-            self._packet_stats["data_packets"] += 1
-
-        except (struct.error, ValueError, IndexError) as e:
-            self._log.exception("Failed to parse packet: %s", e)
-            self._packet_stats["invalid"] += 1
-            return False
-        else:
-            return True
-
-    def _log_parsed_values(
-        self,
-        result: dict[str, Any],
-        voltage: float,
-        current: float,
-        remaining_capacity_ah: float
-    ) -> None:
-        """Log parsed values for debugging.
-
-        Args:
-            result: The parsed result dictionary
-            voltage: Battery voltage in volts
-            current: Battery current in amps
-            remaining_capacity_ah: Remaining capacity in amp-hours
-
-        """
+        # Log parsed values for debugging
         self._log.debug(
             "Parsed data - Voltage: %.2fV, Current: %.3fA, "
             "SOC: %d%%, Temp: %.1f°C, "
             "Remaining: %.2fAh, Power: %.2fW",
-            voltage,
-            current,
-            result['battery_level'],
-            result.get('temperature', 25.0),
-            remaining_capacity_ah,
-            result['power']
+            result.get("voltage", 0),
+            result.get("current", 0),
+            result.get("battery_level", 0),
+            result.get("temperature", 25.0),
+            result.get("remaining_capacity", 0),
+            result.get("power", 0)
         )
 
+        # Store the result
+        self._result = result
+        self._packet_stats["data_packets"] += 1
+        
+        return True
+
+    async def _async_update(self) -> BMSsample:
+        """Update battery status information."""
+        self._log.debug("Starting Pro BMS update")
+
+        # Reset state
+        self._buffer.clear()
+        self._result.clear()
+        self._data_received = False
+        self._ack_sent = False  # Reset ACK flag for new update cycle
+        # Cancel any pending ACK task
+        if self._ack_task and not self._ack_task.done():
+            self._ack_task.cancel()
+        self._ack_task = None
+        self._packet_stats = {
+            "total": 0,
+            "init_responses": 0,
+            "data_packets": 0,
+            "invalid": 0,
+            "unknown_types": {},
+        }
+
+        # First, wait a bit to see if device is already streaming
+        self._log.debug("Checking if device is already streaming data...")
+        if await self._wait_for_data(self._INIT_TIMEOUT):
+            self._log.debug("Device is already streaming data!")
+            return self._process_data()
+
+        # If not streaming, send init command
+        self._log.debug("Device not streaming, sending Extended info command for initialization")
+        try:
+            await self._client.write_gatt_char(self.uuid_tx(), self._CMD_EXTENDED_INFO, response=False)
+            self._log.debug("Extended info command sent successfully")
+        except Exception as e:
+            self._log.error("Failed to send Extended info command: %s", e)
+            raise
+        
+        # Wait for any response (init responses or data)
+        if not await self._wait_for_data(self._DATA_TIMEOUT, wait_for_any_packet=True):
+            self._log.warning(
+                "No packets received after %s seconds. Stats: %s",
+                self._DATA_TIMEOUT,
+                self._packet_stats
+            )
+            raise TimeoutError("No response from Pro BMS")
+        
+        # Now wait for actual data packets (device may send multiple init responses first)
+        # Use a longer timeout since we know the device is responding
+        extended_timeout = self._DATA_TIMEOUT * 2
+        self._log.debug(
+            "Waiting for data packets (received %d init responses so far)",
+            self._packet_stats["init_responses"]
+        )
+        
+        if await self._wait_for_data(extended_timeout):
+            self._log.debug("Received data after init command. Stats: %s", self._packet_stats)
+            return self._process_data()
+
+        # If we got init responses but no data, it might be a communication issue
+        if self._packet_stats["init_responses"] > 0:
+            self._log.warning(
+                "Received %d init responses but no data packets after %s seconds. Stats: %s",
+                self._packet_stats["init_responses"],
+                extended_timeout,
+                self._packet_stats
+            )
+        else:
+            self._log.warning(
+                "No valid packets received after %s seconds. Stats: %s",
+                extended_timeout,
+                self._packet_stats
+            )
+        raise TimeoutError("No valid data received from Pro BMS")
+
     def _process_data(self) -> BMSsample | None:
-        """Process collected data and return BMSsample.
-
-        Returns:
-            BMSsample with parsed data, or None if no valid data available
-
-        """
-        if not hasattr(self, '_result') or not self._result:
+        """Process collected data and return BMSsample."""
+        if not self._result:
             self._log.warning("No data to process")
             return None
 
@@ -490,39 +478,31 @@ class BMS(BaseBMS):
             cycle_charge=self._result.get("cycle_charge"),
             remaining_capacity=self._result.get("remaining_capacity"),
             design_capacity=self._result.get("design_capacity"),
-            problem=self._result.get("problem", False),
-            problem_code=self._result.get("problem_code", 0),
             power=round(self._result.get("power", 0), 2),
             runtime=self._result.get("runtime"),
             battery_charging=self._result.get("battery_charging", False),
         )
 
-        self._log.debug("Created BMSsample: %s", sample)
+        self._log.debug("Returning sample: %s", sample)
         return sample
 
-    def _verify_checksum(self, packet: bytes) -> tuple[bool, str]:
-        """Verify packet checksum.
-
-        Note: Checksum validation is currently bypassed for Pro BMS compatibility.
-        The Pro BMS protocol checksum implementation differs from standard implementations.
-
-        Args:
-            packet: The packet to verify
-
-        Returns:
-            Tuple of (is_valid, checksum_type) - always returns (True, "BYPASSED")
-
-        """
-        return True, "BYPASSED"
-
-    @staticmethod
-    def _calc_values() -> frozenset[str]:
-        """Return values that the BMS cannot provide and need to be calculated.
-
-        Returns:
-            Set of value names that need calculation by the base class
-
-        """
-        # Don't include runtime here since we try to extract it from the packet
-        # If extraction fails, the base class will calculate it
-        return frozenset({"cycle_capacity"})
+    async def disconnect(self) -> None:
+        """Disconnect from the BMS."""
+        self._log.debug("disconnecting BMS (%s)", self._reconnect)
+        self._log.debug("Packet stats: %s", self._packet_stats)
+        
+        # Cancel any pending ACK task
+        if self._ack_task and not self._ack_task.done():
+            self._ack_task.cancel()
+            try:
+                await self._ack_task
+            except asyncio.CancelledError:
+                pass
+            self._ack_task = None
+        
+        # Clear buffer and reset state for clean reconnection
+        self._buffer.clear()
+        self._ack_sent = False
+        self._data_received = False
+        
+        await super().disconnect()
