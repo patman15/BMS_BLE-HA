@@ -8,7 +8,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source LOG
         generate_advertisement_data(
             local_name="NWJ20221223010330\x11",
-            manufacturer_data={65535: b"0UD7\xa2\xd2"},
+            manufacturer_data={65535: b"\x30\x55\x44\x37\xa2\xd2"},
             service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
             rssi=-56,
         ),
@@ -17,7 +17,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source LOG
         generate_advertisement_data(
             local_name="NWJ20221223010388\x11",
-            manufacturer_data={65535: b"0UD7b\xec"},
+            manufacturer_data={65535: b"\x30\x55\x44\x37\x62\xec"},
             service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
             rssi=-47,
         ),
@@ -26,7 +26,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # nRF Connect (https://github.com/patman15/BMS_BLE-HA/issues/82#issuecomment-2498299433)
         generate_advertisement_data(
             local_name="$PFLAC,R,RADIOID\x0d\x0a",
-            manufacturer_data={65535: b"\x10\x55\x44\x33\xe8\xb4"},
+            manufacturer_data={65535: b"\x10\x55\x44\x33\xe8\xb4"},  # MAC address
             service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
             rssi=-47,
         ),
@@ -597,7 +597,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/276)
         generate_advertisement_data(
-            local_name="xxxxxxx20126\f",  # renamed
+            local_name="NWJ20221223020126\f",  # can be renamed!
             manufacturer_data={
                 65535: b"\x30\x55\x44\x37\x92\xf2"
             },  # value: MAC address
@@ -808,6 +808,16 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
         ),
         "redodo_bms",
+    ),
+    (  # source LOG (https://github.com/patman15/BMS_BLE-HA/issues/337)
+        generate_advertisement_data(
+            local_name="EpochGC2-0184",
+            rssi=-83,
+            manufacturer_data={65535: b"\x30\x55\x44\x38\xc1\x6c"},  # MAC address
+            service_data={"00003333-0000-1000-8000-00805f9b34fb": b"456"},
+            service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
+        ),
+        "epoch_pro_bms",
     ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/390)
         generate_advertisement_data(

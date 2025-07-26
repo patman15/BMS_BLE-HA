@@ -16,6 +16,7 @@ BMS_TYPES: Final[list[str]] = [
     "cbtpwr_vb_bms",
     "daly_bms",
     "ecoworthy_bms",
+    "epoch_pro_bms", # needs to be before ective_bms
     "ective_bms",
     "ej_bms",
     "jbd_bms",
