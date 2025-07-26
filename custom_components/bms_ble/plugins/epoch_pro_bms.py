@@ -60,8 +60,8 @@ class BMS(BaseBMS):
         """Provide BluetoothMatcher definition."""
         return [
             {
-                "local_name": "EpochGC2-*",
                 "service_uuid": BMS.uuid_services()[0],
+                "service_data_uuid": normalize_uuid_str("3333"),
                 "connectable": True,
             }
         ]

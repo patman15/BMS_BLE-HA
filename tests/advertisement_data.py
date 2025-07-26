@@ -597,7 +597,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/276)
         generate_advertisement_data(
-            local_name="xxxxxxx20126\f",  # renamed
+            local_name="NWJ20221223020126\f",  # can be renamed!
             manufacturer_data={
                 65535: b"\x30\x55\x44\x37\x92\xf2"
             },  # value: MAC address
