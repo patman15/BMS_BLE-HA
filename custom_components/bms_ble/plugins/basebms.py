@@ -245,7 +245,7 @@ class BaseBMS(ABC):
             "battery_level": (
                 {"design_capacity", "cycle_charge"},
                 lambda: round(
-                    data.get("cycle_charge", 0) * data.get("design_capacity", 0) / 100,
+                    data.get("cycle_charge", 0) / data.get("design_capacity", 0) * 100,
                     1,
                 ),
             ),
@@ -306,13 +306,15 @@ class BaseBMS(ABC):
 
         self._log.debug("disconnected from BMS")
 
-    async def _init_connection(self) -> None:
+    async def _init_connection(
+        self, char_notify: BleakGATTCharacteristic | int | str | None = None
+    ) -> None:
         # reset any stale data from BMS
         self._data.clear()
         self._data_event.clear()
 
         await self._client.start_notify(
-            self.uuid_rx(), getattr(self, "_notification_handler")
+            char_notify or self.uuid_rx(), getattr(self, "_notification_handler")
         )
 
     async def _connect(self) -> None:
@@ -325,7 +327,9 @@ class BaseBMS(ABC):
         try:
             await self._client.disconnect()  # ensure no stale connection exists
         except (BleakError, TimeoutError) as exc:
-            self._log.debug("failed to disconnect stale connection (%s)", type(exc).__name__)
+            self._log.debug(
+                "failed to disconnect stale connection (%s)", type(exc).__name__
+            )
 
         self._log.debug("connecting BMS")
         self._client = await establish_connection(

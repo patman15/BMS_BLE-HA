@@ -696,6 +696,43 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "jbd_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/291)
+        generate_advertisement_data(
+            local_name="GW-24Srenamed1",
+            rssi=-88,
+            manufacturer_data={34952: b"\x88\x88\xbf\x95\x01\x11\x36\x38"},
+            service_uuids=[
+                "0000ffe0-0000-1000-8000-00805f9b34fb",
+                "0000fee7-0000-1000-8000-00805f9b34fb",
+            ],
+        ),
+        "neey_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/291)
+        generate_advertisement_data(
+            local_name="GW-24Srenamed2",
+            rssi=-88,
+            service_uuids=[
+                "0000ffe0-0000-1000-8000-00805f9b34fb",
+                "0000fee7-0000-1000-8000-00805f9b34fb",
+            ],
+        ),
+        "neey_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/291)
+        generate_advertisement_data(
+            local_name="GW-24Srenamed3",
+            rssi=-73,
+            manufacturer_data={
+                55769: b"\x88\xa0\x2b\x80\x03\xf2\xfc\x9b"
+            },  # MAC address
+            service_uuids=[
+                "0000ffe0-0000-1000-8000-00805f9b34fb",
+                "0000fee7-0000-1000-8000-00805f9b34fb",
+            ],
+        ),
+        "neey_bms",
+    ),
     (  # proxy LOG (https://github.com/patman15/BMS_BLE-HA/issues/85)
         generate_advertisement_data(  # Bulltron battery
             local_name="DL-FB4C2E0000000",  # MAC address (Bouffalo Lab)
@@ -729,6 +766,19 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             manufacturer_data={22618: b"\x36\x34\x24\x62\xa2\x6b"},
             service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
             rssi=-87,
+        ),
+        "ej_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/358)
+        generate_advertisement_data(
+            local_name="libattU12E9",
+            manufacturer_data={21320: b"8428089d12e96400"},
+            service_uuids=[
+                "00001800-0000-1000-8000-00805f9b34fb",
+                "00001801-0000-1000-8000-00805f9b34fb",
+                "6e400001-b5a3-f393-e0a9-e50e24dcca9e",
+            ],
+            rssi=-62,
         ),
         "ej_bms",
     ),
@@ -769,6 +819,14 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "epoch_pro_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/390)
+        generate_advertisement_data(
+            local_name="RNGRBP1228000830",
+            rssi=-44,
+            manufacturer_data={57676: b"\x74\x57\x94\x7b"},  # MAC address, correct
+        ),
+        "renogy_pro_bms",
+    ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/360)
         generate_advertisement_data(
             local_name="LT-51230BGC-A00229",
@@ -788,5 +846,32 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             rssi=-50,
         ),
         "ecoworthy_bms",
-    )
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/406)
+        generate_advertisement_data(
+            local_name="AL12-100-4S-B01",
+            manufacturer_data={36783: b"\x30\x37\xc1\xa4"},  # MAC address, wrong
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            rssi=-63,
+        ),
+        "jbd_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/406)
+        generate_advertisement_data(
+            local_name="AL12-100-4S-B02",
+            manufacturer_data={21516: b"\x50\x37\xc1\xa4"},  # MAC address, wrong
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            rssi=-62,
+        ),
+        "jbd_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/402)
+        generate_advertisement_data(
+            local_name="LT-12100BG-A07700",  # -A07248
+            manufacturer_data={22618: b"\xc8\x47\x80\x12\xb3\xb8"},
+            service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
+            rssi=-87,
+        ),
+        "redodo_bms",
+    ),
 ]
