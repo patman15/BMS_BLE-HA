@@ -11,7 +11,6 @@ from homeassistant.const import (  # noqa: F401  # pylint: disable=unused-import
 )
 
 BMS_TYPES: Final[list[str]] = [
-    "pro_bms",  # Check Pro BMS first as it has specific manufacturer data pattern
     "abc_bms",
     "cbtpwr_bms",
     "cbtpwr_vb_bms",
@@ -23,6 +22,7 @@ BMS_TYPES: Final[list[str]] = [
     "jikong_bms",
     "neey_bms",  # active balancer
     "ogt_bms",
+    "pro_bms",
     "redodo_bms",
     "renogy_bms",
     "renogy_pro_bms",
