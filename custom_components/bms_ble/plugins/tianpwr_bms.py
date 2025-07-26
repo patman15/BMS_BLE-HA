@@ -24,7 +24,6 @@ class BMS(BaseBMS):
         ("voltage", 0x83, 5, 2, False, lambda x: x / 100),
         ("current", 0x83, 13, 2, True, lambda x: x / 100),
         ("problem_code", 0x84, 11, 8, False, lambda x: x),
-        # ("runtime", 0x4, 30, 2, False, lambda x: x * 60),
         ("cell_count", 0x84, 3, 1, False, lambda x: x),
         ("temp_sensors", 0x84, 4, 1, False, lambda x: x),
         ("design_capacity", 0x84, 5, 2, False, lambda x: x // 100),

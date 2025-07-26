@@ -1,8 +1,6 @@
 """Test the TianPwr BMS implementation."""
 
 from collections.abc import Buffer
-
-# from copy import deepcopy
 from typing import Final
 from uuid import UUID
 
@@ -149,34 +147,6 @@ async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
     assert bms._client and bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
-
-
-# async def test_update_dischrg(monkeypatch, patch_bleak_client) -> None:
-#     """Test RoyPow BMS data update."""
-
-#     patch_bleak_client(MockTianPwrBleakClient)
-
-#     negative_response: dict[int, bytearray] = deepcopy(MockTianPwrBleakClient.RESP)
-
-#     negative_response[0x3][6] |= 0x1  # make current negative
-#     negative_response[0x3][28] ^= 0x1  # patch CRC
-#     negative_response[0x4][30] = 0x0  # make runtime 255
-#     negative_response[0x4][-2] ^= 0xFF  # patch CRC
-
-#     monkeypatch.setattr(MockTianPwrBleakClient, "RESP", negative_response)
-
-#     bms = BMS(
-#         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73), False
-#     )
-
-#     assert await bms.async_update() == ref_value() | {
-#         "battery_charging": False,
-#         "current": -0.35,
-#         "power": -4.718,
-#         "runtime": 15300,
-#     }
-
-#     await bms.disconnect()
 
 
 @pytest.fixture(
