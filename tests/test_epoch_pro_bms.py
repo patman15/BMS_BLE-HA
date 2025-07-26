@@ -7,8 +7,8 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 
 # from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
+import pytest
 
-# import pytest
 from custom_components.bms_ble.plugins.basebms import BMSsample
 from custom_components.bms_ble.plugins.epoch_pro_bms import BMS
 
@@ -146,72 +146,6 @@ class MockEpochProBleakClient(MockBleakClient):
         await self.send_frag_response(data)
 
 
-# class MockWrongCRCBleakClient(MockEpochProBleakClient):
-#     """Emulate a Epoch Pro BMS BleakClient returning wrong data."""
-
-#     async def send_frag_response(
-#         self,
-#         data: Buffer,
-#         _response: bool | None = None,
-#     ) -> None:
-#         """Send fragmented response."""
-
-#         assert (
-#             self._notify_callback
-#         ), "write to characteristics but notification not enabled"
-
-#         resp = self._response(data)
-#         resp[-2:] = bytearray(b"\00\00")  # make CRC invalid
-#         for notify_data in [
-#             resp[i : min(len(resp), i + BT_FRAME_SIZE)]
-#             for i in range(0, len(resp), BT_FRAME_SIZE)
-#         ]:
-#             self._notify_callback("MockInvalidBleakClient", notify_data)
-
-
-# class MockErrRespBleakClient(MockEpochProBleakClient):
-#     """Emulate a Epoch Pro BMS BleakClient returning error message."""
-
-#     def _response(self, data: Buffer) -> bytearray:
-#         # return error code 0x2 on read request (0x04)
-#         return bytearray(b"\x00\x84\x02\x93\x01")
-
-#     async def disconnect(self) -> bool:
-#         """Mock disconnect to raise BleakError."""
-#         raise BleakError
-
-
-# class MockInvalidMessageBleakClient(MockEpochProBleakClient):
-#     """Emulate a Epoch Pro BMS BleakClient returning unknown message type."""
-
-#     def _response(self, data: Buffer) -> bytearray:
-#         return self.RESP["EIX"]
-
-
-# class MockOversizedBleakClient(MockEpochProBleakClient):
-#     """Emulate a Epoch Pro BMS BleakClient returning wrong data length."""
-
-#     async def send_frag_response(
-#         self,
-#         data: Buffer,
-#         _response: bool | None = None,
-#     ) -> None:
-#         """Send fragmented response and add trash to each message."""
-
-#         assert (
-#             self._notify_callback
-#         ), "write to characteristics but notification not enabled"
-
-#         # add garbage at the end for robustness
-#         resp = self._response(data) + bytearray(b"\xc0\xff\xee")
-
-#         for notify_data in [
-#             resp[i : min(len(resp), i + BT_FRAME_SIZE)]
-#             for i in range(0, len(resp), BT_FRAME_SIZE)
-#         ]:
-#             self._notify_callback("MockOversizedBleakClient", notify_data)
-
-
 async def test_update(patch_bleak_client, reconnect_fixture) -> None:
     """Test Epoch Pro BMS data update."""
 
@@ -231,88 +165,86 @@ async def test_update(patch_bleak_client, reconnect_fixture) -> None:
     await bms.disconnect()
 
 
-# async def test_wrong_crc(patch_bleak_client, patch_bms_timeout) -> None:
-#     """Test data update with BMS returning invalid data (wrong CRC)."""
-
-#     patch_bms_timeout()
-
-#     patch_bleak_client(MockWrongCRCBleakClient)
-
-#     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
-
-#     result: BMSsample = {}
-#     with pytest.raises(TimeoutError):
-#         result = await bms.async_update()
-
-#     assert not result
-
-#     await bms.disconnect()
-
-
-# async def test_error_response(patch_bleak_client, patch_bms_timeout) -> None:
-#     """Test data update with BMS returning error message."""
-
-#     patch_bms_timeout()
-
-#     patch_bleak_client(MockErrRespBleakClient)
-
-#     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
-
-#     result: BMSsample = {}
-#     with pytest.raises(TimeoutError):
-#         result = await bms.async_update()
-
-#     assert not result
-
-#     await bms.disconnect()
+@pytest.fixture(
+    name="wrong_response",
+    params=[
+        (
+            bytearray(  # overall
+                b"\xaa\xf3\x16\x01\x6e\x00\x00\x00\x00\x04\xb0\x00\x00\x00\x5b\x00\x64\x23\x8c\x14"
+                b"\xc9\x00\x00\x01\x0e\x00\x00\x00\x00\x18\x7a\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x00\x00\x0c\xfd\x0c\xff\x00"
+                b"\x1b\x00\x1b\x32\x30\x31\x2d\x00\x31\x00\x00\x32\x30\x31\x2d\x00\x34\x00\x00\x31"
+                b"\x30\x30\x2d\x00\x31\x00\x00\x31\x30\x30\x2d\x00\x31\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x38\xaa\xa8\x02\xaa\xaa\xa8\x00\x82\x00\x3c\x6b\x2f"
+            ),
+            "wrong_SOF",
+        ),
+        (
+            bytearray(  # overall
+                b"\xfa\xf3\x16\x01\x6e\x00\x00\x00\x00\x04\xb0\x00\x00\x00\x5b\x00\x64\x23\x8c\x14"
+                b"\xc9\x00\x00\x01\x0e\x00\x00\x00\x00\x18\x7a\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\x00\x00\x00\x0c\xfd\x0c\xff\x00"
+                b"\x1b\x00\x1b\x32\x30\x31\x2d\x00\x31\x00\x00\x32\x30\x31\x2d\x00\x34\x00\x00\x31"
+                b"\x30\x30\x2d\x00\x31\x00\x00\x31\x30\x30\x2d\x00\x31\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x38\xaa\xa8\x02\xaa\xaa\xa8\x00\x82\x00\x3c\x00\x00"
+            ),
+            "wrong_CRC",
+        ),
+        (bytearray(7), "critical_length"),
+    ],
+    ids=lambda param: param[1],
+)
+def fix_response(request) -> bytearray:
+    """Return faulty response frame."""
+    return request.param[0]
 
 
-# async def test_oversized_response(patch_bleak_client) -> None:
-#     """Test data update with BMS returning oversized data, result shall still be ok."""
+async def test_invalid_response(
+    monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response: bytearray
+) -> None:
+    """Test data up date with BMS returning invalid data."""
 
-#     patch_bleak_client(MockOversizedBleakClient)
+    patch_bms_timeout()
 
-#     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
+    monkeypatch.setattr(
+        MockEpochProBleakClient,
+        "RESP",
+        MockEpochProBleakClient.RESP
+        | {b"\xfa\xf3\x16\x76\x54\x01\x00\x37\xc7\x24": wrong_response},
+    )
 
-#     assert await bms.async_update() == REF_VALUE
+    patch_bleak_client(MockEpochProBleakClient)
 
-#     await bms.disconnect()
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
+    result: BMSsample = {}
+    with pytest.raises(TimeoutError):
+        result = await bms.async_update()
 
-# async def test_invalid_message(patch_bleak_client, patch_bms_timeout) -> None:
-#     """Test data update with BMS returning error message."""
-
-#     patch_bms_timeout()
-#     patch_bleak_client(MockInvalidMessageBleakClient)
-
-#     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
-
-#     result: BMSsample = {}
-#     with pytest.raises(TimeoutError):
-#         result = await bms.async_update()
-
-#     assert not result
-
-#     await bms.disconnect()
+    assert not result
+    await bms.disconnect()
 
 
-# # Alaramflags used: TB02, TB03, TB05, TB06, TB15
-# #          skipped: TB09, TB04, TB16, TB07, TB08
-# async def test_problem_response(monkeypatch, patch_bleak_client) -> None:
-#     """Test data update with BMS returning invalid data (wrong CRC)."""
+async def test_wrong_length(monkeypatch, patch_bleak_client, patch_bms_timeout) -> None:
+    """Test data up date with BMS returning incorrect length, but valid data."""
 
-#     problem_resp: dict[str, bytearray] = MockEpoch ProBleakClient.RESP.copy()
-#     problem_resp["EIC"] = bytearray(
-#         b"\x00\x01\x0a\x01\xff\xff\xff\xff\xff\xff\xff\x03\xff\xcb\x45"
-#     )
+    patch_bms_timeout()
 
-#     monkeypatch.setattr(MockEpoch ProBleakClient, "RESP", problem_resp)
+    monkeypatch.setattr(
+        MockEpochProBleakClient,
+        "RESP",
+        MockEpochProBleakClient.RESP
+        | {
+            b"\xfa\xf3\x16\x76\x54\x01\x00\x37\xc7\x24": MockEpochProBleakClient.RESP[
+                b"\xfa\xf3\x16\x76\x54\x01\x00\x37\xc7\x24"
+            ]
+            + bytes(2)
+        },
+    )
 
-#     patch_bleak_client(MockEpoch ProBleakClient)
+    patch_bleak_client(MockEpochProBleakClient)
 
-#     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
-#     assert await bms.async_update() == REF_VALUE | {
-#         "problem": True,
-#         "problem_code": 0xFFFF00FF00FF0000FF,
-#     }
+    assert await bms.async_update() == REF_VALUE
+    await bms.disconnect()
