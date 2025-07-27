@@ -135,17 +135,17 @@ class BMS(BaseBMS):
             )
         return result
 
-    @staticmethod
-    def _cell_voltages(data: bytearray, cells: int, offs: int) -> list[float]:
-        return [
-            int.from_bytes(
-                data[offs + idx * 2 : offs + idx * 2 + 2],
-                byteorder="big",
-                signed=False,
-            )
-            / 1000
-            for idx in range(cells)
-        ]
+    # @staticmethod
+    # def _cell_voltages(data: bytearray, cells: int, offs: int) -> list[float]:
+    #     return [
+    #         int.from_bytes(
+    #             data[offs + idx * 2 : offs + idx * 2 + 2],
+    #             byteorder="big",
+    #             signed=False,
+    #         )
+    #         / 1000
+    #         for idx in range(cells)
+    #     ]
 
     @staticmethod
     def _temp_sensors(data: bytearray, sensors: int, offs: int) -> list[float]:
@@ -172,6 +172,7 @@ class BMS(BaseBMS):
             self._data_final[0xA2],
             int(result.get("cell_count", 0)),
             BMS._CELL_POS + 2,
+            byteorder="big",
         )
         result["temp_values"] = BMS._temp_sensors(
             self._data_final[0xA2],

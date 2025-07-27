@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 from struct import unpack_from
-from typing import Any, Final
+from typing import Any, Final, Literal
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
@@ -161,12 +161,20 @@ class BMS(BaseBMS):
         }
 
     @staticmethod
-    def _cell_voltages(data: bytearray, cells: int) -> list[float]:
+    def _cell_voltages(
+        data: bytearray,
+        cells: int,
+        start_pos: int,
+        byteorder: Literal["little", "big"],
+        byte_len: int = 2,
+        step: int | None = None,
+        divider: float = 1000,
+    ) -> list[float]:
         """Return cell voltages from status message."""
         return [
             round(value, 3)
             for idx in range(cells)
-            if (value := unpack_from("<f", data, 9 + idx * 4)[0])
+            if (value := unpack_from("<f", data, start_pos + idx * byte_len)[0])
         ]
 
     @staticmethod
@@ -195,6 +203,8 @@ class BMS(BaseBMS):
         data: BMSsample = self._decode_data(self._data_final)
         data["temp_values"] = BMS._temp_sensors(self._data_final, 2)
 
-        data["cell_voltages"] = BMS._cell_voltages(self._data_final, 24)
+        data["cell_voltages"] = BMS._cell_voltages(
+            self._data_final, 24, 9, byteorder="little", byte_len=4
+        )
 
         return data

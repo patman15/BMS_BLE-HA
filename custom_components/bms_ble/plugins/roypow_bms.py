@@ -153,20 +153,20 @@ class BMS(BaseBMS):
                 )
         return result
 
-    @staticmethod
-    def _cell_voltages(data: bytearray) -> list[float]:
-        """Return cell voltages from status message."""
-        cells: Final[int] = max(0, (len(data) - 11) // 2)
-        return [
-            (value / 1000)
-            for idx in range(cells)
-            if (
-                value := int.from_bytes(
-                    data[9 + 2 * idx : 11 + 2 * idx],
-                    byteorder="big",
-                )
-            )
-        ]
+    # @staticmethod
+    # def _cell_voltages(data: bytearray) -> list[float]:
+    #     """Return cell voltages from status message."""
+    #     cells: Final[int] = max(0, (len(data) - 11) // 2)
+    #     return [
+    #         (value / 1000)
+    #         for idx in range(cells)
+    #         if (
+    #             value := int.from_bytes(
+    #                 data[9 + 2 * idx : 11 + 2 * idx],
+    #                 byteorder="big",
+    #             )
+    #         )
+    #     ]
 
     @staticmethod
     def _temp_sensors(data: bytearray, sensors: int) -> list[int | float]:
@@ -201,7 +201,10 @@ class BMS(BaseBMS):
             result.pop("runtime", None)
 
         result["cell_voltages"] = BMS._cell_voltages(
-            self._data_final.get(0x2, bytearray())
+            self._data_final.get(0x2, bytearray()),
+            max(0, (len(self._data_final.get(0x2, bytearray())) - 11) // 2),
+            9,
+            byteorder="big",
         )
         result["temp_values"] = BMS._temp_sensors(
             self._data_final.get(0x3, bytearray()),

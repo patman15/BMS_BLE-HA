@@ -140,18 +140,18 @@ class BMS(BaseBMS):
         """Calculate the length checksum."""
         return (sum((length >> (i * 4)) & 0xF for i in range(3)) ^ 0xF) + 1 & 0xF
 
-    @staticmethod
-    def _cell_voltages(data: bytearray, cells: int) -> list[float]:
-        """Return cell voltages from status message."""
-        return [
-            int.from_bytes(
-                data[BMS._CELL_POS + 1 + idx * 2 : BMS._CELL_POS + idx * 2 + 3],
-                byteorder="big",
-                signed=False,
-            )
-            / 1000
-            for idx in range(cells)
-        ]
+    # @staticmethod
+    # def _cell_voltages(data: bytearray, cells: int) -> list[float]:
+    #     """Return cell voltages from status message."""
+    #     return [
+    #         int.from_bytes(
+    #             data[BMS._CELL_POS + 1 + idx * 2 : BMS._CELL_POS + idx * 2 + 3],
+    #             byteorder="big",
+    #             signed=False,
+    #         )
+    #         / 1000
+    #         for idx in range(cells)
+    #     ]
 
     @staticmethod
     def _temp_sensors(data: bytearray, sensors: int, offs: int) -> list[float]:
@@ -199,7 +199,10 @@ class BMS(BaseBMS):
         temp_pos: Final[int] = BMS._CELL_POS + int(result.get("cell_count", 0)) * 2 + 1
         result["temp_sensors"] = int(self._data[temp_pos])
         result["cell_voltages"] = BMS._cell_voltages(
-            self._data, int(result.get("cell_count", 0))
+            self._data,
+            result.get("cell_count", 0),
+            BMS._CELL_POS + 1,
+            byteorder="big",
         )
         result["temp_values"] = BMS._temp_sensors(
             self._data, int(result.get("temp_sensors", 0)), temp_pos + 1

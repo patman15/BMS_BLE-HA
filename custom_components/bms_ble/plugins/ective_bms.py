@@ -3,7 +3,7 @@
 import asyncio
 from collections.abc import Callable
 from string import hexdigits
-from typing import Any, Final
+from typing import Any, Final, Literal
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
@@ -125,12 +125,25 @@ class BMS(BaseBMS):
         return sum(int(data[idx : idx + 2], 16) for idx in range(0, len(data), 2))
 
     @staticmethod
-    def _cell_voltages(data: bytearray) -> list[float]:
+    def _cell_voltages(
+        data: bytearray,
+        cells: int,
+        start_pos: int,
+        byteorder: Literal["little", "big"],
+        byte_len: int = 2,
+        step: int | None = None,
+        divider: float = 1000,
+    ) -> list[float]:
         """Return cell voltages from status message."""
         return [
-            (value / 1000)
-            for idx in range(BMS._MAX_CELLS)
-            if (value := BMS._conv_int(data[45 + idx * 4 : 49 + idx * 4], False))
+            (value / divider)
+            for idx in range(cells)
+            if (
+                value := BMS._conv_int(
+                    data[start_pos + idx * byte_len : start_pos + (idx + 1) * byte_len],
+                    False,
+                )
+            )
         ]
 
     @staticmethod
@@ -153,5 +166,7 @@ class BMS(BaseBMS):
 
         await asyncio.wait_for(self._wait_event(), timeout=BMS.TIMEOUT)
         return self._decode_data(self._data_final) | {
-            "cell_voltages": BMS._cell_voltages(self._data_final)
+            "cell_voltages": BMS._cell_voltages(
+                self._data_final, BMS._MAX_CELLS, 45, byteorder="big", byte_len=4
+            )
         }

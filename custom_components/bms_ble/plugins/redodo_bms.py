@@ -121,18 +121,18 @@ class BMS(BaseBMS):
             )
         return result
 
-    @staticmethod
-    def _cell_voltages(data: bytearray, cells: int) -> list[float]:
-        """Return cell voltages from status message."""
-        return [
-            (value / 1000)
-            for idx in range(cells)
-            if (
-                value := int.from_bytes(
-                    data[16 + 2 * idx : 16 + 2 * idx + 2], byteorder="little"
-                )
-            )
-        ]
+    # @staticmethod
+    # def _cell_voltages(data: bytearray, cells: int) -> list[float]:
+    #     """Return cell voltages from status message."""
+    #     return [
+    #         (value / 1000)
+    #         for idx in range(cells)
+    #         if (
+    #             value := int.from_bytes(
+    #                 data[16 + 2 * idx : 16 + 2 * idx + 2], byteorder="little"
+    #             )
+    #         )
+    #     ]
 
     @staticmethod
     def _temp_sensors(data: bytearray, sensors: int) -> list[int | float]:
@@ -152,7 +152,7 @@ class BMS(BaseBMS):
 
         return BMS._decode_data(self._data) | BMSsample(
             {
-                "cell_voltages": BMS._cell_voltages(self._data, BMS.MAX_CELLS),
+                "cell_voltages": BMS._cell_voltages(self._data, BMS.MAX_CELLS, 16, byteorder="little"),
                 "temp_values": BMS._temp_sensors(self._data, BMS.MAX_TEMP),
             }
         )

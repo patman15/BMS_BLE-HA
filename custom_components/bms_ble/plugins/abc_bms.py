@@ -130,16 +130,16 @@ class BMS(BaseBMS):
         frame.append(crc8(frame))
         return bytes(frame)
 
-    @staticmethod
-    def _cell_voltages(data: bytearray) -> list[float]:
-        """Return cell voltages from status message."""
-        return [
-            int.from_bytes(
-                data[3 + idx * 4 : 6 + idx * 4], byteorder="little", signed=False
-            )
-            / 1000
-            for idx in range(4 * (len(data) - 4) // 16)
-        ]
+    # @staticmethod
+    # def _cell_voltages(data: bytearray) -> list[float]:
+    #     """Return cell voltages from status message."""
+    #     return [
+    #         int.from_bytes(
+    #             data[3 + idx * 4 : 6 + idx * 4], byteorder="little", signed=False
+    #         )
+    #         / 1000
+    #         for idx in range(4 * (len(data) - 4) // 16)
+    #     ]
 
     @staticmethod
     def _temp_sensors(data: bytearray, sensors: int) -> list[int | float]:
@@ -175,7 +175,14 @@ class BMS(BaseBMS):
 
         result: BMSsample = BMS._decode_data(self._data_final)
         return result | {
-            "cell_voltages": BMS._cell_voltages(self._data_final[0xF4]),
+            "cell_voltages": BMS._cell_voltages(
+                self._data_final[0xF4],
+                (len(self._data_final[0xF4]) - 4) // 4,
+                start_pos=3,
+                byteorder="little",
+                byte_len=3,
+                step=4,
+            ),
             "temp_values": BMS._temp_sensors(
                 self._data_final[0xF2], int(result.get("temp_sensors", 0))
             ),

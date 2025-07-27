@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from enum import IntEnum
 from string import hexdigits
-from typing import Any, Final
+from typing import Any, Final, Literal
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
@@ -175,12 +175,25 @@ class BMS(BaseBMS):
         return (sum(data) ^ 0xFF) & 0xFF
 
     @staticmethod
-    def _cell_voltages(data: bytearray) -> list[float]:
+    def _cell_voltages(
+        data: bytearray,
+        cells: int,
+        start_pos: int,
+        byteorder: Literal["little", "big"],
+        byte_len: int = 2,
+        step: int | None = None,
+        divider: float = 1000,
+    ) -> list[float]:
         """Return cell voltages from status message."""
         return [
-            (value / 1000)
-            for idx in range(BMS._MAX_CELLS)
-            if (value := int(data[25 + 4 * idx : 25 + 4 * idx + 4], 16))
+            (value / divider)
+            for idx in range(cells)
+            if (
+                value := int(
+                    data[start_pos + byte_len * idx : start_pos + byte_len * (idx + 1)],
+                    16,
+                )
+            )
         ]
 
     @staticmethod
@@ -211,5 +224,7 @@ class BMS(BaseBMS):
             return {}
 
         return self._decode_data(raw_data) | {
-            "cell_voltages": self._cell_voltages(raw_data[Cmd.RT])
+            "cell_voltages": self._cell_voltages(
+                raw_data[Cmd.RT], BMS._MAX_CELLS, 25, byteorder="big", byte_len=4
+            )
         }

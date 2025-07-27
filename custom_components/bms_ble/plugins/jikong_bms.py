@@ -225,16 +225,16 @@ class BMS(BaseBMS):
             for key, idx in fields.items()
         }
 
-    @staticmethod
-    def _cell_voltages(data: bytearray, cells: int) -> list[float]:
-        """Return cell voltages from status message."""
-        return [
-            int.from_bytes(
-                data[6 + 2 * idx : 6 + 2 * idx + 2], byteorder="little", signed=True
-            )
-            / 1000
-            for idx in range(cells)
-        ]
+    # @staticmethod
+    # def _cell_voltages(data: bytearray, cells: int) -> list[float]:
+    #     """Return cell voltages from status message."""
+    #     return [
+    #         int.from_bytes(
+    #             data[6 + 2 * idx : 6 + 2 * idx + 2], byteorder="little", signed=True
+    #         )
+    #         / 1000
+    #         for idx in range(cells)
+    #     ]
 
     def _temp_pos(self) -> list[tuple[int, int]]:
         sw_majv: Final[int] = int(self._bms_info.get("sw_version", "")[:2])
@@ -319,7 +319,7 @@ class BMS(BaseBMS):
         )
 
         data["cell_voltages"] = BMS._cell_voltages(
-            self._data_final, data.get("cell_count", 0)
+            self._data_final, data.get("cell_count", 0), 6, byteorder="little"
         )
 
         return data

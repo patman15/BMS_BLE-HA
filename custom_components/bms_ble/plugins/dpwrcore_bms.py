@@ -178,13 +178,13 @@ class BMS(BaseBMS):
             wait_for_notify=False,
         )
 
-    @staticmethod
-    def _cell_voltages(data: bytearray, cells: int) -> list[float]:
-        """Return cell voltages from status message."""
-        return [
-            int.from_bytes(data[7 + 2 * idx : 7 + 2 * idx + 2], byteorder="big") / 1000
-            for idx in range(cells)
-        ]
+    # @staticmethod
+    # def _cell_voltages(data: bytearray, cells: int) -> list[float]:
+    #     """Return cell voltages from status message."""
+    #     return [
+    #         int.from_bytes(data[7 + 2 * idx : 7 + 2 * idx + 2], byteorder="big") / 1000
+    #         for idx in range(cells)
+    #     ]
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
@@ -202,7 +202,7 @@ class BMS(BaseBMS):
 
             if request == Cmd.CELLVOLT and data.get("cell_count"):
                 data["cell_voltages"] = BMS._cell_voltages(
-                    self._data_final, data.get("cell_count", 0)
+                    self._data_final, data.get("cell_count", 0), 7, byteorder="big"
                 )
 
         return data
