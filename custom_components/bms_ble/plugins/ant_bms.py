@@ -39,6 +39,7 @@ class BMS(BaseBMS):
         """Initialize BMS."""
         super().__init__(__name__, ble_device, reconnect)
         self._data_final: bytearray = bytearray()
+        self._valid_reply: Final[int] = BMS._CMD_STAT | 0x10  # valid reply mask
         self._exp_len: int = 0
 
     @staticmethod
@@ -105,7 +106,7 @@ class BMS(BaseBMS):
         if len(self._data) < self._exp_len:
             return
 
-        if not (self._data[2] & 0xF0):
+        if (self._data[2] >> 4) != 0x1:
             self._log.debug("invalid response (0x%X)", self._data[2])
             return
 
@@ -114,8 +115,14 @@ class BMS(BaseBMS):
             return
 
         if len(self._data) != self._exp_len:
-            self._log.debug("invalid frame length %d <> %d", len(self._data), self._exp_len)
-#            return
+            self._log.debug(
+                "invalid frame length %d != %d", len(self._data), self._exp_len
+            )
+            # return
+
+        if self._data[2] != self._valid_reply:
+            self._log.debug("unexpected response (type 0x%X)", self._data[2])
+            return
 
         if (crc := crc_modbus(self._data[1:-5])) != int.from_bytes(
             self._data[-4:-2], "little"
@@ -125,7 +132,7 @@ class BMS(BaseBMS):
                 int.from_bytes(self._data[-4:-2], "little"),
                 crc,
             )
-       #     return
+            # return
 
         self._data_final = self._data.copy()
         self._data_event.set()

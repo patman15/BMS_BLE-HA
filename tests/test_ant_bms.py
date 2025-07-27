@@ -6,8 +6,8 @@ from typing import Final
 from uuid import UUID
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
+import pytest
 
-# import pytest
 from custom_components.bms_ble.plugins.ant_bms import BMS
 from custom_components.bms_ble.plugins.basebms import BMSsample
 
@@ -80,14 +80,6 @@ class MockANTBleakClient(MockBleakClient):
             b"\x6d\x00\x6a\x00\xaf\x02\xf3\xfa\x34\x74\xe5\x00\x28\x66\xec\x00\x9c\x5d\x62\x00"
             b"\x02\x02\x20\x0f\x00\x0b\x00\x04\x00\x1b\x10\x00\xcc\xb3\x92\x00\xd9\x85\xaa\x55"
         ),
-            # b"\x7e\xa1\x11\x00\x00\x8e\x05\x01\x02\x10\x00\x00\x00\x00\x00\x00\x00\x00\x80\x00"
-            # b"\x80\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xe4\x0c\xe4\x0c\xe5\x0c"
-            # b"\xe5\x0c\xe8\x0c\xe7\x0c\xe7\x0c\xe6\x0c\xe8\x0c\xe7\x0c\xe7\x0c\xe7\x0c\xe7\x0c"
-            # b"\xe7\x0c\xe6\x0c\xe9\x0c\x01\x00\x02\x00\x02\x00\x07\x00\xa4\x14\x03\x00\x5b\x00"
-            # b"\x64\x00\x01\x01\x00\x00\x00\x76\xb0\x10\xd5\x67\x0e\x0f\xba\x32\x4a\x00\x0f\x00"
-            # b"\x00\x00\x10\x58\x2e\x02\x00\x00\x00\x00\xe9\x0c\x10\x00\xe4\x0c\x01\x00\x05\x00"
-            # b"\xe6\x0c\x00\x00\x80\x00\x7a\x00\x0f\x02\xf2\xfa\xb9\x8c\x3b\x00\xbb\xd8\x58\x00"
-            # b"\xda\x2d\x43\x00\xe8\xb6\x49\x00\x05\x43\xaa\x55" # 16 cells
         0x2: bytearray(
             b"\x7e\xa1\x12\x6c\x02\x20\x32\x34\x42\x48\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
             b"\x00\x00\x32\x34\x42\x48\x55\x42\x30\x30\x2d\x32\x31\x31\x30\x32\x36\x41\x57\x96"
@@ -128,7 +120,7 @@ class MockANTBleakClient(MockBleakClient):
             self._notify_callback("MockANTBleakClient", notify_data)
 
 
-async def test_update(monkeypatch, patch_bleak_client, reconnect_fixture) -> None:
+async def test_update(patch_bleak_client, reconnect_fixture) -> None:
     """Test ANT BMS data update."""
 
     patch_bleak_client(MockANTBleakClient)
@@ -147,76 +139,48 @@ async def test_update(monkeypatch, patch_bleak_client, reconnect_fixture) -> Non
     await bms.disconnect()
 
 
-# @pytest.fixture(
-#     name="wrong_response",
-#     params=[
-#         (
-#             bytearray(
-#                 b"\xa3\x00\x00\x00\x65\x00\x00\x00\x00\x00\x18\x01\x03\x44\x00\x18\x00\x48\x00\x64"
-#                 b"\x05\x31\xff\x8e\x00\x00\x27\x10\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"
-#                 b"\x00\x01\x00\x02\x00\x00\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-#                 b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-#                 b"\x00\x00\x70\x20"
-#             ),
-#             "wrong_type",
-#         ),
-#         (
-#             bytearray(
-#                 b"\xa2\x00\x00\x00\x65\x00\x00\x00\x00\x00\x18\x01\x03\x56\x00\x04\x0c\xfb\x0c\xfd"
-#                 b"\x0c\xfb\x0c\xfa\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
-#                 b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
-#                 b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
-#                 b"\x00\x03\x00\xcd\x00\xc0\x00\xbe\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18\xfc\x18"
-#                 b"\x97\x6a"
-#             ),
-#             "single_type_sent",
-#         ),
-#         (
-#             bytearray(  # correct CRC: 0x2186
-#                 b"\xa1\x00\x00\x00\x65\x00\x00\x00\x00\x00\x18\x01\x03\x44\x00\x18\x00\x48\x00\x64"
-#                 b"\x05\x31\xff\x8e\x00\x00\x27\x10\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"
-#                 b"\x00\x01\x00\x02\x00\x00\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-#                 b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-#                 b"\x00\x00\x21\x87"
-#             ),
-#             "wrong_CRC",
-#         ),
-#         (
-#             bytearray(b""),
-#             "empty_response",
-#         ),
-#     ],
-#     ids=lambda param: param[1],
-# )
-# def response(request):
-#     """Return faulty response frame."""
-#     return request.param[0]
+@pytest.fixture(
+    name="wrong_response",
+    params=[
+        (b"\x7e\xa1\x12" + MockANTBleakClient.RESP[0x1][3:], "wrong_type"),
+        (b"\x7e\xa1\x1f" + MockANTBleakClient.RESP[0x1][3:], "unknown_type"),
+        (
+            b"\x7e\xa1\x11\x00\x00\x01" + MockANTBleakClient.RESP[0x1][6:],
+            "wrong_length",
+        ),
+        (MockANTBleakClient.RESP[0x1][:-4] + b"\xff\xff\xaa\x55", "wrong_CRC"),
+        (bytearray(b""), "empty_response"),
+    ],
+    ids=lambda param: param[1],
+)
+def fix_response(request):
+    """Return faulty response frame."""
+    return request.param[0]
 
 
-# async def test_invalid_response(
-#     monkeypatch, patch_bleak_client, patch_bms_timeout, protocol_type, wrong_response
-# ) -> None:
-#     """Test data up date with BMS returning invalid data."""
+async def test_invalid_response(
+    monkeypatch, patch_bleak_client, patch_bms_timeout, wrong_response
+) -> None:
+    """Test data up date with BMS returning invalid data."""
 
-#     patch_bms_timeout("ecoworthy_bms")
+    patch_bms_timeout()
 
-#     monkeypatch.setattr(MockANTBleakClient, "RESP", _PROTO_DEFS[protocol_type])
-#     monkeypatch.setattr(
-#         MockANTBleakClient,
-#         "RESP",
-#         {0xA1: wrong_response, 0xA2: MockANTBleakClient.RESP[0xA2]},
-#     )
+    monkeypatch.setattr(
+        MockANTBleakClient,
+        "RESP",
+        MockANTBleakClient.RESP | {0x2: wrong_response},
+    )
 
-#     patch_bleak_client(MockANTBleakClient)
+    patch_bleak_client(MockANTBleakClient)
 
-#     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73))
 
-#     result: BMSsample = {}
-#     with pytest.raises(TimeoutError):
-#         result = await bms.async_update()
+    result: BMSsample = {}
+    with pytest.raises(TimeoutError):
+        result = await bms.async_update()
 
-#     assert not result
-#     await bms.disconnect()
+    assert not result
+    await bms.disconnect()
 
 
 # @pytest.fixture(
