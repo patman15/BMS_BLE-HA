@@ -189,7 +189,6 @@ class BMS(BaseBMS):
             self._data_final.get(0x2, bytearray()),
             cells=max(0, (len(self._data_final.get(0x2, bytearray())) - 11) // 2),
             start=9,
-            byteorder="big",
         )
         result["temp_values"] = BMS._temp_sensors(
             self._data_final.get(0x3, bytearray()),

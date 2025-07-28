@@ -130,7 +130,7 @@ class BMS(BaseBMS):
         *,
         cells: int,
         start: int,
-        byteorder: Literal["little", "big"],
+        byteorder: Literal["little", "big"] = "big",
         size: int = 2,
         step: int | None = None,
         divider: float = 1000,
@@ -167,10 +167,6 @@ class BMS(BaseBMS):
         await asyncio.wait_for(self._wait_event(), timeout=BMS.TIMEOUT)
         return self._decode_data(self._data_final) | {
             "cell_voltages": BMS._cell_voltages(
-                self._data_final,
-                cells=BMS._MAX_CELLS,
-                start=45,
-                byteorder="big",
-                size=4,
+                self._data_final, cells=BMS._MAX_CELLS, start=45, size=4
             )
         }

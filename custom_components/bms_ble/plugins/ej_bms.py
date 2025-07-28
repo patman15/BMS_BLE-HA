@@ -180,7 +180,7 @@ class BMS(BaseBMS):
         *,
         cells: int,
         start: int,
-        byteorder: Literal["little", "big"],
+        byteorder: Literal["little", "big"] = "big",
         size: int = 2,
         step: int | None = None,
         divider: float = 1000,
@@ -221,10 +221,6 @@ class BMS(BaseBMS):
 
         return self._decode_data(raw_data) | {
             "cell_voltages": self._cell_voltages(
-                raw_data[Cmd.RT],
-                cells=BMS._MAX_CELLS,
-                start=25,
-                byteorder="big",
-                size=4,
+                raw_data[Cmd.RT], cells=BMS._MAX_CELLS, start=25, size=4
             )
         }

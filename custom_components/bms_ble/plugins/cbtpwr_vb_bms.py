@@ -186,10 +186,7 @@ class BMS(BaseBMS):
         temp_pos: Final[int] = BMS._CELL_POS + int(result.get("cell_count", 0)) * 2 + 1
         result["temp_sensors"] = int(self._data[temp_pos])
         result["cell_voltages"] = BMS._cell_voltages(
-            self._data,
-            cells=result.get("cell_count", 0),
-            start=BMS._CELL_POS + 1,
-            byteorder="big",
+            self._data, cells=result.get("cell_count", 0), start=BMS._CELL_POS + 1
         )
         result["temp_values"] = BMS._temp_sensors(
             self._data, int(result.get("temp_sensors", 0)), temp_pos + 1

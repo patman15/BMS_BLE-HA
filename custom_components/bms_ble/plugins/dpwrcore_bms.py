@@ -194,10 +194,7 @@ class BMS(BaseBMS):
 
             if request == Cmd.CELLVOLT and data.get("cell_count"):
                 data["cell_voltages"] = BMS._cell_voltages(
-                    self._data_final,
-                    cells=data.get("cell_count", 0),
-                    start=7,
-                    byteorder="big",
+                    self._data_final, cells=data.get("cell_count", 0), start=7
                 )
 
         return data

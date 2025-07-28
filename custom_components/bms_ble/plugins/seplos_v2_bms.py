@@ -222,7 +222,6 @@ class BMS(BaseBMS):
             self._data_final[0x61],
             cells=self._data_final[0x61][BMS._CELL_POS],
             start=10,
-            byteorder="big",
         )
         result["temp_values"] = BMS._temp_sensors(
             self._data_final[0x61],
