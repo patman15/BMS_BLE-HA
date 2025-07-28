@@ -42,11 +42,14 @@ class BMS(BaseBMS):
         ("current", 8, 2, False, lambda x: x / 1000.0),  # Magnitude only
         ("battery_level", 20, 1, False, lambda x: x),
         ("temperature", 12, 1, False, lambda x: x / 10.0),
-        ("remaining_capacity", 16, 2, False, lambda x: x * 10 / 1000.0),  # mAh to Ah
         ("runtime", 24, 2, False, lambda x: x * 60 if 0 < x < 65535 else None),  # minutes to seconds
-        # Design capacity at offset 36-37 in data section
-        ("design_capacity_raw", 36, 2, False, lambda x: x / 100.0),
     ]
+
+    # Additional field definitions (not BMSvalue types, handled separately)
+    _REMAINING_CAPACITY_OFFSET: Final[int] = 16
+    _REMAINING_CAPACITY_SIZE: Final[int] = 2
+    _DESIGN_CAPACITY_OFFSET: Final[int] = 36
+    _DESIGN_CAPACITY_SIZE: Final[int] = 2
 
     # Protection/error status bit definitions (if available in byte 15 of data section)
     _PROTECTION_BITS: Final[dict[int, str]] = {
@@ -68,7 +71,7 @@ class BMS(BaseBMS):
             ble_device.name,
             ble_device.address
         )
-        
+
         # If device name is None or just MAC address, set it to "Pro BMS"
         if not ble_device.name or ble_device.name == ble_device.address:
             _LOGGER.warning(
@@ -145,6 +148,7 @@ class BMS(BaseBMS):
         Args:
             timeout: Maximum time to wait
             wait_for_any_packet: If True, return when any packet is received (not just data)
+
         """
         loop = asyncio.get_event_loop()
         start_time = loop.time()
@@ -263,7 +267,7 @@ class BMS(BaseBMS):
             handler = self._get_packet_handler(packet_type)
             handler(packet, packet_type)
 
-    def _get_packet_handler(self, packet_type: int):
+    def _get_packet_handler(self, packet_type: int) -> Callable[[bytearray, int], None]:
         """Get the appropriate handler for a packet type."""
         handlers = {
             self._TYPE_INIT_RESPONSE: self._handle_init_response,
@@ -282,7 +286,7 @@ class BMS(BaseBMS):
     def _handle_realtime_data(self, packet: bytearray, packet_type: int) -> None:
         """Handle realtime data packet."""
         self._log.debug("Received realtime data packet, length: %d", len(packet))
-        if self._parse_realtime_packet(packet):
+        if self._parse_realtime_packet(bytes(packet)):
             self._data_received = True
 
 
@@ -298,11 +302,8 @@ class BMS(BaseBMS):
         # Positive current (charging)
         return raw_value / 100.0
 
-    def _parse_realtime_packet(self, packet: bytes) -> bool:
-        """Parse real-time data packet and store the result."""
-        packet_len = len(packet)
-
-        # We expect 50-byte packets from Function 0x43
+    def _validate_packet_length(self, packet_len: int) -> bool:
+        """Validate packet length."""
         if packet_len != self._REALTIME_PACKET_LEN:
             self._log.warning(
                 "Unexpected packet length: %d bytes (expected %d)",
@@ -310,11 +311,10 @@ class BMS(BaseBMS):
                 self._REALTIME_PACKET_LEN
             )
             return False
+        return True
 
-        # Extract data section (skip header, length, type, and checksum)
-        data_section = packet[4:-1]
-
-        # Parse fields according to _FIELDS
+    def _parse_fields_from_data(self, data_section: bytes) -> BMSsample:
+        """Parse fields from data section according to _FIELDS."""
         result: BMSsample = {}
         for key, offset, size, signed, func in self._FIELDS:
             if offset + size <= len(data_section):
@@ -327,52 +327,86 @@ class BMS(BaseBMS):
                 if converted is not None:
                     result[key] = converted
 
-        # Handle current sign based on discharge flag (bit 7 of byte 15 in data section)
-        if "current" in result and len(data_section) > 11:
-            byte15 = data_section[11]  # Byte 15 in full packet = offset 11 in data section
-            discharge_flag = (byte15 & 0x80) != 0
-            # Negative current = discharging, Positive current = charging
-            if discharge_flag:
-                result["current"] = -result["current"]
-            result["battery_charging"] = not discharge_flag
+        # Parse remaining capacity and store as cycle_charge
+        if len(data_section) >= self._REMAINING_CAPACITY_OFFSET + self._REMAINING_CAPACITY_SIZE:
+            raw_value = int.from_bytes(
+                data_section[self._REMAINING_CAPACITY_OFFSET:self._REMAINING_CAPACITY_OFFSET + self._REMAINING_CAPACITY_SIZE],
+                byteorder="little",
+                signed=False
+            )
+            result["cycle_charge"] = raw_value * 10 / 1000.0  # mAh to Ah
 
-            # Check for protection/error status in lower bits of byte 15
-            protection_byte = byte15 & 0x7F  # Mask out discharge flag
-            if protection_byte:
-                result["problem_code"] = protection_byte
-                result["problem"] = True
-                # Log protection status
-                problems = []
-                for bit, problem in self._PROTECTION_BITS.items():
-                    if protection_byte & bit:
-                        problems.append(problem)
-                # Always log if we have a protection byte
-                self._log.debug("Protection status detected: %s", ", ".join(problems) if problems else "Unknown protection code")
-            else:
-                result["problem"] = False
+        # Parse design capacity separately (not a BMSvalue)
+        if len(data_section) >= self._DESIGN_CAPACITY_OFFSET + self._DESIGN_CAPACITY_SIZE:
+            raw_value = int.from_bytes(
+                data_section[self._DESIGN_CAPACITY_OFFSET:self._DESIGN_CAPACITY_OFFSET + self._DESIGN_CAPACITY_SIZE],
+                byteorder="little",
+                signed=False
+            )
+            design_capacity_raw = raw_value / 100.0
+            # Only set design capacity if it's a valid value
+            if design_capacity_raw > 0 and design_capacity_raw < 65535:
+                result["design_capacity"] = int(design_capacity_raw)
 
-        # Use design capacity from packet if available
-        if "design_capacity_raw" in result:
-            result["design_capacity"] = int(result["design_capacity_raw"])
-            del result["design_capacity_raw"]  # Remove raw field
-        # Fallback to calculation if design capacity not in packet
-        elif "remaining_capacity" in result and "battery_level" in result:
+        return result
+
+    def _handle_current_and_charging(self, result: BMSsample, data_section: bytes) -> None:
+        """Handle current sign and battery charging status."""
+        if "current" not in result or len(data_section) <= 11:
+            return
+
+        byte15 = data_section[11]  # Byte 15 in full packet = offset 11 in data section
+        discharge_flag = (byte15 & 0x80) != 0
+
+        # Negative current = discharging, Positive current = charging
+        if discharge_flag:
+            result["current"] = -result["current"]
+        result["battery_charging"] = not discharge_flag
+
+        # Handle protection status
+        self._handle_protection_status(result, byte15)
+
+    def _handle_protection_status(self, result: BMSsample, byte15: int) -> None:
+        """Check for protection/error status in lower bits of byte 15."""
+        protection_byte = byte15 & 0x7F  # Mask out discharge flag
+        if protection_byte:
+            result["problem_code"] = protection_byte
+            result["problem"] = True
+            # Log protection status
+            problems = []
+            for bit, problem in self._PROTECTION_BITS.items():
+                if protection_byte & bit:
+                    problems.append(problem)
+            # Always log if we have a protection byte
+            self._log.debug(
+                "Protection status detected: %s",
+                ", ".join(problems) if problems else "Unknown protection code"
+            )
+        else:
+            result["problem"] = False
+
+    def _handle_design_capacity(self, result: BMSsample) -> None:
+        """Handle design capacity - use existing value if available, otherwise calculate."""
+        # If SOC is 0, we can't reliably use or calculate design capacity
+        if "battery_level" in result and result["battery_level"] == 0:
+            if "design_capacity" in result:
+                del result["design_capacity"]
+            self._log.debug("Cannot calculate design capacity with SOC=0")
+        elif "design_capacity" not in result and "cycle_charge" in result and "battery_level" in result:
+            # We already know SOC != 0 from the elif condition
             soc = result["battery_level"]
-            if soc > 0:
-                total_capacity_ah = (result["remaining_capacity"] / soc) * 100
-                result["design_capacity"] = int(total_capacity_ah)
-                self._log.debug(
-                    "Calculated total capacity: (%.2f / %d) * 100 = %d Ah",
-                    result["remaining_capacity"],
-                    soc,
-                    int(total_capacity_ah)
-                )
-            else:
-                self._log.debug("Cannot calculate design capacity with SOC=%d", soc)
+            total_capacity_ah = (result["cycle_charge"] / soc) * 100
+            result["design_capacity"] = int(total_capacity_ah)
+            self._log.debug(
+                "Calculated total capacity: (%.2f / %d) * 100 = %d Ah",
+                result["cycle_charge"],
+                soc,
+                int(total_capacity_ah)
+            )
 
-        # Set cycle charge
-        if "remaining_capacity" in result:
-            result["cycle_charge"] = result["remaining_capacity"]
+    def _calculate_derived_values(self, result: BMSsample) -> None:
+        """Calculate derived values like power, cycle charge, and validate temperature."""
+        # cycle_charge is already set from remaining_capacity field
 
         # Calculate power
         if "voltage" in result and "current" in result:
@@ -391,6 +425,27 @@ class BMS(BaseBMS):
         if "runtime" in result and result.get("current", 0) >= 0:
             del result["runtime"]  # Remove runtime when charging
 
+    def _parse_realtime_packet(self, packet: bytes) -> bool:
+        """Parse real-time data packet and store the result."""
+        # Validate packet length
+        if not self._validate_packet_length(len(packet)):
+            return False
+
+        # Extract data section (skip header, length, type, and checksum)
+        data_section = packet[4:-1]
+
+        # Parse fields from data
+        result = self._parse_fields_from_data(data_section)
+
+        # Handle current sign and charging status
+        self._handle_current_and_charging(result, data_section)
+
+        # Handle design capacity
+        self._handle_design_capacity(result)
+
+        # Calculate derived values
+        self._calculate_derived_values(result)
+
         # Log parsed values for debugging
         self._log.debug(
             "Parsed data - Voltage: %.2fV, Current: %.3fA, "
@@ -400,12 +455,12 @@ class BMS(BaseBMS):
             result.get("current", 0),
             result.get("battery_level", 0),
             result.get("temperature", 0),
-            result.get("remaining_capacity", 0),
+            result.get("cycle_charge", 0),
             result.get("power", 0)
         )
 
         # Store the result
-        self._result = result
+        self._result.update(result)
         self._packet_stats["data_packets"] += 1
 
         return True
@@ -435,7 +490,11 @@ class BMS(BaseBMS):
         self._log.debug("Checking if device is already streaming data...")
         if await self._wait_for_data(self._INIT_TIMEOUT):
             self._log.debug("Device is already streaming data!")
-            return self._process_data()
+            result = self._process_data()
+            if result is None:
+                self._log.warning("Failed to process data from Pro BMS")
+                return {}
+            return result
 
         # If not streaming, send init command
         self._log.debug("Device not streaming, sending Extended info command for initialization")
@@ -465,7 +524,11 @@ class BMS(BaseBMS):
 
         if await self._wait_for_data(extended_timeout):
             self._log.debug("Received data after init command. Stats: %s", self._packet_stats)
-            return self._process_data()
+            result = self._process_data()
+            if result is None:
+                self._log.warning("Failed to process data from Pro BMS")
+                return {}
+            return result
 
         # Log appropriate warning based on what we received
         warning_msg = (
@@ -482,29 +545,41 @@ class BMS(BaseBMS):
             self._log.warning("No data to process")
             return None
 
-        # Get calculated values from base class
-        self._add_missing_values(self._result, self._calc_values())
+        # Create BMSsample from result
+        sample: BMSsample = {}
 
-        # Create BMSsample with available data
-        sample = BMSsample(
-            voltage=round(self._result.get("voltage", 0), 2),
-            current=round(self._result.get("current", 0), 2),
-            battery_level=self._result.get("battery_level", 0),
-            cycles=self._result.get("cycles"),
-            temperature=self._result.get("temperature"),
-            temp_values=self._result.get("temp_values", []),
-            cycle_charge=self._result.get("cycle_charge"),
-            remaining_capacity=self._result.get("remaining_capacity"),
-            design_capacity=self._result.get("design_capacity"),
-            power=round(self._result.get("power", 0), 2),
-            runtime=self._result.get("runtime"),
-            battery_charging=self._result.get("battery_charging", False),
-        )
+        # Add values that are always present
+        sample["voltage"] = round(self._result.get("voltage", 0), 2)
+        sample["current"] = round(self._result.get("current", 0), 2)
+        sample["battery_level"] = self._result.get("battery_level", 0)
+        sample["power"] = round(self._result.get("power", 0), 2)
+        sample["battery_charging"] = self._result.get("battery_charging", False)
+
+        # Add optional values if present
+        if "cycles" in self._result and self._result["cycles"] is not None:
+            sample["cycles"] = self._result["cycles"]
+        if "temperature" in self._result and self._result["temperature"] is not None:
+            sample["temperature"] = self._result["temperature"]
+        if "temp_values" in self._result:
+            sample["temp_values"] = self._result["temp_values"]
+        if "cycle_charge" in self._result and self._result["cycle_charge"] is not None:
+            sample["cycle_charge"] = self._result["cycle_charge"]
+        # Note: remaining_capacity is stored as cycle_charge (parsed in _parse_fields_from_data)
+        if "design_capacity" in self._result and self._result["design_capacity"] is not None:
+            sample["design_capacity"] = self._result["design_capacity"]
+
+        # Runtime is already handled in _process_data - it's deleted when charging
+        # so we can simply include it if present
+        if "runtime" in self._result and self._result["runtime"] is not None:
+            sample["runtime"] = self._result["runtime"]
+
+        # Get calculated values from base class
+        self._add_missing_values(sample, self._calc_values())
 
         self._log.debug("Returning sample: %s", sample)
         return sample
 
-    async def disconnect(self) -> None:
+    async def disconnect(self, reset: bool = False) -> None:
         """Disconnect from the BMS."""
         self._log.debug("disconnecting BMS (%s)", self._reconnect)
         self._log.debug("Packet stats: %s", self._packet_stats)
@@ -521,4 +596,4 @@ class BMS(BaseBMS):
         self._ack_sent = False
         self._data_received = False
 
-        await super().disconnect()
+        await super().disconnect(reset)

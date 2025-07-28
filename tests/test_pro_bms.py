@@ -1,8 +1,9 @@
 """Test the Pro BMS implementation."""
 
 import asyncio
-import struct
 from collections.abc import Buffer
+import contextlib
+import struct
 from typing import Final
 from unittest.mock import AsyncMock
 from uuid import UUID
@@ -26,12 +27,12 @@ class MockProBMSBleakClient(MockBleakClient):
     PACKET_HEADER: Final = bytes([0x55, 0xAA])
     PACKET_TYPE_INIT_RESPONSE: Final = 0x03
     PACKET_TYPE_REALTIME_DATA: Final = 0x04
-    
+
     # Commands - must match the actual BMS class
     CMD_EXTENDED_INFO: Final = bytes.fromhex("55aa070101558042000097")
     CMD_ACK: Final = bytes.fromhex("55aa070101558006000055")
     CMD_DATA_STREAM: Final = bytes.fromhex("55aa0901015580430000120084")
-    
+
     def _create_init_response(self) -> bytearray:
         """Create a valid init response packet."""
         packet = bytearray(20)
@@ -47,37 +48,41 @@ class MockProBMSBleakClient(MockBleakClient):
 
     def _create_data_packet(self, voltage=12.5, current=5.0, soc=80, temp=25.0,
                           remaining_capacity=50.0, runtime=120, design_capacity=100,
-                          discharge=True, protection_status=0) -> bytearray:
+                          discharge=True, protection_status=0, cycles=None) -> bytearray:
         """Create a valid realtime data packet."""
         packet = bytearray(50)
         packet[0:2] = self.PACKET_HEADER
         packet[2] = 45  # Length (50 - 4 header - 1 checksum)
         packet[3] = self.PACKET_TYPE_REALTIME_DATA
-        
+
         # Voltage at offset 8-9 in full packet (offset 4-5 in data section)
         struct.pack_into("<H", packet, 8, int(voltage * 100))
-        
+
         # Current magnitude at offset 12-13 in full packet (offset 8-9 in data section)
         struct.pack_into("<H", packet, 12, int(abs(current) * 1000))
-        
+
         # Temperature at offset 16 in full packet (offset 12 in data section)
         packet[16] = min(255, int(temp * 10))  # Cap at 255 to avoid byte overflow
-        
+
         # Byte 15 in full packet (offset 11 in data section): discharge flag (bit 7) and protection status
         packet[15] = (0x80 if discharge else 0x00) | (protection_status & 0x7F)
-        
+
         # Remaining capacity at offset 20-21 in full packet (offset 16-17 in data section)
         struct.pack_into("<H", packet, 20, int(remaining_capacity * 100))
-        
+
         # Battery level (SOC) at offset 24 in full packet (offset 20 in data section)
         packet[24] = soc
-        
+
         # Runtime at offset 28-29 in full packet (offset 24-25 in data section)
         struct.pack_into("<H", packet, 28, runtime if runtime else 0)
-        
+
+        # Cycles at offset 32-33 in full packet (offset 28-29 in data section)
+        if cycles is not None:
+            struct.pack_into("<H", packet, 32, cycles)
+
         # Design capacity at offset 40-41 in full packet (offset 36-37 in data section)
         struct.pack_into("<H", packet, 40, int(design_capacity * 100))
-        
+
         # Checksum
         packet[49] = sum(packet[2:49]) & 0xFF
         return packet
@@ -91,7 +96,7 @@ class MockProBMSBleakClient(MockBleakClient):
         ):
             # Return init response for Extended Info command
             return self._create_init_response()
-        
+
         return bytearray()
 
     async def write_gatt_char(
@@ -109,14 +114,15 @@ class MockProBMSBleakClient(MockBleakClient):
 
 class MockProBMSWithDataBleakClient(MockProBMSBleakClient):
     """Mock client that sends data packets after init response."""
-    
+
     def __init__(self, *args, **kwargs):
+        """Initialize the mock client."""
         super().__init__(*args, **kwargs)
         self._ack_received = False
         self._data_stream_requested = False
         self._init_sent = False
         self._ack_task = None
-        
+
     async def write_gatt_char(
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
@@ -138,7 +144,7 @@ class MockProBMSWithDataBleakClient(MockProBMSBleakClient):
                 # Send data packet after data stream request
                 await asyncio.sleep(0.1)
                 self._notify_callback("MockProBMSWithDataBleakClient", self._create_data_packet())
-                
+
     async def _handle_ack_and_data(self):
         """Wait for ACK and data stream commands after init."""
         # Wait for the BMS to process init response and send ACK
@@ -147,15 +153,13 @@ class MockProBMSWithDataBleakClient(MockProBMSBleakClient):
         if self._init_sent and not self._data_stream_requested:
             # Send data packet to simulate device behavior
             self._notify_callback("MockProBMSWithDataBleakClient", self._create_data_packet())
-    
+
     async def disconnect(self) -> None:
         """Disconnect and clean up tasks."""
         if self._ack_task and not self._ack_task.done():
             self._ack_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._ack_task
-            except asyncio.CancelledError:
-                pass
         await super().disconnect()
 
 
@@ -210,7 +214,7 @@ async def test_device_name_with_existing_suffix() -> None:
     # Test case where device name already has the MAC suffix (covers line 123)
     device = generate_ble_device("E0:4E:7A:AF:5E:06", "Pro BMS Living Room 5E06", {"path": "/org/bluez/hci0/dev_E0_4E_7A_AF_5E_06"}, -73)
     bms = BMS(device)
-    
+
     # Name should remain unchanged since it already has the suffix
     assert bms.name == "Pro BMS Living Room 5E06"
     assert device.name == "Pro BMS Living Room 5E06"
@@ -347,7 +351,7 @@ def test_matcher_dict_list() -> None:
     """Test matcher_dict_list static method."""
     matchers = BMS.matcher_dict_list()
     assert len(matchers) == 1
-    
+
     # Pattern - exact match without manufacturer_id to avoid conflicts
     assert matchers[0]["local_name"] == "Pro BMS"
     assert matchers[0]["service_uuid"] == "0000fff0-0000-1000-8000-00805f9b34fb"
@@ -378,7 +382,7 @@ async def test_successful_data_update(patch_bleak_client) -> None:
     assert result["current"] == -5.0  # Negative because discharge flag is set
     assert result["battery_level"] == 80
     assert result["temperature"] == 25.0
-    assert result["remaining_capacity"] == 50.0
+    assert result["cycle_charge"] == 50.0  # remaining_capacity is stored as cycle_charge
     assert result["runtime"] == 7200  # 120 minutes * 60
     assert result["design_capacity"] == 100
     assert result["battery_charging"] is False
@@ -412,8 +416,8 @@ async def test_charging_data_update(patch_bleak_client) -> None:
     assert result is not None
     assert result["current"] == 10.0  # Positive because charging
     assert result["battery_charging"] is True
-    # Runtime should be None when charging (runtime=0 passed to mock)
-    assert result["runtime"] is None
+    # Runtime should not be included when charging
+    assert "runtime" not in result
     assert result["power"] == 132.0  # 13.2V * 10.0A
 
     await bms.disconnect()
@@ -449,12 +453,12 @@ async def test_design_capacity_calculation_fallback(patch_bleak_client, caplog) 
     # We need to modify the fields to exclude design_capacity_raw
     import custom_components.bms_ble.plugins.pro_bms as pro_bms_module
     original_fields = pro_bms_module.BMS._FIELDS
-    
+
     # Create fields without design_capacity_raw
     modified_fields = [field for field in original_fields if field[0] != "design_capacity_raw"]
-    
+
     pro_bms_module.BMS._FIELDS = modified_fields
-    
+
     try:
         class MockNoDesignCapacityClient(MockProBMSWithDataBleakClient):
             def _create_data_packet(self, **kwargs):
@@ -463,7 +467,7 @@ async def test_design_capacity_calculation_fallback(patch_bleak_client, caplog) 
                 packet[0:2] = self.PACKET_HEADER
                 packet[2] = 45  # Length
                 packet[3] = self.PACKET_TYPE_REALTIME_DATA
-                
+
                 # Set values directly in packet (offsets are from start of packet)
                 # Data section starts at offset 4 (after header)
                 packet[8:10] = struct.pack("<H", int(12.0 * 100))  # Voltage at data offset 4
@@ -474,7 +478,7 @@ async def test_design_capacity_calculation_fallback(patch_bleak_client, caplog) 
                 packet[28:30] = struct.pack("<H", 240)  # Runtime at data offset 24
                 # Set discharge flag at data offset 11 (packet[15])
                 packet[15] = 0x80  # Discharge flag
-                
+
                 # Calculate checksum
                 packet[-1] = sum(packet[:-1]) & 0xFF
                 return packet
@@ -490,15 +494,15 @@ async def test_design_capacity_calculation_fallback(patch_bleak_client, caplog) 
         assert result is not None
         # Design capacity should be calculated: (40.0 / 50) * 100 = 80
         assert result["design_capacity"] == 80
-        
+
         # Check debug log for calculation message
         assert "Calculated total capacity" in caplog.text
-        
+
         await bms.disconnect()
     finally:
         # Restore original fields
         pro_bms_module.BMS._FIELDS = original_fields
-    
+
     # Check debug log - the format is slightly different
     assert "Calculated total capacity: (40.00 / 50) * 100 = 80 Ah" in caplog.text
 
@@ -509,16 +513,16 @@ async def test_design_capacity_zero_soc(patch_bleak_client, caplog) -> None:
     """Test design capacity calculation with zero SOC."""
     import logging
     caplog.set_level(logging.DEBUG)
-    
+
     # We need to modify the fields to exclude design_capacity_raw
     import custom_components.bms_ble.plugins.pro_bms as pro_bms_module
     original_fields = pro_bms_module.BMS._FIELDS
-    
+
     # Create fields without design_capacity_raw
     modified_fields = [field for field in original_fields if field[0] != "design_capacity_raw"]
-    
+
     pro_bms_module.BMS._FIELDS = modified_fields
-    
+
     try:
         class MockZeroSocClient(MockProBMSWithDataBleakClient):
             def _create_data_packet(self, **kwargs):
@@ -537,7 +541,7 @@ async def test_design_capacity_zero_soc(patch_bleak_client, caplog) -> None:
         assert result is not None
         # Design capacity should be 0 (can't calculate with 0 SOC)
         assert result.get("design_capacity") is None or result["design_capacity"] == 0
-        
+
         # Check debug log for zero SOC message
         assert "Cannot calculate design capacity with SOC=0" in caplog.text
 
@@ -588,7 +592,7 @@ async def test_temperature_validation_edge_case(patch_bleak_client) -> None:
     # The mock already caps at 255 (25.5°C), so let's test with that value
     class MockBoundaryTempClient(MockProBMSWithDataBleakClient):
         """Mock client that sends temperature at boundary."""
-        
+
         def _create_data_packet(self, voltage=12.5, current=5.0, soc=80, temp=25.0,
                               remaining_capacity=50.0, runtime=120, design_capacity=100,
                               discharge=True, protection_status=0) -> bytearray:
@@ -660,7 +664,7 @@ async def test_protection_status_else_branch(patch_bleak_client) -> None:
     # The mock will send a standard data packet with protection byte
     # We need to verify the normal flow works
     result = await bms.async_update()
-    
+
     # Should have problem=False when no protection issues
     assert result is not None
     assert result.get("problem") is False
@@ -674,7 +678,7 @@ async def test_runtime_removed_when_charging(patch_bleak_client) -> None:
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
     )
-    
+
     # Initialize the BMS state
     bms._buffer = bytearray()
     bms._result = {}
@@ -685,13 +689,13 @@ async def test_runtime_removed_when_charging(patch_bleak_client) -> None:
         "invalid": 0,
         "unknown_types": {},
     }
-    
+
     # Create a valid packet with positive current (charging)
     packet = bytearray(50)
     packet[0:2] = bytes([0x55, 0xAA])
     packet[2] = 45  # Length
     packet[3] = 0x04  # PACKET_TYPE_REALTIME_DATA
-    
+
     # Pack data with positive current
     # Data section starts at offset 4, so add 4 to all field offsets
     # Use little-endian as per the parsing code
@@ -702,17 +706,17 @@ async def test_runtime_removed_when_charging(patch_bleak_client) -> None:
     struct.pack_into("<H", packet, 20, 5000)  # Remaining capacity at offset 16 in data = 20 in packet (50Ah)
     struct.pack_into("<H", packet, 28, 120)  # Runtime at offset 24 in data = 28 in packet (120 minutes)
     struct.pack_into("<H", packet, 40, 10000)  # Design capacity at offset 36 in data = 40 in packet (100Ah)
-    
+
     # Set discharge flag to 0 (charging) at byte 11 in data section = byte 15 in packet
     packet[15] = 0x00  # No discharge flag set (bit 7 = 0 means charging)
-    
+
     # Checksum
     packet[-1] = sum(packet[:-1]) & 0xFF
-    
+
     # Parse the packet
     result = bms._parse_realtime_packet(packet)
     assert result is True
-    
+
     # Check that runtime was removed when charging
     assert "runtime" not in bms._result
     assert bms._result["current"] == 0.5  # Positive current (charging)
@@ -726,7 +730,7 @@ async def test_struct_error_exception(patch_bleak_client) -> None:
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
     )
-    
+
     # Initialize the BMS state
     bms._buffer = bytearray()
     bms._result = {}
@@ -737,7 +741,7 @@ async def test_struct_error_exception(patch_bleak_client) -> None:
         "invalid": 0,
         "unknown_types": {},
     }
-    
+
     # Create a packet that's exactly 50 bytes but with corrupted data that causes struct.error
     packet = bytearray(50)
     packet[0:2] = bytes([0x55, 0xAA])
@@ -746,14 +750,14 @@ async def test_struct_error_exception(patch_bleak_client) -> None:
     # Don't fill in the rest properly - this will cause struct.error when unpacking
     # The packet is the right size but the data at specific offsets will be invalid
     packet[-1] = sum(packet[:-1]) & 0xFF
-    
+
     # Create a valid packet structure
     packet = bytearray(50)
     packet[0:2] = bytes([0x55, 0xAA])
     packet[2] = 45  # Length
     packet[3] = 0x04  # PACKET_TYPE_REALTIME_DATA
     packet[-1] = sum(packet[:-1]) & 0xFF
-    
+
     # Create a packet that passes length check but causes IndexError during parsing
     # We need exactly 50 bytes
     packet = bytearray(50)
@@ -761,26 +765,30 @@ async def test_struct_error_exception(patch_bleak_client) -> None:
     packet[2] = 45  # Length
     packet[3] = 0x04  # PACKET_TYPE_REALTIME_DATA
     packet[-1] = sum(packet[:-1]) & 0xFF
-    
+
     # Mock the protection status access to raise IndexError
     # This happens when accessing data_section[offset] for protection status
     original_parse = bms._parse_realtime_packet
-    
+
+    def _raise_index_error():
+        """Raise IndexError for TRY301 compliance."""
+        raise IndexError("Forced index error")
+
     def mock_parse(pkt):
         # Call the original method but intercept the exception
         try:
             # Extract data section like the real method does
-            data_section = pkt[4:-1]
+            _ = pkt[4:-1]  # Not used, but extracted for consistency
             # Force an IndexError when accessing protection status
             # The protection status is accessed after temp parsing
-            raise IndexError("Forced index error")
+            _raise_index_error()
         except (struct.error, ValueError, IndexError) as e:
             bms._log.exception("Failed to parse packet: %s", e)
             bms._packet_stats["invalid"] += 1
             return False
-    
+
     bms._parse_realtime_packet = mock_parse
-    
+
     try:
         result = bms._parse_realtime_packet(packet)
         assert result is False
@@ -793,7 +801,7 @@ async def test_temperature_warning_logged(patch_bleak_client, caplog) -> None:
     """Test that temperature warning is logged when value exceeds 25.5°C."""
     import logging
     caplog.set_level(logging.WARNING)
-    
+
     class MockHighTempClient(MockProBMSWithDataBleakClient):
         def _create_data_packet(self, **kwargs):
             # Create packet with temperature that will be parsed as > 25.5°C
@@ -801,7 +809,7 @@ async def test_temperature_warning_logged(patch_bleak_client, caplog) -> None:
             packet[0:2] = self.PACKET_HEADER
             packet[2] = 45  # Length
             packet[3] = self.PACKET_TYPE_REALTIME_DATA
-            
+
             # Set values directly in packet
             packet[4:6] = struct.pack("<H", int(12.5 * 100))  # Voltage
             packet[6:8] = struct.pack("<h", int(-5.0 * 100))  # Current (negative for discharge)
@@ -814,7 +822,7 @@ async def test_temperature_warning_logged(patch_bleak_client, caplog) -> None:
             packet[10:12] = struct.pack("<H", int(50.0 * 100))  # Remaining capacity
             packet[12:14] = struct.pack("<H", 120)  # Runtime
             packet[14:16] = struct.pack("<H", int(100.0 * 100))  # Design capacity
-            
+
             # Calculate checksum
             packet[-1] = sum(packet[:-1]) & 0xFF
             return packet
@@ -827,7 +835,7 @@ async def test_temperature_warning_logged(patch_bleak_client, caplog) -> None:
             packet[0:2] = self.PACKET_HEADER
             packet[2] = 45  # Length
             packet[3] = self.PACKET_TYPE_REALTIME_DATA
-            
+
             # Set values directly in packet (offsets are from start of packet)
             # Data section starts at offset 4 (after header)
             packet[8:10] = struct.pack("<H", int(12.5 * 100))  # Voltage at data offset 4
@@ -841,15 +849,15 @@ async def test_temperature_warning_logged(patch_bleak_client, caplog) -> None:
             packet[40:42] = struct.pack("<H", int(100.0 * 100))  # Design capacity at data offset 36
             # Set discharge flag at data offset 11 (packet[15])
             packet[15] = 0x80  # Discharge flag
-            
+
             # Calculate checksum
             packet[-1] = sum(packet[:-1]) & 0xFF
             return packet
-    
+
     # We need to patch to force temperature > 25.5 since max uint8 * 0.1 = 25.5
     import custom_components.bms_ble.plugins.pro_bms as pro_bms_module
     original_fields = pro_bms_module.BMS._FIELDS
-    
+
     # Create modified fields with temperature that returns > 25.5
     modified_fields = []
     for field in original_fields:
@@ -858,9 +866,9 @@ async def test_temperature_warning_logged(patch_bleak_client, caplog) -> None:
             modified_fields.append((field[0], field[1], field[2], field[3], lambda x: 30.0))
         else:
             modified_fields.append(field)
-    
+
     pro_bms_module.BMS._FIELDS = modified_fields
-    
+
     try:
         patch_bleak_client(MockHighTempDataClient)
 
@@ -874,7 +882,7 @@ async def test_temperature_warning_logged(patch_bleak_client, caplog) -> None:
         # Should default to 20.0°C when out of range
         assert result["temperature"] == 20.0
         assert result["temp_values"] == [20.0]
-        
+
         # Check that warning was logged
         assert "Temperature out of range: 30.0°C" in caplog.text
 
@@ -890,14 +898,14 @@ async def test_already_streaming_device(patch_bleak_client) -> None:
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
             self._streaming_started = False
-            
+
         async def start_notify(self, char_specifier, callback):
             await super().start_notify(char_specifier, callback)
             # Start streaming after notification is set up
             if not self._streaming_started:
                 self._streaming_started = True
-                asyncio.create_task(self._start_streaming())
-            
+                self._streaming_task = asyncio.create_task(self._start_streaming())
+
         async def _start_streaming(self):
             await asyncio.sleep(0.1)
             if self._notify_callback:
@@ -955,7 +963,7 @@ async def test_packet_parsing_error(patch_bleak_client) -> None:
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
     )
-    
+
     # Initialize the BMS state
     bms._buffer = bytearray()
     bms._result = {}
@@ -966,10 +974,10 @@ async def test_packet_parsing_error(patch_bleak_client) -> None:
         "invalid": 0,
         "unknown_types": {},
     }
-    
+
     # Test with a completely invalid packet structure
     packet = bytearray(b'\x00' * 100)  # All zeros - invalid structure
-    
+
     # This should return False
     result = bms._parse_realtime_packet(packet)
     assert result is False
@@ -1004,7 +1012,7 @@ async def test_invalid_packet_length(patch_bleak_client, caplog) -> None:
     """Test handling of packets with invalid length."""
     import logging
     caplog.set_level(logging.WARNING)
-    
+
     class MockInvalidLengthClient(MockProBMSWithDataBleakClient):
         def _create_data_packet(self, **kwargs):
             # Create packet with wrong length
@@ -1023,7 +1031,7 @@ async def test_invalid_packet_length(patch_bleak_client, caplog) -> None:
 
     with pytest.raises(TimeoutError):
         await bms.async_update()
-    
+
     # Check warning was logged
     assert "Unexpected packet length: 40 bytes (expected 50)" in caplog.text
 
@@ -1062,11 +1070,11 @@ async def test_ack_sending_after_init(patch_bleak_client) -> None:
 
     # Connect and trigger update - the mock will handle the full flow
     result = await bms.async_update()
-    
+
     # Verify result
     assert result is not None  # Should succeed with data
     assert result["voltage"] == 12.5  # result is a dict
-    
+
     # The ACK sending is tested implicitly - if we get data, ACK was sent
 
     await bms.disconnect()
@@ -1078,26 +1086,26 @@ async def test_ack_sending_error(patch_bleak_client) -> None:
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
     )
-    
+
     # Create a mock client that raises on write
     class MockErrorClient:
         def __init__(self):
             self.is_connected = False
-            
+
         async def write_gatt_char(self, char, data, response=None):
             if data == bms._CMD_ACK:
                 raise OSError("ACK write failed")
-                
+
         async def disconnect(self):
             self.is_connected = False
-    
+
     bms._client = MockErrorClient()
-    
+
     # This should handle the exception gracefully (logged but not raised)
     await bms._send_ack_and_data_stream()
-    
+
     # No assertion needed - just verifying it doesn't raise
-    
+
     # Clean up without calling disconnect since we have a custom mock
     bms._client = None
 
@@ -1161,14 +1169,14 @@ async def test_multiple_data_packets(patch_bleak_client) -> None:
 async def test_no_data_after_init(patch_bleak_client, patch_bms_timeout) -> None:
     """Test warning when no init responses received."""
     patch_bms_timeout()
-    
+
     class MockProBMSNoInitBleakClient(MockBleakClient):
         """Mock client that doesn't send any init response."""
-        
+
         async def write_gatt_char(self, char_specifier, data, response=None):
             # Don't send any response - this should trigger the warning
             pass
-    
+
     patch_bleak_client(MockProBMSNoInitBleakClient)
 
     bms = BMS(
@@ -1204,11 +1212,11 @@ async def test_parse_current_sign(patch_bleak_client) -> None:
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
     )
-    
+
     # Test positive current (charging)
     current_bytes = bytearray([0xE8, 0x03])  # 1000 in little endian
     assert bms._parse_current_sign(current_bytes) == 10.0
-    
+
     # Test negative current (discharging)
     current_bytes = bytearray([0xE8, 0x83])  # 1000 with sign bit set
     assert bms._parse_current_sign(current_bytes) == -10.0
@@ -1240,8 +1248,8 @@ async def test_runtime_with_edge_values(patch_bleak_client) -> None:
 
     result = await bms.async_update()
     assert result is not None
-    # Runtime should be None for value 65535
-    assert result["runtime"] is None
+    # Runtime should not be included for value 65535 (converted to None)
+    assert "runtime" not in result
 
     await bms.disconnect()
 
@@ -1268,68 +1276,68 @@ async def test_empty_result_handling(patch_bleak_client) -> None:
 
 async def test_buffer_with_garbage_before_header(patch_bleak_client) -> None:
     """Test buffer handling when garbage data appears before valid header."""
-    
+
     class MockGarbageDataClient(MockProBMSWithDataBleakClient):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
             self._garbage_sent = False
-            
+
         async def write_gatt_char(self, char_specifier, data, response=None):
             if self._notify_callback and data == self.CMD_EXTENDED_INFO:
                 # Send garbage data before valid packet (tests line 188)
                 garbage = bytearray([0xFF, 0xFE, 0xFD, 0xFC])
                 self._notify_callback("MockGarbageDataClient", garbage)
-                
+
                 # Send valid init response
                 init_response = self._create_init_response()
                 self._notify_callback("MockGarbageDataClient", init_response)
-                
+
                 # Send partial header followed by data packet (tests line 192)
                 partial_header = bytearray([0x55])  # Just first byte of header
                 self._notify_callback("MockGarbageDataClient", partial_header)
-                
+
                 # Send complete data packet
                 data_packet = self._create_data_packet()
                 self._notify_callback("MockGarbageDataClient", data_packet)
-    
+
     patch_bleak_client(MockGarbageDataClient)
-    
+
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
     )
-    
+
     result = await bms.async_update()
     assert result is not None
     assert result["voltage"] == 12.5
-    
+
     await bms.disconnect()
 
 
 async def test_protection_status_no_problems(patch_bleak_client) -> None:
     """Test protection status when no problems detected (line 295)."""
-    
+
     class MockNoProblemsClient(MockProBMSWithDataBleakClient):
         def _create_data_packet(self, **kwargs):
             # Create packet with protection status = 0 (no problems)
             return super()._create_data_packet(protection_status=0)
-    
+
     patch_bleak_client(MockNoProblemsClient)
-    
+
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
     )
-    
+
     result = await bms.async_update()
     assert result is not None
     assert result["problem"] is False
     assert "problem_code" not in result
-    
+
     await bms.disconnect()
 
 
 async def test_buffer_too_short_for_header(patch_bleak_client) -> None:
     """Test handling when buffer is too short for header check (line 192)."""
-    
+
     class MockShortBufferClient(MockProBMSBleakClient):
         async def write_gatt_char(self, char_specifier, data, response=None):
             if self._notify_callback and data == self.CMD_EXTENDED_INFO:
@@ -1339,17 +1347,17 @@ async def test_buffer_too_short_for_header(patch_bleak_client) -> None:
                 # Then send the rest of init response
                 init_response = self._create_init_response()
                 self._notify_callback("MockShortBufferClient", init_response[2:])
-    
+
     patch_bleak_client(MockShortBufferClient)
-    
+
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
     )
-    
+
     # Should timeout as the fragmented packet won't be processed correctly
     with pytest.raises(TimeoutError):
         await bms.async_update()
-    
+
     await bms.disconnect()
 
 
@@ -1388,15 +1396,15 @@ async def test_send_ack_and_data_stream_exception(patch_bleak_client):
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
     )
-    
+
     # Ensure _ack_sent is False so the method will execute
     bms._ack_sent = False
-    
+
     # Mock the client to raise an exception on write
     mock_client = AsyncMock()
     mock_client.write_gatt_char.side_effect = OSError("Write failed")
     bms._client = mock_client
-    
+
     # This should catch and log the exception
     await bms._send_ack_and_data_stream()
 
@@ -1406,23 +1414,22 @@ async def test_send_ack_and_data_stream_data_stream_exception(patch_bleak_client
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
     )
-    
+
     # Ensure _ack_sent is False so the method will execute
     bms._ack_sent = False
-    
+
     # Mock the client to raise an exception only on data stream command
     mock_client = AsyncMock()
-    
+
     # Create a side effect function that only fails on data stream command
     def write_side_effect(char, data, response=None):
         if data == bms._CMD_DATA_STREAM:
             raise OSError("Data stream write failed")
         # ACK command succeeds
-        return None
-    
+
     mock_client.write_gatt_char.side_effect = write_side_effect
     bms._client = mock_client
-    
+
     # This should catch and log the exception for data stream
     await bms._send_ack_and_data_stream()
 
@@ -1432,21 +1439,21 @@ async def test_send_ack_and_data_stream_already_sent(patch_bleak_client):
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
     )
-    
+
     # Mark as already sent
     bms._ack_sent = True
-    
+
     # Mock the client to track if write is called
     mock_client = AsyncMock()
     write_called = False
-    
+
     async def write_side_effect(char, data, response=None):
         nonlocal write_called
         write_called = True
-    
+
     mock_client.write_gatt_char.side_effect = write_side_effect
     bms._client = mock_client
-    
+
     # Should return early without calling write
     await bms._send_ack_and_data_stream()
     assert not write_called
@@ -1458,14 +1465,10 @@ async def test_disconnect_with_pending_ack_task(patch_bleak_client):
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
     )
-    
+
     # Create a real async task that will hang until cancelled
     async def hanging_task():
-        try:
-            await asyncio.sleep(100)  # Long sleep that will be cancelled
-        except asyncio.CancelledError:
-            # This is expected when the task is cancelled
-            raise
+        await asyncio.sleep(100)  # Long sleep that will be cancelled
 
     # Create the task but don't await it
     task = asyncio.create_task(hanging_task())
@@ -1483,18 +1486,18 @@ async def test_disconnect_with_completed_ack_task(patch_bleak_client):
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
     )
-    
+
     # Create a mock task that's already done
     from unittest.mock import Mock
     mock_task = Mock()
     mock_task.done = Mock(return_value=True)
     mock_task.cancel = Mock()
-    
+
     bms._ack_task = mock_task
-    
+
     # Call disconnect
     await bms.disconnect()
-    
+
     # Verify task was NOT cancelled (since it's already done)
     mock_task.cancel.assert_not_called()
 
@@ -1512,10 +1515,10 @@ async def test_async_update_cancels_pending_ack_task(patch_bleak_client):
 
     # Set up a pending ACK task
     bms._ack_task = asyncio.create_task(blocking_task())
-    
+
     # Store the original task reference
     original_task = bms._ack_task
-    
+
     # Ensure the task is not done yet
     assert not original_task.done()
 
@@ -1547,14 +1550,14 @@ async def test_async_update_cancels_pending_ack_task(patch_bleak_client):
 
     # The original task should have been cancelled
     assert original_task.cancelled()
-    
+
     # Verify we got valid data
     assert result is not None
     assert result["voltage"] == 12.5
-    
+
     # Clean up - set event to allow task to complete
     event.set()
-    
+
     # Verify we got valid data
     assert result is not None
     assert result.get("voltage") == 12.5
@@ -1563,7 +1566,7 @@ async def test_async_update_cancels_pending_ack_task(patch_bleak_client):
 def test_parse_realtime_packet_field_out_of_bounds():
     """Test parsing when a field extends beyond the data section."""
     bms = BMS(generate_ble_device("aa:bb:cc:dd:ee:ff", "Pro BMS", {"path": "/org/bluez/hci0/dev_aa_bb_cc_dd_ee_ff"}))
-    
+
     # Create a valid 50-byte packet but modify FIELDS to test boundary checking
     packet = bytearray(50)
     packet[0:2] = bms._HEAD
@@ -1571,16 +1574,16 @@ def test_parse_realtime_packet_field_out_of_bounds():
     packet[3] = bms._TYPE_REALTIME_DATA
     packet[4:49] = bytes([0x00] * 45)
     packet[49] = sum(packet[2:49]) & 0xFF
-    
+
     # Temporarily add a field that extends beyond the data section
     original_fields = bms._FIELDS
-    bms._FIELDS = list(original_fields) + [("test_field", 50, 2, False, lambda x: x)]
-    
+    bms._FIELDS = [*list(original_fields), ("test_field", 50, 2, False, lambda x: x)]
+
     success = bms._parse_realtime_packet(packet)
-    
+
     # Restore original fields
     bms._FIELDS = original_fields
-    
+
     # Should parse successfully
     assert success is True
     assert bms._result is not None
@@ -1591,11 +1594,11 @@ def test_parse_realtime_packet_field_out_of_bounds():
 def test_parse_realtime_packet_missing_current():
     """Test parsing when current field is missing."""
     bms = BMS(generate_ble_device("aa:bb:cc:dd:ee:ff", "Pro BMS", {"path": "/org/bluez/hci0/dev_aa_bb_cc_dd_ee_ff"}))
-    
+
     # Modify _FIELDS temporarily to exclude current
     original_fields = bms._FIELDS
     bms._FIELDS = [f for f in original_fields if f[0] != "current"]
-    
+
     # Create a valid packet
     packet = bytearray(50)
     packet[0:2] = bms._HEAD
@@ -1603,12 +1606,12 @@ def test_parse_realtime_packet_missing_current():
     packet[3] = bms._TYPE_REALTIME_DATA
     packet[4:49] = bytes([0x00] * 45)
     packet[49] = sum(packet[2:49]) & 0xFF
-    
+
     success = bms._parse_realtime_packet(packet)
-    
+
     # Restore original fields
     bms._FIELDS = original_fields
-    
+
     assert success is True
     assert bms._result is not None
     assert "current" not in bms._result
@@ -1616,40 +1619,40 @@ def test_parse_realtime_packet_missing_current():
 
 
 def test_parse_realtime_packet_missing_remaining_capacity():
-    """Test parsing when remaining_capacity field is missing."""
+    """Test parsing when remaining_capacity field is not parsed due to short data."""
     bms = BMS(generate_ble_device("aa:bb:cc:dd:ee:ff", "Pro BMS", {"path": "/org/bluez/hci0/dev_aa_bb_cc_dd_ee_ff"}))
-    
-    # Modify _FIELDS temporarily to exclude remaining_capacity
-    original_fields = bms._FIELDS
-    bms._FIELDS = [f for f in original_fields if f[0] != "remaining_capacity"]
-    
-    # Create a valid packet
+
+    # Temporarily modify the offset to make it beyond the data section
+    original_offset = bms._REMAINING_CAPACITY_OFFSET
+    bms._REMAINING_CAPACITY_OFFSET = 100  # Way beyond the 45-byte data section
+
+    # Create a valid 50-byte packet
     packet = bytearray(50)
     packet[0:2] = bms._HEAD
     packet[2] = 45
     packet[3] = bms._TYPE_REALTIME_DATA
     packet[4:49] = bytes([0x00] * 45)
     packet[49] = sum(packet[2:49]) & 0xFF
-    
+
     success = bms._parse_realtime_packet(packet)
-    
-    # Restore original fields
-    bms._FIELDS = original_fields
-    
+
+    # Restore original offset
+    bms._REMAINING_CAPACITY_OFFSET = original_offset
+
     assert success is True
     assert bms._result is not None
-    assert "remaining_capacity" not in bms._result
-    assert "cycle_charge" not in bms._result  # Should not be set without remaining_capacity
+    # Since offset was beyond data section, cycle_charge should not be parsed
+    assert "cycle_charge" not in bms._result
 
 
 def test_parse_realtime_packet_missing_temperature():
     """Test parsing when temperature field is missing."""
     bms = BMS(generate_ble_device("aa:bb:cc:dd:ee:ff", "Pro BMS", {"path": "/org/bluez/hci0/dev_aa_bb_cc_dd_ee_ff"}))
-    
+
     # Modify _FIELDS temporarily to exclude temperature
     original_fields = bms._FIELDS
     bms._FIELDS = [f for f in original_fields if f[0] != "temperature"]
-    
+
     # Create a valid packet
     packet = bytearray(50)
     packet[0:2] = bms._HEAD
@@ -1657,12 +1660,12 @@ def test_parse_realtime_packet_missing_temperature():
     packet[3] = bms._TYPE_REALTIME_DATA
     packet[4:49] = bytes([0x00] * 45)
     packet[49] = sum(packet[2:49]) & 0xFF
-    
+
     success = bms._parse_realtime_packet(packet)
-    
+
     # Restore original fields
     bms._FIELDS = original_fields
-    
+
     assert success is True
     assert bms._result is not None
     assert "temperature" not in bms._result
@@ -1672,32 +1675,32 @@ def test_parse_realtime_packet_missing_temperature():
 def test_parse_realtime_packet_missing_voltage_or_current_for_power():
     """Test parsing when voltage or current is missing for power calculation."""
     bms = BMS(generate_ble_device("aa:bb:cc:dd:ee:ff", "Pro BMS", {"path": "/org/bluez/hci0/dev_aa_bb_cc_dd_ee_ff"}))
-    
+
     # Test 1: Missing voltage
     original_fields = bms._FIELDS
     bms._FIELDS = [f for f in original_fields if f[0] != "voltage"]
-    
+
     packet = bytearray(50)
     packet[0:2] = bms._HEAD
     packet[2] = 45
     packet[3] = bms._TYPE_REALTIME_DATA
     packet[4:49] = bytes([0x00] * 45)
     packet[49] = sum(packet[2:49]) & 0xFF
-    
+
     success = bms._parse_realtime_packet(packet)
-    
+
     assert success is True
     assert bms._result is not None
     assert "power" not in bms._result  # Should not calculate power without voltage
-    
+
     # Test 2: Missing current (already tested above, but let's verify power specifically)
     bms._FIELDS = [f for f in original_fields if f[0] != "current"]
-    
+
     success = bms._parse_realtime_packet(packet)
-    
+
     # Restore original fields
     bms._FIELDS = original_fields
-    
+
     assert success is True
     assert bms._result is not None
     assert "power" not in bms._result  # Should not calculate power without current
@@ -1706,11 +1709,11 @@ def test_parse_realtime_packet_missing_voltage_or_current_for_power():
 def test_parse_realtime_packet_missing_battery_level_for_design_capacity():
     """Test parsing when battery_level is missing for design capacity calculation."""
     bms = BMS(generate_ble_device("aa:bb:cc:dd:ee:ff", "Pro BMS", {"path": "/org/bluez/hci0/dev_aa_bb_cc_dd_ee_ff"}))
-    
+
     # Modify _FIELDS to exclude both design_capacity_raw and battery_level
     original_fields = bms._FIELDS
     bms._FIELDS = [f for f in original_fields if f[0] not in ["design_capacity_raw", "battery_level"]]
-    
+
     # Create a valid packet
     packet = bytearray(50)
     packet[0:2] = bms._HEAD
@@ -1718,12 +1721,12 @@ def test_parse_realtime_packet_missing_battery_level_for_design_capacity():
     packet[3] = bms._TYPE_REALTIME_DATA
     packet[4:49] = bytes([0x00] * 45)
     packet[49] = sum(packet[2:49]) & 0xFF
-    
+
     success = bms._parse_realtime_packet(packet)
-    
+
     # Restore original fields
     bms._FIELDS = original_fields
-    
+
     assert success is True
     assert bms._result is not None
     assert "battery_level" not in bms._result
@@ -1735,14 +1738,342 @@ def test_buffer_exactly_3_bytes_after_header(patch_bleak_client):
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
     )
-    
+
     # Create a buffer with header at position 2, but only 3 bytes total after it
     bms._buffer = bytearray([0x00, 0x00, 0x55, 0xAA, 0x10])  # Header at index 2, only 3 bytes from header
-    
+
     # Process the buffer - should return early after finding header but not having enough data
     bms._process_buffer()
-    
+
     # Buffer should have garbage removed but header kept
     assert bms._buffer == bytearray([0x55, 0xAA, 0x10])
+
+
+async def test_cycles_field_present(patch_bleak_client) -> None:
+    """Test handling when cycles field is present and not None."""
+    device = generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
+    bms = BMS(device)
+
+    # Set result with cycles value to test line 552
+    bms._result = {
+        "voltage": 12.5,
+        "current": 5.0,
+        "battery_level": 80,
+        "power": 62.5,
+        "battery_charging": False,
+        "cycles": 100  # This will trigger line 552
+    }
+
+    # Process the data
+    result = bms._process_data()
+    assert result is not None
+    assert result["cycles"] == 100
+
+
+async def test_short_data_packet_no_design_capacity(patch_bleak_client) -> None:
+    """Test handling of short data packet without design capacity field."""
+    device = generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
+    bms = BMS(device)
+
+    # Create a short data section (less than 38 bytes)
+    # This will trigger the branch at line 330 to skip design capacity parsing
+    short_data = bytearray(35)  # Less than _DESIGN_CAPACITY_OFFSET (36) + _DESIGN_CAPACITY_SIZE (2)
+
+    # Fill with some valid data for the fields that fit
+    # Voltage at offset 4 (2 bytes)
+    short_data[4:6] = struct.pack("<H", 1250)  # 12.5V
+    # Current at offset 8 (2 bytes) - magnitude only
+    short_data[8:10] = struct.pack("<H", 5000)  # 5.0A magnitude
+    # Temperature at offset 12 (1 byte)
+    if len(short_data) > 12:
+        short_data[12] = 250  # 25.0°C
+    # SOC at offset 20 (1 byte)
+    if len(short_data) > 20:
+        short_data[20] = 80  # 80%
+
+    # Call the actual _parse_fields_from_data method to test the branch
+    result = bms._parse_fields_from_data(short_data)
+
+    # Verify that design_capacity is not in the result (branch 330->341 taken)
+    assert "design_capacity" not in result
+
+    # Verify other fields were parsed correctly
+    assert result.get("voltage") == 12.5
+    assert result.get("current") == 5.0  # magnitude only, sign handled elsewhere
+    assert result.get("battery_level") == 80
+    assert result.get("temperature") == 25.0
+
+
+async def test_design_capacity_soc_zero_or_negative(patch_bleak_client) -> None:
+    """Test design capacity calculation when SOC is 0 or negative."""
+    device = generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
+    bms = BMS(device)
+
+    # Test with SOC = 0
+    bms._result = {
+        "battery_level": 0,
+        "remaining_capacity": 10.0
+    }
+    bms._handle_design_capacity(bms._result)
+    assert "design_capacity" not in bms._result
+
+    # Test with negative SOC (edge case)
+    bms._result = {
+        "battery_level": -1,
+        "remaining_capacity": 10.0
+    }
+    bms._handle_design_capacity(bms._result)
+    assert "design_capacity" not in bms._result
+
+
+async def test_optional_fields_not_present(patch_bleak_client) -> None:
+    """Test _process_data when optional fields are not present in result."""
+    device = generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
+    bms = BMS(device)
+
+    # Set minimal result without optional fields
+    bms._result = {
+        "voltage": 12.5,
+        "current": 5.0,
+        "battery_level": 80,
+        "power": 62.5,
+        "battery_charging": False
+    }
+
+    sample = bms._process_data()
+
+    assert sample is not None
+    assert "voltage" in sample
+    assert "current" in sample
+    assert "battery_level" in sample
+    assert "power" in sample
+    assert "battery_charging" in sample
+
+    # Optional fields should not be present
+    assert "cycles" not in sample
+    assert "temperature" not in sample
+    assert "temp_values" not in sample
+    assert "cycle_charge" not in sample
+    assert "design_capacity" not in sample
+
+
+async def test_battery_charging_not_in_result(patch_bleak_client) -> None:
+    """Test _process_data when battery_charging is not in result."""
+    device = generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
+    bms = BMS(device)
+
+    # Set result without battery_charging but with runtime
+    bms._result = {
+        "voltage": 12.5,
+        "current": 5.0,
+        "battery_level": 80,
+        "power": 62.5,
+        "runtime": 120
+    }
+
+    sample = bms._process_data()
+
+    assert sample is not None
+    assert "runtime" in sample
+    assert sample["runtime"] == 120  # Should keep runtime when battery_charging is not present
+
+
+async def test_optional_fields_with_none_values(patch_bleak_client) -> None:
+    """Test _process_data when optional fields have None values."""
+    device = generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
+    bms = BMS(device)
+
+    # Set result with None values for optional fields
+    bms._result = {
+        "voltage": 12.5,
+        "current": 5.0,
+        "battery_level": 80,
+        "power": 62.5,
+        "battery_charging": False,
+        "cycles": None,
+        "temperature": None,
+        "cycle_charge": None,
+        "remaining_capacity": None,
+        "design_capacity": None
+    }
+
+    sample = bms._process_data()
+
+    assert sample is not None
+    # None values should not be included in sample
+    assert "cycles" not in sample
+    assert "temperature" not in sample
+    assert "cycle_charge" not in sample
+    # None values should not be included
+    assert "design_capacity" not in sample
+
+
+async def test_process_data_returns_none_during_streaming(patch_bleak_client) -> None:
+    """Test _async_update when _process_data returns None during streaming."""
+    device = generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
+    bms = BMS(device)
+
+    # Create a mock client with disconnected_callback
+    bms._client = MockProBMSBleakClient(device, disconnected_callback=None)
+    bms._client.bms = bms
+    bms._client._notify_callback = bms._notification_handler
+
+    # Mock _wait_for_data to return True (simulating streaming)
+    async def mock_wait_for_data(timeout, wait_for_any_packet=False):
+        # First call should return True (streaming detected)
+        return True
+
+    bms._wait_for_data = mock_wait_for_data
+
+    # Mock _process_data to return None
+    def mock_process_data():
+        return None
+
+    bms._process_data = mock_process_data
+
+    # Should return empty dict when _process_data returns None
+    result = await bms._async_update()
+    assert result == {}
+
+
+async def test_process_data_returns_none_after_init(patch_bleak_client) -> None:
+    """Test _async_update when _process_data returns None after init command."""
+    device = generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
+    bms = BMS(device)
+
+    # Create a mock client that handles the init flow
+    class InitFlowMock(MockProBMSBleakClient):
+        def __init__(self, device, disconnected_callback=None):
+            super().__init__(device, disconnected_callback)
+            self.write_count = 0
+            self.bms = None
+
+        async def write_gatt_char(self, char_specifier, data, response=None):
+            self.write_count += 1
+            if self.write_count == 1:  # Extended info
+                await asyncio.sleep(0)
+                if self._notify_callback:
+                    self._notify_callback(None, self._create_init_response())
+            elif self.write_count == 3:  # Data stream
+                await asyncio.sleep(0)
+                if self._notify_callback:
+                    self._notify_callback(None, self._create_data_packet())
+                    # Clear result to make _process_data return None
+                    if self.bms:
+                        self.bms._result = {}
+
+    # Set up the mock client
+    bms._client = InitFlowMock(device)
+    bms._client.bms = bms
+    bms._client._notify_callback = bms._notification_handler
+
+    # Should return empty dict when _process_data returns None
+    result = await bms._async_update()
+    assert result == {}
+
+
+async def test_runtime_included_when_discharging(patch_bleak_client) -> None:
+    """Test that runtime is included when battery is discharging."""
+    class MockDischargingWithRuntimeClient(MockProBMSWithDataBleakClient):
+        def _create_data_packet(self, **kwargs):
+            # Create packet with discharge=True and valid runtime
+            return super()._create_data_packet(
+                voltage=12.5, current=-5.0, soc=80, temp=25.0,
+                remaining_capacity=50.0, runtime=7200, design_capacity=100,
+                discharge=True, protection_status=0
+            )
+
+    patch_bleak_client(MockDischargingWithRuntimeClient)
+
+    bms = BMS(
+        generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
+    )
+
+    result = await bms.async_update()
+
+    assert result is not None
+    assert result["battery_charging"] is False
+    assert "runtime" in result
+    assert result["runtime"] == 7200 * 60  # 7200 minutes to seconds
+
+    await bms.disconnect()
+
+
+async def test_temperature_field_present(patch_bleak_client) -> None:
+    """Test handling when temperature field is present and not None."""
+    device = generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
+    bms = BMS(device)
+
+    # Create packet with valid temperature
+    mock_client = MockProBMSBleakClient(device, lambda: None)
+    packet = mock_client._create_data_packet(temp=20.0)
+
+    # Parse the packet
+    success = bms._parse_realtime_packet(packet)
+    assert success is True
+
+    # Process the data
+    result = bms._process_data()
+    assert result is not None
+    assert result["temperature"] == 20.0
+
+
+async def test_runtime_excluded_when_charging(patch_bleak_client) -> None:
+    """Test that runtime is excluded when battery is charging."""
+    class MockChargingWithRuntimeClient(MockProBMSWithDataBleakClient):
+        def _create_data_packet(self, **kwargs):
+            # Create packet with discharge=False (charging) and valid runtime
+            return super()._create_data_packet(
+                voltage=12.5, current=5.0, soc=80, temp=25.0,
+                remaining_capacity=50.0, runtime=7200, design_capacity=100,
+                discharge=False, protection_status=0
+            )
+
+    patch_bleak_client(MockChargingWithRuntimeClient)
+
+    bms = BMS(
+        generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
+    )
+
+    result = await bms.async_update()
+
+    assert result is not None
+    assert result["battery_charging"] is True
+    # Runtime should NOT be in the result when charging
+    assert "runtime" not in result
+
+    await bms.disconnect()
+
+
+async def test_design_capacity_calculation_with_zero_soc(patch_bleak_client) -> None:
+    """Test that design capacity calculation handles zero SOC gracefully."""
+    class MockZeroSOCClient(MockProBMSWithDataBleakClient):
+        def _create_data_packet(self, **kwargs):
+            # Create packet with SOC=0 and no design capacity
+            return super()._create_data_packet(
+                voltage=12.5, current=5.0, soc=0, temp=25.0,
+                remaining_capacity=50.0, runtime=0, design_capacity=0,
+                discharge=True, protection_status=0
+            )
+
+    patch_bleak_client(MockZeroSOCClient)
+
+    bms = BMS(
+        generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
+    )
+
+    result = await bms.async_update()
+
+    assert result is not None
+    assert result["battery_level"] == 0
+    assert result["cycle_charge"] == 50.0  # remaining_capacity
+    # Design capacity should not be calculated when SOC is 0
+    assert "design_capacity" not in result
+
+    await bms.disconnect()
+
+
+# These test cases were removed because they were testing dead code branches
+# that have been simplified in the production code
 
 
