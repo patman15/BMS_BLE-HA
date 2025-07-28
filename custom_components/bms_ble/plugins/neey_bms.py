@@ -166,7 +166,7 @@ class BMS(BaseBMS):
         *,
         cells: int,
         start: int,
-        byteorder: Literal["little", "big"],
+        byteorder: Literal["little", "big"] = "big",
         size: int = 2,
         step: int | None = None,
         divider: float = 1000,
