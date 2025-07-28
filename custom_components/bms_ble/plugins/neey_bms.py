@@ -163,18 +163,19 @@ class BMS(BaseBMS):
     @staticmethod
     def _cell_voltages(
         data: bytearray,
+        *,
         cells: int,
-        start_pos: int,
+        start: int,
         byteorder: Literal["little", "big"],
-        byte_len: int = 2,
+        size: int = 2,
         step: int | None = None,
         divider: float = 1000,
     ) -> list[float]:
-        """Return cell voltages from status message."""
+        """Parse cell voltages from message."""
         return [
             round(value, 3)
             for idx in range(cells)
-            if (value := unpack_from("<f", data, start_pos + idx * byte_len)[0])
+            if (value := unpack_from("<f", data, start + idx * size)[0])
         ]
 
     @staticmethod
@@ -204,7 +205,7 @@ class BMS(BaseBMS):
         data["temp_values"] = BMS._temp_sensors(self._data_final, 2)
 
         data["cell_voltages"] = BMS._cell_voltages(
-            self._data_final, 24, 9, byteorder="little", byte_len=4
+            self._data_final, cells=24, start=9, byteorder="little", size=4
         )
 
         return data

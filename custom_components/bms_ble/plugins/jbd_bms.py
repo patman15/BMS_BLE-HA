@@ -180,16 +180,6 @@ class BMS(BaseBMS):
             )
         return result
 
-    # @staticmethod
-    # def _cell_voltages(data: bytearray) -> list[float]:
-    #     return [
-    #         int.from_bytes(
-    #             data[4 + idx * 2 : 4 + idx * 2 + 2], byteorder="big", signed=False
-    #         )
-    #         / 1000
-    #         for idx in range(int(data[3] / 2))
-    #     ]
-
     @staticmethod
     def _temp_sensors(data: bytearray, sensors: int) -> list[float]:
         return [
@@ -214,7 +204,7 @@ class BMS(BaseBMS):
 
         await self._await_cmd_resp(0x04)
         data["cell_voltages"] = BMS._cell_voltages(
-            self._data_final, self._data_final[3] // 2, 4, byteorder="big"
+            self._data_final, cells=self._data_final[3] // 2, start=4, byteorder="big"
         )
 
         return data

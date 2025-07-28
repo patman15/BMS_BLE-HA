@@ -177,10 +177,11 @@ class BMS(BaseBMS):
     @staticmethod
     def _cell_voltages(
         data: bytearray,
+        *,
         cells: int,
-        start_pos: int,
+        start: int,
         byteorder: Literal["little", "big"],
-        byte_len: int = 2,
+        size: int = 2,
         step: int | None = None,
         divider: float = 1000,
     ) -> list[float]:
@@ -188,12 +189,7 @@ class BMS(BaseBMS):
         return [
             (value / divider)
             for idx in range(cells)
-            if (
-                value := int(
-                    data[start_pos + byte_len * idx : start_pos + byte_len * (idx + 1)],
-                    16,
-                )
-            )
+            if (value := int(data[start + size * idx : start + size * (idx + 1)], 16))
         ]
 
     @staticmethod
@@ -225,6 +221,10 @@ class BMS(BaseBMS):
 
         return self._decode_data(raw_data) | {
             "cell_voltages": self._cell_voltages(
-                raw_data[Cmd.RT], BMS._MAX_CELLS, 25, byteorder="big", byte_len=4
+                raw_data[Cmd.RT],
+                cells=BMS._MAX_CELLS,
+                start=25,
+                byteorder="big",
+                size=4,
             )
         }

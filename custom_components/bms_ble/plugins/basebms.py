@@ -468,10 +468,11 @@ class BaseBMS(ABC):
     @staticmethod
     def _cell_voltages(
         data: bytearray,
+        *,
         cells: int,
-        start_pos: int,
+        start: int,
         byteorder: Literal["little", "big"],
-        byte_len: int = 2,
+        size: int = 2,
         step: int | None = None,
         divider: float = 1000,
     ) -> list[float]:
@@ -480,24 +481,24 @@ class BaseBMS(ABC):
         Args:
             data: Raw data from BMS
             cells: Number of cells to read
-            start_pos: Start position in data array
+            start: Start position in data array
             byteorder: Byte order ("big"/"little" endian)
-            byte_len: Number of bytes per cell value (defaults 2)
+            size: Number of bytes per cell value (defaults 2)
             step: Optional step size between cells (defaults to byte_len)
             divider: Value to divide raw value by, defaults to 1000 (mv to V)
 
         Returns:
-            List of cell voltages in volts
+            list[float]: List of cell voltages in volts
 
         """
-        step = step or byte_len
+        step = step or size
         return [
             value / divider
             for idx in range(cells)
-            if (len(data) >= start_pos + idx * step + byte_len)
+            if (len(data) >= start + idx * step + size)
             and (
                 value := int.from_bytes(
-                    data[start_pos + idx * step : start_pos + idx * step + byte_len],
+                    data[start + idx * step : start + idx * step + size],
                     byteorder=byteorder,
                     signed=False,
                 )

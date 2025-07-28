@@ -127,29 +127,29 @@ class BMS(BaseBMS):
     @staticmethod
     def _cell_voltages(
         data: bytearray,
+        *,
         cells: int,
-        start_pos: int,
+        start: int,
         byteorder: Literal["little", "big"],
-        byte_len: int = 2,
+        size: int = 2,
         step: int | None = None,
         divider: float = 1000,
     ) -> list[float]:
-        """Return cell voltages from status message."""
+        """Parse cell voltages from status message."""
         return [
             (value / divider)
             for idx in range(cells)
             if (
                 value := BMS._conv_int(
-                    data[start_pos + idx * byte_len : start_pos + (idx + 1) * byte_len],
-                    False,
+                    data[start + idx * size : start + (idx + 1) * size]
                 )
             )
         ]
 
     @staticmethod
-    def _conv_int(data: bytearray, sign: bool) -> int:
+    def _conv_int(data: bytearray, sign: bool = False) -> int:
         return int.from_bytes(
-            int(data, 16).to_bytes(len(data) >> 1, byteorder="little", signed=False),
+            int(data, 16).to_bytes(len(data) >> 1, byteorder="little", signed=sign),
             byteorder="big",
             signed=sign,
         )
@@ -167,6 +167,10 @@ class BMS(BaseBMS):
         await asyncio.wait_for(self._wait_event(), timeout=BMS.TIMEOUT)
         return self._decode_data(self._data_final) | {
             "cell_voltages": BMS._cell_voltages(
-                self._data_final, BMS._MAX_CELLS, 45, byteorder="big", byte_len=4
+                self._data_final,
+                cells=BMS._MAX_CELLS,
+                start=45,
+                byteorder="big",
+                size=4,
             )
         }
