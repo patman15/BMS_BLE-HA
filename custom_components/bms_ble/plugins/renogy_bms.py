@@ -116,14 +116,6 @@ class BMS(BaseBMS):
         return int.from_bytes(data[pos : pos + 2], byteorder="big", signed=signed)
 
     @staticmethod
-    def _cell_voltages(data: bytearray, cells: int) -> list[float]:
-        """Return cell voltages from status message."""
-        return [
-            BMS._read_int16(data, BMS._CELL_POS + 2 + 2 * idx) / 10
-            for idx in range(cells)
-        ]
-
-    @staticmethod
     def _temp_sensors(data: bytearray, sensors: int) -> list[int | float]:
         return [
             BMS._read_int16(data, BMS._TEMP_POS + 2 + 2 * idx, signed=True) / 10
@@ -151,7 +143,11 @@ class BMS(BaseBMS):
         await self._await_reply(self._cmd(0x1388, 0x22))
         result["cell_count"] = BMS._read_int16(self._data, BMS._CELL_POS)
         result["cell_voltages"] = BMS._cell_voltages(
-            self._data, min(16, result.get("cell_count", 0))
+            self._data,
+            cells=min(16, result.get("cell_count", 0)),
+            start=BMS._CELL_POS + 2,
+            byteorder="big",
+            divider=10,
         )
 
         result["temp_sensors"] = BMS._read_int16(self._data, BMS._TEMP_POS)
