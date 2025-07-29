@@ -35,9 +35,9 @@ class BMS(BaseBMS):
         ("voltage", 14, 2, False, lambda x: x / 100),
         ("current", 16, 2, True, lambda x: x),
         ("pack_count", 42, 2, False, lambda x: x),
-        # ("cycle_charge", 8, 4, False, lambda x: float(BMS._swap32(x) / 100)),
+        # ("cycle_charge", 8, 4, False, lambda x: x),
         # ("cycles", 46, 2, False, lambda x: x),
-        #("design_capacity", 4, 4, False, lambda x: float(x / 100)),
+        # ("design_capacity", 4, 4, False, lambda x: x),
         ("battery_level", 8, 2, False, lambda x: x),
         # ("problem_code", 100, 8, False, lambda x: x),
     ]
@@ -194,18 +194,12 @@ class BMS(BaseBMS):
                     )
                 )
             # get cell voltages
-            pack_cells: list[float] = [
-                float(
-                    int.from_bytes(
-                        pack_response[
-                            BMS._CELL_POS + idx * 2 : BMS._CELL_POS + idx * 2 + 2
-                        ],
-                        byteorder="big",
-                    )
-                    / 1000
-                )
-                for idx in range(pack_response[BMS._CELLNUM_POS])
-            ]
+            pack_cells: list[float] = BMS._cell_voltages(
+                pack_response,
+                cells=pack_response[BMS._CELLNUM_POS],
+                start=BMS._CELL_POS,
+            )
+
             # update per pack delta voltage
             data["delta_voltage"] = max(
                 data.get("delta_voltage", 0),
