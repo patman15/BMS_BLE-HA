@@ -51,6 +51,7 @@ class BMS(BaseBMS):
                 "PQ-24*",
                 "L-12*",  # LiTime
                 "L-24*",  # LiTime
+                "LT-12???BG-A0[7-9]*",  # LiTime based on ser#
                 "LT-51*",  # LiTime
             )
         ]
@@ -121,19 +122,6 @@ class BMS(BaseBMS):
         return result
 
     @staticmethod
-    def _cell_voltages(data: bytearray, cells: int) -> list[float]:
-        """Return cell voltages from status message."""
-        return [
-            (value / 1000)
-            for idx in range(cells)
-            if (
-                value := int.from_bytes(
-                    data[16 + 2 * idx : 16 + 2 * idx + 2], byteorder="little"
-                )
-            )
-        ]
-
-    @staticmethod
     def _temp_sensors(data: bytearray, sensors: int) -> list[int | float]:
         return [
             value
@@ -151,7 +139,9 @@ class BMS(BaseBMS):
 
         return BMS._decode_data(self._data) | BMSsample(
             {
-                "cell_voltages": BMS._cell_voltages(self._data, BMS.MAX_CELLS),
+                "cell_voltages": BMS._cell_voltages(
+                    self._data, cells=BMS.MAX_CELLS, start=16, byteorder="little"
+                ),
                 "temp_values": BMS._temp_sensors(self._data, BMS.MAX_TEMP),
             }
         )

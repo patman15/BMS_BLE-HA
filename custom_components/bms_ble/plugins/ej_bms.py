@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from enum import IntEnum
 from string import hexdigits
-from typing import Any, Final
+from typing import Any, Final, Literal
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
@@ -22,6 +22,7 @@ class BMS(BaseBMS):
     """E&J Technology BMS implementation."""
 
     _BT_MODULE_MSG: Final[bytes] = bytes([0x41, 0x54, 0x0D, 0x0A])  # BLE module message
+    _IGNORE_CRC: Final[str] = "libattU"
     _HEAD: Final[bytes] = b"\x3a"
     _TAIL: Final[bytes] = b"\x7e"
     _MAX_CELLS: Final[int] = 16
@@ -57,8 +58,10 @@ class BMS(BaseBMS):
                 {"local_name": "LT-24*", "manufacturer_id": 22618, "connectable": True},
             ]
             + [  # LiTime
-                AdvertisementPattern(
-                    local_name="LT-12*", manufacturer_id=m_id, connectable=True
+                AdvertisementPattern(  # LiTime based on ser#
+                    local_name="LT-12???BG-A0[0-6]*",
+                    manufacturer_id=m_id,
+                    connectable=True,
                 )
                 for m_id in (33384, 22618)
             ]
@@ -147,7 +150,10 @@ class BMS(BaseBMS):
             self._data.clear()
             return
 
-        if (crc := BMS._crc(self._data[1:-3])) != int(self._data[-3:-1], 16):
+        if not self.name.startswith(BMS._IGNORE_CRC) and (
+            crc := BMS._crc(self._data[1:-3])
+        ) != int(self._data[-3:-1], 16):
+            # libattU firmware uses no CRC, so we ignore it
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X", int(self._data[-3:-1], 16), crc
             )
@@ -169,12 +175,21 @@ class BMS(BaseBMS):
         return (sum(data) ^ 0xFF) & 0xFF
 
     @staticmethod
-    def _cell_voltages(data: bytearray) -> list[float]:
+    def _cell_voltages(
+        data: bytearray,
+        *,
+        cells: int,
+        start: int,
+        byteorder: Literal["little", "big"] = "big",
+        size: int = 2,
+        step: int | None = None,
+        divider: float = 1000,
+    ) -> list[float]:
         """Return cell voltages from status message."""
         return [
-            (value / 1000)
-            for idx in range(BMS._MAX_CELLS)
-            if (value := int(data[25 + 4 * idx : 25 + 4 * idx + 4], 16))
+            (value / divider)
+            for idx in range(cells)
+            if (value := int(data[start + size * idx : start + size * (idx + 1)], 16))
         ]
 
     @staticmethod
@@ -205,5 +220,7 @@ class BMS(BaseBMS):
             return {}
 
         return self._decode_data(raw_data) | {
-            "cell_voltages": self._cell_voltages(raw_data[Cmd.RT])
+            "cell_voltages": self._cell_voltages(
+                raw_data[Cmd.RT], cells=BMS._MAX_CELLS, start=25, size=4
+            )
         }

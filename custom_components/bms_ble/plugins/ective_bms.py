@@ -3,7 +3,7 @@
 import asyncio
 from collections.abc import Callable
 from string import hexdigits
-from typing import Any, Final
+from typing import Any, Final, Literal
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
@@ -125,18 +125,31 @@ class BMS(BaseBMS):
         return sum(int(data[idx : idx + 2], 16) for idx in range(0, len(data), 2))
 
     @staticmethod
-    def _cell_voltages(data: bytearray) -> list[float]:
-        """Return cell voltages from status message."""
+    def _cell_voltages(
+        data: bytearray,
+        *,
+        cells: int,
+        start: int,
+        byteorder: Literal["little", "big"] = "big",
+        size: int = 2,
+        step: int | None = None,
+        divider: float = 1000,
+    ) -> list[float]:
+        """Parse cell voltages from status message."""
         return [
-            (value / 1000)
-            for idx in range(BMS._MAX_CELLS)
-            if (value := BMS._conv_int(data[45 + idx * 4 : 49 + idx * 4], False))
+            (value / divider)
+            for idx in range(cells)
+            if (
+                value := BMS._conv_int(
+                    data[start + idx * size : start + (idx + 1) * size]
+                )
+            )
         ]
 
     @staticmethod
-    def _conv_int(data: bytearray, sign: bool) -> int:
+    def _conv_int(data: bytearray, sign: bool = False) -> int:
         return int.from_bytes(
-            int(data, 16).to_bytes(len(data) >> 1, byteorder="little", signed=False),
+            int(data, 16).to_bytes(len(data) >> 1, byteorder="little", signed=sign),
             byteorder="big",
             signed=sign,
         )
@@ -153,5 +166,7 @@ class BMS(BaseBMS):
 
         await asyncio.wait_for(self._wait_event(), timeout=BMS.TIMEOUT)
         return self._decode_data(self._data_final) | {
-            "cell_voltages": BMS._cell_voltages(self._data_final)
+            "cell_voltages": BMS._cell_voltages(
+                self._data_final, cells=BMS._MAX_CELLS, start=45, size=4
+            )
         }

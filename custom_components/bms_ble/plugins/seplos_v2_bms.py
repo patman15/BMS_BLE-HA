@@ -139,7 +139,9 @@ class BMS(BaseBMS):
         except KeyError:
             self._log.debug("unexpected reply: 0x%X", self._data[3])
 
-    async def _init_connection(self) -> None:
+    async def _init_connection(
+        self, char_notify: BleakGATTCharacteristic | int | str | None = None
+    ) -> None:
         """Initialize protocol state."""
         await super()._init_connection()
         self._exp_len = BMS._MIN_LEN
@@ -181,16 +183,6 @@ class BMS(BaseBMS):
             )
         ]
 
-    @staticmethod
-    def _cell_voltages(data: bytearray) -> list[float]:
-        return [
-            int.from_bytes(
-                data[10 + idx * 2 : 10 + idx * 2 + 2], byteorder="big", signed=False
-            )
-            / 1000
-            for idx in range(data[BMS._CELL_POS])
-        ]
-
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
@@ -226,7 +218,11 @@ class BMS(BaseBMS):
             & BMS._PRB_MASK
         )
 
-        result["cell_voltages"] = BMS._cell_voltages(self._data_final[0x61])
+        result["cell_voltages"] = BMS._cell_voltages(
+            self._data_final[0x61],
+            cells=self._data_final[0x61][BMS._CELL_POS],
+            start=10,
+        )
         result["temp_values"] = BMS._temp_sensors(
             self._data_final[0x61],
             result["temp_sensors"],

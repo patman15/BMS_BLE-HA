@@ -13,14 +13,14 @@ from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue, crc_mod
 class BMS(BaseBMS):
     """Renogy battery class implementation."""
 
-    _HEAD: Final[bytes] = b"\x30\x03"  # SOP, read fct (x03)
+    HEAD: bytes = b"\x30\x03"  # SOP, read fct (x03)
     _CRC_POS: Final[int] = -2
     _TEMP_POS: Final[int] = 37
     _CELL_POS: Final[int] = 3
-    _FIELDS: Final[list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]]] = [
+    FIELDS: list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]] = [
         ("voltage", 5, 2, False, lambda x: x / 10),
         ("current", 3, 2, True, lambda x: x / 100),
-        ("design_capacity", 11, 4, False, lambda x: x / 1000),
+        ("design_capacity", 11, 4, False, lambda x: x // 1000),
         ("cycle_charge", 7, 4, False, lambda x: x / 1000),
         ("cycles", 15, 2, False, lambda x: x),
     ]
@@ -37,7 +37,7 @@ class BMS(BaseBMS):
                 "service_uuid": BMS.uuid_services()[0],
                 "manufacturer_id": 0x9860,
                 "connectable": True,
-            }
+            },
         ]
 
     @staticmethod
@@ -80,7 +80,7 @@ class BMS(BaseBMS):
         """Handle the RX characteristics notify event (new data arrives)."""
         self._log.debug("RX BLE data: %s", data)
 
-        if not data.startswith(BMS._HEAD) or len(data) < 3:
+        if not data.startswith(BMS.HEAD) or len(data) < 3:
             self._log.debug("incorrect SOF")
             return
 
@@ -99,38 +99,26 @@ class BMS(BaseBMS):
             return
 
         self._data = data.copy()
-
         self._data_event.set()
 
-    @staticmethod
-    def _decode_data(data: bytearray) -> BMSsample:
+    @classmethod
+    def decode_data(cls, data: bytearray) -> BMSsample:
+        """Decode the data from the BMS using the defined fields."""
         result: BMSsample = {}
-        for key, idx, size, sign, func in BMS._FIELDS:
+        for key, idx, size, sign, func in cls.FIELDS:
             result[key] = func(
                 int.from_bytes(data[idx : idx + size], byteorder="big", signed=sign)
             )
         return result
 
     @staticmethod
-    def _cell_voltages(data: bytearray, cells: int) -> list[float]:
-        """Return cell voltages from status message."""
-        return [
-            int.from_bytes(
-                data[BMS._CELL_POS + 2 + 2 * idx : BMS._CELL_POS + 4 + 2 * idx],
-                byteorder="big",
-            )
-            / 10
-            for idx in range(cells)
-        ]
+    def _read_int16(data: bytearray, pos: int, signed: bool = False) -> int:
+        return int.from_bytes(data[pos : pos + 2], byteorder="big", signed=signed)
 
     @staticmethod
     def _temp_sensors(data: bytearray, sensors: int) -> list[int | float]:
         return [
-            int.from_bytes(
-                data[BMS._TEMP_POS + 2 + 2 * idx : BMS._TEMP_POS + 4 + 2 * idx],
-                byteorder="big",
-            )
-            / 10
+            BMS._read_int16(data, BMS._TEMP_POS + 2 + 2 * idx, signed=True) / 10
             for idx in range(sensors)
         ]
 
@@ -138,7 +126,7 @@ class BMS(BaseBMS):
     def _cmd(addr: int, words: int) -> bytes:
         """Assemble a Renogy BMS command (MODBUS)."""
         frame: bytearray = (
-            bytearray(BMS._HEAD)
+            bytearray(BMS.HEAD)
             + int.to_bytes(addr, 2, byteorder="big")
             + int.to_bytes(words, 2, byteorder="big")
         )
@@ -149,20 +137,25 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
-        await self._await_reply(self._cmd(5042, 0x7))
-        result: BMSsample = BMS._decode_data(self._data)
+        await self._await_reply(self._cmd(0x13B2, 0x7))
+        result: BMSsample = type(self).decode_data(self._data)
 
-        await self._await_reply(self._cmd(5000, 0x22))
-        result["cell_count"] = self._data[BMS._CELL_POS + 1]
+        await self._await_reply(self._cmd(0x1388, 0x22))
+        result["cell_count"] = BMS._read_int16(self._data, BMS._CELL_POS)
         result["cell_voltages"] = BMS._cell_voltages(
-            self._data, min(16, result.get("cell_count", 0))
-        )
-        result["temp_sensors"] = min(16, self._data[BMS._TEMP_POS + 1])
-        result["temp_values"] = BMS._temp_sensors(
-            self._data, result.get("temp_sensors", 0)
+            self._data,
+            cells=min(16, result.get("cell_count", 0)),
+            start=BMS._CELL_POS + 2,
+            byteorder="big",
+            divider=10,
         )
 
-        await self._await_reply(self._cmd(5100, 0x7))
+        result["temp_sensors"] = BMS._read_int16(self._data, BMS._TEMP_POS)
+        result["temp_values"] = BMS._temp_sensors(
+            self._data, min(16, result.get("temp_sensors", 0))
+        )
+
+        await self._await_reply(self._cmd(0x13EC, 0x7))
         result["problem_code"] = int.from_bytes(self._data[3:-2], byteorder="big") & (
             ~0xE
         )
