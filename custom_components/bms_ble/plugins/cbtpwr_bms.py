@@ -127,19 +127,6 @@ class BMS(BaseBMS):
         return bytes(frame)
 
     @staticmethod
-    def _cell_voltages(data: bytearray) -> list[float]:
-        """Return cell voltages from status message."""
-        return [
-            int.from_bytes(
-                data[4 + 2 * idx : 6 + 2 * idx],
-                byteorder="little",
-                signed=True,
-            )
-            / 1000
-            for idx in range(5)
-        ]
-
-    @staticmethod
     def _decode_data(cache: dict[int, bytearray]) -> BMSsample:
         result: BMSsample = {}
         for field, cmd, pos, size, sign, fct in BMS._FIELDS:
@@ -172,9 +159,11 @@ class BMS(BaseBMS):
                 await self._await_reply(BMS._cmd(cmd.to_bytes(1)))
             except TimeoutError:
                 break
-            voltages.extend(BMS._cell_voltages(self._data))
-            if (valid := [v for v in voltages if v != 0]) != voltages:
-                voltages = valid
+            cells: list[float] = BMS._cell_voltages(
+                self._data, cells=5, start=4, byteorder="little"
+            )
+            voltages.extend(cells)
+            if len(voltages) % 5 or len(cells) == 0:
                 break
 
         data: BMSsample = BMS._decode_data(resp_cache)
