@@ -109,20 +109,6 @@ class BMS(BaseBMS):
         return result
 
     @staticmethod
-    def _cell_voltages(data: bytearray) -> list[float]:
-        """Return cell voltages from status message."""
-        return [
-            (value / 1000)
-            for idx in range(8)
-            if (
-                value := int.from_bytes(
-                    data[3 + 2 * idx : 5 + 2 * idx],
-                    byteorder="big",
-                )
-            )
-        ]
-
-    @staticmethod
     def _temp_sensors(data: bytearray, sensors: int) -> list[int | float]:
         return [
             int.from_bytes(
@@ -152,7 +138,9 @@ class BMS(BaseBMS):
             await self._await_reply(BMS._cmd(cmd))
             result["cell_voltages"] = result.setdefault(
                 "cell_voltages", []
-            ) + BMS._cell_voltages(self._data_final.get(cmd, bytearray()))
+            ) + BMS._cell_voltages(
+                self._data_final.get(cmd, bytearray()), cells=8, start=3
+            )
 
         if {0x83, 0x87}.issubset(self._data_final):
             result["temp_values"] = [
