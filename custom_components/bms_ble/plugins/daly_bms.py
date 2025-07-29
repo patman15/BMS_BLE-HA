@@ -116,18 +116,6 @@ class BMS(BaseBMS):
         self._data_event.set()
 
     @staticmethod
-    def _cell_voltages(data: bytearray, cells: int) -> list[float]:
-        return [
-            int.from_bytes(
-                data[BMS.HEAD_LEN + 2 * idx : BMS.HEAD_LEN + 2 * idx + 2],
-                byteorder="big",
-                signed=True,
-            )
-            / 1000
-            for idx in range(cells)
-        ]
-
-    @staticmethod
     def _temp_sensors(data: bytearray, sensors: int, offs: int) -> list[float]:
         return [
             float(
@@ -149,14 +137,12 @@ class BMS(BaseBMS):
                 if sum(self._data[BMS.MOS_TEMP_POS :][:2]):
                     self._log.debug("MOS info: %s", self._data)
                     data["temp_values"] = [
-                        float(
-                            int.from_bytes(
-                                self._data[BMS.MOS_TEMP_POS :][:2],
-                                byteorder="big",
-                                signed=True,
-                            )
-                            - 40
+                        int.from_bytes(
+                            self._data[BMS.MOS_TEMP_POS :][:2],
+                            byteorder="big",
+                            signed=True,
                         )
+                        - 40
                     ]
             except TimeoutError:
                 self._log.debug("no MOS temperature available.")
@@ -183,7 +169,7 @@ class BMS(BaseBMS):
 
         # get cell voltages
         data["cell_voltages"] = self._cell_voltages(
-            self._data, int(data.get("cell_count", 0))
+            self._data, cells=data.get("cell_count", 0), start=BMS.HEAD_LEN
         )
 
         return data

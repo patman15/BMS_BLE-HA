@@ -465,6 +465,46 @@ class BaseBMS(ABC):
 
         return data
 
+    @staticmethod
+    def _cell_voltages(
+        data: bytearray,
+        *,
+        cells: int,
+        start: int,
+        byteorder: Literal["little", "big"] = "big",
+        size: int = 2,
+        step: int | None = None,
+        divider: float = 1000,
+    ) -> list[float]:
+        """Return cell voltages from status message.
+
+        Args:
+            data: Raw data from BMS
+            cells: Number of cells to read
+            start: Start position in data array
+            byteorder: Byte order ("big"/"little" endian)
+            size: Number of bytes per cell value (defaults 2)
+            step: Optional step size between cells (defaults to byte_len)
+            divider: Value to divide raw value by, defaults to 1000 (mv to V)
+
+        Returns:
+            list[float]: List of cell voltages in volts
+
+        """
+        step = step or size
+        return [
+            value / divider
+            for idx in range(cells)
+            if (len(data) >= start + idx * step + size)
+            and (
+                value := int.from_bytes(
+                    data[start + idx * step : start + idx * step + size],
+                    byteorder=byteorder,
+                    signed=False,
+                )
+            )
+        ]
+
 
 def crc_modbus(data: bytearray) -> int:
     """Calculate CRC-16-CCITT MODBUS."""
