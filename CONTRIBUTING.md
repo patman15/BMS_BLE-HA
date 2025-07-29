@@ -3,6 +3,20 @@
 ## Issues
 In case you have troubles, please enable the debug protocol for the integration and [open an issue](https://github.com/patman15/BMS_BLE-HA/issues) with a good description of what happened and the relevant snippet from the log.
 
+## Architecture Guidelines
+- The integration shall not use persistent information. That means all necessary info shall be determined on connecting the device.
+- The BT pattern matcher shall be unique to allow auto-detecting devices.
+- Frame parsing shall check the validity of a frame according to the protocol type, e.g. CRC, length, allowed type
+- If available the data shall be read from the device, the `basebms` functionality is only to have consistent data over all BMS types.
+
+to be extended ...
+
+## Coding Style Guidelines
+
+In general I use guidelines very close to the ones that Home Assistant uses for core integrations. Thus, the code shall pass
+- `ruff check .`
+- `pyright`
+
 ## Adding a new battery management system
 
  1. Fork the repository and create a branch with the name of the new BMS to add.
@@ -13,7 +27,8 @@ In case you have troubles, please enable the debug protocol for the integration 
  6. Add an appropriate [bluetooth device matcher](https://developers.home-assistant.io/docs/creating_integration_manifest#bluetooth) to `manifest.json`. Note that this is required to match the implementation of `match_dict_list()` in the new BMS class.
  7. Test and commit the changes to the branch and create a pull request to the main repository.
 
-Note: in order to keep maintainability of this integration, pull requests are required to pass standard Home Assistant checks for integrations, Python linting, and 100% [branch test coverage](https://coverage.readthedocs.io/en/latest/branch.html#branch).
+> [!NOTE]
+> In order to keep maintainability of this integration, pull requests are required to pass standard Home Assistant checks for integrations, [coding style guidelines](#coding-style-guidelines), Python linting, and 100% [branch test coverage](https://coverage.readthedocs.io/en/latest/branch.html#branch).
 
 ### Any contributions you make will be under the LGPL-2.1 License
 
