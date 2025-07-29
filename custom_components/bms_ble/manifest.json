@@ -15,7 +15,7 @@
     },
     {
       "manufacturer_id": 771
-    },    
+    },
     {
       "manufacturer_id": 258
     },
@@ -97,7 +97,11 @@
     {
       "local_name": "xiaoxiang*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },    
+    },
+    {
+      "local_name": "AL12-*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
     {
       "manufacturer_id": 123,
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
@@ -111,24 +115,15 @@
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
-      "local_name": "ECO-WORTHY*",
-      "manufacturer_id": 49844
+      "local_name": "ECO-WORTHY 02_*"
     },
     {
       "local_name": "ECO-WORTHY*",
-      "manufacturer_id": 47912
-    },
-    {
-      "local_name": "ECO-WORTHY*",
-      "manufacturer_id": 57570
-    },
-    {
-      "local_name": "ECO-WORTHY*",
-      "manufacturer_id": 15996
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
       "local_name": "DCHOUSE*",
-      "manufacturer_id": 57570
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
       "local_name": "DP04S*",
@@ -194,7 +189,7 @@
     {
       "local_name": "LT-*",
       "manufacturer_id": 22618
-    },    
+    },
     {
       "local_name": "SV12V*",
       "manufacturer_id": 33384
@@ -258,6 +253,13 @@
       "local_name": "ANT-*",
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
       "manufacturer_id": 8979
+    },
+    {
+      "local_name": "RNG*",
+      "manufacturer_id": 57676
+    },
+    {
+      "service_uuid": "0000fee7-0000-1000-8000-00805f9b34fb"
     }
   ],
   "codeowners": [
@@ -276,5 +278,5 @@
   ],
   "quality_scale": "silver",
   "requirements": [],
-  "version": "1.18.0"
+  "version": "1.19.0-beta.1"
 }

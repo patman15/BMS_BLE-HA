@@ -12,7 +12,7 @@ from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
-from bleak_retry_connector import BLEAK_TRANSIENT_BACKOFF_TIME, establish_connection
+from bleak_retry_connector import BLEAK_TIMEOUT, establish_connection
 
 from homeassistant.components.bluetooth import BluetoothServiceInfoBleak
 from homeassistant.components.bluetooth.match import ble_device_matches
@@ -57,6 +57,7 @@ class BMSmode(IntEnum):
     BULK = 0x00
     ABSORPTION = 0x01
     FLOAT = 0x02
+
 
 class BMSsample(TypedDict, total=False):
     """Dictionary representing a sample of battery management system (BMS) data."""
@@ -105,8 +106,10 @@ class BaseBMS(ABC):
     """Abstract base class for battery management system."""
 
     MAX_RETRY: Final[int] = 3  # max number of retries for data requests
+    TIMEOUT: Final[float] = BLEAK_TIMEOUT / 4  # default timeout for BMS operations
+    # calculate time between retries to complete all retries (2 modes) in TIMEOUT seconds
+    _RETRY_TIMEOUT: Final[float] = TIMEOUT / (2**MAX_RETRY - 1)
     _MAX_TIMEOUT_FACTOR: Final[int] = 8  # limit timout increase to 8x
-    TIMEOUT: Final[float] = BLEAK_TRANSIENT_BACKOFF_TIME * _MAX_TIMEOUT_FACTOR
     _MAX_CELL_VOLT: Final[float] = 5.906  # max cell potential
     _HRS_TO_SECS: Final[int] = 60 * 60  # seconds in an hour
 
@@ -242,7 +245,7 @@ class BaseBMS(ABC):
             "battery_level": (
                 {"design_capacity", "cycle_charge"},
                 lambda: round(
-                    data.get("cycle_charge", 0) * data.get("design_capacity", 0) / 100,
+                    data.get("cycle_charge", 0) / data.get("design_capacity", 0) * 100,
                     1,
                 ),
             ),
@@ -303,13 +306,15 @@ class BaseBMS(ABC):
 
         self._log.debug("disconnected from BMS")
 
-    async def _init_connection(self) -> None:
+    async def _init_connection(
+        self, char_notify: BleakGATTCharacteristic | int | str | None = None
+    ) -> None:
         # reset any stale data from BMS
         self._data.clear()
         self._data_event.clear()
 
         await self._client.start_notify(
-            self.uuid_rx(), getattr(self, "_notification_handler")
+            char_notify or self.uuid_rx(), getattr(self, "_notification_handler")
         )
 
     async def _connect(self) -> None:
@@ -318,6 +323,13 @@ class BaseBMS(ABC):
         if self._client.is_connected:
             self._log.debug("BMS already connected")
             return
+
+        try:
+            await self._client.disconnect()  # ensure no stale connection exists
+        except (BleakError, TimeoutError) as exc:
+            self._log.debug(
+                "failed to disconnect stale connection (%s)", type(exc).__name__
+            )
 
         self._log.debug("connecting BMS")
         self._client = await establish_connection(
@@ -330,9 +342,9 @@ class BaseBMS(ABC):
 
         try:
             await self._init_connection()
-        except Exception as err:
+        except Exception as exc:
             self._log.info(
-                "failed to initialize BMS connection (%s)", type(err).__name__
+                "failed to initialize BMS connection (%s)", type(exc).__name__
             )
             await self.disconnect()
             raise
@@ -383,8 +395,8 @@ class BaseBMS(ABC):
             [False, True] if self._inv_wr_mode is None else [self._inv_wr_mode]
         ):
             try:
+                self._data_event.clear()  # clear event before requesting new data
                 for attempt in range(BaseBMS.MAX_RETRY):
-                    self._data_event.clear()  # clear event before requesting new data
                     await self._send_msg(
                         data, max_size, char or self.uuid_tx(), attempt, inv_wr_mode
                     )
@@ -392,7 +404,7 @@ class BaseBMS(ABC):
                         if wait_for_notify:
                             await asyncio.wait_for(
                                 self._wait_event(),
-                                BLEAK_TRANSIENT_BACKOFF_TIME
+                                BaseBMS._RETRY_TIMEOUT
                                 * min(2**attempt, BaseBMS._MAX_TIMEOUT_FACTOR),
                             )
                     except TimeoutError:
@@ -413,15 +425,14 @@ class BaseBMS(ABC):
     async def disconnect(self, reset: bool = False) -> None:
         """Disconnect the BMS, includes stoping notifications."""
 
-        if self._client.is_connected:
-            self._log.debug("disconnecting BMS")
-            try:
-                self._data_event.clear()
-                if reset:
-                    self._inv_wr_mode = None  # reset write mode
-                await self._client.disconnect()
-            except BleakError:
-                self._log.warning("disconnect failed!")
+        self._log.debug("disconnecting BMS (%s)", str(self._client.is_connected))
+        try:
+            self._data_event.clear()
+            if reset:
+                self._inv_wr_mode = None  # reset write mode
+            await self._client.disconnect()
+        except BleakError:
+            self._log.warning("disconnect failed!")
 
     async def _wait_event(self) -> None:
         """Wait for data event and clear it."""
@@ -453,6 +464,46 @@ class BaseBMS(ABC):
             await self.disconnect()
 
         return data
+
+    @staticmethod
+    def _cell_voltages(
+        data: bytearray,
+        *,
+        cells: int,
+        start: int,
+        byteorder: Literal["little", "big"] = "big",
+        size: int = 2,
+        step: int | None = None,
+        divider: float = 1000,
+    ) -> list[float]:
+        """Return cell voltages from status message.
+
+        Args:
+            data: Raw data from BMS
+            cells: Number of cells to read
+            start: Start position in data array
+            byteorder: Byte order ("big"/"little" endian)
+            size: Number of bytes per cell value (defaults 2)
+            step: Optional step size between cells (defaults to byte_len)
+            divider: Value to divide raw value by, defaults to 1000 (mv to V)
+
+        Returns:
+            list[float]: List of cell voltages in volts
+
+        """
+        step = step or size
+        return [
+            value / divider
+            for idx in range(cells)
+            if (len(data) >= start + idx * step + size)
+            and (
+                value := int.from_bytes(
+                    data[start + idx * step : start + idx * step + size],
+                    byteorder=byteorder,
+                    signed=False,
+                )
+            )
+        ]
 
 
 def crc_modbus(data: bytearray) -> int:

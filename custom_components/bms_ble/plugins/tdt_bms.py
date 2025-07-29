@@ -82,7 +82,9 @@ class BMS(BaseBMS):
             }
         )  # calculate further values from BMS provided set ones
 
-    async def _init_connection(self) -> None:
+    async def _init_connection(
+        self, char_notify: BleakGATTCharacteristic | int | str | None = None
+    ) -> None:
         await self._await_reply(
             data=b"HiLink", char=BMS._UUID_CFG, wait_for_notify=False
         )
@@ -165,7 +167,7 @@ class BMS(BaseBMS):
         return result
 
     @staticmethod
-    def _cell_voltages(data: bytearray) -> list[float]:
+    def _conv_cells(data: bytearray) -> list[float]:
         return [
             int.from_bytes(
                 data[BMS._CELL_POS + 1 + idx * 2 : BMS._CELL_POS + 1 + idx * 2 + 2],
@@ -209,7 +211,7 @@ class BMS(BaseBMS):
             self._data_final[0x8C][BMS._CELL_POS + int(result["cell_count"]) * 2 + 1]
         )
 
-        result["cell_voltages"] = BMS._cell_voltages(self._data_final[0x8C])
+        result["cell_voltages"] = BMS._conv_cells(self._data_final[0x8C])
         result["temp_values"] = BMS._temp_sensors(
             self._data_final[0x8C],
             result["temp_sensors"],

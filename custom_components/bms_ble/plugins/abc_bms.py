@@ -17,12 +17,12 @@ class BMS(BaseBMS):
     _HEAD_CMD: Final[int] = 0xEE
     _HEAD_RESP: Final[bytes] = b"\xcc"
     _INFO_LEN: Final[int] = 0x14
-    _EXP_REPLY: Final[dict[int, list[int]]] = {  # wait for these replies
-        0xC0: [0xF1],
-        0xC1: [0xF0, 0xF2],
-        0xC2: [0xF0, 0xF3, 0xF4],
-        0xC3: [0xF5, 0xF6, 0xF7, 0xF8, 0xFA],
-        0xC4: [0xF9] * 2,  # 4 cells per message
+    _EXP_REPLY: Final[dict[int, set[int]]] = {  # wait for these replies
+        0xC0: {0xF1},
+        0xC1: {0xF0, 0xF2},
+        0xC2: {0xF0, 0xF3, 0xF4},  # 4 cells per F4 message
+        0xC3: {0xF5, 0xF6, 0xF7, 0xF8, 0xFA},
+        0xC4: {0xF9},
     }
     _FIELDS: Final[list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]] = [
         ("temp_sensors", 0xF2, 4, 1, False, lambda x: x),
@@ -41,15 +41,13 @@ class BMS(BaseBMS):
             lambda x: sum(((x >> (i * 8)) & 1) << i for i in range(16)),
         ),
     ]
-    _RESPS: Final[set[int]] = {field[1] for field in _FIELDS} | {
-        field[1] for field in _FIELDS
-    }
+    _RESPS: Final[set[int]] = {field[1] for field in _FIELDS} | {0xF4}  # cell voltages
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
         super().__init__(__name__, ble_device, reconnect)
         self._data_final: dict[int, bytearray] = {}
-        self._exp_reply: list[int] = []
+        self._exp_reply: set[int] = set()
 
     @staticmethod
     def matcher_dict_list() -> list[AdvertisementPattern]:
@@ -120,8 +118,7 @@ class BMS(BaseBMS):
         else:
             self._data_final[data[1]] = data.copy()
 
-        if data[1] in self._exp_reply:
-            self._exp_reply.remove(data[1])
+        self._exp_reply.discard(data[1])
 
         if not self._exp_reply:  # check if all expected replies are received
             self._data_event.set()
@@ -132,17 +129,6 @@ class BMS(BaseBMS):
         frame = bytearray([BMS._HEAD_CMD, cmd[0], 0x00, 0x00, 0x00])
         frame.append(crc8(frame))
         return bytes(frame)
-
-    @staticmethod
-    def _cell_voltages(data: bytearray) -> list[float]:
-        """Return cell voltages from status message."""
-        return [
-            int.from_bytes(
-                data[3 + idx * 4 : 6 + idx * 4], byteorder="little", signed=False
-            )
-            / 1000
-            for idx in range(4 * (len(data) - 4) // 16)
-        ]
 
     @staticmethod
     def _temp_sensors(data: bytearray, sensors: int) -> list[int | float]:
@@ -165,19 +151,27 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         self._data_final.clear()
-        for cmd in (0xC4, 0xC2, 0xC1):
-            self._exp_reply = BMS._EXP_REPLY[cmd].copy()
+        for cmd in (0xC1, 0xC2, 0xC4):
+            self._exp_reply.update(BMS._EXP_REPLY[cmd])
             with contextlib.suppress(TimeoutError):
                 await self._await_reply(BMS._cmd(bytes([cmd])))
 
-        # check all repsonses are here, 0xF9 is not mandatory
-        if not BMS._RESPS.issubset(set(self._data_final.keys()) | {0xF9}):
+        # check all repsonses are here, 0xF9 is not mandatory (not all BMS report it)
+        self._data_final.setdefault(0xF9, bytearray())
+        if not BMS._RESPS.issubset(set(self._data_final.keys())):
             self._log.debug("Incomplete data set %s", self._data_final.keys())
             raise TimeoutError("BMS data incomplete.")
 
         result: BMSsample = BMS._decode_data(self._data_final)
         return result | {
-            "cell_voltages": BMS._cell_voltages(self._data_final[0xF4]),
+            "cell_voltages": BMS._cell_voltages(
+                self._data_final[0xF4],
+                cells=(len(self._data_final[0xF4]) - 4) // 4,
+                start=3,
+                byteorder="little",
+                size=3,
+                step=4,
+            ),
             "temp_values": BMS._temp_sensors(
                 self._data_final[0xF2], int(result.get("temp_sensors", 0))
             ),

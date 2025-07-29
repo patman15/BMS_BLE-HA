@@ -51,13 +51,12 @@ class BMS(BaseBMS):
     def matcher_dict_list() -> list[AdvertisementPattern]:
         """Provide BluetoothMatcher definition."""
         return [
-            AdvertisementPattern(
-                local_name="ECO-WORTHY*", manufacturer_id=m_id, connectable=True
-            )
-            for m_id in (0x3E7C, 0xBB28, 0xC2B4)
+            AdvertisementPattern(local_name="ECO-WORTHY 02_*", connectable=True)
         ] + [
             AdvertisementPattern(
-                local_name=pattern, service_uuid=BMS.uuid_services()[0], connectable=True
+                local_name=pattern,
+                service_uuid=BMS.uuid_services()[0],
+                connectable=True,
             )
             for pattern in ("DCHOUSE*", "ECO-WORTHY*")
         ]
@@ -137,18 +136,6 @@ class BMS(BaseBMS):
         return result
 
     @staticmethod
-    def _cell_voltages(data: bytearray, cells: int, offs: int) -> list[float]:
-        return [
-            int.from_bytes(
-                data[offs + idx * 2 : offs + idx * 2 + 2],
-                byteorder="big",
-                signed=False,
-            )
-            / 1000
-            for idx in range(cells)
-        ]
-
-    @staticmethod
     def _temp_sensors(data: bytearray, sensors: int, offs: int) -> list[float]:
         return [
             int.from_bytes(
@@ -171,8 +158,8 @@ class BMS(BaseBMS):
 
         result["cell_voltages"] = BMS._cell_voltages(
             self._data_final[0xA2],
-            int(result.get("cell_count", 0)),
-            BMS._CELL_POS + 2,
+            cells=int(result.get("cell_count", 0)),
+            start=BMS._CELL_POS + 2,
         )
         result["temp_values"] = BMS._temp_sensors(
             self._data_final[0xA2],

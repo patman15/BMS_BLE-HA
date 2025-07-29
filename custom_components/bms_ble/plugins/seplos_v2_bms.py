@@ -38,6 +38,7 @@ class BMS(BaseBMS):
         super().__init__(__name__, ble_device, reconnect)
         self._data_final: dict[int, bytearray] = {}
         self._exp_len: int = BMS._MIN_LEN
+        self._exp_reply: set[int] = set()
 
     @staticmethod
     def matcher_dict_list() -> list[AdvertisementPattern]:
@@ -132,9 +133,15 @@ class BMS(BaseBMS):
         )
 
         self._data_final[self._data[3]] = self._data
-        self._data_event.set()
+        try:
+            self._exp_reply.remove(self._data[3])
+            self._data_event.set()
+        except KeyError:
+            self._log.debug("unexpected reply: 0x%X", self._data[3])
 
-    async def _init_connection(self) -> None:
+    async def _init_connection(
+        self, char_notify: BleakGATTCharacteristic | int | str | None = None
+    ) -> None:
         """Initialize protocol state."""
         await super()._init_connection()
         self._exp_len = BMS._MIN_LEN
@@ -176,20 +183,11 @@ class BMS(BaseBMS):
             )
         ]
 
-    @staticmethod
-    def _cell_voltages(data: bytearray) -> list[float]:
-        return [
-            int.from_bytes(
-                data[10 + idx * 2 : 10 + idx * 2 + 2], byteorder="big", signed=False
-            )
-            / 1000
-            for idx in range(data[BMS._CELL_POS])
-        ]
-
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
         for cmd, data in BMS._CMDS:
+            self._exp_reply.add(cmd)
             await self._await_reply(BMS._cmd(cmd, data=bytearray(data)))
 
         result: BMSsample = {}
@@ -220,7 +218,11 @@ class BMS(BaseBMS):
             & BMS._PRB_MASK
         )
 
-        result["cell_voltages"] = BMS._cell_voltages(self._data_final[0x61])
+        result["cell_voltages"] = BMS._cell_voltages(
+            self._data_final[0x61],
+            cells=self._data_final[0x61][BMS._CELL_POS],
+            start=10,
+        )
         result["temp_values"] = BMS._temp_sensors(
             self._data_final[0x61],
             result["temp_sensors"],
