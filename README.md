@@ -62,6 +62,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Seplos v3 (show up as `SP[0,1,4-6]`&#x2026;)
 - TDT BMS
     - Wattcycle batteries
+- TianPower BMS (show up as `TP_`&#x2026;)
 
 > [!TIP]
 > New device types can be easily added via the plugin architecture of this integration. See the [contribution guidelines](CONTRIBUTING.md) for details.
@@ -288,6 +289,7 @@ for helping with making the integration better.
 - JBD BMS: [esphome-jbd-bms](https://github.com/syssi/esphome-jbd-bms)
 - D-powercore BMS: [Strom BMS monitor](https://github.com/majonessyltetoy/strom)
 - Redodo BMS: [LiTime BMS bluetooth](https://github.com/calledit/LiTime_BMS_bluetooth)
+- TianPower BMS: [esphome-tianpower-bms](https://github.com/syssi/esphome-tianpower-bms)
 
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
