@@ -11,8 +11,8 @@ on:
     - cron:  '0 5 * * 6'
     
 jobs:
-  ruff:
-    name: "Ruff"
+  linting:
+    name: "Linting and Type Checking"
     runs-on: "ubuntu-latest"
     steps:
         - name: "Checkout the repository"
@@ -29,3 +29,6 @@ jobs:
 
         - name: "Run Ruff"
           run: python3 -m ruff check .
+        
+        - name: "Run MyPy"
+          run: python3 -m mypy .
