@@ -123,23 +123,23 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "seplos_v2_bms",
     ),
-    (  # source LOG
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/418)
         generate_advertisement_data(
-            local_name="BP02",
+            local_name="BP21",
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            rssi=-62,
+        ),
+        "seplos_v2_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/418)
+        generate_advertisement_data(
+            local_name="BP00",
             service_uuids=[
                 "00001800-0000-1000-8000-00805f9b34fb",
                 "00001801-0000-1000-8000-00805f9b34fb",
                 "0000ff00-0000-1000-8000-00805f9b34fb",
             ],
-            rssi=-90,
-        ),
-        "seplos_v2_bms",
-    ),
-    (
-        generate_advertisement_data( # generated
-            local_name="BP21",
-            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
-            rssi=-81,
+            rssi=-62,
         ),
         "seplos_v2_bms",
     ),
