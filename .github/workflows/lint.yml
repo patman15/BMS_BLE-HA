@@ -11,8 +11,8 @@ on:
     - cron:  '0 5 * * 6'
     
 jobs:
-  ruff:
-    name: "Ruff"
+  linting:
+    name: "Linting and Type Checking"
     runs-on: "ubuntu-latest"
     steps:
         - name: "Checkout the repository"
@@ -25,7 +25,10 @@ jobs:
             cache: "pip"
 
         - name: "Install requirements"
-          run: python3 -m pip install -r requirements.txt
+          run: python3 -m pip install -r requirements_test.txt
 
         - name: "Run Ruff"
           run: python3 -m ruff check .
+        
+        - name: "Run MyPy"
+          run: python3 -m mypy .

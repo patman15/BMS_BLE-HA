@@ -207,7 +207,7 @@ async def async_setup_entry(
         async_add_entities([BMSSensor(bms, descr, mac)])
 
 
-class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ignore[reportIncompatibleMethodOverride]
+class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
     """The generic BMS sensor implementation."""
 
     _attr_has_entity_name = True
@@ -219,11 +219,11 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
         """Intitialize the BMS sensor."""
         self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
         self._attr_device_info = bms.device_info
-        self.entity_description = descr  # type: ignore[reportIncompatibleVariableOverride]
+        self.entity_description = descr
         super().__init__(bms)
 
     @property
-    def extra_state_attributes(self) -> dict[str, list[int | float]] | None:  # type: ignore[reportIncompatibleVariableOverride]
+    def extra_state_attributes(self) -> dict[str, list[int | float]] | None:
         """Return entity specific state attributes, e.g. cell voltages."""
         if self.entity_description.attr_fn:
             return self.entity_description.attr_fn(self.coordinator.data)
@@ -231,7 +231,7 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):  # type: ign
         return None
 
     @property
-    def native_value(self) -> int | float | None:  # type: ignore[reportIncompatibleVariableOverride]
+    def native_value(self) -> int | float | None:
         """Return the sensor value."""
         return self.entity_description.value_fn(self.coordinator.data)
 
