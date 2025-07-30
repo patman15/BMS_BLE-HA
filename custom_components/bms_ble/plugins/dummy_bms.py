@@ -77,7 +77,7 @@ class BMS(BaseBMS):
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         self._log.debug("replace with command to UUID %s", BMS.uuid_tx())
-        await self._await_reply(b"<some_command>")
+        # await self._await_reply(b"<some_command>")
 
         # # TODO: parse data from self._data here
 
