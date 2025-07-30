@@ -66,7 +66,7 @@ async def async_setup_entry(
         )
 
 
-class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity):  # type: ignore[reportIncompatibleMethodOverride]
+class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity):
     """The generic BMS binary sensor implementation."""
 
     entity_description: BmsBinaryEntityDescription
@@ -81,16 +81,16 @@ class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity): 
         self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
         self._attr_device_info = bms.device_info
         self._attr_has_entity_name = True
-        self.entity_description: BmsBinaryEntityDescription = descr  # type: ignore[reportIncompatibleVariableOverride]
+        self.entity_description: BmsBinaryEntityDescription = descr
         super().__init__(bms)
 
     @property
-    def is_on(self) -> bool | None:  # type: ignore[reportIncompatibleVariableOverride]
+    def is_on(self) -> bool | None:
         """Handle updated data from the coordinator."""
         return bool(self.coordinator.data.get(self.entity_description.key))
 
     @property
-    def extra_state_attributes(self) -> dict[str, int | str] | None:  # type: ignore[reportIncompatibleVariableOverride]
+    def extra_state_attributes(self) -> dict[str, int | str] | None:
         """Return entity specific state attributes, e.g. cell voltages."""
         return (
             fn(self.coordinator.data)
