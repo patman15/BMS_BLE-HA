@@ -39,7 +39,7 @@ class BMS(BaseBMS):
         """Initialize BMS."""
         super().__init__(__name__, ble_device, reconnect)
         self._data_final: bytearray = bytearray()
-        self._valid_reply: Final[int] = BMS._CMD_STAT | 0x10  # valid reply mask
+        self._valid_reply: int = BMS._CMD_STAT | 0x10  # valid reply mask
         self._exp_len: int = 0
 
     @staticmethod
@@ -80,11 +80,15 @@ class BMS(BaseBMS):
             {"cycle_capacity", "temperature"}
         )  # calculate further values from BMS provided set ones
 
-    async def _init_connection(self) -> None:
+    async def _init_connection(
+        self, char_notify: BleakGATTCharacteristic | int | str | None = None
+    ) -> None:
         """Initialize RX/TX characteristics and protocol state."""
-        await super()._init_connection()
+        await super()._init_connection(char_notify)
         self._exp_len = 0
-        await self._await_reply(BMS._cmd(BMS._CMD_DEV, 0x026C, 0x20))
+        self._valid_reply = BMS._CMD_DEV | 0x10
+        await self._await_reply(BMS._cmd(BMS._CMD_DEV, 0x026C, 0x20))  # TODO: parse
+        self._valid_reply = BMS._CMD_STAT | 0x10
 
     def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
@@ -162,18 +166,6 @@ class BMS(BaseBMS):
         return result
 
     @staticmethod
-    def _cell_voltages(data: bytearray, cells: int) -> list[float]:
-        return [
-            int.from_bytes(
-                data[BMS._CELL_POS + 2 * idx : BMS._CELL_POS + 2 * idx + 2],
-                byteorder="little",
-                signed=True,
-            )
-            / 1000
-            for idx in range(cells)
-        ]
-
-    @staticmethod
     def _temp_sensors(data: bytearray, sensors: int, offs: int) -> list[float]:
         return [
             float(int.from_bytes(data[idx : idx + 2], byteorder="little", signed=True))
@@ -194,7 +186,10 @@ class BMS(BaseBMS):
         result["problem_code"] = protection | warning
         result["cell_count"] = int(self._data_final[BMS._CELL_COUNT])
         result["cell_voltages"] = BMS._cell_voltages(
-            self._data_final, result.get("cell_count", 0)
+            self._data_final,
+            cells=result.get("cell_count", 0),
+            start=BMS._CELL_POS,
+            byteorder="little",
         )
         result["temp_sensors"] = int(self._data_final[BMS._TEMP_POS])
         result["temp_values"] = BMS._temp_sensors(
