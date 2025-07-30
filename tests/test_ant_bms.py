@@ -142,13 +142,13 @@ async def test_update(patch_bleak_client, reconnect_fixture) -> None:
 @pytest.fixture(
     name="wrong_response",
     params=[
-        (b"\x7e\xa1\x12" + MockANTBleakClient.RESP[0x1][3:], "wrong_type"),
-        (b"\x7e\xa1\x1f" + MockANTBleakClient.RESP[0x1][3:], "unknown_type"),
+        (b"\x7e\xa1\x11" + MockANTBleakClient.RESP[0x2][3:], "wrong_type"),
+        (b"\x7e\xa1\x1f" + MockANTBleakClient.RESP[0x2][3:], "unknown_type"),
         (
-            b"\x7e\xa1\x11\x00\x00\x01" + MockANTBleakClient.RESP[0x1][6:],
+            b"\x7e\xa1\x12\x00\x00\x01" + MockANTBleakClient.RESP[0x2][6:],
             "wrong_length",
         ),
-        (MockANTBleakClient.RESP[0x1][:-4] + b"\xff\xff\xaa\x55", "wrong_CRC"),
+        (MockANTBleakClient.RESP[0x2][:-4] + b"\xff\xff\xaa\x55", "wrong_CRC"),
         (bytearray(b""), "empty_response"),
     ],
     ids=lambda param: param[1],
