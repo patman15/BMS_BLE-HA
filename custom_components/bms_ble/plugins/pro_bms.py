@@ -3,16 +3,12 @@
 import asyncio
 from collections.abc import Callable
 import contextlib
-import logging
 from typing import Any, Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 
 from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue
-
-# Debug logger
-_LOGGER = logging.getLogger(__name__)
 
 
 class BMS(BaseBMS):
@@ -28,9 +24,8 @@ class BMS(BaseBMS):
     _CMD_ACK: Final[bytes] = bytes.fromhex("55aa070101558006000055")
     _CMD_DATA_STREAM: Final[bytes] = bytes.fromhex("55aa0901015580430000120084")
 
-    # Timing constants (seconds)
-    _INIT_TIMEOUT: Final[float] = 0.5  # Short timeout for init
-    _DATA_TIMEOUT: Final[float] = 2.0  # Longer timeout for data
+    # Timing constant (seconds)
+    _DATA_TIMEOUT: Final[float] = 2.0  # Timeout for waiting for data
 
     # Expected packet length
     _REALTIME_PACKET_LEN: Final[int] = 50
@@ -39,17 +34,13 @@ class BMS(BaseBMS):
     _FIELDS: Final[list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]]] = [
         # (name, offset_in_data, size, signed, conversion_func)
         ("voltage", 4, 2, False, lambda x: x * 0.01),
-        ("current", 8, 2, False, lambda x: x / 1000.0),  # Magnitude only
+        ("current", 8, 2, False, lambda x: x / 1000.0),  # Unsigned magnitude
         ("battery_level", 20, 1, False, lambda x: x),
         ("temperature", 12, 1, False, lambda x: x / 10.0),
-        ("runtime", 24, 2, False, lambda x: x * 60 if 0 < x < 65535 else None),  # minutes to seconds
+        ("runtime", 24, 2, False, lambda x: x * 60),  # minutes to seconds
+        ("cycle_charge", 16, 2, False, lambda x: x * 0.01),  # Remaining capacity in Ah
+        ("design_capacity", 36, 2, False, lambda x: x * 0.01),  # Design capacity in Ah
     ]
-
-    # Additional field definitions (not BMSvalue types, handled separately)
-    _REMAINING_CAPACITY_OFFSET: Final[int] = 16
-    _REMAINING_CAPACITY_SIZE: Final[int] = 2
-    _DESIGN_CAPACITY_OFFSET: Final[int] = 36
-    _DESIGN_CAPACITY_SIZE: Final[int] = 2
 
     # Protection/error status bit definitions (if available in byte 15 of data section)
     _PROTECTION_BITS: Final[dict[int, str]] = {
@@ -65,29 +56,6 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize private BMS members."""
-        # Debug logging for device name issues
-        _LOGGER.debug(
-            "Pro BMS init - device name: %s, address: %s",
-            ble_device.name,
-            ble_device.address
-        )
-
-        # If device name is None or just MAC address, set it to "Pro BMS"
-        if not ble_device.name or ble_device.name == ble_device.address:
-            _LOGGER.warning(
-                "Pro BMS device %s has no name or MAC as name, setting to 'Pro BMS'",
-                ble_device.address
-            )
-            # Create a new BLEDevice with the proper name
-            from bleak.backends.device import BLEDevice as BLEDeviceClass
-            ble_device = BLEDeviceClass(
-                address=ble_device.address,
-                name="Pro BMS",
-                details=ble_device.details,
-                rssi=ble_device.rssi,
-            )
-            _LOGGER.debug("Created new BLEDevice with name: %s", ble_device.name)
-
         super().__init__(__name__, ble_device, reconnect)
 
         # Initialize buffers and state
@@ -112,11 +80,17 @@ class BMS(BaseBMS):
     @staticmethod
     def matcher_dict_list() -> list[AdvertisementPattern]:
         """Provide BluetoothMatcher definition."""
-
         return [
-            # Exact match for "Pro BMS" with service UUID only
+            # Primary pattern: match by exact name
             AdvertisementPattern(
                 local_name="Pro BMS",
+                service_uuid=BMS.uuid_services()[0],
+                connectable=True,
+            ),
+            # Secondary pattern: match by unique manufacturer ID for nameless devices
+            # 42711 (0xA6D7) appears to be unique to Pro BMS devices
+            AdvertisementPattern(
+                manufacturer_id=42711,
                 service_uuid=BMS.uuid_services()[0],
                 connectable=True,
             ),
@@ -323,52 +297,32 @@ class BMS(BaseBMS):
                     byteorder="little",
                     signed=signed
                 )
-                converted = func(value)
-                if converted is not None:
-                    result[key] = converted
-
-        # Parse remaining capacity and store as cycle_charge
-        if len(data_section) >= self._REMAINING_CAPACITY_OFFSET + self._REMAINING_CAPACITY_SIZE:
-            raw_value = int.from_bytes(
-                data_section[self._REMAINING_CAPACITY_OFFSET:self._REMAINING_CAPACITY_OFFSET + self._REMAINING_CAPACITY_SIZE],
-                byteorder="little",
-                signed=False
-            )
-            result["cycle_charge"] = raw_value * 10 / 1000.0  # mAh to Ah
-
-        # Parse design capacity separately (not a BMSvalue)
-        if len(data_section) >= self._DESIGN_CAPACITY_OFFSET + self._DESIGN_CAPACITY_SIZE:
-            raw_value = int.from_bytes(
-                data_section[self._DESIGN_CAPACITY_OFFSET:self._DESIGN_CAPACITY_OFFSET + self._DESIGN_CAPACITY_SIZE],
-                byteorder="little",
-                signed=False
-            )
-            design_capacity_raw = raw_value / 100.0
-            # Only set design capacity if it's a valid value
-            if design_capacity_raw > 0 and design_capacity_raw < 65535:
-                result["design_capacity"] = int(design_capacity_raw)
+                result[key] = func(value)
 
         return result
 
     def _handle_current_and_charging(self, result: BMSsample, data_section: bytes) -> None:
-        """Handle current sign and battery charging status."""
-        if "current" not in result or len(data_section) <= 11:
+        """Handle battery charging status and protection status."""
+        if "current" not in result:
             return
 
+        # Check discharge flag in byte 15 (bit 7)
         byte15 = data_section[11]  # Byte 15 in full packet = offset 11 in data section
         discharge_flag = (byte15 & 0x80) != 0
 
-        # Negative current = discharging, Positive current = charging
+        # Apply sign based on discharge flag
+        # Discharge flag set = discharging (negative current)
+        # Discharge flag clear = charging (positive current)
         if discharge_flag:
             result["current"] = -result["current"]
+
         result["battery_charging"] = not discharge_flag
 
-        # Handle protection status
-        self._handle_protection_status(result, byte15)
+        # Handle protection status from lower bits of byte 15
+        self._handle_protection_status(result, byte15 & 0x7F)
 
-    def _handle_protection_status(self, result: BMSsample, byte15: int) -> None:
-        """Check for protection/error status in lower bits of byte 15."""
-        protection_byte = byte15 & 0x7F  # Mask out discharge flag
+    def _handle_protection_status(self, result: BMSsample, protection_byte: int) -> None:
+        """Check for protection/error status."""
         if protection_byte:
             result["problem_code"] = protection_byte
             result["problem"] = True
@@ -408,9 +362,9 @@ class BMS(BaseBMS):
         """Calculate derived values like power, cycle charge, and validate temperature."""
         # cycle_charge is already set from remaining_capacity field
 
-        # Calculate power
+        # Calculate power (always positive)
         if "voltage" in result and "current" in result:
-            result["power"] = round(result["voltage"] * result["current"], 2)
+            result["power"] = round(result["voltage"] * abs(result["current"]), 2)
 
         # Calculate temperature values array
         if "temperature" in result:
@@ -486,18 +440,8 @@ class BMS(BaseBMS):
             "unknown_types": {},
         }
 
-        # First, wait a bit to see if device is already streaming
-        self._log.debug("Checking if device is already streaming data...")
-        if await self._wait_for_data(self._INIT_TIMEOUT):
-            self._log.debug("Device is already streaming data!")
-            result = self._process_data()
-            if result is None:
-                self._log.warning("Failed to process data from Pro BMS")
-                return {}
-            return result
-
-        # If not streaming, send init command
-        self._log.debug("Device not streaming, sending Extended info command for initialization")
+        # Send init command to start data streaming
+        self._log.debug("Sending Extended info command for initialization")
         try:
             await self._client.write_gatt_char(self.uuid_tx(), self._CMD_EXTENDED_INFO, response=False)
             self._log.debug("Extended info command sent successfully")

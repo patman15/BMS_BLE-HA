@@ -58,14 +58,16 @@ class MockProBMSBleakClient(MockBleakClient):
         # Voltage at offset 8-9 in full packet (offset 4-5 in data section)
         struct.pack_into("<H", packet, 8, int(voltage * 100))
 
-        # Current magnitude at offset 12-13 in full packet (offset 8-9 in data section)
+        # Current at offset 12-13 in full packet (offset 8-9 in data section)
+        # Always store as unsigned magnitude
         struct.pack_into("<H", packet, 12, int(abs(current) * 1000))
 
         # Temperature at offset 16 in full packet (offset 12 in data section)
         packet[16] = min(255, int(temp * 10))  # Cap at 255 to avoid byte overflow
 
-        # Byte 15 in full packet (offset 11 in data section): discharge flag (bit 7) and protection status
-        packet[15] = (0x80 if discharge else 0x00) | (protection_status & 0x7F)
+        # Byte 15 in full packet (offset 11 in data section): discharge flag (bit 7) + protection status
+        discharge_flag = 0x80 if discharge else 0x00
+        packet[15] = discharge_flag | (protection_status & 0x7F)
 
         # Remaining capacity at offset 20-21 in full packet (offset 16-17 in data section)
         struct.pack_into("<H", packet, 20, int(remaining_capacity * 100))
@@ -181,43 +183,16 @@ async def test_update_timeout(patch_bleak_client, patch_bms_timeout) -> None:
 
 
 async def test_device_name_consistency(patch_bleak_client) -> None:
-    """Test that device name always includes MAC suffix for consistency."""
+    """Test that device name is handled correctly."""
     patch_bleak_client(MockProBMSBleakClient)
 
-    # Test with device advertising its MAC address as name
-    bms_with_mac = BMS(
-        generate_ble_device("E0:4E:7A:AF:5E:06", "E0:4E:7A:AF:5E:06", {"path": "/org/bluez/hci0/dev_E0_4E_7A_AF_5E_06"}, -73)
+    # Only test with the actual advertised name that would match
+    device = BMS(
+        generate_ble_device("AA:BB:CC:DD:EE:FF", "Pro BMS", {"path": "/org/bluez/hci0/dev_AA_BB_CC_DD_EE_FF"}, -70)
     )
-    assert bms_with_mac.name == "Pro BMS"  # Pro BMS now sets name to "Pro BMS" when device name is MAC address
 
-    # Test with device advertising "Pro BMS" as name
-    bms_with_name = BMS(
-        generate_ble_device("E0:4E:7A:AF:5E:06", "Pro BMS", {"path": "/org/bluez/hci0/dev_E0_4E_7A_AF_5E_06"}, -73)
-    )
-    assert bms_with_name.name == "Pro BMS"  # Pro BMS uses the device name as-is
-
-    # Test with device having None as name
-    bms_with_none = BMS(
-        generate_ble_device("E0:4E:7A:AF:5E:06", None, {"path": "/org/bluez/hci0/dev_E0_4E_7A_AF_5E_06"}, -73)
-    )
-    assert bms_with_none.name == "Pro BMS"  # Pro BMS sets name to "Pro BMS" when device name is None
-
-    # Test with device advertising custom name
-    bms_with_custom = BMS(
-        generate_ble_device("E0:4E:7A:AF:5E:06", "Pro BMS Living Room", {"path": "/org/bluez/hci0/dev_E0_4E_7A_AF_5E_06"}, -73)
-    )
-    assert bms_with_custom.name == "Pro BMS Living Room"  # Pro BMS uses the device name as-is
-
-
-async def test_device_name_with_existing_suffix() -> None:
-    """Test that device name is not modified when it already contains MAC suffix."""
-    # Test case where device name already has the MAC suffix (covers line 123)
-    device = generate_ble_device("E0:4E:7A:AF:5E:06", "Pro BMS Living Room 5E06", {"path": "/org/bluez/hci0/dev_E0_4E_7A_AF_5E_06"}, -73)
-    bms = BMS(device)
-
-    # Name should remain unchanged since it already has the suffix
-    assert bms.name == "Pro BMS Living Room 5E06"
-    assert device.name == "Pro BMS Living Room 5E06"
+    # The base class sets the name directly from the device
+    assert device.name == "Pro BMS"
 
 
 @pytest.fixture(
@@ -350,13 +325,19 @@ def test_calc_values() -> None:
 def test_matcher_dict_list() -> None:
     """Test matcher_dict_list static method."""
     matchers = BMS.matcher_dict_list()
-    assert len(matchers) == 1
+    assert len(matchers) == 2
 
-    # Pattern - exact match without manufacturer_id to avoid conflicts
+    # First pattern - exact name match
     assert matchers[0]["local_name"] == "Pro BMS"
     assert matchers[0]["service_uuid"] == "0000fff0-0000-1000-8000-00805f9b34fb"
-    assert "manufacturer_id" not in matchers[0]  # No manufacturer_id to avoid conflicts
-    assert matchers[0]["connectable"] is True  # Pro BMS requires active connections
+    assert "manufacturer_id" not in matchers[0]
+    assert matchers[0]["connectable"] is True
+
+    # Second pattern - manufacturer ID for nameless devices
+    assert "local_name" not in matchers[1]
+    assert matchers[1]["manufacturer_id"] == 42711  # 0xA6D7
+    assert matchers[1]["service_uuid"] == "0000fff0-0000-1000-8000-00805f9b34fb"
+    assert matchers[1]["connectable"] is True
 
 
 def test_device_info() -> None:
@@ -379,14 +360,14 @@ async def test_successful_data_update(patch_bleak_client) -> None:
     # Verify data was parsed correctly
     assert result is not None
     assert result["voltage"] == 12.5
-    assert result["current"] == -5.0  # Negative because discharge flag is set
+    assert result["current"] == -5.0  # Negative because discharging
     assert result["battery_level"] == 80
     assert result["temperature"] == 25.0
     assert result["cycle_charge"] == 50.0  # remaining_capacity is stored as cycle_charge
     assert result["runtime"] == 7200  # 120 minutes * 60
     assert result["design_capacity"] == 100
     assert result["battery_charging"] is False
-    assert result["power"] == -62.5  # 12.5V * -5.0A
+    assert result["power"] == 62.5  # Power is always positive (12.5V * 5.0A)
     assert result["cycle_charge"] == 50.0
     assert result["temp_values"] == [25.0]
     assert result["cycle_capacity"] == 625.0  # Calculated: voltage * cycle_charge = 12.5 * 50.0
@@ -400,7 +381,7 @@ async def test_charging_data_update(patch_bleak_client) -> None:
         def _create_data_packet(self, **kwargs):
             # Override to create charging packet (discharge=False)
             return super()._create_data_packet(
-                voltage=13.2, current=10.0, soc=60, temp=22.0,
+                voltage=13.2, current=5.0, soc=60, temp=22.0,
                 remaining_capacity=60.0, runtime=0, design_capacity=100,
                 discharge=False, protection_status=0
             )
@@ -414,11 +395,11 @@ async def test_charging_data_update(patch_bleak_client) -> None:
     result = await bms.async_update()
 
     assert result is not None
-    assert result["current"] == 10.0  # Positive because charging
+    assert result["current"] == 5.0  # Positive because charging
     assert result["battery_charging"] is True
     # Runtime should not be included when charging
     assert "runtime" not in result
-    assert result["power"] == 132.0  # 13.2V * 10.0A
+    assert result["power"] == 66.0  # 13.2V * 5.0A
 
     await bms.disconnect()
 
@@ -450,12 +431,12 @@ async def test_design_capacity_calculation_fallback(patch_bleak_client, caplog) 
     import logging
     caplog.set_level(logging.DEBUG)
 
-    # We need to modify the fields to exclude design_capacity_raw
+    # We need to modify the fields to exclude design_capacity
     import custom_components.bms_ble.plugins.pro_bms as pro_bms_module
     original_fields = pro_bms_module.BMS._FIELDS
 
-    # Create fields without design_capacity_raw
-    modified_fields = [field for field in original_fields if field[0] != "design_capacity_raw"]
+    # Create fields without design_capacity
+    modified_fields = [field for field in original_fields if field[0] != "design_capacity"]
 
     pro_bms_module.BMS._FIELDS = modified_fields
 
@@ -518,8 +499,8 @@ async def test_design_capacity_zero_soc(patch_bleak_client, caplog) -> None:
     import custom_components.bms_ble.plugins.pro_bms as pro_bms_module
     original_fields = pro_bms_module.BMS._FIELDS
 
-    # Create fields without design_capacity_raw
-    modified_fields = [field for field in original_fields if field[0] != "design_capacity_raw"]
+    # Create fields without design_capacity
+    modified_fields = [field for field in original_fields if field[0] != "design_capacity"]
 
     pro_bms_module.BMS._FIELDS = modified_fields
 
@@ -1248,8 +1229,9 @@ async def test_runtime_with_edge_values(patch_bleak_client) -> None:
 
     result = await bms.async_update()
     assert result is not None
-    # Runtime should not be included for value 65535 (converted to None)
-    assert "runtime" not in result
+    # Runtime should now be included even for value 65535 (no validation)
+    assert "runtime" in result
+    assert result["runtime"] == 65535 * 60  # 65535 minutes converted to seconds
 
     await bms.disconnect()
 
@@ -1622,9 +1604,9 @@ def test_parse_realtime_packet_missing_remaining_capacity():
     """Test parsing when remaining_capacity field is not parsed due to short data."""
     bms = BMS(generate_ble_device("aa:bb:cc:dd:ee:ff", "Pro BMS", {"path": "/org/bluez/hci0/dev_aa_bb_cc_dd_ee_ff"}))
 
-    # Temporarily modify the offset to make it beyond the data section
-    original_offset = bms._REMAINING_CAPACITY_OFFSET
-    bms._REMAINING_CAPACITY_OFFSET = 100  # Way beyond the 45-byte data section
+    # Modify _FIELDS to exclude cycle_charge (which is remaining capacity)
+    original_fields = bms._FIELDS
+    bms._FIELDS = [f for f in original_fields if f[0] != "cycle_charge"]
 
     # Create a valid 50-byte packet
     packet = bytearray(50)
@@ -1636,12 +1618,12 @@ def test_parse_realtime_packet_missing_remaining_capacity():
 
     success = bms._parse_realtime_packet(packet)
 
-    # Restore original offset
-    bms._REMAINING_CAPACITY_OFFSET = original_offset
+    # Restore original fields
+    bms._FIELDS = original_fields
 
     assert success is True
     assert bms._result is not None
-    # Since offset was beyond data section, cycle_charge should not be parsed
+    # Since we excluded cycle_charge from fields, it should not be parsed
     assert "cycle_charge" not in bms._result
 
 
@@ -1710,9 +1692,9 @@ def test_parse_realtime_packet_missing_battery_level_for_design_capacity():
     """Test parsing when battery_level is missing for design capacity calculation."""
     bms = BMS(generate_ble_device("aa:bb:cc:dd:ee:ff", "Pro BMS", {"path": "/org/bluez/hci0/dev_aa_bb_cc_dd_ee_ff"}))
 
-    # Modify _FIELDS to exclude both design_capacity_raw and battery_level
+    # Modify _FIELDS to exclude both design_capacity and battery_level
     original_fields = bms._FIELDS
-    bms._FIELDS = [f for f in original_fields if f[0] not in ["design_capacity_raw", "battery_level"]]
+    bms._FIELDS = [f for f in original_fields if f[0] not in ["design_capacity", "battery_level"]]
 
     # Create a valid packet
     packet = bytearray(50)
@@ -1908,34 +1890,6 @@ async def test_optional_fields_with_none_values(patch_bleak_client) -> None:
     assert "design_capacity" not in sample
 
 
-async def test_process_data_returns_none_during_streaming(patch_bleak_client) -> None:
-    """Test _async_update when _process_data returns None during streaming."""
-    device = generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
-    bms = BMS(device)
-
-    # Create a mock client with disconnected_callback
-    bms._client = MockProBMSBleakClient(device, disconnected_callback=None)
-    bms._client.bms = bms
-    bms._client._notify_callback = bms._notification_handler
-
-    # Mock _wait_for_data to return True (simulating streaming)
-    async def mock_wait_for_data(timeout, wait_for_any_packet=False):
-        # First call should return True (streaming detected)
-        return True
-
-    bms._wait_for_data = mock_wait_for_data
-
-    # Mock _process_data to return None
-    def mock_process_data():
-        return None
-
-    bms._process_data = mock_process_data
-
-    # Should return empty dict when _process_data returns None
-    result = await bms._async_update()
-    assert result == {}
-
-
 async def test_process_data_returns_none_after_init(patch_bleak_client) -> None:
     """Test _async_update when _process_data returns None after init command."""
     device = generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", {"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"}, -73)
@@ -1978,7 +1932,7 @@ async def test_runtime_included_when_discharging(patch_bleak_client) -> None:
         def _create_data_packet(self, **kwargs):
             # Create packet with discharge=True and valid runtime
             return super()._create_data_packet(
-                voltage=12.5, current=-5.0, soc=80, temp=25.0,
+                voltage=12.5, current=5.0, soc=80, temp=25.0,
                 remaining_capacity=50.0, runtime=7200, design_capacity=100,
                 discharge=True, protection_status=0
             )
@@ -2071,9 +2025,9 @@ async def test_design_capacity_calculation_with_zero_soc(patch_bleak_client) -> 
     assert "design_capacity" not in result
 
     await bms.disconnect()
-
-
 # These test cases were removed because they were testing dead code branches
 # that have been simplified in the production code
+
+
 
 

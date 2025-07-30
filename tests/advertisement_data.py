@@ -875,7 +875,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # Pro BMS test advertisement
         generate_advertisement_data(
             local_name="Pro BMS",
-            manufacturer_data={0x004C: bytes.fromhex("021595851db504b8ea30116113ccfbffc8171c05f82480")},  # Apple manufacturer ID with actual pattern
+            manufacturer_data={0x3DB3: bytes.fromhex("358683777d7d6998c3cb56151fc3")},  # Pro BMS specific manufacturer ID (15795)
             service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
             rssi=-60,
         ),
