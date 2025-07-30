@@ -135,6 +135,14 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "seplos_v2_bms",
     ),
+    (
+        generate_advertisement_data( # generated
+            local_name="BP21",
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            rssi=-81,
+        ),
+        "seplos_v2_bms",
+    ),
     (  # source LOG
         generate_advertisement_data(
             local_name="LT-12V-1544",
