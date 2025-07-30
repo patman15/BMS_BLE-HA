@@ -30,7 +30,7 @@ In general I use guidelines very close to the ones that Home Assistant uses for 
 > [!NOTE]
 > In order to keep maintainability of this integration, pull requests are required to pass standard Home Assistant checks for integrations, [coding style guidelines](#coding-style-guidelines), Python linting, and 100% [branch test coverage](https://coverage.readthedocs.io/en/latest/branch.html#branch).
 
-### Any contributions you make will be under the LGPL-2.1 License
+### Any contributions you make will be under the Apache-2.0 License
 
 In short, when you submit code changes, your submissions are understood to be under the same [Apache-2.0](LICENSE) that covers the project. Feel free to contact the maintainers if that's a concern.
 
