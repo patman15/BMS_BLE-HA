@@ -126,9 +126,11 @@ class BMS(BaseBMS):
         self._data_final = self._data.copy()
         self._data_event.set()
 
-    async def _init_connection(self) -> None:
+    async def _init_connection(
+        self, char_notify: BleakGATTCharacteristic | int | str | None = None
+    ) -> None:
         """Initialize RX/TX characteristics and protocol state."""
-        await super()._init_connection()
+        await super()._init_connection(char_notify)
 
         # query device info frame (0x03) and wait for BMS ready (0xC8)
         self._valid_reply = 0x01
