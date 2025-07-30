@@ -25,7 +25,7 @@ jobs:
             cache: "pip"
 
         - name: "Install requirements"
-          run: python3 -m pip install -r requirements.txt
+          run: python3 -m pip install -r requirements_all.txt
 
         - name: "Run Ruff"
           run: python3 -m ruff check .
