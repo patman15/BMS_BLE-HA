@@ -10,6 +10,10 @@ from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue
 class BMS(BaseBMS):
     """Dummy BMS implementation."""
 
+    # _HEAD: Final[bytes] = b"\x55"  # beginning of frame
+    # _TAIL: Final[bytes] = b"\xAA"  # end of frame
+    # _FRAME_LEN: Final[int] = 10  # length of frame, including SOF and checksum
+
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
         super().__init__(__name__, ble_device, reconnect)
@@ -49,12 +53,26 @@ class BMS(BaseBMS):
         self, _sender: BleakGATTCharacteristic, data: bytearray
     ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
-        # self._log.debug("RX BLE data: %s", data)
-        #
-        # # do things like checking correctness of frame here and
+        self._log.debug("RX BLE data: %s", data)
+
+        # *******************************************************
+        # # Do things like checking correctness of frame here and
         # # store it into a instance variable, e.g. self._data
-        #
-        # self._data_event.set()
+        # # Below are some examples of how to do it
+        # # Have a look at the BMS base class for function to use,
+        # # take a look at other implementations for more  details
+        # *******************************************************
+
+        # if not data.startswith(BMS._HEAD):
+        #     self._log.debug("incorrect SOF")
+        #     return
+
+        # if (crc := crc_sum(self._data[:-1])) != self._data[-1]:
+        #     self._log.debug("invalid checksum 0x%X != 0x%X", self._data[-1], crc)
+        #     return
+
+        self._data = data.copy()
+        self._data_event.set()
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
