@@ -64,13 +64,13 @@ After initialization, the device streams 50-byte packets at ~1Hz via notificatio
 | 2 | 1 | Length | `0x2D` (45 bytes follow) | - |
 | 3 | 1 | Type | `0x04` (real-time data) | - |
 | 4-7 | 4 | Fixed | `0x80 0xAA 0x01 0x70` | Protocol bytes |
-| 8-9 | 2 | Voltage | Battery voltage | `value * 0.01` V |
+| 8-9 | 2 | Voltage | Battery voltage | Little-endian, `value * 0.01` V |
 | 10-11 | 2 | Unknown | - | - |
-| 12-13 | 2 | Current | Unsigned current magnitude | `value / 1000.0` A |
+| 12-13 | 2 | Current | Current magnitude | Little-endian, `value / 1000.0` A |
 | 14 | 1 | Unknown | - | - |
-| 15 | 1 | Status Byte | Bit 7: discharge flag, Bits 0-6: protection status | - |
+| 15 | 1 | Status/Direction | Bit 7: discharge flag (1=discharge, 0=charge) | Bits 0-6: protection status |
 | 16 | 1 | Temperature | Primary temperature sensor | `value / 10.0` °C |
-| 17-19 | 3 | Unknown | - | - |
+| 17-19 | 3 | Unknown | Reserved (always 0x00 0x00 0x00) | - |
 | 20-21 | 2 | Remaining Capacity | Current charge in battery | `value * 10` mAh |
 | 22-23 | 2 | Unknown | - | - |
 | 24 | 1 | **State of Charge** | Battery percentage | 0-100% |
@@ -82,20 +82,27 @@ After initialization, the device streams 50-byte packets at ~1Hz via notificatio
 
 ### Data Conversion Details
 
-1. **Voltage**: 
+1. **Voltage**:
    - Read 16-bit little-endian from bytes 8-9
    - Multiply by 0.01 to get voltage in Volts
 
 2. **Current**:
-   - Read 16-bit little-endian unsigned from bytes 12-13 (magnitude only)
-   - Check bit 7 of byte 15 for direction (1 = discharging, 0 = charging)
-   - Apply sign: negative for discharge, positive for charge
-   - Divide by 1000 to convert mA to Amps
+   - Read 4 bytes starting at offset 12 (bytes 12-15)
+   - Bytes 12-13: Current magnitude as 16-bit little-endian unsigned (mA)
+   - Byte 15 bit 7: Discharge flag (1 = discharging, 0 = charging)
+   - Lambda implementation: `((x & 0xFFFF) / 1000.0) * (-1 if (x >> 24) & 0x80 else 1)`
+     - `x & 0xFFFF`: Extract lower 16 bits (magnitude from bytes 12-13)
+     - `x >> 24`: Shift to get byte 15
+     - `& 0x80`: Check bit 7 for discharge flag
+     - Divide by 1000 to convert mA to Amps
+     - Apply negative sign if discharging
 
 3. **Temperature**:
    - Read byte 16 (unsigned byte: 0-255)
    - Divide by 10 to get temperature in °C
    - Valid range: 0°C to 25.5°C (limited by unsigned byte encoding)
+   - Note: While some protocol documentation suggests temperature should be 3 bytes (value + sign + padding),
+     actual device logs show only the first byte is used, with bytes 17-18 always being 0x00 0x00
 
 4. **Protection Status**:
    - Lower 7 bits of byte 15 indicate protection/error conditions
@@ -119,7 +126,6 @@ After initialization, the device streams 50-byte packets at ~1Hz via notificatio
 7. **Design Capacity**:
    - Read 16-bit little-endian from bytes 40-41
    - Divide by 100 to get Ah
-   - If not available in packet, calculated from: `(remaining_capacity / SOC) * 100`
 
 8. **Runtime**:
    - Read 16-bit little-endian from bytes 28-29 (minutes)
@@ -131,10 +137,11 @@ After initialization, the device streams 50-byte packets at ~1Hz via notificatio
 
 The plugin calculates these additional values:
 
-1. **Power**: `voltage × current` (W)
-2. **Cycle Charge**: Same as remaining capacity (Ah)
-3. **Cycle Capacity**: `voltage × cycle_charge` (Wh) - calculated by base class
-4. **Temperature Values Array**: Single-element array with temperature value
+1. **Power**: `voltage × current` (W) - calculated by base class
+2. **Battery Charging**: `True` if current > 0, `False` otherwise - calculated by base class
+3. **Cycle Charge**: Same as remaining capacity (Ah)
+4. **Cycle Capacity**: `voltage × cycle_charge` (Wh) - calculated by base class
+5. **Temperature Values Array**: Single-element array with temperature value
 
 ## Home Assistant Integration
 
@@ -307,8 +314,9 @@ template:
 4. **Checksum**: Currently bypassed as the algorithm differs from documentation
 5. **Buffer Management**: Robust handling of fragmented packets and buffer alignment
 6. **Device Name Handling**: Automatic correction when device name is None or MAC address
-7. **Protection Status**: Monitored via byte 15 for safety alerts
-8. **Temperature Validation**: Capped at 25.5°C due to unsigned byte limitation
+7. **Protection Status**: Monitored via byte 15 (lower 7 bits) for safety alerts
+8. **Temperature Validation**: Removed - trust the device and Home Assistant to handle values
+9. **Current Reading**: Uses a 4-byte read to get both magnitude and sign in one operation
 
 ## Testing
 
@@ -336,7 +344,7 @@ Test coverage includes:
 | Device not discovered | Name is None or MAC address | Plugin auto-corrects to "Pro BMS" |
 | No data after init | Device needs time to respond | Wait for multiple init responses |
 | Wrong current direction | Incorrect byte/bit check | Use byte 15 bit 7 for direction |
-| Temperature shows 20°C | Out of range value | Check if > 25.5°C (capped) |
+| Temperature shows unexpected value | Check device readings | Verify with actual device data |
 | SOC shows 0% | Device calibrating | Wait 10-30 seconds after connection |
 | No runtime value | Battery charging | Runtime only available when discharging |
 | Slow initialization | Multiple init packets | Normal behavior, wait for data packets |

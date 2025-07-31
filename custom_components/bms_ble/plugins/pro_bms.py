@@ -3,7 +3,7 @@
 import asyncio
 from collections.abc import Callable
 import contextlib
-from typing import Any, Final
+from typing import Any, Final, cast
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
@@ -34,7 +34,7 @@ class BMS(BaseBMS):
     _FIELDS: Final[list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]]] = [
         # (name, offset_in_data, size, signed, conversion_func)
         ("voltage", 4, 2, False, lambda x: x * 0.01),
-        ("current", 8, 2, False, lambda x: x / 1000.0),  # Unsigned magnitude
+        ("current", 8, 4, False, lambda x: ((x & 0xFFFF) / 1000.0) * (-1 if (x >> 24) & 0x80 else 1)),
         ("battery_level", 20, 1, False, lambda x: x),
         ("temperature", 12, 1, False, lambda x: x / 10.0),
         ("runtime", 24, 2, False, lambda x: x * 60),  # minutes to seconds
@@ -114,7 +114,7 @@ class BMS(BaseBMS):
     @staticmethod
     def _calc_values() -> frozenset[BMSvalue]:
         """Return values that the BMS cannot provide and need to be calculated."""
-        return frozenset({"cycle_capacity"})
+        return frozenset({"power", "battery_charging", "cycle_capacity"})
 
     async def _wait_for_data(self, timeout: float, wait_for_any_packet: bool = False) -> bool:
         """Wait for data packets with timeout.
@@ -264,17 +264,6 @@ class BMS(BaseBMS):
             self._data_received = True
 
 
-    def _parse_current_sign(self, current_bytes: bytearray) -> float:
-        """Parse current value with sign bit handling."""
-        # Extract the raw value (lower 15 bits)
-        raw_value = int.from_bytes(current_bytes, byteorder="little") & 0x7FFF
-
-        # Check sign bit (bit 15)
-        if current_bytes[1] & 0x80:
-            # Negative current (discharging)
-            return -raw_value / 100.0
-        # Positive current (charging)
-        return raw_value / 100.0
 
     def _validate_packet_length(self, packet_len: int) -> bool:
         """Validate packet length."""
@@ -301,26 +290,6 @@ class BMS(BaseBMS):
 
         return result
 
-    def _handle_current_and_charging(self, result: BMSsample, data_section: bytes) -> None:
-        """Handle battery charging status and protection status."""
-        if "current" not in result:
-            return
-
-        # Check discharge flag in byte 15 (bit 7)
-        byte15 = data_section[11]  # Byte 15 in full packet = offset 11 in data section
-        discharge_flag = (byte15 & 0x80) != 0
-
-        # Apply sign based on discharge flag
-        # Discharge flag set = discharging (negative current)
-        # Discharge flag clear = charging (positive current)
-        if discharge_flag:
-            result["current"] = -result["current"]
-
-        result["battery_charging"] = not discharge_flag
-
-        # Handle protection status from lower bits of byte 15
-        self._handle_protection_status(result, byte15 & 0x7F)
-
     def _handle_protection_status(self, result: BMSsample, protection_byte: int) -> None:
         """Check for protection/error status."""
         if protection_byte:
@@ -339,45 +308,7 @@ class BMS(BaseBMS):
         else:
             result["problem"] = False
 
-    def _handle_design_capacity(self, result: BMSsample) -> None:
-        """Handle design capacity - use existing value if available, otherwise calculate."""
-        # If SOC is 0, we can't reliably use or calculate design capacity
-        if "battery_level" in result and result["battery_level"] == 0:
-            if "design_capacity" in result:
-                del result["design_capacity"]
-            self._log.debug("Cannot calculate design capacity with SOC=0")
-        elif "design_capacity" not in result and "cycle_charge" in result and "battery_level" in result:
-            # We already know SOC != 0 from the elif condition
-            soc = result["battery_level"]
-            total_capacity_ah = (result["cycle_charge"] / soc) * 100
-            result["design_capacity"] = int(total_capacity_ah)
-            self._log.debug(
-                "Calculated total capacity: (%.2f / %d) * 100 = %d Ah",
-                result["cycle_charge"],
-                soc,
-                int(total_capacity_ah)
-            )
 
-    def _calculate_derived_values(self, result: BMSsample) -> None:
-        """Calculate derived values like power, cycle charge, and validate temperature."""
-        # cycle_charge is already set from remaining_capacity field
-
-        # Calculate power (always positive)
-        if "voltage" in result and "current" in result:
-            result["power"] = round(result["voltage"] * abs(result["current"]), 2)
-
-        # Calculate temperature values array
-        if "temperature" in result:
-            result["temp_values"] = [result["temperature"]]
-            # Validate temperature range (0-25.5°C due to unsigned byte limitation)
-            if result["temperature"] > 25.5:
-                self._log.warning("Temperature out of range: %.1f°C", result["temperature"])
-                result["temperature"] = 20.0
-                result["temp_values"] = [20.0]
-
-        # Only include runtime when discharging
-        if "runtime" in result and result.get("current", 0) >= 0:
-            del result["runtime"]  # Remove runtime when charging
 
     def _parse_realtime_packet(self, packet: bytes) -> bool:
         """Parse real-time data packet and store the result."""
@@ -391,26 +322,24 @@ class BMS(BaseBMS):
         # Parse fields from data
         result = self._parse_fields_from_data(data_section)
 
-        # Handle current sign and charging status
-        self._handle_current_and_charging(result, data_section)
+        # Handle protection status from byte 15
+        byte15 = data_section[11]  # Byte 15 in full packet = offset 11 in data section
+        self._handle_protection_status(result, byte15 & 0x7F)
 
-        # Handle design capacity
-        self._handle_design_capacity(result)
-
-        # Calculate derived values
-        self._calculate_derived_values(result)
+        # Calculate temperature values array
+        if "temperature" in result:
+            result["temp_values"] = [result["temperature"]]
 
         # Log parsed values for debugging
         self._log.debug(
             "Parsed data - Voltage: %.2fV, Current: %.3fA, "
             "SOC: %d%%, Temp: %.1f°C, "
-            "Remaining: %.2fAh, Power: %.2fW",
+            "Remaining: %.2fAh",
             result.get("voltage", 0),
             result.get("current", 0),
             result.get("battery_level", 0),
             result.get("temperature", 0),
-            result.get("cycle_charge", 0),
-            result.get("power", 0)
+            result.get("cycle_charge", 0)
         )
 
         # Store the result
@@ -468,11 +397,8 @@ class BMS(BaseBMS):
 
         if await self._wait_for_data(extended_timeout):
             self._log.debug("Received data after init command. Stats: %s", self._packet_stats)
-            result = self._process_data()
-            if result is None:
-                self._log.warning("Failed to process data from Pro BMS")
-                return {}
-            return result
+            # Return the result directly (cast to BMSsample for type checking)
+            return cast("BMSsample", self._result)
 
         # Log appropriate warning based on what we received
         warning_msg = (
@@ -483,45 +409,7 @@ class BMS(BaseBMS):
         self._log.warning(warning_msg)
         raise TimeoutError("No valid data received from Pro BMS")
 
-    def _process_data(self) -> BMSsample | None:
-        """Process collected data and return BMSsample."""
-        if not self._result:
-            self._log.warning("No data to process")
-            return None
 
-        # Create BMSsample from result
-        sample: BMSsample = {}
-
-        # Add values that are always present
-        sample["voltage"] = round(self._result.get("voltage", 0), 2)
-        sample["current"] = round(self._result.get("current", 0), 2)
-        sample["battery_level"] = self._result.get("battery_level", 0)
-        sample["power"] = round(self._result.get("power", 0), 2)
-        sample["battery_charging"] = self._result.get("battery_charging", False)
-
-        # Add optional values if present
-        if "cycles" in self._result and self._result["cycles"] is not None:
-            sample["cycles"] = self._result["cycles"]
-        if "temperature" in self._result and self._result["temperature"] is not None:
-            sample["temperature"] = self._result["temperature"]
-        if "temp_values" in self._result:
-            sample["temp_values"] = self._result["temp_values"]
-        if "cycle_charge" in self._result and self._result["cycle_charge"] is not None:
-            sample["cycle_charge"] = self._result["cycle_charge"]
-        # Note: remaining_capacity is stored as cycle_charge (parsed in _parse_fields_from_data)
-        if "design_capacity" in self._result and self._result["design_capacity"] is not None:
-            sample["design_capacity"] = self._result["design_capacity"]
-
-        # Runtime is already handled in _process_data - it's deleted when charging
-        # so we can simply include it if present
-        if "runtime" in self._result and self._result["runtime"] is not None:
-            sample["runtime"] = self._result["runtime"]
-
-        # Get calculated values from base class
-        self._add_missing_values(sample, self._calc_values())
-
-        self._log.debug("Returning sample: %s", sample)
-        return sample
 
     async def disconnect(self, reset: bool = False) -> None:
         """Disconnect from the BMS."""
