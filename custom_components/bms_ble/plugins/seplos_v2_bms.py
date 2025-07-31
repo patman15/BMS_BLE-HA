@@ -45,10 +45,11 @@ class BMS(BaseBMS):
         """Provide BluetoothMatcher definition."""
         return [
             {
-                "local_name": "BP0?",
+                "local_name": pattern,
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             }
+            for pattern in ("BP0?", "BP1?", "BP2?")
         ]
 
     @staticmethod

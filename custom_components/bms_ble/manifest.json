@@ -219,6 +219,14 @@
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
+      "local_name": "BP1?",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "BP2?",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },        
+    {
       "local_name": "F10*"
     },
     {
