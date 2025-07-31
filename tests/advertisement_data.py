@@ -263,9 +263,18 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "ogt_bms",
     ),
-    (  # Pro BMS test advertisement
+    (  # Pro BMS test: name and service UUID matching
         generate_advertisement_data(
             local_name="Pro BMS",
+            service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
+            rssi=-60,
+        ),
+        "pro_bms",
+    ),
+    (  # Pro BMS test: name, service UUID, and manufacturer ID matching
+        generate_advertisement_data(
+            local_name="Pro BMS",
+            manufacturer_data={0x3DB3: bytes.fromhex("358683777d7d6998c3cb56151fc3")},  # Pro BMS specific manufacturer ID (15795)
             service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
             rssi=-60,
         ),
@@ -879,15 +888,6 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             rssi=-87,
         ),
         "redodo_bms",
-    ),
-    (  # Pro BMS test advertisement
-        generate_advertisement_data(
-            local_name="Pro BMS",
-            manufacturer_data={0x3DB3: bytes.fromhex("358683777d7d6998c3cb56151fc3")},  # Pro BMS specific manufacturer ID (15795)
-            service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
-            rssi=-60,
-        ),
-        "pro_bms",
     ),
     (  # source PCAP (https://github.com/patman15/BMS_BLE-HA/issues/412)
         generate_advertisement_data(  # OUI: 90:a6:bf

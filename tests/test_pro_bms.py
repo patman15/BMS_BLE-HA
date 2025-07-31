@@ -324,7 +324,7 @@ def test_matcher_dict_list() -> None:
 
     # Second pattern - manufacturer ID for nameless devices
     assert "local_name" not in matchers[1]
-    assert matchers[1]["manufacturer_id"] == 42711  # 0xA6D7
+    assert matchers[1]["manufacturer_id"] == 15795  # 0x3DB3
     assert matchers[1]["service_uuid"] == "0000fff0-0000-1000-8000-00805f9b34fb"
     assert matchers[1]["connectable"] is True
 
