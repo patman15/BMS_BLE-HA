@@ -326,10 +326,6 @@ class BMS(BaseBMS):
         byte15 = data_section[11]  # Byte 15 in full packet = offset 11 in data section
         self._handle_protection_status(result, byte15 & 0x7F)
 
-        # Calculate temperature values array
-        if "temperature" in result:
-            result["temp_values"] = [result["temperature"]]
-
         # Log parsed values for debugging
         self._log.debug(
             "Parsed data - Voltage: %.2fV, Current: %.3fA, "
