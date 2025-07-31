@@ -88,9 +88,9 @@ class BMS(BaseBMS):
                 connectable=True,
             ),
             # Secondary pattern: match by unique manufacturer ID for nameless devices
-            # 42711 (0xA6D7) appears to be unique to Pro BMS devices
+            # 15795 (0x3DB3) appears to be unique to Pro BMS devices
             AdvertisementPattern(
-                manufacturer_id=42711,
+                manufacturer_id=15795,
                 service_uuid=BMS.uuid_services()[0],
                 connectable=True,
             ),
