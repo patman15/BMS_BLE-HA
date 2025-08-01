@@ -879,4 +879,13 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "tianpwr_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/423)
+        generate_advertisement_data(
+            local_name="DXDB00213J-020",
+            manufacturer_data={58324: b"\x32\x38\xc1\xa4"},
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            rssi=-94,
+        ),
+        "jbd_bms",
+    )
 ]

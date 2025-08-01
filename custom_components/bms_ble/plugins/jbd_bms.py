@@ -61,6 +61,7 @@ class BMS(BaseBMS):
                 "gokwh*",
                 "OGR-*",  # OGRPHY
                 "DWC*",  # Vatrer
+                "DXD*",  # Vatrer
                 "xiaoxiang*",  # xiaoxiang BMS
                 "AL12-*",  # Aolithium
             )
