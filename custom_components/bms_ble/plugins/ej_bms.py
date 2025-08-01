@@ -180,10 +180,9 @@ class BMS(BaseBMS):
         *,
         cells: int,
         start: int,
-        byteorder: Literal["little", "big"] = "big",
         size: int = 2,
-        step: int | None = None,
-        divider: float = 1000,
+        byteorder: Literal["little", "big"] = "big",
+        divider: int = 1000,
     ) -> list[float]:
         """Return cell voltages from status message."""
         return [
@@ -220,7 +219,7 @@ class BMS(BaseBMS):
             return {}
 
         return self._decode_data(raw_data) | {
-            "cell_voltages": self._cell_voltages(
+            "cell_voltages": BMS._cell_voltages(
                 raw_data[Cmd.RT], cells=BMS._MAX_CELLS, start=25, size=4
             )
         }

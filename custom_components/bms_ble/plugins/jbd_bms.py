@@ -62,6 +62,7 @@ class BMS(BaseBMS):
                 "gokwh*",
                 "OGR-*",  # OGRPHY
                 "DWC*",  # Vatrer
+                "DXD*",  # Vatrer
                 "xiaoxiang*",  # xiaoxiang BMS
                 "AL12-*",  # Aolithium
             )
@@ -181,13 +182,6 @@ class BMS(BaseBMS):
             )
         return result
 
-    @staticmethod
-    def _temp_sensors(data: bytearray, sensors: int) -> list[float]:
-        return [
-            (int.from_bytes(data[idx : idx + 2], byteorder="big") - 2731) / 10
-            for idx in range(27, 27 + sensors * 2, 2)
-        ]
-
     async def _await_cmd_resp(self, cmd: int) -> None:
         msg: Final[bytes] = BMS._cmd(bytes([cmd]))
         self._valid_reply = msg[2]
@@ -199,8 +193,13 @@ class BMS(BaseBMS):
         data: BMSsample = {}
         await self._await_cmd_resp(0x03)
         data = BMS._decode_data(self._data_final)
-        data["temp_values"] = BMS._temp_sensors(
-            self._data_final, int(data.get("temp_sensors", 0))
+        data["temp_values"] = BMS._temp_values(
+            self._data_final,
+            values=data.get("temp_sensors", 0),
+            start=27,
+            signed=False,
+            offset=2731,
+            divider=10,
         )
 
         await self._await_cmd_resp(0x04)

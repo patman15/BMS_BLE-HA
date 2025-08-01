@@ -45,10 +45,11 @@ class BMS(BaseBMS):
         """Provide BluetoothMatcher definition."""
         return [
             {
-                "local_name": "BP0?",
+                "local_name": pattern,
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             }
+            for pattern in ("BP0?", "BP1?", "BP2?")
         ]
 
     @staticmethod
@@ -169,20 +170,6 @@ class BMS(BaseBMS):
                 )
         return result
 
-    @staticmethod
-    def _temp_sensors(data: bytearray, sensors: int, offs: int) -> list[int | float]:
-        return [
-            (value - 2731.5) / 10
-            for idx in range(sensors)
-            if (
-                value := int.from_bytes(
-                    data[offs + idx * 2 : offs + (idx + 1) * 2],
-                    byteorder="big",
-                    signed=False,
-                )
-            )
-        ]
-
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
@@ -223,10 +210,13 @@ class BMS(BaseBMS):
             cells=self._data_final[0x61][BMS._CELL_POS],
             start=10,
         )
-        result["temp_values"] = BMS._temp_sensors(
+        result["temp_values"] = BMS._temp_values(
             self._data_final[0x61],
-            result["temp_sensors"],
-            BMS._CELL_POS + result.get("cell_count", 0) * 2 + 2,
+            values=result["temp_sensors"],
+            start=BMS._CELL_POS + result.get("cell_count", 0) * 2 + 2,
+            signed=False,
+            offset=2731,
+            divider=10,
         )
 
         self._data_final.clear()

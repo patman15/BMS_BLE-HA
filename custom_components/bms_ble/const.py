@@ -30,8 +30,9 @@ BMS_TYPES: Final[list[str]] = [
     "seplos_v2_bms",
     "roypow_bms",
     "tdt_bms",
-    "dpwrcore_bms",  # only name filter
+    "dpwrcore_bms",  # **vvv** only name filter **vvv**
     "felicity_bms",
+    "tianpwr_bms",
 ]  # available BMS types
 DOMAIN: Final[str] = "bms_ble"
 LOGGER: Final[logging.Logger] = logging.getLogger(__package__)

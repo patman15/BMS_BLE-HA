@@ -123,15 +123,23 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "seplos_v2_bms",
     ),
-    (  # source LOG
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/418)
         generate_advertisement_data(
-            local_name="BP02",
+            local_name="BP21",
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            rssi=-62,
+        ),
+        "seplos_v2_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/418)
+        generate_advertisement_data(
+            local_name="BP00",
             service_uuids=[
                 "00001800-0000-1000-8000-00805f9b34fb",
                 "00001801-0000-1000-8000-00805f9b34fb",
                 "0000ff00-0000-1000-8000-00805f9b34fb",
             ],
-            rssi=-90,
+            rssi=-62,
         ),
         "seplos_v2_bms",
     ),
@@ -873,4 +881,20 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "redodo_bms",
     ),
+    (  # source PCAP (https://github.com/patman15/BMS_BLE-HA/issues/412)
+        generate_advertisement_data(  # OUI: 90:a6:bf
+            local_name="TP_123456",
+            rssi=-87,
+        ),
+        "tianpwr_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/423)
+        generate_advertisement_data(
+            local_name="DXDB00213J-020",
+            manufacturer_data={58324: b"\x32\x38\xc1\xa4"},
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            rssi=-94,
+        ),
+        "jbd_bms",
+    )
 ]

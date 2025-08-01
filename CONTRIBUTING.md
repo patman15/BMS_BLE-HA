@@ -7,7 +7,8 @@ In case you have troubles, please enable the debug protocol for the integration 
 - The integration shall not use persistent information. That means all necessary info shall be determined on connecting the device.
 - The BT pattern matcher shall be unique to allow auto-detecting devices.
 - Frame parsing shall check the validity of a frame according to the protocol type, e.g. CRC, length, allowed type
-- If available the data shall be read from the device, the `basebms` functionality is only to have consistent data over all BMS types.
+- All plugin classes shall inherit from `BaseBMS` and use the functions from there before overriding or replacing.
+- If available the data shall be read from the device, the `BaseBMS._add_missing_values()` functionality is only to have consistent data over all BMS types.
 
 to be extended ...
 
@@ -15,7 +16,7 @@ to be extended ...
 
 In general I use guidelines very close to the ones that Home Assistant uses for core integrations. Thus, the code shall pass
 - `ruff check .`
-- `pyright`
+- `mypy .`
 
 ## Adding a new battery management system
 
@@ -30,9 +31,9 @@ In general I use guidelines very close to the ones that Home Assistant uses for 
 > [!NOTE]
 > In order to keep maintainability of this integration, pull requests are required to pass standard Home Assistant checks for integrations, [coding style guidelines](#coding-style-guidelines), Python linting, and 100% [branch test coverage](https://coverage.readthedocs.io/en/latest/branch.html#branch).
 
-### Any contributions you make will be under the LGPL-2.1 License
+### Any contributions you make will be under the Apache-2.0 License
 
-In short, when you submit code changes, your submissions are understood to be under the same [LGPL-2.1 license](LICENSE) that covers the project. Feel free to contact the maintainers if that's a concern.
+In short, when you submit code changes, your submissions are understood to be under the same [Apache-2.0](LICENSE) that covers the project. Feel free to contact the maintainers if that's a concern.
 
 ### Dummy BMS Example
 Note: In order for the [example](custom_components/bms_ble/plugins/dummy_bms.py) to work, you need to set the UUIDs of the service, the characteristic providing notifications, and the characteristic for sending commands to. While the device must be in Bluetooth range, the actual communication does not matter. Always the fixed values in the code will be shown.
@@ -40,43 +41,26 @@ Note: In order for the [example](custom_components/bms_ble/plugins/dummy_bms.py)
 ```python
 """Module to support Dummy BMS."""
 
-# import asyncio
-import logging
-from typing import Any
-
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from custom_components.bms_ble.const import (
-    ATTR_BATTERY_CHARGING,
-    # ATTR_BATTERY_LEVEL,
-    ATTR_CURRENT,
-    # ATTR_CYCLE_CAP,
-    # ATTR_CYCLE_CHRG,
-    # ATTR_CYCLES,
-    # ATTR_DELTA_VOLTAGE,
-    ATTR_POWER,
-    # ATTR_RUNTIME,
-    # ATTR_TEMPERATURE,
-    ATTR_VOLTAGE,
-)
-
-from .basebms import BaseBMS, BMSsample
-
-LOGGER = logging.getLogger(__name__)
-BAT_TIMEOUT = 10
+from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue
 
 
 class BMS(BaseBMS):
-    """Dummy battery class implementation."""
+    """Dummy BMS implementation."""
+
+    # _HEAD: Final[bytes] = b"\x55"  # beginning of frame
+    # _TAIL: Final[bytes] = b"\xAA"  # end of frame
+    # _FRAME_LEN: Final[int] = 10  # length of frame, including SOF and checksum
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        LOGGER.debug("%s init(), BT address: %s", self.device_id(), ble_device.address)
-        super().__init__(LOGGER, self._notification_handler, ble_device, reconnect)
+        super().__init__(__name__, ble_device, reconnect)
 
     @staticmethod
-    def matcher_dict_list() -> list[dict[str, Any]]:
+    def matcher_dict_list() -> list[AdvertisementPattern]:
         """Provide BluetoothMatcher definition."""
         return [{"local_name": "dummy", "connectable": True}]
 
@@ -101,31 +85,46 @@ class BMS(BaseBMS):
         return "#changeme"
 
     @staticmethod
-    def _calc_values() -> set[str]:
-        return {
-            ATTR_POWER,
-            ATTR_BATTERY_CHARGING,
-        }  # calculate further values from BMS provided set ones
+    def _calc_values() -> frozenset[BMSvalue]:
+        return frozenset(
+            {"power", "battery_charging"}
+        )  # calculate further values from BMS provided set ones
 
-    def _notification_handler(self, _sender, data: bytearray) -> None:
+    def _notification_handler(
+        self, _sender: BleakGATTCharacteristic, data: bytearray
+    ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
-        # LOGGER.debug("%s: Received BLE data: %s", self.name, data.hex(' '))
-        # 
-        # # do things like checking correctness of frame here and
+        self._log.debug("RX BLE data: %s", data)
+
+        # *******************************************************
+        # # Do things like checking correctness of frame here and
         # # store it into a instance variable, e.g. self._data
-        #
-        # self._data_event.set()
+        # # Below are some examples of how to do it
+        # # Have a look at the BMS base class for function to use,
+        # # take a look at other implementations for more  details
+        # *******************************************************
+
+        # if not data.startswith(BMS._HEAD):
+        #     self._log.debug("incorrect SOF")
+        #     return
+
+        # if (crc := crc_sum(self._data[:-1])) != self._data[-1]:
+        #     self._log.debug("invalid checksum 0x%X != 0x%X", self._data[-1], crc)
+        #     return
+
+        self._data = data.copy()
+        self._data_event.set()
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        LOGGER.debug("(%s) replace with command to UUID %s", self.name, BMS.uuid_tx())
-        # await self._client.write_gatt_char(BMS.uuid_tx(), data=b"<some_command>")
-        # await asyncio.wait_for(self._wait_event(), timeout=BAT_TIMEOUT) # wait for data update
+        self._log.debug("replace with command to UUID %s", BMS.uuid_tx())
+        # await self._await_reply(b"<some_command>")
         # #
         # # parse data from self._data here
 
         return {
-            ATTR_VOLTAGE: 12,
-            ATTR_CURRENT: 1.5,
+            "voltage": 12,
+            "current": 1.5,
+            "temperature": 27.182,
         }  # fixed values, replace parsed data
 ```
