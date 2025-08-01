@@ -114,7 +114,7 @@ class BMS(BaseBMS):
         return [(value / 1000) for value in data.get("BatcelList", [])[0]]
 
     @staticmethod
-    def _temp_sensors(data: dict) -> list[float]:
+    def _conv_temp(data: dict) -> list[float]:
         return [
             (value / 10) for value in data.get("BtemList", [])[0] if value != 0x7FFF
         ]
@@ -126,7 +126,7 @@ class BMS(BaseBMS):
 
         return (
             BMS._decode_data(self._data_final)
-            | {"temp_values": BMS._temp_sensors(self._data_final)}
+            | {"temp_values": BMS._conv_temp(self._data_final)}
             | {"cell_voltages": BMS._conv_cells(self._data_final)}
             | {
                 "problem_code": int(
