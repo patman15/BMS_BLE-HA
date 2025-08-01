@@ -166,32 +166,6 @@ class BMS(BaseBMS):
             )
         return result
 
-    @staticmethod
-    def _conv_cells(data: bytearray) -> list[float]:
-        return [
-            int.from_bytes(
-                data[BMS._CELL_POS + 1 + idx * 2 : BMS._CELL_POS + 1 + idx * 2 + 2],
-                byteorder="big",
-                signed=False,
-            )
-            / 1000
-            for idx in range(data[BMS._CELL_POS])
-        ]
-
-    @staticmethod
-    def _temp_sensors(data: bytearray, sensors: int, offs: int) -> list[int | float]:
-        return [
-            (value - 2731.5) / 10
-            for idx in range(sensors)
-            if (
-                value := int.from_bytes(
-                    data[offs + idx * 2 : offs + (idx + 1) * 2],
-                    byteorder="big",
-                    signed=False,
-                )
-            )
-        ]
-
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
@@ -211,11 +185,18 @@ class BMS(BaseBMS):
             self._data_final[0x8C][BMS._CELL_POS + int(result["cell_count"]) * 2 + 1]
         )
 
-        result["cell_voltages"] = BMS._conv_cells(self._data_final[0x8C])
-        result["temp_values"] = BMS._temp_sensors(
+        result["cell_voltages"] = BMS._cell_voltages(
             self._data_final[0x8C],
-            result["temp_sensors"],
-            BMS._CELL_POS + result.get("cell_count", 0) * 2 + 2,
+            cells=result.get("cell_count", 0),
+            start=BMS._CELL_POS + 1,
+        )
+        result["temp_values"] = BMS._temp_values(
+            self._data_final[0x8C],
+            values=result["temp_sensors"],
+            start=BMS._CELL_POS + result.get("cell_count", 0) * 2 + 2,
+            signed=False,
+            offset=2731,
+            divider=10,
         )
         idx: Final[int] = int(
             result.get("cell_count", 0) + result.get("temp_sensors", 0)

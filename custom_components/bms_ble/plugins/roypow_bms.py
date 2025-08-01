@@ -154,10 +154,6 @@ class BMS(BaseBMS):
         return result
 
     @staticmethod
-    def _temp_sensors(data: bytearray, sensors: int) -> list[int | float]:
-        return [data[14 + idx] - 40 for idx in range(sensors)]
-
-    @staticmethod
     def _crc(frame: bytearray) -> int:
         """Calculate XOR of all frame bytes."""
         crc: int = 0
@@ -190,9 +186,13 @@ class BMS(BaseBMS):
             cells=max(0, (len(self._data_final.get(0x2, bytearray())) - 11) // 2),
             start=9,
         )
-        result["temp_values"] = BMS._temp_sensors(
+        result["temp_values"] = BMS._temp_values(
             self._data_final.get(0x3, bytearray()),
-            int(result.get("temp_sensors", 0)),
+            values=result.get("temp_sensors", 0),
+            start=14,
+            size=1,
+            signed=False,
+            offset=40,
         )
 
         return result

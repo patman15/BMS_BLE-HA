@@ -131,13 +131,6 @@ class BMS(BaseBMS):
         return bytes(frame)
 
     @staticmethod
-    def _temp_sensors(data: bytearray, sensors: int) -> list[int | float]:
-        return [
-            int.from_bytes(data[5 + idx : 6 + idx], byteorder="little", signed=True)
-            for idx in range(sensors)
-        ]
-
-    @staticmethod
     def _decode_data(data: dict[int, bytearray]) -> BMSsample:
         result: BMSsample = {}
         for key, cmd, idx, size, sign, func in BMS._FIELDS:
@@ -171,7 +164,10 @@ class BMS(BaseBMS):
                 byteorder="little",
                 size=2,
             )[::2],
-            "temp_values": BMS._temp_sensors(
-                self._data_final[0xF2], int(result.get("temp_sensors", 0))
+            "temp_values": BMS._temp_values(
+                self._data_final[0xF2],
+                start=5,
+                values=result.get("temp_sensors", 0),
+                byteorder="little",
             ),
         }

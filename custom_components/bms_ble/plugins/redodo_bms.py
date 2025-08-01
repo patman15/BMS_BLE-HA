@@ -13,10 +13,9 @@ from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue, crc_sum
 class BMS(BaseBMS):
     """Redodo BMS implementation."""
 
-    CRC_POS: Final[int] = -1  # last byte
-    HEAD_LEN: Final[int] = 3
-    MAX_CELLS: Final[int] = 16
-    MAX_TEMP: Final[int] = 5
+    _HEAD_LEN: Final[int] = 3
+    _MAX_CELLS: Final[int] = 16
+    _MAX_TEMP: Final[int] = 3
     _FIELDS: Final[list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]]] = [
         ("voltage", 12, 2, False, lambda x: x / 1000),
         ("current", 48, 4, True, lambda x: x / 1000),
@@ -99,14 +98,12 @@ class BMS(BaseBMS):
             self._log.debug("incorrect SOF.")
             return
 
-        if len(data) != data[2] + BMS.HEAD_LEN + 1:  # add header length and CRC
+        if len(data) != data[2] + BMS._HEAD_LEN + 1:  # add header length and CRC
             self._log.debug("incorrect frame length (%i)", len(data))
             return
 
-        if (crc := crc_sum(data[: BMS.CRC_POS])) != data[BMS.CRC_POS]:
-            self._log.debug(
-                "invalid checksum 0x%X != 0x%X", data[len(data) + BMS.CRC_POS], crc
-            )
+        if (crc := crc_sum(data[:-1])) != data[-1]:
+            self._log.debug("invalid checksum 0x%X != 0x%X", data[len(data) - 1], crc)
             return
 
         self._data = data
@@ -121,27 +118,16 @@ class BMS(BaseBMS):
             )
         return result
 
-    @staticmethod
-    def _temp_sensors(data: bytearray, sensors: int) -> list[int | float]:
-        return [
-            value
-            for idx in range(sensors)
-            if (
-                value := int.from_bytes(
-                    data[52 + idx * 2 : 54 + idx * 2], byteorder="little", signed=True
-                )
-            )
-        ]
-
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         await self._await_reply(b"\x00\x00\x04\x01\x13\x55\xaa\x17")
 
-        return BMS._decode_data(self._data) | BMSsample(
-            {
-                "cell_voltages": BMS._cell_voltages(
-                    self._data, cells=BMS.MAX_CELLS, start=16, byteorder="little"
-                ),
-                "temp_values": BMS._temp_sensors(self._data, BMS.MAX_TEMP),
-            }
+        result: BMSsample = BMS._decode_data(self._data)
+        result["cell_voltages"] = BMS._cell_voltages(
+            self._data, cells=BMS._MAX_CELLS, start=16, byteorder="little"
         )
+        result["temp_values"] = BMS._temp_values(
+            self._data, values=BMS._MAX_TEMP, start=52, byteorder="little"
+        )
+
+        return result

@@ -115,13 +115,6 @@ class BMS(BaseBMS):
         self._data = data
         self._data_event.set()
 
-    @staticmethod
-    def _temp_sensors(data: bytearray, sensors: int, offs: int) -> list[int | float]:
-        return [
-            int.from_bytes(data[idx : idx + 2], byteorder="big", signed=True) - 40
-            for idx in range(offs, offs + sensors * 2, 2)
-        ]
-
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         data: BMSsample = {}
@@ -160,8 +153,11 @@ class BMS(BaseBMS):
 
         # add temperature sensors
         data.setdefault("temp_values", []).extend(
-            self._temp_sensors(
-                self._data, data.get("temp_sensors", 0), 64 + BMS.HEAD_LEN
+            BMS._temp_values(
+                self._data,
+                values=data.get("temp_sensors", 0),
+                start=64 + BMS.HEAD_LEN,
+                offset=40,
             )
         )
 
