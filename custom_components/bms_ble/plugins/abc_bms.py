@@ -164,14 +164,13 @@ class BMS(BaseBMS):
 
         result: BMSsample = BMS._decode_data(self._data_final)
         return result | {
-            "cell_voltages": BMS._cell_voltages(
+            "cell_voltages": BMS._cell_voltages(  # every second value is the cell idx
                 self._data_final[0xF4],
-                cells=(len(self._data_final[0xF4]) - 4) // 4,
+                cells=(len(self._data_final[0xF4]) - 4) // 2,
                 start=3,
                 byteorder="little",
-                size=3,
-                step=4,
-            ),
+                size=2,
+            )[::2],
             "temp_values": BMS._temp_sensors(
                 self._data_final[0xF2], int(result.get("temp_sensors", 0))
             ),

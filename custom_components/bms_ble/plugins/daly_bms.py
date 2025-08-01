@@ -116,11 +116,9 @@ class BMS(BaseBMS):
         self._data_event.set()
 
     @staticmethod
-    def _temp_sensors(data: bytearray, sensors: int, offs: int) -> list[float]:
+    def _temp_sensors(data: bytearray, sensors: int, offs: int) -> list[int | float]:
         return [
-            float(
-                int.from_bytes(data[idx : idx + 2], byteorder="big", signed=True) - 40
-            )
+            int.from_bytes(data[idx : idx + 2], byteorder="big", signed=True) - 40
             for idx in range(offs, offs + sensors * 2, 2)
         ]
 
@@ -160,7 +158,7 @@ class BMS(BaseBMS):
                 )
             )
 
-        # get temperatures
+        # add temperature sensors
         data.setdefault("temp_values", []).extend(
             self._temp_sensors(
                 self._data, data.get("temp_sensors", 0), 64 + BMS.HEAD_LEN
@@ -168,7 +166,7 @@ class BMS(BaseBMS):
         )
 
         # get cell voltages
-        data["cell_voltages"] = self._cell_voltages(
+        data["cell_voltages"] = BMS._cell_voltages(
             self._data, cells=data.get("cell_count", 0), start=BMS.HEAD_LEN
         )
 
