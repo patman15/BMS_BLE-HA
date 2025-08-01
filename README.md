@@ -58,7 +58,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
 - Renogy BMS, Renogy Pro BMS
 - RoyPow batteries
-- Seplos v2 (show up as `BP0?`)
+- Seplos v2 (show up as `BP[0-2]?`)
 - Seplos v3 (show up as `SP[0,1,4-6]`&#x2026;)
 - TDT BMS
     - Wattcycle batteries
