@@ -148,6 +148,7 @@ async def test_update(patch_bleak_client, reconnect_fixture) -> None:
             b"\x7e\xa1\x12\x00\x00\x01" + MockANTBleakClient.RESP[0x2][6:],
             "wrong_length",
         ),
+        (b"\x7e\xa1\x11", "too_short"),
         (MockANTBleakClient.RESP[0x2][:-4] + b"\xff\xff\xaa\x55", "wrong_CRC"),
         (bytearray(b""), "empty_response"),
     ],
