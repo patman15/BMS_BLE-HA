@@ -168,9 +168,9 @@ class BMS(BaseBMS):
         """Update battery status information."""
 
         await self._await_reply(BMS._cmd(0x42))
-        result: BMSsample = {"cell_count": int(self._data[BMS._CELL_POS])}
-        temp_pos: Final[int] = BMS._CELL_POS + int(result.get("cell_count", 0)) * 2 + 1
-        result["temp_sensors"] = int(self._data[temp_pos])
+        result: BMSsample = {"cell_count": self._data[BMS._CELL_POS]}
+        temp_pos: Final[int] = BMS._CELL_POS + result.get("cell_count", 0) * 2 + 1
+        result["temp_sensors"] = self._data[temp_pos]
         result["cell_voltages"] = BMS._cell_voltages(
             self._data, cells=result.get("cell_count", 0), start=BMS._CELL_POS + 1
         )
@@ -182,7 +182,7 @@ class BMS(BaseBMS):
         )
 
         result |= BMS._decode_data(
-            self._data, temp_pos + 2 * int(result.get("temp_sensors", 0)) + 1
+            self._data, temp_pos + 2 * result.get("temp_sensors", 0) + 1
         )
 
         await self._await_reply(BMS._cmd(0x81, 1, b"\x01\x00"), max_size=20)

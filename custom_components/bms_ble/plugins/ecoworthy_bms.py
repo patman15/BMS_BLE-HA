@@ -146,7 +146,7 @@ class BMS(BaseBMS):
 
         result["cell_voltages"] = BMS._cell_voltages(
             self._data_final[0xA2],
-            cells=int(result.get("cell_count", 0)),
+            cells=result.get("cell_count", 0),
             start=BMS._CELL_POS + 2,
         )
         result["temp_values"] = BMS._temp_values(

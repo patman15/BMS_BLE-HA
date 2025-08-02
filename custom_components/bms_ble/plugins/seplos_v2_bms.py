@@ -178,10 +178,10 @@ class BMS(BaseBMS):
             await self._await_reply(BMS._cmd(cmd, data=bytearray(data)))
 
         result: BMSsample = {}
-        result["cell_count"] = int(self._data_final[0x61][BMS._CELL_POS])
-        result["temp_sensors"] = int(
-            self._data_final[0x61][BMS._CELL_POS + int(result["cell_count"]) * 2 + 1]
-        )
+        result["cell_count"] = self._data_final[0x61][BMS._CELL_POS]
+        result["temp_sensors"] = self._data_final[0x61][
+            BMS._CELL_POS + result["cell_count"] * 2 + 1
+        ]
         result |= BMS._decode_data(
             self._data_final,
             BMS._CELL_POS

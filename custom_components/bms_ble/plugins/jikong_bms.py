@@ -298,7 +298,7 @@ class BMS(BaseBMS):
             int(self._bms_info.get("sw_version", "")[:2]),
         )
         data["temp_values"] = BMS._temp_sensors(
-            self._data_final, self._temp_pos(), int(data.get("temp_sensors", 0))
+            self._data_final, self._temp_pos(), data.get("temp_sensors", 0)
         )
 
         data["problem_code"] = (

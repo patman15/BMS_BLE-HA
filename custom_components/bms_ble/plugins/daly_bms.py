@@ -96,7 +96,7 @@ class BMS(BaseBMS):
         if (
             len(data) < BMS.HEAD_LEN
             or data[0:2] != BMS.HEAD_READ
-            or int(data[2]) + 1 != len(data) - len(BMS.HEAD_READ) - BMS.CRC_LEN
+            or data[2] + 1 != len(data) - len(BMS.HEAD_READ) - BMS.CRC_LEN
         ):
             self._log.debug("response data is invalid")
             return

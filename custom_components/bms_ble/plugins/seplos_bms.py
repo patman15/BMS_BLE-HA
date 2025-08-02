@@ -124,7 +124,7 @@ class BMS(BaseBMS):
             and data[0] <= self._pack_count
             and data[1] & 0x80
         ):
-            self._log.debug("RX error: %X", int(data[2]))
+            self._log.debug("RX error: %X", data[2])
             self._data = bytearray()
             self._pkglen = BMS.HEAD_LEN + BMS.CRC_LEN
 
@@ -145,7 +145,6 @@ class BMS(BaseBMS):
                 int.from_bytes(self._data[self._pkglen - 2 : self._pkglen], "little"),
                 crc,
             )
-            # self._data_final[int(self._data[0])] = bytearray()  # reset invalid data
             self._data = bytearray()
             return
 
@@ -164,7 +163,7 @@ class BMS(BaseBMS):
                 self._data,
             )
 
-        self._data_final[int(self._data[0]) << 8 | int(self._data[2])] = self._data
+        self._data_final[self._data[0] << 8 | self._data[2]] = self._data
         self._data = bytearray()
         self._data_event.set()
 
