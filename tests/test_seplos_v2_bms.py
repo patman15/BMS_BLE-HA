@@ -143,12 +143,10 @@ async def test_update(patch_bleak_client, reconnect_fixture) -> None:
         reconnect_fixture,
     )
 
-    result = await bms.async_update()
-
-    assert result == REF_VALUE
+    assert await bms.async_update() == REF_VALUE
 
     # query again to check already connected state
-    result = await bms.async_update()
+    await bms.async_update()
     assert bms._client and bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
@@ -174,10 +172,11 @@ async def test_short_message(monkeypatch, patch_bleak_client) -> None:
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73), False
     )
 
-    ref: BMSsample = REF_VALUE.copy()
-    del ref["cycles"]
-    assert await bms.async_update() == ref
+    result: BMSsample = {}
+    with pytest.raises(ValueError, match="message too short to decode data"):
+        result = await bms.async_update()
 
+    assert not result
     await bms.disconnect()
 
 

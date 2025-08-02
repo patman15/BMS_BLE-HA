@@ -1,15 +1,14 @@
 """Module to support D-powercore Smart BMS."""
 
-from collections.abc import Callable
 from enum import IntEnum
 from string import hexdigits
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue
+from .basebms import AdvertisementPattern, BaseBMS, BMSdp, BMSsample, BMSvalue
 
 
 class Cmd(IntEnum):
@@ -30,22 +29,31 @@ class BMS(BaseBMS):
 
     _PAGE_LEN: Final[int] = 20
     _MAX_CELLS: Final[int] = 32
-    _FIELDS: Final[list[tuple[BMSvalue, Cmd, int, int, Callable[[int], Any]]]] = [
-        ("voltage", Cmd.LEGINFO1, 6, 2, lambda x: x / 10),
-        ("current", Cmd.LEGINFO1, 8, 2, lambda x: x),
-        ("battery_level", Cmd.LEGINFO1, 14, 1, lambda x: x),
-        ("cycle_charge", Cmd.LEGINFO1, 12, 2, lambda x: x / 1000),
-        ("temperature", Cmd.LEGINFO2, 12, 2, lambda x: round(x * 0.1 - 273.15, 1)),
-        ("cell_count", Cmd.CELLVOLT, 6, 1, lambda x: min(x, BMS._MAX_CELLS)),
-        ("cycles", Cmd.LEGINFO2, 8, 2, lambda x: x),
-        ("problem_code", Cmd.LEGINFO1, 15, 1, lambda x: x & 0xFF),
-    ]
+    _FIELDS: Final[tuple[BMSdp, ...]] = (
+        BMSdp("voltage", 6, 2, False, lambda x: x / 10, Cmd.LEGINFO1),
+        BMSdp("current", 8, 2, True, lambda x: x, Cmd.LEGINFO1),
+        BMSdp("battery_level", 14, 1, False, lambda x: x, Cmd.LEGINFO1),
+        BMSdp("cycle_charge", 12, 2, False, lambda x: x / 1000, Cmd.LEGINFO1),
+        BMSdp(
+            "temperature",
+            12,
+            2,
+            False,
+            lambda x: round(x * 0.1 - 273.15, 1),
+            Cmd.LEGINFO2,
+        ),
+        BMSdp(
+            "cell_count", 6, 1, False, lambda x: min(x, BMS._MAX_CELLS), Cmd.CELLVOLT
+        ),
+        BMSdp("cycles", 8, 2, False, lambda x: x, Cmd.LEGINFO2),
+        BMSdp("problem_code", 15, 1, False, lambda x: x & 0xFF, Cmd.LEGINFO1),
+    )
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
         super().__init__(__name__, ble_device, reconnect)
         assert self._ble_device.name is not None  # required for unlock
-        self._data_final: bytearray = bytearray()
+        self._data_final: dict[int, bytearray] = {}
 
     @staticmethod
     def matcher_dict_list() -> list[AdvertisementPattern]:
@@ -115,7 +123,7 @@ class BMS(BaseBMS):
         maxpg: Final[int] = data[1] & 0xF
 
         if page == 1:
-            self._data = bytearray()
+            self._data.clear()
 
         self._data += data[2 : size + 2]
 
@@ -130,11 +138,11 @@ class BMS(BaseBMS):
                     int.from_bytes(self._data[-4:-2], byteorder="big"),
                     crc,
                 )
-                self._data = bytearray()
-                self._data_final = bytearray()  # reset invalid data
+                self._data.clear()
+                self._data_final = {}  # reset invalid data
                 return
 
-            self._data_final = self._data
+            self._data_final[self._data[3]] = self._data.copy()
             self._data_event.set()
 
     @staticmethod
@@ -180,21 +188,16 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        data: BMSsample = {}
         for request in (Cmd.LEGINFO1, Cmd.LEGINFO2, Cmd.CELLVOLT):
             await self._await_reply(self._cmd_frame(request, b""))
 
-            for key, cmd, idx, size, func in BMS._FIELDS:
-                if cmd == request:
-                    data[key] = func(
-                        int.from_bytes(
-                            self._data[idx : idx + size], byteorder="big", signed=True
-                        )
-                    )
+        result: BMSsample = BMS._decode_data(BMS._FIELDS, self._data_final)
 
-            if request == Cmd.CELLVOLT and data.get("cell_count"):
-                data["cell_voltages"] = BMS._cell_voltages(
-                    self._data_final, cells=data.get("cell_count", 0), start=7
-                )
+        if Cmd.CELLVOLT in self._data_final:
+            result["cell_voltages"] = BMS._cell_voltages(
+                self._data_final[Cmd.CELLVOLT],
+                cells=result.get("cell_count", 0),
+                start=7,
+            )
 
-        return data
+        return result
