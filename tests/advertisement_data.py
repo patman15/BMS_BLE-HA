@@ -887,5 +887,25 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             rssi=-94,
         ),
         "jbd_bms",
-    )
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/427)
+        generate_advertisement_data(
+            local_name="06201000690",
+            manufacturer_data={
+                529: b"\x00\x00\x40\x00\x2a\xbb\x7f\xff\x2b\x38\x2b\x43\xc8\xcb\x00\x7c\x00\xbf\xbf\xbf\xc0\x00\x00\x00\x00\x25\x80"
+            },
+            service_data={"0000262a-0000-1000-8000-00805f9b34fb": b"\x46\x00\x3e"},
+            service_uuids=[
+                "00001800-0000-1000-8000-00805f9b34fb",
+                "00001801-0000-1000-8000-00805f9b34fb",
+                "0000180a-0000-1000-8000-00805f9b34fb",
+                "0000180f-0000-1000-8000-00805f9b34fb",
+                "0000262a-0000-1000-8000-00805f9b34fb",
+                "0000fa00-0000-1000-8000-00805f9b34fb",
+                "0000ff00-0000-1000-8000-00805f9b34fb",
+            ],
+            rssi=-48,
+        ),
+        "jbd_bms",
+    ),
 ]
