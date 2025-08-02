@@ -22,16 +22,16 @@ class BMS(BaseBMS):
     _CELL_POS: Final[int] = 0x8
     _INFO_LEN: Final[int] = 10  # minimal frame length
     _FIELDS: Final[list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]] = [
-        ("voltage", 0x8C, 2, 2, False, lambda x: float(x / 100)),
+        ("voltage", 0x8C, 2, 2, False, lambda x: x / 100),
         (
             "current",
             0x8C,
             0,
             2,
             False,
-            lambda x: float((x & 0x3FFF) / 10 * (-1 if x >> 15 else 1)),
+            lambda x: (x & 0x3FFF) / 10 * (-1 if x >> 15 else 1),
         ),
-        ("cycle_charge", 0x8C, 4, 2, False, lambda x: float(x / 10)),
+        ("cycle_charge", 0x8C, 4, 2, False, lambda x: x / 10),
         ("battery_level", 0x8C, 13, 1, False, lambda x: x),
         ("cycles", 0x8C, 8, 2, False, lambda x: x),
     ]  # problem code is not included in the list, but extra
@@ -166,32 +166,6 @@ class BMS(BaseBMS):
             )
         return result
 
-    @staticmethod
-    def _conv_cells(data: bytearray) -> list[float]:
-        return [
-            int.from_bytes(
-                data[BMS._CELL_POS + 1 + idx * 2 : BMS._CELL_POS + 1 + idx * 2 + 2],
-                byteorder="big",
-                signed=False,
-            )
-            / 1000
-            for idx in range(data[BMS._CELL_POS])
-        ]
-
-    @staticmethod
-    def _temp_sensors(data: bytearray, sensors: int, offs: int) -> list[int | float]:
-        return [
-            (value - 2731.5) / 10
-            for idx in range(sensors)
-            if (
-                value := int.from_bytes(
-                    data[offs + idx * 2 : offs + (idx + 1) * 2],
-                    byteorder="big",
-                    signed=False,
-                )
-            )
-        ]
-
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
@@ -206,20 +180,26 @@ class BMS(BaseBMS):
         else:
             raise TimeoutError
 
-        result: BMSsample = {"cell_count": int(self._data_final[0x8C][BMS._CELL_POS])}
-        result["temp_sensors"] = int(
-            self._data_final[0x8C][BMS._CELL_POS + int(result["cell_count"]) * 2 + 1]
-        )
+        result: BMSsample = {"cell_count": self._data_final[0x8C][BMS._CELL_POS]}
+        result["temp_sensors"] = self._data_final[0x8C][
+            BMS._CELL_POS + result["cell_count"] * 2 + 1
+        ]
 
-        result["cell_voltages"] = BMS._conv_cells(self._data_final[0x8C])
-        result["temp_values"] = BMS._temp_sensors(
+        result["cell_voltages"] = BMS._cell_voltages(
             self._data_final[0x8C],
-            result["temp_sensors"],
-            BMS._CELL_POS + result.get("cell_count", 0) * 2 + 2,
+            cells=result.get("cell_count", 0),
+            start=BMS._CELL_POS + 1,
         )
-        idx: Final[int] = int(
-            result.get("cell_count", 0) + result.get("temp_sensors", 0)
+        result["temp_values"] = BMS._temp_values(
+            self._data_final[0x8C],
+            values=result["temp_sensors"],
+            start=BMS._CELL_POS + result.get("cell_count", 0) * 2 + 2,
+            signed=False,
+            offset=2731,
+            divider=10,
         )
+        idx: Final[int] = result.get("cell_count", 0) + result.get("temp_sensors", 0)
+
         result |= BMS._decode_data(
             self._data_final,
             BMS._CELL_POS + idx * 2 + 2,

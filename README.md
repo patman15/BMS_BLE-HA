@@ -51,14 +51,14 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - accurat batteries (show up as `GJ-`&#x2026;), Aolithium batteries (show up as `AL12-`&#x2026;)
     - Bulltron, DCHOUSE, ECO-WORTHY (show up as `DP04S`&#x2026;, `ECO-LFP`&#x2026;), Epoch batteries
     - Eleksol, Liontron, Perfektium (show up as `PKT`&#x2026;), Ultimatron batteries (show up as `12??0`&#x2026;)
-    - SBL batteries, Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries (show up as `DWC`&#x2026;)
+    - SBL batteries, Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries (show up as `DWC`&#x2026; or `DXD`&#x2026;)
 - JK BMS, Jikong, (HW version &ge; 6 required)
 - LiTime, Power Queen, and Redodo batteries
 - NEEY balancer (4th gen) (show up as `GW-24S`&#x2026;)
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
 - Renogy BMS, Renogy Pro BMS
 - RoyPow batteries
-- Seplos v2 (show up as `BP0?`)
+- Seplos v2 (show up as `BP[0-2]?`)
 - Seplos v3 (show up as `SP[0,1,4-6]`&#x2026;)
 - TDT BMS
     - Wattcycle batteries
@@ -291,7 +291,7 @@ for helping with making the integration better.
 - Redodo BMS: [LiTime BMS bluetooth](https://github.com/calledit/LiTime_BMS_bluetooth)
 - TianPower BMS: [esphome-tianpower-bms](https://github.com/syssi/esphome-tianpower-bms)
 
-[license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=86400
+[license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA?style=for-the-badge&color=orange&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
 [effort-shield]: https://img.shields.io/badge/Effort%20spent-580_hours-gold?style=for-the-badge&cacheSeconds=86400

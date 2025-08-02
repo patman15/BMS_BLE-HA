@@ -110,9 +110,9 @@ class BMS(BaseBMS):
             bytes([data[0] | 0x80]) + data[1:], wait_for_notify=False
         )
 
-        size: Final[int] = int(data[0])
-        page: Final[int] = int(data[1] >> 4)
-        maxpg: Final[int] = int(data[1] & 0xF)
+        size: Final[int] = data[0]
+        page: Final[int] = data[1] >> 4
+        maxpg: Final[int] = data[1] & 0xF
 
         if page == 1:
             self._data = bytearray()

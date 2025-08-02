@@ -58,7 +58,7 @@ class BMS(BaseBMS):
                 12: ("temperature", 2, lambda x: round(x * 0.1 - 273.15, 1)),
                 # 3rd byte of current is 0 (should be 1 as for B version)
                 16: ("current", 3, lambda x: x / 100),
-                24: ("runtime", 2, lambda x: int(x * 60)),
+                24: ("runtime", 2, lambda x: x * 60),
                 44: ("cycles", 2, lambda x: x),
                 # Type A batteries have no cell voltage registers
             }
@@ -72,7 +72,7 @@ class BMS(BaseBMS):
                 # SOC (State of Charge)
                 13: ("battery_level", 1, lambda x: x),
                 15: ("cycle_charge", 3, lambda x: x / 1000),
-                18: ("runtime", 2, lambda x: int(x * 60)),
+                18: ("runtime", 2, lambda x: x * 60),
                 23: ("cycles", 2, lambda x: x),
             }
             # add cell voltage registers, note: need to be last!

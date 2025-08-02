@@ -17,6 +17,7 @@ class BMS(BaseBMS):
     _TAIL: Final[bytes] = b"\xaa"
     _RDCMD: Final[bytes] = b"\x04"
     _MAX_CELLS: Final[int] = 16
+    _MAX_TEMP: Final[int] = 6
     _MIN_LEN: Final[int] = 4
     _DEF_LEN: Final[int] = 20
     _FIELDS: Final[list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]] = [
@@ -109,16 +110,6 @@ class BMS(BaseBMS):
         return result
 
     @staticmethod
-    def _temp_sensors(data: bytearray, sensors: int) -> list[int | float]:
-        return [
-            int.from_bytes(
-                data[3 + idx * 2 : 5 + idx * 2], byteorder="big", signed=True
-            )
-            / 10
-            for idx in range(min(sensors, 6))
-        ]
-
-    @staticmethod
     def _cmd(addr: int) -> bytes:
         """Assemble a TianPwr BMS command."""
         return BMS._HEAD + BMS._RDCMD + addr.to_bytes(1) + BMS._TAIL
@@ -149,9 +140,11 @@ class BMS(BaseBMS):
                 )
                 / 10
                 for idx in (7, 11)  # take ambient and mosfet temperature
-            ] + BMS._temp_sensors(
+            ] + BMS._temp_values(
                 self._data_final.get(0x87, bytearray()),
-                int(result.get("temp_sensors", 0)),
+                values=min(BMS._MAX_TEMP, result.get("temp_sensors", 0)),
+                start=3,
+                divider=10,
             )
 
         return result

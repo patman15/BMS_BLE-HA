@@ -116,13 +116,6 @@ class BMS(BaseBMS):
         return int.from_bytes(data[pos : pos + 2], byteorder="big", signed=signed)
 
     @staticmethod
-    def _temp_sensors(data: bytearray, sensors: int) -> list[int | float]:
-        return [
-            BMS._read_int16(data, BMS._TEMP_POS + 2 + 2 * idx, signed=True) / 10
-            for idx in range(sensors)
-        ]
-
-    @staticmethod
     def _cmd(addr: int, words: int) -> bytes:
         """Assemble a Renogy BMS command (MODBUS)."""
         frame: bytearray = (
@@ -151,8 +144,11 @@ class BMS(BaseBMS):
         )
 
         result["temp_sensors"] = BMS._read_int16(self._data, BMS._TEMP_POS)
-        result["temp_values"] = BMS._temp_sensors(
-            self._data, min(16, result.get("temp_sensors", 0))
+        result["temp_values"] = BMS._temp_values(
+            self._data,
+            values=min(16, result.get("temp_sensors", 0)),
+            start=BMS._TEMP_POS + 2,
+            divider=10,
         )
 
         await self._await_reply(self._cmd(0x13EC, 0x7))

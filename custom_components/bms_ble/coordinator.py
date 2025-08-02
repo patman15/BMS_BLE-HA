@@ -93,7 +93,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
     def link_quality(self) -> int:
         """Gives the precentage of successful BMS reads out of the last 100 attempts."""
 
-        return int(self._link_q.count(True) * 100 / len(self._link_q))
+        return self._link_q.count(True) * 100 // len(self._link_q)
 
     async def async_shutdown(self) -> None:
         """Shutdown coordinator and any connection."""

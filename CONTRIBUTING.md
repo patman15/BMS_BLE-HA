@@ -7,7 +7,8 @@ In case you have troubles, please enable the debug protocol for the integration 
 - The integration shall not use persistent information. That means all necessary info shall be determined on connecting the device.
 - The BT pattern matcher shall be unique to allow auto-detecting devices.
 - Frame parsing shall check the validity of a frame according to the protocol type, e.g. CRC, length, allowed type
-- If available the data shall be read from the device, the `basebms` functionality is only to have consistent data over all BMS types.
+- All plugin classes shall inherit from `BaseBMS` and use the functions from there before overriding or replacing.
+- If available the data shall be read from the device, the `BaseBMS._add_missing_values()` functionality is only to have consistent data over all BMS types.
 
 to be extended ...
 
@@ -15,7 +16,7 @@ to be extended ...
 
 In general I use guidelines very close to the ones that Home Assistant uses for core integrations. Thus, the code shall pass
 - `ruff check .`
-- `pyright`
+- `mypy .`
 
 ## Adding a new battery management system
 

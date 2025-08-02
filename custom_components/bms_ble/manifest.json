@@ -23,6 +23,9 @@
       "manufacturer_id": 260
     },
     {
+      "manufacturer_id": 529
+    },
+    {
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
       "manufacturer_id": 2917
     },
@@ -92,6 +95,10 @@
     },
     {
       "local_name": "DWC*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "DXD*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
@@ -225,7 +232,7 @@
     {
       "local_name": "BP2?",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },        
+    },
     {
       "local_name": "F10*"
     },

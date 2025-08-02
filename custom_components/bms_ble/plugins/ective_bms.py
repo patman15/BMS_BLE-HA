@@ -130,10 +130,9 @@ class BMS(BaseBMS):
         *,
         cells: int,
         start: int,
-        byteorder: Literal["little", "big"] = "big",
         size: int = 2,
-        step: int | None = None,
-        divider: float = 1000,
+        byteorder: Literal["little", "big"] = "big",
+        divider: int = 1000,
     ) -> list[float]:
         """Parse cell voltages from status message."""
         return [

@@ -141,20 +141,6 @@ class BMS(BaseBMS):
         return (sum((length >> (i * 4)) & 0xF for i in range(3)) ^ 0xF) + 1 & 0xF
 
     @staticmethod
-    def _temp_sensors(data: bytearray, sensors: int, offs: int) -> list[float]:
-        return [
-            (value) / 10
-            for idx in range(sensors)
-            if (
-                value := int.from_bytes(
-                    data[offs + idx * 2 : offs + (idx + 1) * 2],
-                    byteorder="big",
-                    signed=True,
-                )
-            )
-        ]
-
-    @staticmethod
     def _decode_data(data: bytearray, offs: int) -> BMSsample:
         result: BMSsample = {}
         for key, idx, size, sign, func in BMS._FIELDS:
@@ -182,18 +168,21 @@ class BMS(BaseBMS):
         """Update battery status information."""
 
         await self._await_reply(BMS._cmd(0x42))
-        result: BMSsample = {"cell_count": int(self._data[BMS._CELL_POS])}
-        temp_pos: Final[int] = BMS._CELL_POS + int(result.get("cell_count", 0)) * 2 + 1
-        result["temp_sensors"] = int(self._data[temp_pos])
+        result: BMSsample = {"cell_count": self._data[BMS._CELL_POS]}
+        temp_pos: Final[int] = BMS._CELL_POS + result.get("cell_count", 0) * 2 + 1
+        result["temp_sensors"] = self._data[temp_pos]
         result["cell_voltages"] = BMS._cell_voltages(
             self._data, cells=result.get("cell_count", 0), start=BMS._CELL_POS + 1
         )
-        result["temp_values"] = BMS._temp_sensors(
-            self._data, int(result.get("temp_sensors", 0)), temp_pos + 1
+        result["temp_values"] = BMS._temp_values(
+            self._data,
+            values=result.get("temp_sensors", 0),
+            start=temp_pos + 1,
+            divider=10,
         )
 
         result |= BMS._decode_data(
-            self._data, temp_pos + 2 * int(result.get("temp_sensors", 0)) + 1
+            self._data, temp_pos + 2 * result.get("temp_sensors", 0) + 1
         )
 
         await self._await_reply(BMS._cmd(0x81, 1, b"\x01\x00"), max_size=20)
