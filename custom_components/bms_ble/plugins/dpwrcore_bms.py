@@ -48,7 +48,7 @@ class BMS(BaseBMS):
         BMSdp("cycles", 8, 2, False, lambda x: x, Cmd.LEGINFO2),
         BMSdp("problem_code", 15, 1, False, lambda x: x & 0xFF, Cmd.LEGINFO1),
     )
-    _CMDS: Final[set[int]] = {field.idx for field in _FIELDS}
+    _CMDS: Final[set[Cmd]] = {Cmd(field.idx) for field in _FIELDS}
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
