@@ -141,8 +141,7 @@ class MockProblemBleakClient(MockDPwrcoreBleakClient):
             char_specifier
         ) != normalize_uuid_str("fff3"):
             return bytearray()
-        cmd: int = int(bytearray(data)[5])
-        if cmd == 0x60:
+        if bytearray(data)[5] == 0x60:
             return bytearray(
                 b"\x12\x12\x3a\x05\x03\x60\x00\x0a\x02\x13\x00\x00\x71\xc5\x45\x8e\x3d\xff\x03\xcc"
                 b"\x02\x22\x0d\x0a\x03\x60\x00\x0a\x02\x13\x00\x00\x71\xc5\x45\x8e\x3d\x00\x03\xcc"
@@ -274,5 +273,32 @@ async def test_problem_response(patch_bleak_client, dev_name) -> None:
         "problem": True,
         "problem_code": 255,
     }
+
+    await bms.disconnect()
+
+
+async def test_incomplete_msgs(monkeypatch, patch_bleak_client, dev_name) -> None:
+    """Test D-pwercore BMS data update."""
+
+    def _stuck_response(
+        _self,
+        _char_specifier: BleakGATTCharacteristic | int | str | UUID,
+        _data: Buffer,
+    ) -> bytearray:
+        return bytearray(
+            b"\x12\x12\x3a\x05\x03\x60\x00\x0a\x02\x13\x00\x00\x71\xc5\x45\x8e\x3d\x00\x02\xcd"
+            b"\x02\x22\x0d\x0a\x03\x60\x00\x0a\x02\x13\x00\x00\x71\xc5\x45\x8e\x3d\x00\x02\xcd"
+        )  # 2nd line only 4 bytes valid! TODO: put numbers
+
+    monkeypatch.setattr(MockDPwrcoreBleakClient, "_response", _stuck_response)
+    patch_bleak_client(MockDPwrcoreBleakClient)
+
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", dev_name, None, -73), False)
+
+    result: BMSsample = {}
+    with pytest.raises(ValueError, match="incomplete response set"):
+        result = await bms.async_update()
+
+    assert not result
 
     await bms.disconnect()

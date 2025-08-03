@@ -48,6 +48,7 @@ class BMS(BaseBMS):
         BMSdp("cycles", 8, 2, False, lambda x: x, Cmd.LEGINFO2),
         BMSdp("problem_code", 15, 1, False, lambda x: x & 0xFF, Cmd.LEGINFO1),
     )
+    _CMDS: Final[set[int]] = {field.idx for field in _FIELDS}
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
@@ -150,7 +151,7 @@ class BMS(BaseBMS):
         return sum(data) + 8
 
     @staticmethod
-    def _cmd_frame(cmd: Cmd, data: bytes) -> bytes:
+    def _cmd(cmd: Cmd, data: bytes) -> bytes:
         frame: bytearray = bytearray([cmd.value, 0x00, 0x00]) + data
         checksum: Final[int] = BMS._crc(frame)
         frame = (
@@ -179,7 +180,7 @@ class BMS(BaseBMS):
 
         pwd = int(self.name[-4:], 16)
         await self._await_reply(
-            BMS._cmd_frame(
+            BMS._cmd(
                 Cmd.UNLOCK,
                 bytes([(pwd >> 8) & 0xFF, pwd & 0xFF]),
             ),
@@ -188,16 +189,18 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        for request in (Cmd.LEGINFO1, Cmd.LEGINFO2, Cmd.CELLVOLT):
-            await self._await_reply(self._cmd_frame(request, b""))
+        for request in BMS._CMDS:
+            await self._await_reply(self._cmd(request, b""))
+
+        if not BMS._CMDS.issubset(set(self._data_final.keys())):
+            raise ValueError("incomplete response set")
 
         result: BMSsample = BMS._decode_data(BMS._FIELDS, self._data_final)
+        result["cell_voltages"] = BMS._cell_voltages(
+            self._data_final[Cmd.CELLVOLT],
+            cells=result.get("cell_count", 0),
+            start=7,
+        )
 
-        if Cmd.CELLVOLT in self._data_final:
-            result["cell_voltages"] = BMS._cell_voltages(
-                self._data_final[Cmd.CELLVOLT],
-                cells=result.get("cell_count", 0),
-                start=7,
-            )
-
+        self._data_final.clear()
         return result
