@@ -1,13 +1,19 @@
 """Module to support Seplos v2 BMS."""
 
-from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue, crc_xmodem
+from .basebms import (
+    AdvertisementPattern,
+    BaseBMS,
+    BMSdp,
+    BMSsample,
+    BMSvalue,
+    crc_xmodem,
+)
 
 
 class BMS(BaseBMS):
@@ -22,15 +28,14 @@ class BMS(BaseBMS):
     _CELL_POS: Final[int] = 9
     _PRB_MAX: Final[int] = 8  # max number of alarm event bytes
     _PRB_MASK: Final[int] = ~0x82FFFF  # ignore byte 7-8 + byte 6 (bit 7,2)
-    _PFIELDS: Final[  # Seplos V2: single machine data
-        list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]
-    ] = [
-        ("voltage", 0x61, 2, 2, False, lambda x: x / 100),
-        ("current", 0x61, 0, 2, True, lambda x: x / 100),  # /10 for 0x62
-        ("cycle_charge", 0x61, 4, 2, False, lambda x: x / 100),  # /10 for 0x62
-        ("cycles", 0x61, 13, 2, False, lambda x: x),
-        ("battery_level", 0x61, 9, 2, False, lambda x: x / 10),
-    ]
+    _PFIELDS: Final[tuple[BMSdp, ...]] = (  # Seplos V2: single machine data
+        BMSdp("voltage", 2, 2, False, lambda x: x / 100),
+        BMSdp("current", 0, 2, True, lambda x: x / 100),  # /10 for 0x62
+        BMSdp("cycle_charge", 4, 2, False, lambda x: x / 100),  # /10 for 0x62
+        BMSdp("cycles", 13, 2, False, lambda x: x),
+        BMSdp("battery_level", 9, 2, False, lambda x: x / 10),
+    )
+    _GSMD_LEN: Final[int] = _CELL_POS + max((dp.pos + dp.size) for dp in _PFIELDS) + 3
     _CMDS: Final[list[tuple[int, bytes]]] = [(0x51, b""), (0x61, b"\x00"), (0x62, b"")]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -156,20 +161,6 @@ class BMS(BaseBMS):
         frame += int.to_bytes(crc_xmodem(frame[1:]), 2, byteorder="big") + BMS._TAIL
         return bytes(frame)
 
-    @staticmethod
-    def _decode_data(data: dict[int, bytearray], offs: int) -> BMSsample:
-        result: BMSsample = {}
-        for key, cmd, idx, size, sign, func in BMS._PFIELDS:
-            if idx + offs + size <= len(data[cmd]) - 3:
-                result[key] = func(
-                    int.from_bytes(
-                        data[cmd][idx + offs : idx + offs + size],
-                        byteorder="big",
-                        signed=sign,
-                    )
-                )
-        return result
-
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
@@ -182,26 +173,22 @@ class BMS(BaseBMS):
         result["temp_sensors"] = self._data_final[0x61][
             BMS._CELL_POS + result["cell_count"] * 2 + 1
         ]
+        ct_blk_len: Final[int] = (result["cell_count"] + result["temp_sensors"]) * 2 + 2
+
+        if (BMS._GSMD_LEN + ct_blk_len) > len(self._data_final[0x61]):
+            raise ValueError("message too short to decode data")
+
         result |= BMS._decode_data(
-            self._data_final,
-            BMS._CELL_POS
-            + (result.get("cell_count", 0) + result.get("temp_sensors", 0)) * 2
-            + 2,
+            BMS._PFIELDS, self._data_final[0x61], offset=BMS._CELL_POS + ct_blk_len
         )
 
         # get extention pack count from parallel data (main pack)
-        result["pack_count"] = int.from_bytes(
-            self._data_final[0x51][42:43], byteorder="big"
-        )
+        result["pack_count"] = self._data_final[0x51][42]
 
         # get alarms from parallel data (main pack)
-        alarm_events: Final[int] = min(
-            int.from_bytes(self._data_final[0x62][46:47]), BMS._PRB_MAX
-        )
+        alarm_evt: Final[int] = min(self._data_final[0x62][46], BMS._PRB_MAX)
         result["problem_code"] = (
-            int.from_bytes(
-                self._data_final[0x62][47 : 47 + alarm_events], byteorder="big"
-            )
+            int.from_bytes(self._data_final[0x62][47 : 47 + alarm_evt], byteorder="big")
             & BMS._PRB_MASK
         )
 

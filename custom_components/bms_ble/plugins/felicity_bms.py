@@ -103,7 +103,7 @@ class BMS(BaseBMS):
         self._data_event.set()
 
     @staticmethod
-    def _decode_data(data: dict) -> BMSsample:
+    def _conv_data(data: dict) -> BMSsample:
         result: BMSsample = {}
         for key, itm, func in BMS._FIELDS:
             result[key] = func(data.get(itm, []))
@@ -125,7 +125,7 @@ class BMS(BaseBMS):
         await self._await_reply(BMS._CMD_PRE + BMS._CMD_RT)
 
         return (
-            BMS._decode_data(self._data_final)
+            BMS._conv_data(self._data_final)
             | {"temp_values": BMS._conv_temp(self._data_final)}
             | {"cell_voltages": BMS._conv_cells(self._data_final)}
             | {

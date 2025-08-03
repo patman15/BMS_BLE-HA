@@ -1,13 +1,12 @@
 """Module to support Redodo BMS."""
 
-from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue, crc_sum
+from .basebms import AdvertisementPattern, BaseBMS, BMSdp, BMSsample, BMSvalue, crc_sum
 
 
 class BMS(BaseBMS):
@@ -16,14 +15,14 @@ class BMS(BaseBMS):
     _HEAD_LEN: Final[int] = 3
     _MAX_CELLS: Final[int] = 16
     _MAX_TEMP: Final[int] = 3
-    _FIELDS: Final[list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]]] = [
-        ("voltage", 12, 2, False, lambda x: x / 1000),
-        ("current", 48, 4, True, lambda x: x / 1000),
-        ("battery_level", 90, 2, False, lambda x: x),
-        ("cycle_charge", 62, 2, False, lambda x: x / 100),
-        ("cycles", 96, 4, False, lambda x: x),
-        ("problem_code", 76, 4, False, lambda x: x),
-    ]
+    _FIELDS: Final[tuple[BMSdp, ...]] = (
+        BMSdp("voltage", 12, 2, False, lambda x: x / 1000),
+        BMSdp("current", 48, 4, True, lambda x: x / 1000),
+        BMSdp("battery_level", 90, 2, False, lambda x: x),
+        BMSdp("cycle_charge", 62, 2, False, lambda x: x / 100),
+        BMSdp("cycles", 96, 4, False, lambda x: x),
+        BMSdp("problem_code", 76, 4, False, lambda x: x),
+    )
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -109,20 +108,13 @@ class BMS(BaseBMS):
         self._data = data
         self._data_event.set()
 
-    @staticmethod
-    def _decode_data(data: bytearray) -> BMSsample:
-        result: BMSsample = {}
-        for key, idx, size, sign, func in BMS._FIELDS:
-            result[key] = func(
-                int.from_bytes(data[idx : idx + size], byteorder="little", signed=sign)
-            )
-        return result
-
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         await self._await_reply(b"\x00\x00\x04\x01\x13\x55\xaa\x17")
 
-        result: BMSsample = BMS._decode_data(self._data)
+        result: BMSsample = BMS._decode_data(
+            BMS._FIELDS, self._data, byteorder="little"
+        )
         result["cell_voltages"] = BMS._cell_voltages(
             self._data, cells=BMS._MAX_CELLS, start=16, byteorder="little"
         )
