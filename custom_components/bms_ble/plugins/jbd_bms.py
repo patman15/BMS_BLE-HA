@@ -1,13 +1,12 @@
 """Module to support JBD Smart BMS."""
 
-from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue
+from .basebms import AdvertisementPattern, BaseBMS, BMSdp, BMSsample, BMSvalue
 
 
 class BMS(BaseBMS):
@@ -18,15 +17,15 @@ class BMS(BaseBMS):
     TAIL: Final[int] = 0x77  # tail for command
     INFO_LEN: Final[int] = 7  # minimum frame size
     BASIC_INFO: Final[int] = 23  # basic info data length
-    _FIELDS: Final[list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]]] = [
-        ("temp_sensors", 26, 1, False, lambda x: x),  # count is not limited
-        ("voltage", 4, 2, False, lambda x: x / 100),
-        ("current", 6, 2, True, lambda x: x / 100),
-        ("battery_level", 23, 1, False, lambda x: x),
-        ("cycle_charge", 8, 2, False, lambda x: x / 100),
-        ("cycles", 12, 2, False, lambda x: x),
-        ("problem_code", 20, 2, False, lambda x: x),
-    ]  # general protocol v4
+    _FIELDS: Final[tuple[BMSdp, ...]] = (
+        BMSdp("temp_sensors", 26, 1, False, lambda x: x),  # count is not limited
+        BMSdp("voltage", 4, 2, False, lambda x: x / 100),
+        BMSdp("current", 6, 2, True, lambda x: x / 100),
+        BMSdp("battery_level", 23, 1, False, lambda x: x),
+        BMSdp("cycle_charge", 8, 2, False, lambda x: x / 100),
+        BMSdp("cycles", 12, 2, False, lambda x: x),
+        BMSdp("problem_code", 20, 2, False, lambda x: x),
+    )  # general protocol v4
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
@@ -172,15 +171,6 @@ class BMS(BaseBMS):
         frame.extend([*BMS._crc(frame[2:4]).to_bytes(2, "big"), BMS.TAIL])
         return bytes(frame)
 
-    @staticmethod
-    def _decode_data(data: bytearray) -> BMSsample:
-        result: BMSsample = {}
-        for key, idx, size, sign, func in BMS._FIELDS:
-            result[key] = func(
-                int.from_bytes(data[idx : idx + size], byteorder="big", signed=sign)
-            )
-        return result
-
     async def _await_cmd_resp(self, cmd: int) -> None:
         msg: Final[bytes] = BMS._cmd(bytes([cmd]))
         self._valid_reply = msg[2]
@@ -191,7 +181,7 @@ class BMS(BaseBMS):
         """Update battery status information."""
         data: BMSsample = {}
         await self._await_cmd_resp(0x03)
-        data = BMS._decode_data(self._data_final)
+        data = BMS._decode_data(BMS._FIELDS, self._data_final)
         data["temp_values"] = BMS._temp_values(
             self._data_final,
             values=data.get("temp_sensors", 0),

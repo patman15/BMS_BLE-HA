@@ -1,15 +1,14 @@
 """Module to support Ective BMS."""
 
 import asyncio
-from collections.abc import Callable
 from string import hexdigits
-from typing import Any, Final, Literal
+from typing import Final, Literal
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue
+from .basebms import AdvertisementPattern, BaseBMS, BMSdp, BMSsample, BMSvalue
 
 
 class BMS(BaseBMS):
@@ -19,15 +18,15 @@ class BMS(BaseBMS):
     _MAX_CELLS: Final[int] = 16
     _INFO_LEN: Final[int] = 113
     _CRC_LEN: Final[int] = 4
-    _FIELDS: Final[list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]]] = [
-        ("voltage", 1, 8, False, lambda x: x / 1000),
-        ("current", 9, 8, True, lambda x: x / 1000),
-        ("battery_level", 29, 4, False, lambda x: x),
-        ("cycle_charge", 17, 8, False, lambda x: x / 1000),
-        ("cycles", 25, 4, False, lambda x: x),
-        ("temperature", 33, 4, False, lambda x: round(x * 0.1 - 273.15, 1)),
-        ("problem_code", 37, 2, False, lambda x: x),
-    ]
+    _FIELDS: Final[tuple[BMSdp, ...]] = (
+        BMSdp("voltage", 1, 8, False, lambda x: x / 1000),
+        BMSdp("current", 9, 8, True, lambda x: x / 1000),
+        BMSdp("battery_level", 29, 4, False, lambda x: x),
+        BMSdp("cycle_charge", 17, 8, False, lambda x: x / 1000),
+        BMSdp("cycles", 25, 4, False, lambda x: x),
+        BMSdp("temperature", 33, 4, False, lambda x: round(x * 0.1 - 273.15, 1)),
+        BMSdp("problem_code", 37, 2, False, lambda x: x),
+    )
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -154,17 +153,19 @@ class BMS(BaseBMS):
         )
 
     @staticmethod
-    def _decode_data(data: bytearray) -> BMSsample:
+    def _conv_data(data: bytearray) -> BMSsample:
         result: BMSsample = {}
-        for key, idx, size, sign, func in BMS._FIELDS:
-            result[key] = func(BMS._conv_int(data[idx : idx + size], sign))
+        for field in BMS._FIELDS:
+            result[field.key] = field.fct(
+                BMS._conv_int(data[field.pos : field.pos + field.size], field.signed)
+            )
         return result
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
         await asyncio.wait_for(self._wait_event(), timeout=BMS.TIMEOUT)
-        return self._decode_data(self._data_final) | {
+        return self._conv_data(self._data_final) | {
             "cell_voltages": BMS._cell_voltages(
                 self._data_final, cells=BMS._MAX_CELLS, start=45, size=4
             )

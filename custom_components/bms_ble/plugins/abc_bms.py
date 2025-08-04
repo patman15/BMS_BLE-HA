@@ -1,14 +1,13 @@
 """Module to support ABC BMS."""
 
-from collections.abc import Callable
 import contextlib
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue, crc8
+from .basebms import AdvertisementPattern, BaseBMS, BMSdp, BMSsample, BMSvalue, crc8
 
 
 class BMS(BaseBMS):
@@ -24,24 +23,24 @@ class BMS(BaseBMS):
         0xC3: {0xF5, 0xF6, 0xF7, 0xF8, 0xFA},
         0xC4: {0xF9},
     }
-    _FIELDS: Final[list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]] = [
-        ("temp_sensors", 0xF2, 4, 1, False, lambda x: x),
-        ("voltage", 0xF0, 2, 3, False, lambda x: x / 1000),
-        ("current", 0xF0, 5, 3, True, lambda x: x / 1000),
-        # ("design_capacity", 0xF0, 8, 3, False, lambda x: x / 1000),
-        ("battery_level", 0xF0, 16, 1, False, lambda x: x),
-        ("cycle_charge", 0xF0, 11, 3, False, lambda x: x / 1000),
-        ("cycles", 0xF0, 14, 2, False, lambda x: x),
-        (  # only first bit per byte is used
+    _FIELDS: Final[tuple[BMSdp, ...]] = (
+        BMSdp("temp_sensors", 4, 1, False, lambda x: x, 0xF2),
+        BMSdp("voltage", 2, 3, False, lambda x: x / 1000, 0xF0),
+        BMSdp("current", 5, 3, True, lambda x: x / 1000, 0xF0),
+        # ("design_capacity", 8, 3, False, lambda x: x / 1000, 0xF0),
+        BMSdp("battery_level", 16, 1, False, lambda x: x, 0xF0),
+        BMSdp("cycle_charge", 11, 3, False, lambda x: x / 1000, 0xF0),
+        BMSdp("cycles", 14, 2, False, lambda x: x, 0xF0),
+        BMSdp(  # only first bit per byte is used
             "problem_code",
-            0xF9,
             2,
             16,
             False,
             lambda x: sum(((x >> (i * 8)) & 1) << i for i in range(16)),
+            0xF9,
         ),
-    ]
-    _RESPS: Final[set[int]] = {field[1] for field in _FIELDS} | {0xF4}  # cell voltages
+    )
+    _RESPS: Final[set[int]] = {field.idx for field in _FIELDS} | {0xF4}  # cell voltages
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -130,17 +129,6 @@ class BMS(BaseBMS):
         frame.append(crc8(frame))
         return bytes(frame)
 
-    @staticmethod
-    def _decode_data(data: dict[int, bytearray]) -> BMSsample:
-        result: BMSsample = {}
-        for key, cmd, idx, size, sign, func in BMS._FIELDS:
-            result[key] = func(
-                int.from_bytes(
-                    data[cmd][idx : idx + size], byteorder="little", signed=sign
-                )
-            )
-        return result
-
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         self._data_final.clear()
@@ -155,7 +143,9 @@ class BMS(BaseBMS):
             self._log.debug("Incomplete data set %s", self._data_final.keys())
             raise TimeoutError("BMS data incomplete.")
 
-        result: BMSsample = BMS._decode_data(self._data_final)
+        result: BMSsample = BMS._decode_data(
+            BMS._FIELDS, self._data_final, byteorder="little"
+        )
         return result | {
             "cell_voltages": BMS._cell_voltages(  # every second value is the cell idx
                 self._data_final[0xF4],

@@ -1,13 +1,19 @@
 """Module to support Daly Smart BMS."""
 
-from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue, crc_modbus
+from .basebms import (
+    AdvertisementPattern,
+    BaseBMS,
+    BMSdp,
+    BMSsample,
+    BMSvalue,
+    crc_modbus,
+)
 
 
 class BMS(BaseBMS):
@@ -23,17 +29,17 @@ class BMS(BaseBMS):
     INFO_LEN: Final[int] = 84 + HEAD_LEN + CRC_LEN + MAX_CELLS + MAX_TEMP
     MOS_TEMP_POS: Final[int] = HEAD_LEN + 8
     MOS_NOT_AVAILABLE: Final[tuple[str]] = ("DL-FB4C2E0",)
-    _FIELDS: Final[list[tuple[BMSvalue, int, int, Callable[[int], Any]]]] = [
-        ("voltage", 80 + HEAD_LEN, 2, lambda x: x / 10),
-        ("current", 82 + HEAD_LEN, 2, lambda x: (x - 30000) / 10),
-        ("battery_level", 84 + HEAD_LEN, 2, lambda x: x / 10),
-        ("cycle_charge", 96 + HEAD_LEN, 2, lambda x: x / 10),
-        ("cell_count", 98 + HEAD_LEN, 2, lambda x: min(x, BMS.MAX_CELLS)),
-        ("temp_sensors", 100 + HEAD_LEN, 2, lambda x: min(x, BMS.MAX_TEMP)),
-        ("cycles", 102 + HEAD_LEN, 2, lambda x: x),
-        ("delta_voltage", 112 + HEAD_LEN, 2, lambda x: x / 1000),
-        ("problem_code", 116 + HEAD_LEN, 8, lambda x: x % 2**64),
-    ]
+    _FIELDS: Final[tuple[BMSdp, ...]] = (
+        BMSdp("voltage", 80, 2, False, lambda x: x / 10),
+        BMSdp("current", 82, 2, False, lambda x: (x - 30000) / 10),
+        BMSdp("battery_level", 84, 2, False, lambda x: x / 10),
+        BMSdp("cycle_charge", 96, 2, False, lambda x: x / 10),
+        BMSdp("cell_count", 98, 2, False, lambda x: min(x, BMS.MAX_CELLS)),
+        BMSdp("temp_sensors", 100, 2, False, lambda x: min(x, BMS.MAX_TEMP)),
+        BMSdp("cycles", 102, 2, False, lambda x: x),
+        BMSdp("delta_voltage", 112, 2, False, lambda x: x / 1000),
+        BMSdp("problem_code", 116, 8, False, lambda x: x % 2**64),
+    )
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
@@ -117,7 +123,7 @@ class BMS(BaseBMS):
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
-        data: BMSsample = {}
+        result: BMSsample = {}
         if (  # do not query devices that do not support MOS temperature, e.g. Bulltron
             not self.name or not self.name.startswith(BMS.MOS_NOT_AVAILABLE)
         ):
@@ -127,7 +133,7 @@ class BMS(BaseBMS):
 
                 if sum(self._data[BMS.MOS_TEMP_POS :][:2]):
                     self._log.debug("MOS info: %s", self._data)
-                    data["temp_values"] = [
+                    result["temp_values"] = [
                         int.from_bytes(
                             self._data[BMS.MOS_TEMP_POS :][:2],
                             byteorder="big",
@@ -144,26 +150,21 @@ class BMS(BaseBMS):
             self._log.debug("incorrect frame length: %i", len(self._data))
             return {}
 
-        for key, idx, size, func in BMS._FIELDS:
-            data[key] = func(
-                int.from_bytes(
-                    self._data[idx : idx + size], byteorder="big", signed=True
-                )
-            )
+        result |= BMS._decode_data(BMS._FIELDS, self._data, offset=BMS.HEAD_LEN)
 
         # add temperature sensors
-        data.setdefault("temp_values", []).extend(
+        result.setdefault("temp_values", []).extend(
             BMS._temp_values(
                 self._data,
-                values=data.get("temp_sensors", 0),
+                values=result.get("temp_sensors", 0),
                 start=64 + BMS.HEAD_LEN,
                 offset=40,
             )
         )
 
         # get cell voltages
-        data["cell_voltages"] = BMS._cell_voltages(
-            self._data, cells=data.get("cell_count", 0), start=BMS.HEAD_LEN
+        result["cell_voltages"] = BMS._cell_voltages(
+            self._data, cells=result.get("cell_count", 0), start=BMS.HEAD_LEN
         )
 
-        return data
+        return result

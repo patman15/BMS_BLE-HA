@@ -63,7 +63,7 @@ REF_VALUE: BMSsample = {
         3.529,
     ],
     "delta_voltage": 0.003,
-    "temp_values": [24.95, 23.75, 23.85, 24.85, 24.95, 23.75, 23.85, 24.85],
+    "temp_values": [25.0, 23.8, 23.9, 24.9, 25.0, 23.8, 23.9, 24.9],
     "pack_battery_levels": [47.9, 48.0],
     "pack_currents": [-7.2, -7.19],
     "pack_cycles": [9, 10],
