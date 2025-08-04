@@ -1,13 +1,19 @@
 """Module to support Renogy BMS."""
 
-from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue, crc_modbus
+from .basebms import (
+    AdvertisementPattern,
+    BaseBMS,
+    BMSdp,
+    BMSsample,
+    BMSvalue,
+    crc_modbus,
+)
 
 
 class BMS(BaseBMS):
@@ -17,13 +23,13 @@ class BMS(BaseBMS):
     _CRC_POS: Final[int] = -2
     _TEMP_POS: Final[int] = 37
     _CELL_POS: Final[int] = 3
-    FIELDS: list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]] = [
-        ("voltage", 5, 2, False, lambda x: x / 10),
-        ("current", 3, 2, True, lambda x: x / 100),
-        ("design_capacity", 11, 4, False, lambda x: x // 1000),
-        ("cycle_charge", 7, 4, False, lambda x: x / 1000),
-        ("cycles", 15, 2, False, lambda x: x),
-    ]
+    FIELDS: tuple[BMSdp, ...] = (
+        BMSdp("voltage", 5, 2, False, lambda x: x / 10),
+        BMSdp("current", 3, 2, True, lambda x: x / 100),
+        BMSdp("design_capacity", 11, 4, False, lambda x: x // 1000),
+        BMSdp("cycle_charge", 7, 4, False, lambda x: x / 1000),
+        BMSdp("cycles", 15, 2, False, lambda x: x),
+    )
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -101,26 +107,9 @@ class BMS(BaseBMS):
         self._data = data.copy()
         self._data_event.set()
 
-    @classmethod
-    def decode_data(cls, data: bytearray) -> BMSsample:
-        """Decode the data from the BMS using the defined fields."""
-        result: BMSsample = {}
-        for key, idx, size, sign, func in cls.FIELDS:
-            result[key] = func(
-                int.from_bytes(data[idx : idx + size], byteorder="big", signed=sign)
-            )
-        return result
-
     @staticmethod
     def _read_int16(data: bytearray, pos: int, signed: bool = False) -> int:
         return int.from_bytes(data[pos : pos + 2], byteorder="big", signed=signed)
-
-    @staticmethod
-    def _temp_sensors(data: bytearray, sensors: int) -> list[int | float]:
-        return [
-            BMS._read_int16(data, BMS._TEMP_POS + 2 + 2 * idx, signed=True) / 10
-            for idx in range(sensors)
-        ]
 
     @staticmethod
     def _cmd(addr: int, words: int) -> bytes:
@@ -138,7 +127,7 @@ class BMS(BaseBMS):
         """Update battery status information."""
 
         await self._await_reply(self._cmd(0x13B2, 0x7))
-        result: BMSsample = type(self).decode_data(self._data)
+        result: BMSsample = BMS._decode_data(type(self).FIELDS, self._data)
 
         await self._await_reply(self._cmd(0x1388, 0x22))
         result["cell_count"] = BMS._read_int16(self._data, BMS._CELL_POS)
@@ -151,8 +140,11 @@ class BMS(BaseBMS):
         )
 
         result["temp_sensors"] = BMS._read_int16(self._data, BMS._TEMP_POS)
-        result["temp_values"] = BMS._temp_sensors(
-            self._data, min(16, result.get("temp_sensors", 0))
+        result["temp_values"] = BMS._temp_values(
+            self._data,
+            values=min(16, result.get("temp_sensors", 0)),
+            start=BMS._TEMP_POS + 2,
+            divider=10,
         )
 
         await self._await_reply(self._cmd(0x13EC, 0x7))

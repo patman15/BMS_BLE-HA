@@ -103,7 +103,7 @@ class BMS(BaseBMS):
         self._data_event.set()
 
     @staticmethod
-    def _decode_data(data: dict) -> BMSsample:
+    def _conv_data(data: dict) -> BMSsample:
         result: BMSsample = {}
         for key, itm, func in BMS._FIELDS:
             result[key] = func(data.get(itm, []))
@@ -114,7 +114,7 @@ class BMS(BaseBMS):
         return [(value / 1000) for value in data.get("BatcelList", [])[0]]
 
     @staticmethod
-    def _temp_sensors(data: dict) -> list[float]:
+    def _conv_temp(data: dict) -> list[float]:
         return [
             (value / 10) for value in data.get("BtemList", [])[0] if value != 0x7FFF
         ]
@@ -125,8 +125,8 @@ class BMS(BaseBMS):
         await self._await_reply(BMS._CMD_PRE + BMS._CMD_RT)
 
         return (
-            BMS._decode_data(self._data_final)
-            | {"temp_values": BMS._temp_sensors(self._data_final)}
+            BMS._conv_data(self._data_final)
+            | {"temp_values": BMS._conv_temp(self._data_final)}
             | {"cell_voltages": BMS._conv_cells(self._data_final)}
             | {
                 "problem_code": int(

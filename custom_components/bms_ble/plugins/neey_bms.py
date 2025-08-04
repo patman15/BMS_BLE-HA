@@ -168,10 +168,9 @@ class BMS(BaseBMS):
         *,
         cells: int,
         start: int,
-        byteorder: Literal["little", "big"] = "big",
         size: int = 2,
-        step: int | None = None,
-        divider: float = 1000,
+        byteorder: Literal["little", "big"] = "big",
+        divider: int = 1000,
     ) -> list[float]:
         """Parse cell voltages from message."""
         return [
@@ -188,7 +187,7 @@ class BMS(BaseBMS):
         ]
 
     @staticmethod
-    def _decode_data(data: bytearray) -> BMSsample:
+    def _conv_data(data: bytearray) -> BMSsample:
         """Return BMS data from status message."""
         result: BMSsample = {}
         for key, idx, fmt, func in BMS._FIELDS:
@@ -203,7 +202,7 @@ class BMS(BaseBMS):
             self._log.debug("requesting cell info")
             await self._await_reply(data=BMS._cmd(b"\x02"))
 
-        data: BMSsample = self._decode_data(self._data_final)
+        data: BMSsample = self._conv_data(self._data_final)
         data["temp_values"] = BMS._temp_sensors(self._data_final, 2)
 
         data["cell_voltages"] = BMS._cell_voltages(

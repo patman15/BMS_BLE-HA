@@ -1,14 +1,13 @@
 """Module to support E&J Technology BMS."""
 
-from collections.abc import Callable
 from enum import IntEnum
 from string import hexdigits
-from typing import Any, Final, Literal
+from typing import Final, Literal
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue
+from .basebms import AdvertisementPattern, BaseBMS, BMSdp, BMSsample, BMSvalue
 
 
 class Cmd(IntEnum):
@@ -26,14 +25,20 @@ class BMS(BaseBMS):
     _HEAD: Final[bytes] = b"\x3a"
     _TAIL: Final[bytes] = b"\x7e"
     _MAX_CELLS: Final[int] = 16
-    _FIELDS: Final[list[tuple[BMSvalue, Cmd, int, int, Callable[[int], Any]]]] = [
-        ("current", Cmd.RT, 89, 8, lambda x: ((x >> 16) - (x & 0xFFFF)) / 100),
-        ("battery_level", Cmd.RT, 123, 2, lambda x: x),
-        ("cycle_charge", Cmd.CAP, 15, 4, lambda x: x / 10),
-        ("temperature", Cmd.RT, 97, 2, lambda x: x - 40),  # only 1st sensor relevant
-        ("cycles", Cmd.RT, 115, 4, lambda x: x),
-        ("problem_code", Cmd.RT, 105, 4, lambda x: x & 0x0FFC),  # mask status bits
-    ]
+    _FIELDS: Final[tuple[BMSdp, ...]] = (
+        BMSdp(
+            "current", 89, 8, False, lambda x: ((x >> 16) - (x & 0xFFFF)) / 100, Cmd.RT
+        ),
+        BMSdp("battery_level", 123, 2, False, lambda x: x, Cmd.RT),
+        BMSdp("cycle_charge", 15, 4, False, lambda x: x / 10, Cmd.CAP),
+        BMSdp(
+            "temperature", 97, 2, False, lambda x: x - 40, Cmd.RT
+        ),  # only 1st sensor relevant
+        BMSdp("cycles", 115, 4, False, lambda x: x, Cmd.RT),
+        BMSdp(
+            "problem_code", 105, 4, False, lambda x: x & 0x0FFC, Cmd.RT
+        ),  # mask status bits
+    )
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -180,10 +185,9 @@ class BMS(BaseBMS):
         *,
         cells: int,
         start: int,
-        byteorder: Literal["little", "big"] = "big",
         size: int = 2,
-        step: int | None = None,
-        divider: float = 1000,
+        byteorder: Literal["little", "big"] = "big",
+        divider: int = 1000,
     ) -> list[float]:
         """Return cell voltages from status message."""
         return [
@@ -193,10 +197,12 @@ class BMS(BaseBMS):
         ]
 
     @staticmethod
-    def _decode_data(data: dict[int, bytearray]) -> BMSsample:
+    def _conv_data(data: dict[int, bytearray]) -> BMSsample:
         result: BMSsample = {}
-        for key, cmd, idx, size, func in BMS._FIELDS:
-            result[key] = func(int(data[cmd.value][idx : idx + size], 16))
+        for field in BMS._FIELDS:
+            result[field.key] = field.fct(
+                int(data[field.idx][field.pos : field.pos + field.size], 16)
+            )
         return result
 
     async def _async_update(self) -> BMSsample:
@@ -219,8 +225,8 @@ class BMS(BaseBMS):
         ):
             return {}
 
-        return self._decode_data(raw_data) | {
-            "cell_voltages": self._cell_voltages(
+        return self._conv_data(raw_data) | {
+            "cell_voltages": BMS._cell_voltages(
                 raw_data[Cmd.RT], cells=BMS._MAX_CELLS, start=25, size=4
             )
         }

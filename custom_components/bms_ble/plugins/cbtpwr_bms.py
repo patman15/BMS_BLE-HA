@@ -1,7 +1,6 @@
 """Module to support CBT Power Smart BMS."""
 
-from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
@@ -9,7 +8,7 @@ from bleak.uuids import normalize_uuid_str
 
 from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue, crc_sum
+from .basebms import AdvertisementPattern, BaseBMS, BMSdp, BMSsample, BMSvalue, crc_sum
 
 
 class BMS(BaseBMS):
@@ -23,17 +22,17 @@ class BMS(BaseBMS):
     LEN_POS: Final[int] = 3
     CMD_POS: Final[int] = 2
     CELL_VOLTAGE_CMDS: Final[list[int]] = [0x5, 0x6, 0x7, 0x8]
-    _FIELDS: Final[list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]] = [
-        ("voltage", 0x0B, 4, 4, False, lambda x: x / 1000),
-        ("current", 0x0B, 8, 4, True, lambda x: x / 1000),
-        ("temperature", 0x09, 4, 2, True, lambda x: x),
-        ("battery_level", 0x0A, 4, 1, False, lambda x: x),
-        ("design_capacity", 0x15, 4, 2, False, lambda x: x),
-        ("cycles", 0x15, 6, 2, False, lambda x: x),
-        ("runtime", 0x0C, 14, 2, False, lambda x: x * _HRS_TO_SECS / 100),
-        ("problem_code", 0x21, 4, 4, False, lambda x: x),
-    ]
-    _CMDS: Final[list[int]] = list({field[1] for field in _FIELDS})
+    _FIELDS: Final[tuple[BMSdp, ...]] = (
+        BMSdp("voltage", 4, 4, False, lambda x: x / 1000, 0x0B),
+        BMSdp("current", 8, 4, True, lambda x: x / 1000, 0x0B),
+        BMSdp("temperature", 4, 2, True, lambda x: x, 0x09),
+        BMSdp("battery_level", 4, 1, False, lambda x: x, 0x0A),
+        BMSdp("design_capacity", 4, 2, False, lambda x: x, 0x15),
+        BMSdp("cycles", 6, 2, False, lambda x: x, 0x15),
+        BMSdp("runtime", 14, 2, False, lambda x: x * _HRS_TO_SECS / 100, 0x0C),
+        BMSdp("problem_code", 4, 4, False, lambda x: x, 0x21),
+    )
+    _CMDS: Final[list[int]] = list({field.idx for field in _FIELDS})
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
@@ -126,16 +125,6 @@ class BMS(BaseBMS):
         frame.extend(BMS.TAIL_TX)
         return bytes(frame)
 
-    @staticmethod
-    def _decode_data(cache: dict[int, bytearray]) -> BMSsample:
-        result: BMSsample = {}
-        for field, cmd, pos, size, sign, fct in BMS._FIELDS:
-            if cmd in cache:
-                result[field] = fct(
-                    int.from_bytes(cache[cmd][pos : pos + size], "little", signed=sign)
-                )
-        return result
-
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         resp_cache: dict[int, bytearray] = {}  # avoid multiple queries
@@ -166,7 +155,7 @@ class BMS(BaseBMS):
             if len(voltages) % 5 or len(cells) == 0:
                 break
 
-        data: BMSsample = BMS._decode_data(resp_cache)
+        data: BMSsample = BMS._decode_data(BMS._FIELDS, resp_cache, byteorder="little")
 
         # get cycle charge from design capacity and SoC
         if data.get("design_capacity") and data.get("battery_level"):
