@@ -1,13 +1,12 @@
 """Module to support RoyPow BMS."""
 
-from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue
+from .basebms import AdvertisementPattern, BaseBMS, BMSdp, BMSsample, BMSvalue
 
 
 class BMS(BaseBMS):
@@ -17,31 +16,31 @@ class BMS(BaseBMS):
     _TAIL: Final[int] = 0xF5
     _BT_MODULE_MSG: Final[bytes] = b"AT+STAT\r\n"  # AT cmd from BLE module
     _MIN_LEN: Final[int] = len(_HEAD) + 1
-    _FIELDS: Final[list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]] = [
-        ("battery_level", 0x4, 7, 1, False, lambda x: x),
-        ("voltage", 0x4, 47, 2, False, lambda x: x / 100),
-        (
+    _FIELDS: Final[tuple[BMSdp, ...]] = (
+        BMSdp("battery_level", 7, 1, False, lambda x: x, 0x4),
+        BMSdp("voltage", 47, 2, False, lambda x: x / 100, 0x4),
+        BMSdp(
             "current",
-            0x3,
             6,
             3,
             False,
             lambda x: (x & 0xFFFF) * (-1 if (x >> 16) & 0x1 else 1) / 100,
+            0x3,
         ),
-        ("problem_code", 0x3, 9, 3, False, lambda x: x),
-        (
+        BMSdp("problem_code", 9, 3, False, lambda x: x, 0x3),
+        BMSdp(
             "cycle_charge",
-            0x4,
             24,
             4,
             False,
             lambda x: ((x & 0xFFFF0000) | (x & 0xFF00) >> 8 | (x & 0xFF) << 8) / 1000,
+            0x4,
         ),
-        ("runtime", 0x4, 30, 2, False, lambda x: x * 60),
-        ("temp_sensors", 0x3, 13, 1, False, lambda x: x),
-        ("cycles", 0x4, 9, 2, False, lambda x: x),
-    ]
-    _CMDS: Final[set[int]] = set({field[1] for field in _FIELDS})
+        BMSdp("runtime", 30, 2, False, lambda x: x * 60, 0x4),
+        BMSdp("temp_sensors", 13, 1, False, lambda x: x, 0x3),
+        BMSdp("cycles", 9, 2, False, lambda x: x, 0x4),
+    )
+    _CMDS: Final[set[int]] = set({field.idx for field in _FIELDS})
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -142,18 +141,6 @@ class BMS(BaseBMS):
         self._data_event.set()
 
     @staticmethod
-    def _decode_data(data: dict[int, bytearray]) -> BMSsample:
-        result: BMSsample = {}
-        for key, cmd, idx, size, sign, func in BMS._FIELDS:
-            if cmd in data:
-                result[key] = func(
-                    int.from_bytes(
-                        data[cmd][idx : idx + size], byteorder="big", signed=sign
-                    )
-                )
-        return result
-
-    @staticmethod
     def _crc(frame: bytearray) -> int:
         """Calculate XOR of all frame bytes."""
         crc: int = 0
@@ -175,7 +162,7 @@ class BMS(BaseBMS):
         for cmd in range(2, 5):
             await self._await_reply(BMS._cmd(bytes([0xFF, cmd])))
 
-        result: BMSsample = BMS._decode_data(self._data_final)
+        result: BMSsample = BMS._decode_data(BMS._FIELDS, self._data_final)
 
         # remove remaining runtime if battery is charging
         if result.get("runtime") == 0xFFFF * 60:

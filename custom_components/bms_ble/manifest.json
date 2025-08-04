@@ -23,6 +23,9 @@
       "manufacturer_id": 260
     },
     {
+      "manufacturer_id": 529
+    },
+    {
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
       "manufacturer_id": 2917
     },
@@ -97,7 +100,7 @@
     {
       "local_name": "DXD*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },    
+    },
     {
       "local_name": "xiaoxiang*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
@@ -229,7 +232,7 @@
     {
       "local_name": "BP2?",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },        
+    },
     {
       "local_name": "F10*"
     },
@@ -270,7 +273,7 @@
     },
     {
       "local_name": "TP_*"
-    }    
+    }
   ],
   "codeowners": [
     "@patman15"
@@ -288,5 +291,5 @@
   ],
   "quality_scale": "silver",
   "requirements": [],
-  "version": "1.19.0-beta.1"
+  "version": "1.19.0"
 }

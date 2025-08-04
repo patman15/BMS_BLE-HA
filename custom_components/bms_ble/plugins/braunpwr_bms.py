@@ -1,13 +1,12 @@
 """Module to support Braun Power BMS."""
 
-from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue
+from .basebms import AdvertisementPattern, BaseBMS, BMSdp, BMSsample, BMSvalue
 
 
 class BMS(BaseBMS):
@@ -16,18 +15,18 @@ class BMS(BaseBMS):
     _HEAD: Final[bytes] = b"\x7b"  # header for responses
     _TAIL: Final[int] = 0x7D  # tail for command
     _MIN_LEN: Final[int] = 4  # minimum frame size
-    _FIELDS: Final[list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]] = [
-        ("cell_count", 0x2, 3, 1, False, lambda x: x),
-        ("temp_sensors", 0x3, 3, 1, False, lambda x: x),
-        ("voltage", 0x1, 5, 2, False, lambda x: x / 100),
-        ("current", 0x1, 13, 2, True, lambda x: x / 100),
-        ("battery_level", 0x1, 4, 1, False, lambda x: x),
-        ("cycle_charge", 0x1, 15, 2, False, lambda x: x / 100),
-        ("design_capacity", 0x1, 17, 2, False, lambda x: x // 100),
-        ("cycles", 0x1, 23, 2, False, lambda x: x),
-        ("problem_code", 0x8, 9, 2, False, lambda x: x & 0xAAAA),
-    ]  # problem code assumed max len 22 bytes (always cut last in case shorter)
-    _CMDS: Final[set[int]] = set({field[1] for field in _FIELDS}) | {
+    _FIELDS: Final[tuple[BMSdp, ...]] = (
+        BMSdp("cell_count", 3, 1, False, lambda x: x, 0x2),
+        BMSdp("temp_sensors", 3, 1, False, lambda x: x, 0x3),
+        BMSdp("voltage", 5, 2, False, lambda x: x / 100, 0x1),
+        BMSdp("current", 13, 2, True, lambda x: x / 100, 0x1),
+        BMSdp("battery_level", 4, 1, False, lambda x: x, 0x1),
+        BMSdp("cycle_charge", 15, 2, False, lambda x: x / 100, 0x1),
+        BMSdp("design_capacity", 17, 2, False, lambda x: x // 100, 0x1),
+        BMSdp("cycles", 23, 2, False, lambda x: x, 0x1),
+        BMSdp("problem_code", 9, 2, False, lambda x: x & 0xAAAA, 0x8),
+    )  # problem code assumed max len 22 bytes (always cut last in case shorter)
+    _CMDS: Final[set[int]] = {field.idx for field in _FIELDS} | {
         0x9,
         0x74,  # SW version
         0x78,
@@ -136,25 +135,6 @@ class BMS(BaseBMS):
         assert len(data) <= 255, "data length must be a single byte."
         return bytes([*BMS._HEAD, cmd, len(data), *data, BMS._TAIL])
 
-    @staticmethod
-    def _decode_data(data: dict[int, bytearray]) -> BMSsample:
-        result: BMSsample = {}
-        for key, cmd, idx, size, sign, func in BMS._FIELDS:
-            result[key] = func(
-                int.from_bytes(
-                    data[cmd][idx : idx + size], byteorder="big", signed=sign
-                )
-            )
-        return result
-
-    @staticmethod
-    def _temp_sensors(data: bytearray, sensors: int) -> list[float]:
-        return [
-            (int.from_bytes(data[4 + idx * 2 : 6 + idx * 2], byteorder="big") - 2731)
-            / 10
-            for idx in range(sensors)
-        ]
-
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         self._data_final.clear()
@@ -163,12 +143,16 @@ class BMS(BaseBMS):
             await self._await_reply(BMS._cmd(cmd))
 
         data: BMSsample = {}
-        data = BMS._decode_data(self._data_final)
+        data = BMS._decode_data(BMS._FIELDS, self._data_final)
         data["cell_voltages"] = BMS._cell_voltages(
             self._data_final[0x2], cells=data.get("cell_count", 0), start=4
         )
-        data["temp_values"] = BMS._temp_sensors(
-            self._data_final[0x3], data.get("temp_sensors", 0)
+        data["temp_values"] = BMS._temp_values(
+            self._data_final[0x3],
+            values=data.get("temp_sensors", 0),
+            start=4,
+            offset=2731,
+            divider=10,
         )
 
         return data

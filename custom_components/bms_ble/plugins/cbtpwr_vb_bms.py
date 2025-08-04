@@ -1,14 +1,20 @@
 """Module to support CBT Power VB series BMS."""
 
-from collections.abc import Callable
 from string import hexdigits
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue, lrc_modbus
+from .basebms import (
+    AdvertisementPattern,
+    BaseBMS,
+    BMSdp,
+    BMSsample,
+    BMSvalue,
+    lrc_modbus,
+)
 
 
 class BMS(BaseBMS):
@@ -23,13 +29,13 @@ class BMS(BaseBMS):
     _MAX_LEN: Final[int] = 255
     _CELL_POS: Final[int] = 6
 
-    _FIELDS: Final[list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]]] = [
-        ("voltage", 2, 2, False, lambda x: x / 10),
-        ("current", 0, 2, True, lambda x: x / 10),
-        ("battery_level", 4, 2, False, lambda x: min(x, 100)),
-        ("cycles", 7, 2, False, lambda x: x),
-        ("problem_code", 15, 6, False, lambda x: x & 0xFFF000FF000F),
-    ]
+    _FIELDS: Final[tuple[BMSdp, ...]] = (
+        BMSdp("voltage", 2, 2, False, lambda x: x / 10),
+        BMSdp("current", 0, 2, True, lambda x: x / 10),
+        BMSdp("battery_level", 4, 2, False, lambda x: min(x, 100)),
+        BMSdp("cycles", 7, 2, False),
+        BMSdp("problem_code", 15, 6, False, lambda x: x & 0xFFF000FF000F),
+    )
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -141,15 +147,6 @@ class BMS(BaseBMS):
         return (sum((length >> (i * 4)) & 0xF for i in range(3)) ^ 0xF) + 1 & 0xF
 
     @staticmethod
-    def _decode_data(data: bytearray, offs: int) -> BMSsample:
-        result: BMSsample = {}
-        for key, idx, size, sign, func in BMS._FIELDS:
-            result[key] = func(
-                int.from_bytes(data[idx + offs : idx + offs + size], "big", signed=sign)
-            )
-        return result
-
-    @staticmethod
     def _cmd(cmd: int, dev_id: int = 1, data: bytes = b"") -> bytes:
         """Assemble a Seplos VB series command."""
         assert len(data) <= 0xFFF
@@ -168,9 +165,9 @@ class BMS(BaseBMS):
         """Update battery status information."""
 
         await self._await_reply(BMS._cmd(0x42))
-        result: BMSsample = {"cell_count": int(self._data[BMS._CELL_POS])}
-        temp_pos: Final[int] = BMS._CELL_POS + int(result.get("cell_count", 0)) * 2 + 1
-        result["temp_sensors"] = int(self._data[temp_pos])
+        result: BMSsample = {"cell_count": self._data[BMS._CELL_POS]}
+        temp_pos: Final[int] = BMS._CELL_POS + result.get("cell_count", 0) * 2 + 1
+        result["temp_sensors"] = self._data[temp_pos]
         result["cell_voltages"] = BMS._cell_voltages(
             self._data, cells=result.get("cell_count", 0), start=BMS._CELL_POS + 1
         )
@@ -182,7 +179,7 @@ class BMS(BaseBMS):
         )
 
         result |= BMS._decode_data(
-            self._data, temp_pos + 2 * int(result.get("temp_sensors", 0)) + 1
+            BMS._FIELDS, self._data, offset=temp_pos + 2 * result["temp_sensors"] + 1
         )
 
         await self._await_reply(BMS._cmd(0x81, 1, b"\x01\x00"), max_size=20)

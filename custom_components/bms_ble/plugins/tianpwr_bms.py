@@ -1,13 +1,12 @@
 """Module to support TianPwr BMS."""
 
-from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue
+from .basebms import AdvertisementPattern, BaseBMS, BMSdp, BMSsample, BMSvalue
 
 
 class BMS(BaseBMS):
@@ -20,18 +19,18 @@ class BMS(BaseBMS):
     _MAX_TEMP: Final[int] = 6
     _MIN_LEN: Final[int] = 4
     _DEF_LEN: Final[int] = 20
-    _FIELDS: Final[list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]] = [
-        ("battery_level", 0x83, 3, 2, False, lambda x: x),
-        ("voltage", 0x83, 5, 2, False, lambda x: x / 100),
-        ("current", 0x83, 13, 2, True, lambda x: x / 100),
-        ("problem_code", 0x84, 11, 8, False, lambda x: x),
-        ("cell_count", 0x84, 3, 1, False, lambda x: x),
-        ("temp_sensors", 0x84, 4, 1, False, lambda x: x),
-        ("design_capacity", 0x84, 5, 2, False, lambda x: x // 100),
-        ("cycle_charge", 0x84, 7, 2, False, lambda x: x / 100),
-        ("cycles", 0x84, 9, 2, False, lambda x: x),
-    ]
-    _CMDS: Final[set[int]] = set({field[1] for field in _FIELDS}) | set({0x87})
+    _FIELDS: Final[tuple[BMSdp, ...]] = (
+        BMSdp("battery_level", 3, 2, False, lambda x: x, 0x83),
+        BMSdp("voltage", 5, 2, False, lambda x: x / 100, 0x83),
+        BMSdp("current", 13, 2, True, lambda x: x / 100, 0x83),
+        BMSdp("problem_code", 11, 8, False, lambda x: x, 0x84),
+        BMSdp("cell_count", 3, 1, False, lambda x: x, 0x84),
+        BMSdp("temp_sensors", 4, 1, False, lambda x: x, 0x84),
+        BMSdp("design_capacity", 5, 2, False, lambda x: x // 100, 0x84),
+        BMSdp("cycle_charge", 7, 2, False, lambda x: x / 100, 0x84),
+        BMSdp("cycles", 9, 2, False, lambda x: x, 0x84),
+    )
+    _CMDS: Final[set[int]] = set({field.idx for field in _FIELDS}) | set({0x87})
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -98,18 +97,6 @@ class BMS(BaseBMS):
         self._data_event.set()
 
     @staticmethod
-    def _decode_data(data: dict[int, bytearray]) -> BMSsample:
-        result: BMSsample = {}
-        for key, cmd, idx, size, sign, func in BMS._FIELDS:
-            if cmd in data:
-                result[key] = func(
-                    int.from_bytes(
-                        data[cmd][idx : idx + size], byteorder="big", signed=sign
-                    )
-                )
-        return result
-
-    @staticmethod
     def _cmd(addr: int) -> bytes:
         """Assemble a TianPwr BMS command."""
         return BMS._HEAD + BMS._RDCMD + addr.to_bytes(1) + BMS._TAIL
@@ -121,7 +108,7 @@ class BMS(BaseBMS):
         for cmd in BMS._CMDS:
             await self._await_reply(BMS._cmd(cmd))
 
-        result: BMSsample = BMS._decode_data(self._data_final)
+        result: BMSsample = BMS._decode_data(BMS._FIELDS, self._data_final)
 
         for cmd in range(
             0x88, 0x89 + min(result.get("cell_count", 0), BMS._MAX_CELLS) // 8

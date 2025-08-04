@@ -10,6 +10,7 @@ from bleak.uuids import normalize_uuid_str
 from .basebms import (
     AdvertisementPattern,
     BaseBMS,
+    BMSdp,
     BMSpackvalue,
     BMSsample,
     BMSvalue,
@@ -28,7 +29,7 @@ class BMS(BaseBMS):
     EIA_LEN: Final[int] = PIB_LEN
     EIB_LEN: Final[int] = 0x16
     EIC_LEN: Final[int] = 0x5
-    TEMP_START: Final[int] = HEAD_LEN + 32
+    _TEMP_START: Final[int] = HEAD_LEN + 32
     QUERY: Final[dict[str, tuple[int, int, int]]] = {
         # name: cmd, reg start, length
         "EIA": (0x4, 0x2000, EIA_LEN),
@@ -39,16 +40,16 @@ class BMS(BaseBMS):
         "PIA": (0x4, 0x1000, PIA_LEN),
         "PIB": (0x4, 0x1100, PIB_LEN),
     }
-    _FIELDS: Final[list[tuple[BMSvalue, int, int, int, bool, Callable[[int], Any]]]] = [
-        ("temperature", EIB_LEN, 20, 2, True, lambda x: x / 10),  # avg. ctemp
-        ("voltage", EIA_LEN, 0, 4, False, lambda x: BMS._swap32(x) / 100),
-        ("current", EIA_LEN, 4, 4, True, lambda x: BMS._swap32(x, True) / 10),
-        ("cycle_charge", EIA_LEN, 8, 4, False, lambda x: BMS._swap32(x) / 100),
-        ("pack_count", EIA_LEN, 44, 2, False, lambda x: x),
-        ("cycles", EIA_LEN, 46, 2, False, lambda x: x),
-        ("battery_level", EIA_LEN, 48, 2, False, lambda x: x / 10),
-        ("problem_code", EIC_LEN, 1, 9, False, lambda x: x & 0xFFFF00FF00FF0000FF),
-    ]  # Protocol Seplos V3
+    _FIELDS: Final[tuple[BMSdp, ...]] = (
+        BMSdp("temperature", 20, 2, True, lambda x: x / 10, EIB_LEN),  # avg. ctemp
+        BMSdp("voltage", 0, 4, False, lambda x: BMS._swap32(x) / 100, EIA_LEN),
+        BMSdp("current", 4, 4, True, lambda x: BMS._swap32(x, True) / 10, EIA_LEN),
+        BMSdp("cycle_charge", 8, 4, False, lambda x: BMS._swap32(x) / 100, EIA_LEN),
+        BMSdp("pack_count", 44, 2, False, lambda x: x, EIA_LEN),
+        BMSdp("cycles", 46, 2, False, lambda x: x, EIA_LEN),
+        BMSdp("battery_level", 48, 2, False, lambda x: x / 10, EIA_LEN),
+        BMSdp("problem_code", 1, 9, False, lambda x: x & 0xFFFF00FF00FF0000FF, EIC_LEN),
+    )  # Protocol Seplos V3
     _PFIELDS: Final[list[tuple[BMSpackvalue, int, bool, Callable[[int], Any]]]] = [
         ("pack_voltages", 0, False, lambda x: x / 100),
         ("pack_currents", 2, True, lambda x: x / 100),
@@ -124,7 +125,7 @@ class BMS(BaseBMS):
             and data[0] <= self._pack_count
             and data[1] & 0x80
         ):
-            self._log.debug("RX error: %X", int(data[2]))
+            self._log.debug("RX error: %X", data[2])
             self._data = bytearray()
             self._pkglen = BMS.HEAD_LEN + BMS.CRC_LEN
 
@@ -145,7 +146,6 @@ class BMS(BaseBMS):
                 int.from_bytes(self._data[self._pkglen - 2 : self._pkglen], "little"),
                 crc,
             )
-            # self._data_final[int(self._data[0])] = bytearray()  # reset invalid data
             self._data = bytearray()
             return
 
@@ -164,7 +164,7 @@ class BMS(BaseBMS):
                 self._data,
             )
 
-        self._data_final[int(self._data[0]) << 8 | int(self._data[2])] = self._data
+        self._data_final[self._data[0] << 8 | self._data[2] >> 1] = self._data
         self._data = bytearray()
         self._data_event.set()
 
@@ -197,25 +197,14 @@ class BMS(BaseBMS):
         frame += int.to_bytes(crc_modbus(frame), 2, byteorder="little")
         return bytes(frame)
 
-    @staticmethod
-    def _decode_data(data: dict[int, bytearray]) -> BMSsample:
-        result: BMSsample = {}
-        for key, msg, idx, size, sign, func in BMS._FIELDS:
-            result[key] = func(
-                int.from_bytes(
-                    data[msg * 2][BMS.HEAD_LEN + idx : BMS.HEAD_LEN + idx + size],
-                    byteorder="big",
-                    signed=sign,
-                )
-            )
-        return result
-
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         for block in BMS.QUERY.values():
             await self._await_reply(BMS._cmd(0x0, *block))
 
-        data: BMSsample = BMS._decode_data(self._data_final)
+        data: BMSsample = BMS._decode_data(
+            BMS._FIELDS, self._data_final, offset=BMS.HEAD_LEN
+        )
 
         self._pack_count = min(data.get("pack_count", 0), 0x10)
 
@@ -227,7 +216,7 @@ class BMS(BaseBMS):
                 data.setdefault(key, []).append(
                     func(
                         int.from_bytes(
-                            self._data_final[pack << 8 | BMS.PIA_LEN * 2][
+                            self._data_final[pack << 8 | BMS.PIA_LEN][
                                 BMS.HEAD_LEN + idx : BMS.HEAD_LEN + idx + 2
                             ],
                             byteorder="big",
@@ -236,17 +225,9 @@ class BMS(BaseBMS):
                     )
                 )
 
-            # get cell voltages
-            pack_cells: list[float] = [
-                int.from_bytes(
-                    self._data_final[pack << 8 | BMS.PIB_LEN * 2][
-                        BMS.HEAD_LEN + idx * 2 : BMS.HEAD_LEN + idx * 2 + 2
-                    ],
-                    byteorder="big",
-                )
-                / 1000
-                for idx in range(16)
-            ]
+            pack_cells: list[float] = BMS._cell_voltages(
+                self._data_final[pack << 8 | BMS.PIB_LEN], cells=16, start=BMS.HEAD_LEN
+            )
             # update per pack delta voltage
             data["delta_voltage"] = max(
                 data.get("delta_voltage", 0),
@@ -256,17 +237,14 @@ class BMS(BaseBMS):
             data.setdefault("cell_voltages", []).extend(pack_cells)
             # add temperature sensors (4x cell temperature + 4 reserved)
             data.setdefault("temp_values", []).extend(
-                (
-                    int.from_bytes(
-                        self._data_final[pack << 8 | BMS.PIB_LEN * 2][
-                            BMS.TEMP_START + idx * 2 : BMS.TEMP_START + idx * 2 + 2
-                        ],
-                        byteorder="big",
-                    )
-                    - 2731.5
+                BMS._temp_values(
+                    self._data_final[pack << 8 | BMS.PIB_LEN],
+                    values=4,
+                    start=BMS._TEMP_START,
+                    signed=False,
+                    offset=2731,
+                    divider=10,
                 )
-                / 10
-                for idx in range(4)
             )
 
         self._data_final.clear()

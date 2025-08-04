@@ -6,7 +6,7 @@ from collections.abc import Callable
 from enum import IntEnum
 import logging
 from statistics import fmean
-from typing import Any, Final, Literal, TypedDict
+from typing import Any, Final, Literal, NamedTuple, TypedDict
 
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -89,6 +89,17 @@ class BMSsample(TypedDict, total=False):
     pack_currents: list[float]  # [A]
     pack_battery_levels: list[int | float]  # [%]
     pack_cycles: list[int]  # [#]
+
+
+class BMSdp(NamedTuple):
+    """Representation of one BMS data point."""
+
+    key: BMSvalue  # the key of the value to be parsed
+    pos: int  # position within the message
+    size: int  # size in bytes
+    signed: bool  # signed value
+    fct: Callable[[int], Any] = lambda x: x  # conversion function (default do nothing)
+    idx: int = -1  # array index containing the message to be parsed
 
 
 class AdvertisementPattern(TypedDict, total=False):
@@ -464,6 +475,28 @@ class BaseBMS(ABC):
             await self.disconnect()
 
         return data
+
+    @staticmethod
+    def _decode_data(
+        fields: tuple[BMSdp, ...],
+        data: bytearray | dict[int, bytearray],
+        *,
+        byteorder: Literal["little", "big"] = "big",
+        offset: int = 0,
+    ) -> BMSsample:
+        result: BMSsample = {}
+        for field in fields:
+            if isinstance(data, dict) and field.idx not in data:
+                continue
+            msg: bytearray = data[field.idx] if isinstance(data, dict) else data
+            result[field.key] = field.fct(
+                int.from_bytes(
+                    msg[offset + field.pos : offset + field.pos + field.size],
+                    byteorder=byteorder,
+                    signed=field.signed,
+                )
+            )
+        return result
 
     @staticmethod
     def _cell_voltages(
