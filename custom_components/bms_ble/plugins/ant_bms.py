@@ -1,13 +1,19 @@
 """Module to support ANT BMS."""
 
-from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue, crc_modbus
+from .basebms import (
+    AdvertisementPattern,
+    BaseBMS,
+    BMSdp,
+    BMSsample,
+    BMSvalue,
+    crc_modbus,
+)
 
 
 class BMS(BaseBMS):
@@ -23,17 +29,17 @@ class BMS(BaseBMS):
     _CELL_COUNT: Final[int] = 9
     _CELL_POS: Final[int] = 34
     _MAX_CELLS: Final[int] = 32
-    _FIELDS: Final[list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]]] = [
-        ("battery_charging", 7, 1, False, lambda x: x == 0x2),
-        ("voltage", 38, 2, False, lambda x: x / 100),
-        ("current", 40, 2, True, lambda x: x / 10),
-        ("design_capacity", 50, 4, False, lambda x: x // 100000),
-        ("battery_level", 42, 2, False, lambda x: x),
-        ("cycle_charge", 54, 4, False, lambda x: x // 100000),
-        # ("cycles", 14, 2, False, lambda x: x),
-        ("delta_voltage", 82, 2, False, lambda x: x / 1000),
-        ("power", 62, 4, True, lambda x: x / 1),
-    ]
+    _FIELDS: Final[tuple[BMSdp, ...]] = (
+        BMSdp("battery_charging", 7, 1, False, lambda x: x == 0x2),
+        BMSdp("voltage", 38, 2, False, lambda x: x / 100),
+        BMSdp("current", 40, 2, True, lambda x: x / 10),
+        BMSdp("design_capacity", 50, 4, False, lambda x: x // 100000),
+        BMSdp("battery_level", 42, 2, False, lambda x: x),
+        BMSdp("cycle_charge", 54, 4, False, lambda x: x // 100000),
+        # BMSdp("cycles", 14, 2, False, lambda x: x),
+        BMSdp("delta_voltage", 82, 2, False, lambda x: x / 1000),
+        BMSdp("power", 62, 4, True, lambda x: x / 1),
+    )
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
@@ -155,19 +161,6 @@ class BMS(BaseBMS):
         return bytes(frame) + BMS._TAIL
 
     @staticmethod
-    def _decode_data(data: bytearray, offs: int = 0) -> BMSsample:
-        result: BMSsample = {}
-        for key, idx, size, sign, func in BMS._FIELDS:
-            result[key] = func(
-                int.from_bytes(
-                    data[idx + offs : idx + offs + size],
-                    byteorder="little",
-                    signed=sign,
-                )
-            )
-        return result
-
-    @staticmethod
     def _temp_sensors(data: bytearray, sensors: int, offs: int) -> list[float]:
         return [
             float(int.from_bytes(data[idx : idx + 2], byteorder="little", signed=True))
@@ -186,23 +179,25 @@ class BMS(BaseBMS):
             self._data_final[18:26], byteorder="little", signed=False
         )
         result["problem_code"] = protection | warning
-        result["cell_count"] = int(self._data_final[BMS._CELL_COUNT])
+        result["cell_count"] = self._data_final[BMS._CELL_COUNT]
         result["cell_voltages"] = BMS._cell_voltages(
             self._data_final,
-            cells=result.get("cell_count", 0),
+            cells=result["cell_count"],
             start=BMS._CELL_POS,
             byteorder="little",
         )
-        result["temp_sensors"] = int(self._data_final[BMS._TEMP_POS])
+        result["temp_sensors"] = self._data_final[BMS._TEMP_POS]
         result["temp_values"] = BMS._temp_sensors(
             self._data_final,
-            result.get("temp_sensors", 0) + 2,  # + MOSFET, balancer temperature
-            BMS._CELL_POS + result.get("cell_count", 0) * 2,
+            result["temp_sensors"] + 2,  # + MOSFET, balancer temperature
+            BMS._CELL_POS + result["cell_count"] * 2,
         )
         result.update(
             BMS._decode_data(
+                BMS._FIELDS,
                 self._data_final,
-                (result.get("temp_sensors", 0) + result.get("cell_count", 0)) * 2,
+                byteorder="little",
+                offset=(result["temp_sensors"] + result["cell_count"]) * 2,
             )
         )
 
