@@ -1,8 +1,7 @@
 """Module to support Jikong Smart BMS."""
 
 import asyncio
-from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
@@ -11,6 +10,7 @@ from bleak.uuids import normalize_uuid_str
 from .basebms import (
     AdvertisementPattern,
     BaseBMS,
+    BMSdp,
     BMSmode,
     BMSsample,
     BMSvalue,
@@ -27,17 +27,15 @@ class BMS(BaseBMS):
     _BT_MODULE_MSG: Final = bytes([0x41, 0x54, 0x0D, 0x0A])  # AT\r\n from BLE module
     TYPE_POS: Final[int] = 4  # frame type is right after the header
     INFO_LEN: Final[int] = 300
-    _FIELDS: Final[list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]]] = (
-        [  # Protocol: JK02_32S; JK02_24S has offset -32
-            ("voltage", 150, 4, False, lambda x: x / 1000),
-            ("current", 158, 4, True, lambda x: x / 1000),
-            ("battery_level", 173, 1, False, lambda x: x),
-            ("cycle_charge", 174, 4, False, lambda x: x / 1000),
-            ("cycles", 182, 4, False, lambda x: x),
-            ("balance_current", 170, 2, True, lambda x: x / 1000),
-            ("temp_sensors", 214, 2, True, lambda x: x),
-            ("problem_code", 166, 4, False, lambda x: x),
-        ]
+    _FIELDS: Final[tuple[BMSdp, ...]] = (  # Protocol: JK02_32S; JK02_24S has offset -32
+        BMSdp("voltage", 150, 4, False, lambda x: x / 1000),
+        BMSdp("current", 158, 4, True, lambda x: x / 1000),
+        BMSdp("battery_level", 173, 1, False, lambda x: x),
+        BMSdp("cycle_charge", 174, 4, False, lambda x: x / 1000),
+        BMSdp("cycles", 182, 4, False, lambda x: x),
+        BMSdp("balance_current", 170, 2, True, lambda x: x / 1000),
+        BMSdp("temp_sensors", 214, 2, True, lambda x: x),
+        BMSdp("problem_code", 166, 4, False, lambda x: x),
     )
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -250,10 +248,12 @@ class BMS(BaseBMS):
         ]
 
     @staticmethod
-    def _decode_data(data: bytearray, offs: int, sw_majv: int) -> BMSsample:
+    def _conv_data(data: bytearray, offs: int, sw_majv: int) -> BMSsample:
         """Return BMS data from status message."""
 
-        result: BMSsample = {}
+        result: BMSsample = BMS._decode_data(
+            BMS._FIELDS, data, byteorder="little", offset=offs
+        )
         result["cell_count"] = int.from_bytes(
             data[70 + (offs >> 1) : 74 + (offs >> 1)], byteorder="little"
         ).bit_count()
@@ -272,15 +272,6 @@ class BMS(BaseBMS):
                 else BMSmode.UNKNOWN
             )
 
-        for key, idx, size, sign, func in BMS._FIELDS:
-            result[key] = func(
-                int.from_bytes(
-                    data[idx + offs : idx + offs + size],
-                    byteorder="little",
-                    signed=sign,
-                )
-            )
-
         return result
 
     async def _async_update(self) -> BMSsample:
@@ -292,13 +283,13 @@ class BMS(BaseBMS):
                 data=BMS._cmd(b"\x96"), char=self._char_write_handle
             )
 
-        data: BMSsample = self._decode_data(
+        data: BMSsample = self._conv_data(
             self._data_final,
             self._prot_offset,
             int(self._bms_info.get("sw_version", "")[:2]),
         )
         data["temp_values"] = BMS._temp_sensors(
-            self._data_final, self._temp_pos(), int(data.get("temp_sensors", 0))
+            self._data_final, self._temp_pos(), data.get("temp_sensors", 0)
         )
 
         data["problem_code"] = (

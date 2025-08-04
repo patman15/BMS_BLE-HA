@@ -6,7 +6,7 @@ from collections.abc import Callable
 from enum import IntEnum
 import logging
 from statistics import fmean
-from typing import Any, Final, Literal, TypedDict
+from typing import Any, Final, Literal, NamedTuple, TypedDict
 
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -89,6 +89,17 @@ class BMSsample(TypedDict, total=False):
     pack_currents: list[float]  # [A]
     pack_battery_levels: list[int | float]  # [%]
     pack_cycles: list[int]  # [#]
+
+
+class BMSdp(NamedTuple):
+    """Representation of one BMS data point."""
+
+    key: BMSvalue  # the key of the value to be parsed
+    pos: int  # position within the message
+    size: int  # size in bytes
+    signed: bool  # signed value
+    fct: Callable[[int], Any] = lambda x: x  # conversion function (default do nothing)
+    idx: int = -1  # array index containing the message to be parsed
 
 
 class AdvertisementPattern(TypedDict, total=False):
@@ -466,42 +477,103 @@ class BaseBMS(ABC):
         return data
 
     @staticmethod
+    def _decode_data(
+        fields: tuple[BMSdp, ...],
+        data: bytearray | dict[int, bytearray],
+        *,
+        byteorder: Literal["little", "big"] = "big",
+        offset: int = 0,
+    ) -> BMSsample:
+        result: BMSsample = {}
+        for field in fields:
+            if isinstance(data, dict) and field.idx not in data:
+                continue
+            msg: bytearray = data[field.idx] if isinstance(data, dict) else data
+            result[field.key] = field.fct(
+                int.from_bytes(
+                    msg[offset + field.pos : offset + field.pos + field.size],
+                    byteorder=byteorder,
+                    signed=field.signed,
+                )
+            )
+        return result
+
+    @staticmethod
     def _cell_voltages(
         data: bytearray,
         *,
         cells: int,
         start: int,
-        byteorder: Literal["little", "big"] = "big",
         size: int = 2,
-        step: int | None = None,
-        divider: float = 1000,
+        byteorder: Literal["little", "big"] = "big",
+        divider: int = 1000,
     ) -> list[float]:
-        """Return cell voltages from status message.
+        """Return cell voltages from BMS message.
 
         Args:
             data: Raw data from BMS
             cells: Number of cells to read
             start: Start position in data array
-            byteorder: Byte order ("big"/"little" endian)
             size: Number of bytes per cell value (defaults 2)
-            step: Optional step size between cells (defaults to byte_len)
+            byteorder: Byte order ("big"/"little" endian)
             divider: Value to divide raw value by, defaults to 1000 (mv to V)
 
         Returns:
             list[float]: List of cell voltages in volts
 
         """
-        step = step or size
         return [
             value / divider
             for idx in range(cells)
-            if (len(data) >= start + idx * step + size)
+            if (len(data) >= start + (idx + 1) * size)
             and (
                 value := int.from_bytes(
-                    data[start + idx * step : start + idx * step + size],
+                    data[start + idx * size : start + (idx + 1) * size],
                     byteorder=byteorder,
                     signed=False,
                 )
+            )
+        ]
+
+    @staticmethod
+    def _temp_values(
+        data: bytearray,
+        *,
+        values: int,
+        start: int,
+        size: int = 2,
+        byteorder: Literal["little", "big"] = "big",
+        signed: bool = True,
+        offset: float = 0,
+        divider: int = 1,
+    ) -> list[int | float]:
+        """Return temperature values from BMS message.
+
+        Args:
+            data: Raw data from BMS
+            values: Number of values to read
+            start: Start position in data array
+            size: Number of bytes per cell value (defaults 2)
+            byteorder: Byte order ("big"/"little" endian)
+            signed: Indicates whether two's complement is used to represent the integer.
+            offset: The offset read values are shifted by (for Kelvin use 273.15)
+            divider: Value to divide raw value by, defaults to 1000 (mv to V)
+
+        Returns:
+            list[int | float]: List of temperature values
+
+        """
+        return [
+            value / divider if divider != 1 else value
+            for idx in range(values)
+            if (len(data) >= start + (idx + 1) * size)
+            and (
+                value := int.from_bytes(
+                    data[start + idx * size : start + (idx + 1) * size],
+                    byteorder=byteorder,
+                    signed=signed,
+                )
+                - offset
             )
         ]
 

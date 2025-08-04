@@ -23,7 +23,7 @@ REF_VALUE: BMSsample = {
     "battery_level": 51.4,
     "cycle_charge": 143.94,
     "cycles": 128,
-    "temperature": 23.6,
+    "temperature": 23.65,
     "cycle_capacity": 7628.82,
     "power": 363.05,
     "battery_charging": True,
@@ -45,7 +45,7 @@ REF_VALUE: BMSsample = {
         3.313,
         3.313,
     ],
-    "temp_values": [22.75, 22.15, 22.25, 23.15, 27.65, 23.65],
+    "temp_values": [22.8, 22.2, 22.3, 23.2, 27.7, 23.7],
     "delta_voltage": 0.004,
     "pack_count": 1,
     "problem": False,
@@ -143,12 +143,10 @@ async def test_update(patch_bleak_client, reconnect_fixture) -> None:
         reconnect_fixture,
     )
 
-    result = await bms.async_update()
-
-    assert result == REF_VALUE
+    assert await bms.async_update() == REF_VALUE
 
     # query again to check already connected state
-    result = await bms.async_update()
+    await bms.async_update()
     assert bms._client and bms._client.is_connected is not reconnect_fixture
 
     await bms.disconnect()
@@ -174,10 +172,11 @@ async def test_short_message(monkeypatch, patch_bleak_client) -> None:
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73), False
     )
 
-    ref: BMSsample = REF_VALUE.copy()
-    del ref["cycles"]
-    assert await bms.async_update() == ref
+    result: BMSsample = {}
+    with pytest.raises(ValueError, match="message too short to decode data"):
+        result = await bms.async_update()
 
+    assert not result
     await bms.disconnect()
 
 
