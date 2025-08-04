@@ -25,9 +25,13 @@ Protocol documentation is available here but seems to not always be correct: htt
 The Pro BMS is detected using:
 - Exact local name match: "Pro BMS"
 - Service UUID: `0000fff0-0000-1000-8000-00805f9b34fb`
+- Manufacturer ID: `15795` (changed from 76 to avoid conflicts)
 - Must be connectable
 
-**Note**: The device no longer uses manufacturer ID matching due to conflicts with other BMS devices. The device exhibits unusual Bluetooth LE advertisement behavior, broadcasting with hundreds of different manufacturer IDs in a single advertisement packet, which caused detection issues.
+**Note**: The device exhibits unusual Bluetooth LE advertisement behavior, broadcasting with hundreds of different manufacturer IDs in a single advertisement packet. After analysis, manufacturer ID 15795 was chosen as it:
+- Is frequently advertised by ProBMS devices
+- Does not conflict with other BMS plugins
+- Is not reserved for major manufacturers (unlike 76 which is Apple's ID)
 
 ### Device Name Handling
 
@@ -41,18 +45,30 @@ When these conditions are detected, the plugin automatically creates a new BLEDe
 
 ### Initialization Sequence
 
-The device uses a simplified initialization sequence:
+The device requires a complete 4-command handshake sequence for initialization:
 
 ```python
-# Extended info command to trigger initialization
-CMD_EXTENDED_INFO = "55aa070101558042000097"
+# Step 1: Send initialization command (Function 0x04)
+CMD_INIT = "55aa0a0101558004077f648e682b"
 
-# After receiving init responses, send:
-CMD_ACK = "55aa070101558006000055"          # Acknowledge init complete
-CMD_DATA_STREAM = "55aa0901015580430000120084"  # Start data streaming (Function 0x43)
+# Step 2: Wait for initialization response (Type 0x03)
+# Response example: 55aa080380aa01040000002c52
+
+# Step 3: Send ACK command (Function 0x40)
+CMD_ACK = "55aa070101558040000095"
+
+# Step 4: Send data stream command (Function 0x42)
+CMD_DATA_STREAM = "55aa070101558042000097"
+
+# Step 5: Send trigger data command (Function 0x43) - CRITICAL
+CMD_TRIGGER_DATA = "55aa0901015580430000120084"
+
+# Step 6: Receive continuous data packets (Type 0x04)
 ```
 
-The device may send multiple initialization response packets (type 0x03) before starting data streaming.
+The complete sequence is: Init → Init Response → ACK → Data Stream → **Trigger Data** → Continuous Data.
+
+**Important**: The 4th command (CMD_TRIGGER_DATA with Function 0x43) is critical for starting the data flow. Without this command, the device will not stream data. The device may send multiple initialization response packets (type 0x03) during the handshake.
 
 ### Data Packet Format (50 bytes)
 
@@ -309,14 +325,15 @@ template:
 ## Implementation Notes
 
 1. **Function 0x43 vs 0x56**: Despite documentation, Function 0x43 provides real-time data
-2. **Simplified Initialization**: Only one init command is sent, device handles the rest
-3. **Multiple Init Responses**: Device may send 2-3 init response packets before data
-4. **Checksum**: Currently bypassed as the algorithm differs from documentation
-5. **Buffer Management**: Robust handling of fragmented packets and buffer alignment
-6. **Device Name Handling**: Automatic correction when device name is None or MAC address
-7. **Protection Status**: Monitored via byte 15 (lower 7 bits) for safety alerts
-8. **Temperature Validation**: Removed - trust the device and Home Assistant to handle values
-9. **Current Reading**: Uses a 4-byte read to get both magnitude and sign in one operation
+2. **4-Command Initialization**: Complete sequence required: Init → ACK → Data Stream → Trigger Data (0x43)
+3. **Critical 4th Command**: The CMD_TRIGGER_DATA (Function 0x43) command is essential for starting data flow
+4. **Multiple Init Responses**: Device may send 2-3 init response packets before data
+5. **Checksum**: Currently bypassed as the algorithm differs from documentation
+6. **Buffer Management**: Robust handling of fragmented packets and buffer alignment
+7. **Device Name Handling**: Automatic correction when device name is None or MAC address
+8. **Protection Status**: Monitored via byte 15 (lower 7 bits) for safety alerts
+9. **Temperature Validation**: Removed - trust the device and Home Assistant to handle values
+10. **Current Reading**: Uses a 4-byte read to get both magnitude and sign in one operation
 
 ## Testing
 
@@ -342,13 +359,14 @@ Test coverage includes:
 | Problem | Cause | Solution |
 |---------|-------|----------|
 | Device not discovered | Name is None or MAC address | Plugin auto-corrects to "Pro BMS" |
-| No data after init | Device needs time to respond | Wait for multiple init responses |
+| No data after init | Missing 4th command (0x43) | Ensure all 4 commands are sent in sequence |
 | Wrong current direction | Incorrect byte/bit check | Use byte 15 bit 7 for direction |
 | Temperature shows unexpected value | Check device readings | Verify with actual device data |
 | SOC shows 0% | Device calibrating | Wait 10-30 seconds after connection |
 | No runtime value | Battery charging | Runtime only available when discharging |
 | Slow initialization | Multiple init packets | Normal behavior, wait for data packets |
 | Buffer alignment issues | Fragmented packets | Fixed with proper header search |
+| Device detected but no data | Incomplete init sequence | Must send all 4 commands including CMD_TRIGGER_DATA |
 
 ### Debug Logging
 
