@@ -10,6 +10,7 @@ from bleak.uuids import normalize_uuid_str
 from .basebms import (
     AdvertisementPattern,
     BaseBMS,
+    BMSdp,
     BMSpackvalue,
     BMSsample,
     BMSvalue,
@@ -30,17 +31,17 @@ class BMS(BaseBMS):
     _HEAD_LEN: Final[int] = 5
     _MIN_LEN: Final[int] = 7  # HEAD, CMD, VER, DEV, LEN, CRC (2 bytes)
 
-    _FIELDS: Final[list[tuple[BMSvalue, int, int, bool, Callable[[int], Any]]]] = [
-        ("temperature", 18, 2, True, lambda x: x / 10),
-        ("voltage", 14, 2, False, lambda x: x / 100),
-        ("current", 16, 2, True, lambda x: x),
-        ("pack_count", 42, 2, False, lambda x: x),
-        # ("cycle_charge", 8, 4, False, lambda x: x),
-        # ("cycles", 46, 2, False, lambda x: x),
-        # ("design_capacity", 4, 4, False, lambda x: x),
-        ("battery_level", 8, 2, False, lambda x: x),
-        # ("problem_code", 100, 8, False, lambda x: x),
-    ]
+    _FIELDS: Final[tuple[BMSdp, ...]] = (
+        BMSdp("temperature", 18, 2, True, lambda x: x / 10),
+        BMSdp("voltage", 14, 2, False, lambda x: x / 100),
+        BMSdp("current", 16, 2, True, lambda x: x),
+        BMSdp("pack_count", 42, 2, False, lambda x: x),
+        # BMSdp("cycle_charge", 8, 4, False, lambda x: x),
+        # BMSdp("cycles", 46, 2, False, lambda x: x),
+        # BMSdp("design_capacity", 4, 4, False, lambda x: x),
+        BMSdp("battery_level", 8, 2, False, lambda x: x),
+        # BMSdp("problem_code", 100, 8, False, lambda x: x),
+    )
 
     _PFIELDS: Final[list[tuple[BMSpackvalue, int, bool, Callable[[int], Any]]]] = [
         ("pack_voltages", 46, False, lambda x: x / 100),
@@ -155,27 +156,14 @@ class BMS(BaseBMS):
         frame += int.to_bytes(crc_modbus(frame), 2, byteorder="little")
         return bytes(frame)
 
-    @staticmethod
-    def _decode_data(data: bytearray) -> BMSsample:
-        result: BMSsample = {}
-        for key, idx, size, sign, func in BMS._FIELDS:
-            result[key] = func(
-                int.from_bytes(
-                    data[BMS._HEAD_LEN + idx : BMS._HEAD_LEN + idx + size],
-                    byteorder="big",
-                    signed=sign,
-                )
-            )
-        return result
-
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         # await self._await_reply(BMS._cmd(0, 0xf3, 0xea64, 0x1))
         await self._await_reply(BMS._cmd(1, 0xF3, 0x7654, 0x37))
-        # #
-        # # parse data from self._data here
 
-        data: BMSsample = BMS._decode_data(self._data_final[0x016E])
+        data: BMSsample = BMS._decode_data(
+            BMS._FIELDS, self._data_final[0x016E], offset=BMS._HEAD_LEN
+        )
 
         for pack in range(1, 1 + data.get("pack_count", 0)):
             await self._await_reply(BMS._cmd(pack, 0xF3, 0x75F8, 0x52))
@@ -209,16 +197,11 @@ class BMS(BaseBMS):
             data.setdefault("cell_voltages", []).extend(pack_cells)
             # add temperature sensors (4x cell temperature + 4 reserved)
             data.setdefault("temp_values", []).extend(
-                (
-                    int.from_bytes(
-                        pack_response[
-                            BMS._TEMP_POS + idx * 2 : BMS._TEMP_POS + idx * 2 + 2
-                        ],
-                        byteorder="big",
-                        signed=True,
-                    )
+                BMS._temp_values(
+                    pack_response,
+                    values=pack_response[BMS._TEMPNUM_POS],
+                    start=BMS._TEMP_POS,
                 )
-                for idx in range(pack_response[BMS._TEMPNUM_POS])
             )
 
         self._data_final.clear()
