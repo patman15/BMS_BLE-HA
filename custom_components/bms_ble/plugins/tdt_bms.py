@@ -130,7 +130,6 @@ class BMS(BaseBMS):
 
         if self._data[1] != BMS._RSP_VER:
             self._log.debug("unknown frame version: V%.1f", self._data[1] / 10)
-            return
 
         if self._data[4]:
             self._log.debug("BMS reported error code: 0x%X", self._data[4])
