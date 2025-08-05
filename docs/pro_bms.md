@@ -91,8 +91,8 @@ After initialization, the device streams 50-byte packets at ~1Hz via notificatio
 | 12-13 | 2 | Current | Current magnitude | Little-endian, `value / 1000.0` A |
 | 14 | 1 | Unknown | - | - |
 | 15 | 1 | Status/Direction | Bit 7: discharge flag (1=discharge, 0=charge) | Bits 0-6: protection status |
-| 16 | 1 | Temperature | Primary temperature sensor | `value / 10.0` °C |
-| 17-19 | 3 | Unknown | Reserved (always 0x00 0x00 0x00) | - |
+| 16-18 | 3 | Temperature | Primary temperature sensor | 2 bytes value (little-endian) + 1 byte sign |
+| 19 | 1 | Unknown | Reserved (always 0x00) | - |
 | 20-21 | 2 | Remaining Capacity | Current charge in battery | Little-endian, `value * 10 / 1000.0` Ah |
 | 22-23 | 2 | Unknown | - | - |
 | 24 | 1 | **State of Charge** | Battery percentage | Direct value, 0-100% |
@@ -141,11 +141,17 @@ This provides accurate time-to-empty estimates based on current discharge rate.
      - Apply negative sign if discharging
 
 3. **Temperature**:
-   - Read byte 16 (unsigned byte: 0-255)
-   - Divide by 10 to get temperature in °C
-   - Valid range: 0°C to 25.5°C (limited by unsigned byte encoding)
-   - Note: While some protocol documentation suggests temperature should be 3 bytes (value + sign + padding),
-     actual device logs show only the first byte is used, with bytes 17-18 always being 0x00 0x00
+   - Read 3 bytes starting at offset 12 (bytes 16-18)
+   - Bytes 16-17: Temperature magnitude as 16-bit little-endian unsigned (0.1°C units)
+   - Byte 18: Sign byte (0x00 = positive, non-zero = negative)
+   - Lambda implementation: `((x & 0xFFFF) / 10.0) * (1 if (x >> 16) == 0x00 else -1)`
+     - `x & 0xFFFF`: Extract lower 16 bits (magnitude from bytes 16-17)
+     - `x >> 16`: Shift to get byte 18 (sign byte)
+     - Check if sign byte is 0x00 for positive temperature
+     - Divide by 10 to convert from 0.1°C units to °C
+     - Apply negative sign if sign byte is non-zero
+   - Note: Current implementation follows the protocol specification using all 3 bytes,
+     though in practice bytes 17-18 are typically 0x00 0x00 for room temperature readings
 
 4. **Protection Status**:
    - Lower 7 bits of byte 15 indicate protection/error conditions

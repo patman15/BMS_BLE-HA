@@ -32,7 +32,7 @@ class BMS(BaseBMS):
         # (name, offset_in_data, size, conversion_func)
         ("voltage", 4, 2, lambda x: x / 100.0),  # voltage in 0.01V at bytes 8-9
         ("current", 8, 4, lambda x: ((x & 0xFFFF) / 1000.0) * (-1 if (x >> 24) & 0x80 else 1)),  # current from bytes 12-15
-        ("temperature", 12, 1, lambda x: x / 10.0),  # temperature at byte 16
+        ("temperature", 12, 3, lambda x: ((x & 0xFFFF) / 10.0) * (1 if (x >> 16) == 0x00 else -1)),  # temperature at bytes 16-18: 2-byte value + 1-byte sign
         ("cycle_charge", 16, 2, lambda x: x * 10 / 1000.0),  # remaining capacity at bytes 20-21 (data offset 16-17) in 10mAh units, convert to Ah
         ("battery_level", 20, 1, lambda x: x),  # SOC at byte 24
         # Runtime field removed - BMS provides incorrect values that increase with discharge current
