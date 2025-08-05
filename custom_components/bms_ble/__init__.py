@@ -49,6 +49,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> boo
             },
         )
 
+    # Check if device name is None (can happen on HA restart before device advertises)
+    if ble_device.name is None:
+        LOGGER.debug("Device %s found but name not yet available", entry.unique_id)
+        raise ConfigEntryNotReady(
+            f"Device {entry.unique_id} found but name not yet available"
+        )
+
     plugin: ModuleType = await async_import_module(hass, entry.data["type"])
     coordinator = BTBmsCoordinator(hass, ble_device, plugin.BMS(ble_device), entry)
 

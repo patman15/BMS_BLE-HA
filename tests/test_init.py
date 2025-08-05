@@ -58,6 +58,45 @@ async def test_init_fail(
     ), "Failure: config entry generated sensors."
 
 
+@pytest.mark.usefixtures("enable_bluetooth")
+async def test_device_name_none(
+    monkeypatch,
+    bms_fixture: str,
+    bt_discovery: BluetoothServiceInfoBleak,
+    hass: HomeAssistant,
+) -> None:
+    """Test that setup fails gracefully when device name is None."""
+    # Mock async_ble_device_from_address to return a device with None name
+    from bleak.backends.device import BLEDevice
+
+    mock_device = BLEDevice(
+        address="cc:cc:cc:cc:cc:cc",
+        name=None,
+        details={"path": "/org/bluez/hci0/dev_cc_cc_cc_cc_cc_cc"},
+        rssi=-85,
+    )
+
+    def mock_device_from_address(hass, address, connectable):
+        return mock_device
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.async_ble_device_from_address",
+        mock_device_from_address,
+    )
+
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
+
+    cfg = mock_config(bms=bms_fixture)
+    cfg.add_to_hass(hass)
+
+    # Setup should fail with ConfigEntryNotReady
+    assert not await hass.config_entries.async_setup(cfg.entry_id)
+    await hass.async_block_till_done()
+
+    # Verify the entry is in retry state
+    assert cfg.state is ConfigEntryState.SETUP_RETRY
+
+
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_unload_entry(
     monkeypatch,
