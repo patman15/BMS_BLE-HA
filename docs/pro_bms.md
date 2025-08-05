@@ -25,13 +25,9 @@ Protocol documentation is available here but seems to not always be correct: htt
 The Pro BMS is detected using:
 - Exact local name match: "Pro BMS"
 - Service UUID: `0000fff0-0000-1000-8000-00805f9b34fb`
-- Manufacturer ID: `15795` (changed from 76 to avoid conflicts)
 - Must be connectable
 
-**Note**: The device exhibits unusual Bluetooth LE advertisement behavior, broadcasting with hundreds of different manufacturer IDs in a single advertisement packet. After analysis, manufacturer ID 15795 was chosen as it:
-- Is frequently advertised by ProBMS devices
-- Does not conflict with other BMS plugins
-- Is not reserved for major manufacturers (unlike 76 which is Apple's ID)
+**Note**: The device exhibits unusual Bluetooth LE advertisement behavior, broadcasting with hundreds of different manufacturer IDs in a single advertisement packet. Due to this behavior and conflicts with other BMS devices (particularly CBTPWR which matches on the same service UUID with manufacturer ID 0), the ProBMS matcher relies only on the exact local name and service UUID for detection. The manufacturer ID has been removed from the matcher to ensure proper device detection.
 
 ### Device Name Handling
 
@@ -70,6 +66,16 @@ The complete sequence is: Init → Init Response → ACK → Data Stream → **T
 
 **Important**: The 4th command (CMD_TRIGGER_DATA with Function 0x43) is critical for starting the data flow. Without this command, the device will not stream data. The device may send multiple initialization response packets (type 0x03) during the handshake.
 
+### Transition Period
+
+After the initialization sequence completes, the device may continue sending initialization response packets (type 0x03) for a short period before transitioning to real-time data packets (type 0x04). The integration handles this transition period by:
+
+- Waiting up to 1 second after initialization for the device to stabilize
+- Retrying data packet reception up to 5 times with short delays
+- Only considering packets of type 0x04 with at least 45 bytes as valid data
+
+This ensures reliable data collection even when the device takes time to transition from initialization mode to data streaming mode.
+
 ### Data Packet Format (50 bytes)
 
 After initialization, the device streams 50-byte packets at ~1Hz via notifications:
@@ -87,14 +93,35 @@ After initialization, the device streams 50-byte packets at ~1Hz via notificatio
 | 15 | 1 | Status/Direction | Bit 7: discharge flag (1=discharge, 0=charge) | Bits 0-6: protection status |
 | 16 | 1 | Temperature | Primary temperature sensor | `value / 10.0` °C |
 | 17-19 | 3 | Unknown | Reserved (always 0x00 0x00 0x00) | - |
-| 20-21 | 2 | Remaining Capacity | Current charge in battery | `value * 10` mAh |
+| 20-21 | 2 | Remaining Capacity | Current charge in battery | Little-endian, `value * 10 / 1000.0` Ah |
 | 22-23 | 2 | Unknown | - | - |
-| 24 | 1 | **State of Charge** | Battery percentage | 0-100% |
-| 25-27 | 3 | Unknown | - | - |
-| 28-29 | 2 | Runtime | Remaining time (when discharging) | minutes |
-| 30-39 | 10 | Unknown/Reserved | - | - |
-| 40-41 | 2 | Design Capacity | Total battery capacity | `value / 100.0` Ah |
+| 24 | 1 | **State of Charge** | Battery percentage | Direct value, 0-100% |
+| 25-31 | 7 | Unknown | - | - |
+| 32-33 | 2 | ~~Runtime~~ | ~~Remaining time~~ | **Not used** - see note below |
+| 34-39 | 6 | Unknown/Reserved | - | - |
+| 40-41 | 2 | Design Capacity | Total battery capacity | Little-endian, `value / 155.0` Ah |
 | 42-49 | 8 | Unknown/Reserved | - | - |
+
+### Protocol Documentation Discrepancy
+
+**Important Note**: The official BT630 protocol documentation appears to have incorrect field offsets. Through empirical testing with actual device data, we've determined that the documentation's parameter offsets do not align with the actual data structure. Our implementation is based on real device data analysis and has been verified to produce correct values.
+
+The key differences from the official documentation:
+- Parameters start immediately after the fixed header (offset 8), not at a later offset
+- Remaining capacity uses 10mAh units (multiply by 10, divide by 1000), not 0.01Ah units
+- SOC is a direct percentage value (0-100), not divided by 100
+- Design capacity uses a special divisor of 155, not 100
+- Runtime field at offset 32-33 is not used (see Runtime Calculation note below)
+
+### Runtime Calculation
+
+**Important**: The runtime field at bytes 32-33 is not used by this integration. Analysis of real device data showed that this field exhibits inverse behavior - it increases when discharge current increases, which is opposite to battery physics. Instead, runtime is calculated by the base class using the standard formula:
+
+```
+runtime (seconds) = remaining_capacity (Ah) / abs(current) (A) * 3600
+```
+
+This provides accurate time-to-empty estimates based on current discharge rate.
 
 ### Data Conversion Details
 

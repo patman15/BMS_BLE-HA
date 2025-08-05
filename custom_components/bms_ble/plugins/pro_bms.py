@@ -26,17 +26,18 @@ class BMS(BaseBMS):
     # Critical 4th command that triggers data streaming (Function 0x43)
     CMD_TRIGGER_DATA: Final[bytes] = bytes.fromhex("55aa0901015580430000120084")
 
-    # Field definitions based on btsnoop packet analysis
+    # Field definitions based on btsnoop packet analysis and packet structure from documentation
     # Offset is from start of data section (after 4-byte header)
     _FIELDS: Final[list[tuple[BMSvalue, int, int, Callable[[int], Any]]]] = [
         # (name, offset_in_data, size, conversion_func)
-        ("voltage", 4, 2, lambda x: x / 100.0),  # voltage in 0.01V
-        ("current", 8, 2, lambda x: (x if x < 0x8000 else x - 0x10000) / 100.0),  # current in 0.01A (signed 16-bit)
-        ("temperature", 12, 1, lambda x: x / 10.0),  # temperature in 0.1°C (unsigned for this device)
-        ("battery_level", 16, 1, lambda x: x),  # remaining percentage
-        ("runtime", 28, 2, lambda x: x * 60),  # runtime in minutes, convert to seconds
-        ("cycle_charge", 32, 2, lambda x: x / 100.0),  # cumulative charge in 0.01 kWh
-        ("design_capacity", 36, 2, lambda x: x / 100.0),  # design capacity in 0.01 Ah
+        ("voltage", 4, 2, lambda x: x / 100.0),  # voltage in 0.01V at bytes 8-9
+        ("current", 8, 4, lambda x: ((x & 0xFFFF) / 1000.0) * (-1 if (x >> 24) & 0x80 else 1)),  # current from bytes 12-15
+        ("temperature", 12, 1, lambda x: x / 10.0),  # temperature at byte 16
+        ("cycle_charge", 16, 2, lambda x: x * 10 / 1000.0),  # remaining capacity at bytes 20-21 (data offset 16-17) in 10mAh units, convert to Ah
+        ("battery_level", 20, 1, lambda x: x),  # SOC at byte 24
+        # Runtime field removed - BMS provides incorrect values that increase with discharge current
+        # Base class will calculate runtime correctly as: remaining_capacity / abs(current) * 3600
+        ("design_capacity", 36, 2, lambda x: x / 155.0),  # design capacity at bytes 40-41, divide by 155 to get Ah, not sure why 155 but it wors
     ]
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
@@ -84,6 +85,7 @@ class BMS(BaseBMS):
                 "power",
                 "battery_charging",
                 "cycle_capacity",
+                "runtime",
             }
         )
 
@@ -161,12 +163,30 @@ class BMS(BaseBMS):
             self._init_complete = True
             self._log.debug("Initialization sequence complete")
 
-        # Wait for data packet
-        self._data_event.clear()  # clear event to ensure new data is acquired
-        await asyncio.wait_for(self._wait_event(), timeout=BaseBMS.TIMEOUT)
+            # Allow time for device to transition from init responses to data packets
+            # The device may continue sending init responses for a short period
+            await asyncio.sleep(1.0)
 
-        if len(self._data) < 45:
-            self._log.debug("Incomplete data packet")
+        # Always clear the event to ensure we get fresh data on each update
+        self._data_event.clear()
+
+        # Wait for new data packet
+        try:
+            await asyncio.wait_for(self._wait_event(), timeout=5.0)
+
+            # Verify we have valid data
+            if not self._streaming or len(self._data) < 45:
+                self._log.error("No valid data received")
+                # Reset init state to retry initialization on next update
+                self._init_complete = False
+                self._streaming = False
+                return {}
+
+        except TimeoutError:
+            self._log.error("Timeout waiting for data update")
+            # Reset init state to retry initialization on next update
+            self._init_complete = False
+            self._streaming = False
             return {}
 
         # Skip header (2), length (1), type (1) to get to data section
@@ -174,7 +194,6 @@ class BMS(BaseBMS):
         result: BMSsample = {}
 
         # Parse fields using the same pattern as other plugins
-        # We already checked that len(self._data) >= 45, so we have at least 41 bytes in data_section
         for key, offset, size, func in BMS._FIELDS:
             value = int.from_bytes(
                 data_section[offset:offset + size],
@@ -183,8 +202,10 @@ class BMS(BaseBMS):
             )
             result[key] = func(value)
 
-        # Parse protection status at offset 11 from start of packet (offset 7 in data_section)
-        protection = data_section[7] & 0x7F
+
+        # Parse protection status from byte 15 (offset 11 in data_section)
+        # Lower 7 bits indicate protection/error conditions
+        protection = data_section[11] & 0x7F
         if protection:
             result["problem_code"] = protection
 

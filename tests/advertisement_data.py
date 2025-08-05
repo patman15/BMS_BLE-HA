@@ -271,15 +271,6 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "pro_bms",
     ),
-    (  # Pro BMS test: name, service UUID, and manufacturer ID matching
-        generate_advertisement_data(
-            local_name="Pro BMS",
-            manufacturer_data={0x3DB3: bytes.fromhex("358683777d7d6998c3cb56151fc3")},  # Pro BMS specific manufacturer ID (15795)
-            service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
-            rssi=-60,
-        ),
-        "pro_bms",
-    ),
     (  # source PCAP
         generate_advertisement_data(
             local_name="R-24100BNN160-A00643",
