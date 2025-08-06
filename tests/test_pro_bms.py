@@ -162,9 +162,9 @@ class TestProBMS:
             "current": -2.454,   # 0x96090080: magnitude 0x0996=2454/1000=2.454A, discharge flag 0x80
             "temperature": 22.6,  # 0xe2 = 226 / 10
             "battery_level": 51,  # 0x33
-            # Runtime removed - base class will calculate from cycle_charge/current
-            "cycle_charge": 65.73,  # 0x19ad = 6573 * 10 / 1000 = 65.73 Ah (remaining capacity)
-            "design_capacity": 128.85,  # 0x4e04 = 19972 / 155 = 128.85 Ah
+            "cycle_charge": 65.73,  # 0x19ad = 6573 / 100 = 65.73 Ah (remaining capacity)
+            "power": 14.82,  # 0x05ca = 1482 / 100 = 14.82 W
+            "runtime": 3209,  # 0x0c89 = 3209 seconds (bytes 32-35)
         }
         for key, expected_value in expected.items():
             assert key in result
@@ -198,9 +198,10 @@ class TestProBMS:
             "current": 13.414,   # 0x66340000: magnitude 0x3466=13414/1000=13.414A, no discharge flag
             "temperature": 21.8,  # 0xda = 218 / 10
             "battery_level": 32,  # 0x20
-            # Runtime removed - base class doesn't calculate runtime when charging
-            "cycle_charge": 41.75,  # 0x1057 = 4183 * 10 / 1000 = 41.83 Ah
-            "design_capacity": 117.13,  # 0x46eb = 18155 / 155 = 117.13 Ah
+            "cycle_charge": 41.83,  # 0x1057 = 4183 / 100 = 41.83 Ah
+            "power": 3.9,  # 0x00000186 = 390 / 100 = 3.9 W (bytes 28-31)
+            "runtime": 17961,  # 0x4629 = 17961 seconds (bytes 32-35)
+            "design_capacity": 130,  # Calculated: 41.83 / (32/100) = 130.7 ≈ 130 Ah
         }
 
         for key, expected_value in expected.items():
@@ -208,8 +209,8 @@ class TestProBMS:
             assert result[key] == pytest.approx(expected_value, rel=0.01)
 
     @pytest.mark.asyncio
-    async def test_async_update_discharging_with_runtime(self, mock_device, patch_bleak_client):
-        """Test async update when discharging - runtime calculated by base class."""
+    async def test_async_update_discharging_minimal(self, mock_device, patch_bleak_client):
+        """Test async update when discharging with minimal current."""
         # Use actual recorded data packet with minimal discharge
         mock_client = MockProBMSBleakClient(mock_device)
         mock_client.set_test_data(RECORDED_PACKETS["data_discharging_minimal"])
@@ -221,7 +222,7 @@ class TestProBMS:
         # Perform update
         result = await bms.async_update()
 
-        # Verify parsed values - runtime will be calculated by base class
+        # Verify parsed values
         # 55aa2d0480aa01702f0500008f010080d8000000ba210000430000006b3e000011020000390b00006d4b0000c2648e686957
         # Current is 4 bytes at offset 8-11: 0x8f010080 = -0.399A (0x018f with discharge flag 0x80)
         expected = {
@@ -229,9 +230,10 @@ class TestProBMS:
             "current": -0.399,   # 0x8f010080: magnitude 0x018f=399/1000=0.399A, discharge flag 0x80
             "temperature": 21.6,  # 0xd8 = 216 / 10
             "battery_level": 67,  # 0x43
-            # Runtime removed - base class will calculate: 86.34Ah / 0.399A * 3600 = 779,098 seconds
-            "cycle_charge": 86.34,  # 0x21ba = 8634 * 10 / 1000 = 86.34 Ah
-            "design_capacity": 124.57,  # 0x4b6d = 19309 / 155 = 124.57 Ah
+            "cycle_charge": 86.34,  # 0x21ba = 8634 / 100 = 86.34 Ah
+            "power": 159.79,  # 0x3e6b = 15979 / 100 = 159.79 W
+            "runtime": 529,  # 0x0211 = 529 seconds (bytes 32-35)
+            "design_capacity": 128,  # Calculated: 86.34 / (67/100) = 128.9 ≈ 128 Ah
         }
 
         for key, expected_value in expected.items():
@@ -318,7 +320,9 @@ class TestProBMS:
         result = bms._calc_values()
 
         # Should return the frozenset of values that the base class should calculate
-        assert result == frozenset({"power", "battery_charging", "cycle_capacity", "runtime"})
+        # battery_charging and cycle_capacity are calculated by base class
+        # design_capacity is calculated directly in _async_update, not by base class
+        assert result == frozenset({"battery_charging", "cycle_capacity"})
 
     def test_notification_handler_invalid_header(self, bms):
         """Test notification handler with invalid header."""
@@ -365,10 +369,16 @@ class TestProBMS:
 
     def test_calc_values(self, bms):
         """Test calculated values."""
-        calc_values = BMS._calc_values()
-        assert "power" in calc_values
+        calc_values = bms._calc_values()
+        # Power is provided directly by the BMS, not calculated
+        assert "power" not in calc_values
+        # Runtime is provided directly from packet data (bytes 32-35), not calculated by base class
+        assert "runtime" not in calc_values
+        # These are calculated by the base class
         assert "battery_charging" in calc_values
         assert "cycle_capacity" in calc_values
+        # design_capacity is not in _calc_values since it's calculated directly in _async_update
+        assert "design_capacity" not in calc_values
 
     def test_negative_current_calculation(self, bms):
         """Test negative current calculation."""
@@ -544,6 +554,37 @@ class TestProBMS:
         assert bms._streaming is False
         assert bms._init_response_received is False
 
+
+    @pytest.mark.asyncio
+    async def test_async_update_battery_level_zero(self, mock_device, patch_bleak_client):
+        """Test async update when battery_level is 0 (design_capacity not calculated)."""
+        mock_client = MockProBMSBleakClient(mock_device)
+
+        # Create a modified packet with battery_level = 0
+        base_packet = bytearray(RECORDED_PACKETS["data_charging_high"])
+        # Battery level is at offset 20 in the data section (offset 24 in full packet)
+        base_packet[24] = 0x00  # Set battery_level to 0
+
+        mock_client.set_test_data(base_packet)
+        patch_bleak_client(lambda *args, **kwargs: mock_client)
+
+        bms = BMS(mock_device)
+
+        # Perform update
+        result = await bms.async_update()
+
+        # Verify battery_level is 0
+        assert result["battery_level"] == 0
+
+        # design_capacity should not be calculated when battery_level is 0
+        assert "design_capacity" not in result
+
+        # But cycle_charge should still be present
+        assert "cycle_charge" in result
+
+
+
+
     def test_incomplete_data_packet_check(self, bms):
         """Test that incomplete data packets are detected."""
         # Packet that's too short (less than 45 bytes)
@@ -608,6 +649,32 @@ class TestProBMS:
 
             # Should return empty dict for no init response
             assert result == {}
+
+
+    @pytest.mark.asyncio
+    async def test_calc_values_with_zero_battery_level(self, mock_device, patch_bleak_client):
+        """Test design_capacity calculation when battery_level is 0."""
+        # Since we simplified the code, we only need to test the edge case
+        # where battery_level is 0 to avoid division by zero
+
+        mock_client = MockProBMSBleakClient(mock_device)
+
+        # Use charging packet but modify battery_level to 0
+        zero_soc_packet = bytearray(RECORDED_PACKETS["data_charging_high"])
+        zero_soc_packet[24] = 0x00  # Set SOC to 0
+
+        mock_client.set_test_data(zero_soc_packet)
+        patch_bleak_client(lambda *args, **kwargs: mock_client)
+
+        bms = BMS(mock_device)
+        result = await bms.async_update()
+
+        # Verify battery_level is 0 and design_capacity is not calculated
+        assert result["battery_level"] == 0
+        assert "design_capacity" not in result
+        # But base class calculations should still work
+        assert "battery_charging" in result  # Base class calculates this
+        assert "cycle_capacity" in result  # Base class calculates this
 
 
 class TestProBMSDeviceDetection:

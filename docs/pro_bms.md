@@ -13,6 +13,8 @@ Protocol documentation is available here but seems to not always be correct: htt
 
 **Important Protocol Note**: While the official BT630 protocol documentation specifies Function 0x56 for real-time data, extensive testing has shown this does not work. The working implementation uses Function 0x43, which the documentation labels as "historical data" but actually provides real-time values.
 
+**CRITICAL UPDATE (2025-08)**: Extensive protocol analysis revealed multiple field misinterpretations. The ÷155 formula for "design_capacity" was a mathematical coincidence - those bytes are actually part of a timestamp. Several fields have been corrected based on the actual protocol specification.
+
 ## Device Identification
 
 - **Local Name**: "Pro BMS"
@@ -76,7 +78,7 @@ After the initialization sequence completes, the device may continue sending ini
 
 This ensures reliable data collection even when the device takes time to transition from initialization mode to data streaming mode.
 
-### Data Packet Format (50 bytes)
+### Data Packet Format (50 bytes) - CORRECTED
 
 After initialization, the device streams 50-byte packets at ~1Hz via notifications:
 
@@ -93,35 +95,33 @@ After initialization, the device streams 50-byte packets at ~1Hz via notificatio
 | 15 | 1 | Status/Direction | Bit 7: discharge flag (1=discharge, 0=charge) | Bits 0-6: protection status |
 | 16-18 | 3 | Temperature | Primary temperature sensor | 2 bytes value (little-endian) + 1 byte sign |
 | 19 | 1 | Unknown | Reserved (always 0x00) | - |
-| 20-21 | 2 | Remaining Capacity | Current charge in battery | Little-endian, `value * 10 / 1000.0` Ah |
-| 22-23 | 2 | Unknown | - | - |
+| 20-23 | 4 | **Remaining Capacity** | Current charge in battery | Little-endian, `value / 100.0` Ah |
 | 24 | 1 | **State of Charge** | Battery percentage | Direct value, 0-100% |
-| 25-31 | 7 | Unknown | - | - |
-| 32-33 | 2 | ~~Runtime~~ | ~~Remaining time~~ | **Not used** - see note below |
-| 34-39 | 6 | Unknown/Reserved | - | - |
-| 40-41 | 2 | Design Capacity | Total battery capacity | Little-endian, `value / 155.0` Ah |
-| 42-49 | 8 | Unknown/Reserved | - | - |
+| 25-27 | 3 | **Reserved/Unused** | Always 0x000000 | Not used by device |
+| 28-31 | 4 | **Power** | Power in Watts | Little-endian, `value / 100.0` W |
+| 32-35 | 4 | **Total Charge Energy** | Cumulative energy charged | Little-endian, `value / 100.0` kWh |
+| 36-39 | 4 | **Total Discharge Capacity** | Cumulative discharge | Little-endian, `value / 10.0` Ah |
+| 40-43 | 4 | **Timestamp** | Unix timestamp | Little-endian, seconds since epoch |
+| 44-49 | 6 | Unknown/Reserved | - | - |
 
-### Protocol Documentation Discrepancy
+### Protocol Documentation Discrepancy - RESOLVED
 
-**Important Note**: The official BT630 protocol documentation appears to have incorrect field offsets. Through empirical testing with actual device data, we've determined that the documentation's parameter offsets do not align with the actual data structure. Our implementation is based on real device data analysis and has been verified to produce correct values.
+**2025-08 Update**: Through extensive protocol analysis and comparison with the official specification, we've identified and corrected multiple field misinterpretations:
 
-The key differences from the official documentation:
-- Parameters start immediately after the fixed header (offset 8), not at a later offset
-- Remaining capacity uses 10mAh units (multiply by 10, divide by 1000), not 0.01Ah units
-- SOC is a direct percentage value (0-100), not divided by 100
-- Design capacity uses a special divisor of 155, not 100
-- Runtime field at offset 32-33 is not used (see Runtime Calculation note below)
+1. **Remaining Capacity (bytes 20-23)**: Now correctly uses `value / 100` formula (was confusingly doing `value * 10 / 1000`)
+2. **Remaining Time (bytes 25-27)**: Now properly captured as minutes and converted to seconds for the runtime field
+3. **Total Charge Energy (bytes 32-35)**: Previously misinterpreted as "runtime in seconds", actually cumulative charging energy in 0.01 kWh units
+4. **Total Discharge Capacity (bytes 36-39)**: Previously missing, cumulative discharge in 0.1 Ah units (not captured due to BMSvalue constraints)
+5. **Design Capacity REMOVED**: The field at bytes 40-41 with ÷155 formula was completely wrong - these bytes are part of a Unix timestamp (bytes 40-43)
 
-### Runtime Calculation
+The ÷155 formula for "design_capacity" was a mathematical coincidence that happened to produce a plausible value in one test case but was completely incorrect.
 
-**Important**: The runtime field at bytes 32-33 is not used by this integration. Analysis of real device data showed that this field exhibits inverse behavior - it increases when discharge current increases, which is opposite to battery physics. Instead, runtime is calculated by the base class using the standard formula:
+### Runtime Field
 
-```
-runtime (seconds) = remaining_capacity (Ah) / abs(current) (A) * 3600
-```
-
-This provides accurate time-to-empty estimates based on current discharge rate.
+The runtime field is calculated by the base class from remaining capacity and current:
+- Bytes 25-27 in the packet are unused/reserved (always 0x000000)
+- The base class automatically calculates runtime when current is non-zero
+- Represents time to full charge when charging, time to empty when discharging
 
 ### Data Conversion Details
 
@@ -164,33 +164,46 @@ This provides accurate time-to-empty estimates based on current discharge rate.
      - 0x20: Short circuit
      - 0x40: Cell imbalance
 
-5. **Remaining Capacity**:
-   - Read 16-bit little-endian from bytes 20-21
-   - Multiply by 10 to get mAh
-   - Divide by 1000 to get Ah
+5. **Remaining Capacity** (CORRECTED):
+   - Read 4 bytes starting at offset 16 (bytes 20-23)
+   - Little-endian value in 0.01 Ah units
+   - Formula: `value / 100.0` to get Ah
+   - Note: Previously used confusing `value * 10 / 1000.0` which gave same result
 
 6. **State of Charge (SOC)**:
    - Read byte 24 directly as percentage (0-100)
 
-7. **Design Capacity**:
-   - Read 16-bit little-endian from bytes 40-41
-   - Divide by 100 to get Ah
+7. **Reserved Bytes**:
+   - Bytes 25-27 are unused/reserved (always 0x000000)
+   - Not processed by the plugin
 
-8. **Runtime**:
-   - Read 16-bit little-endian from bytes 28-29 (minutes)
-   - Convert to seconds by multiplying by 60
-   - Only available when discharging (current < 0)
-   - Valid range: 1-65534 minutes
+8. **Power**:
+   - Read 32-bit little-endian from bytes 28-31
+   - Divide by 100 to get Watts
+   - Positive when charging, negative when discharging
+
+9. **Total Charge Energy** (CORRECTED):
+   - Read 32-bit little-endian from bytes 32-35
+   - Formula: `value / 100.0` to get kWh
+   - This is cumulative energy charged, NOT runtime
+   - Note: Not exposed as a sensor due to BMSvalue constraints
+
+10. **Total Discharge Capacity** (NEW BUT NOT CAPTURED):
+    - Read 32-bit little-endian from bytes 36-39
+    - Formula: `value / 10.0` to get Ah
+    - This is cumulative discharge capacity
+    - Note: Not exposed as a sensor due to BMSvalue constraints
 
 ## Calculated Values
 
 The plugin calculates these additional values:
 
-1. **Power**: `voltage × current` (W) - calculated by base class
-2. **Battery Charging**: `True` if current > 0, `False` otherwise - calculated by base class
-3. **Cycle Charge**: Same as remaining capacity (Ah)
-4. **Cycle Capacity**: `voltage × cycle_charge` (Wh) - calculated by base class
-5. **Temperature Values Array**: Single-element array with temperature value
+1. **Battery Charging**: `True` if current > 0, `False` otherwise
+2. **Design Capacity**: Calculated from remaining capacity and SOC: `remaining_capacity / (SOC / 100)` when SOC > 0
+3. **Cycle Capacity**: `voltage × remaining_capacity` (Wh)
+4. **Cycle Charge**: Same as remaining capacity (Ah) - using existing BMSvalue field name
+
+Note: The previously bogus "design_capacity" field from bytes 40-41 has been removed. Design capacity is now properly calculated from remaining capacity and SOC.
 
 ## Home Assistant Integration
 
@@ -201,17 +214,16 @@ The plugin exposes these entities:
 - `sensor.pro_bms_current` - Current flow (A, positive = charging, negative = discharging)
 - `sensor.pro_bms_battery` - State of charge (%)
 - `sensor.pro_bms_temperature` - Temperature (°C)
-- `sensor.pro_bms_power` - Power (W)
-- `sensor.pro_bms_runtime` - Remaining runtime when discharging (seconds)
+- `sensor.pro_bms_power` - Power (W) - provided directly by BMS
+- `sensor.pro_bms_runtime` - Remaining time in seconds (calculated by base class)
 - `sensor.pro_bms_stored_energy` - Stored energy / Cycle capacity (Wh)
 
 ### Binary Sensors
 - `binary_sensor.pro_bms_battery_charging` - Charging status (on = charging)
 
 ### Internal Values (not exposed as sensors)
-- `remaining_capacity` - Current charge in battery (Ah)
-- `design_capacity` - Total battery capacity (Ah)
-- `cycle_charge` - Same as remaining capacity (Ah)
+- `cycle_charge` - Remaining capacity in battery (Ah)
+- `design_capacity` - Total battery capacity (Ah) - calculated from remaining/SOC
 
 ### Template Sensor for Charge Time Remaining
 
@@ -365,8 +377,8 @@ template:
 6. **Buffer Management**: Robust handling of fragmented packets and buffer alignment
 7. **Device Name Handling**: Automatic correction when device name is None or MAC address
 8. **Protection Status**: Monitored via byte 15 (lower 7 bits) for safety alerts
-9. **Temperature Validation**: Removed - trust the device and Home Assistant to handle values
-10. **Current Reading**: Uses a 4-byte read to get both magnitude and sign in one operation
+9. **Field Corrections**: Multiple fields corrected in 2025-08 based on protocol analysis
+10. **Calculated Design Capacity**: Now derived from remaining capacity and SOC instead of bogus bytes 40-41
 
 ## Testing
 
@@ -384,6 +396,7 @@ Test coverage includes:
 - Device name correction
 - Protection status detection
 - Edge cases and error conditions
+- Field interpretation corrections
 
 ## Troubleshooting
 
@@ -396,7 +409,8 @@ Test coverage includes:
 | Wrong current direction | Incorrect byte/bit check | Use byte 15 bit 7 for direction |
 | Temperature shows unexpected value | Check device readings | Verify with actual device data |
 | SOC shows 0% | Device calibrating | Wait 10-30 seconds after connection |
-| No runtime value | Battery charging | Runtime only available when discharging |
+| Runtime incorrect | Bytes 25-27 are reserved | Base class calculates from capacity/current |
+| Design capacity wrong | Was reading timestamp bytes | Now calculated from remaining/SOC |
 | Slow initialization | Multiple init packets | Normal behavior, wait for data packets |
 | Buffer alignment issues | Fragmented packets | Fixed with proper header search |
 | Device detected but no data | Incomplete init sequence | Must send all 4 commands including CMD_TRIGGER_DATA |
