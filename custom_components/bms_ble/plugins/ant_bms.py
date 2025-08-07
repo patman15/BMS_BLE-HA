@@ -115,7 +115,7 @@ class BMS(BaseBMS):
         )
 
         # verify that data is long enough
-        if len(self._data) < self._exp_len:
+        if BMS._MIN_LEN < len(self._data) < self._exp_len:
             return
 
         if (self._data[2] >> 4) != 0x1:
@@ -130,7 +130,7 @@ class BMS(BaseBMS):
             self._log.debug(
                 "invalid frame length %d != %d", len(self._data), self._exp_len
             )
-            # return
+            # return # TODO: enable
 
         if self._data[2] != self._valid_reply:
             self._log.debug("unexpected response (type 0x%X)", self._data[2])
@@ -144,7 +144,7 @@ class BMS(BaseBMS):
                 int.from_bytes(self._data[-4:-2], "little"),
                 crc,
             )
-            # return
+            # return # TODO: enable
 
         self._data_final = self._data.copy()
         self._data_event.set()
