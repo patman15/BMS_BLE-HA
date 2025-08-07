@@ -55,6 +55,7 @@ class BMS(BaseBMS):
                 "121?0*",  # Eleksol, Ultimatron
                 "12200*",
                 "12300*",
+                "SBL-*",  # SBL
                 "LT40AH",  # LionTron
                 "PKT*",  # Perfektium
                 "gokwh*",

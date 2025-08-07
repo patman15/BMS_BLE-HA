@@ -704,6 +704,15 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "jbd_bms",
     ),
+    (  # source pcap (https://github.com/patman15/BMS_BLE-HA/issues/303)
+        generate_advertisement_data(
+            local_name="HSKS-25A-118",
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            manufacturer_data={123: b"\x02\xff\xff"},
+            rssi=-70,
+        ),
+        "braunpwr_bms",
+    ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/291)
         generate_advertisement_data(
             local_name="GW-24Srenamed1",
