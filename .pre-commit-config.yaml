@@ -7,4 +7,5 @@ repos:
     rev: v1.17.0  # Use the latest stable version of mypy
     hooks:
       - id: mypy
-        args: ["--allow-subclassing-any"]  # avoid HA dependency installation
+        args: ["--allow-subclassing-any"]
+        # args: [--ignore-missing-imports]  # Optional: customize your mypy flags
