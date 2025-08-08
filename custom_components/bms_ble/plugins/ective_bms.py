@@ -147,8 +147,8 @@ class BMS(BaseBMS):
     @staticmethod
     def _conv_int(data: bytearray, sign: bool = False) -> int:
         return int.from_bytes(
-            int(data, 16).to_bytes(len(data) >> 1, byteorder="little", signed=sign),
-            byteorder="big",
+            bytes.fromhex(data.decode("ascii", errors="strict")),
+            byteorder="little",
             signed=sign,
         )
 
