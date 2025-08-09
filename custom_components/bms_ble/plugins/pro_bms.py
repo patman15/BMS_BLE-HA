@@ -1,14 +1,13 @@
 """Module to support Pro BMS."""
 
 import asyncio
-from collections.abc import Callable
-from typing import Any, Final
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue
+from .basebms import AdvertisementPattern, BaseBMS, BMSdp, BMSsample, BMSvalue
 
 
 class BMS(BaseBMS):
@@ -30,24 +29,35 @@ class BMS(BaseBMS):
     # Offset is from start of data_section (after skipping 4 bytes: 55aa + length + type)
     # VALIDATED 2025-08-06: Field offsets validated against 987 Pro BMS packets with physics cross-validation
     # Power field confirmed with 0.019% average error across ALL 987 packets (987/987 perfect matches)
-    _FIELDS: Final[list[tuple[BMSvalue, int, int, Callable[[int], Any]]]] = [
-        # (name, offset_in_data_section, size, conversion_func)
-        # Note: data_section = packet[4:], so data_section[0] = packet[4]
-        ("voltage", 4, 2, lambda x: x / 100.0),  # voltage at data_section[4:6] (packet bytes 8-9) in 0.01V units
-        ("current", 8, 4, lambda x: ((x & 0xFFFF) / 1000.0) * (-1 if (x >> 24) & 0x80 else 1)),  # current at data_section[8:12] (packet bytes 12-15)
-        ("temperature", 12, 3, lambda x: ((x & 0xFFFF) / 10.0) * (1 if (x >> 16) == 0x00 else -1)),  # temperature at data_section[12:15] (packet bytes 16-18)
-        ("cycle_charge", 16, 4, lambda x: x / 100.0),  # remaining capacity at data_section[16:20] (packet bytes 20-23) in 0.01Ah units
-        ("battery_level", 20, 1, lambda x: x),  # SOC at data_section[20] (packet byte 24)
+    _FIELDS: Final[tuple[BMSdp, ...]] = (
+        BMSdp("voltage", 8, 2, False, lambda x: x / 100.0),
+        BMSdp(
+            "current",
+            12,
+            4,
+            False,
+            lambda x: ((x & 0xFFFF) / 1000.0) * (-1 if (x >> 24) & 0x80 else 1),
+        ),
+        BMSdp("problem_code", 15, 4, False, lambda x: x & 0x7F),
+        BMSdp(
+            "temperature",
+            16,
+            3,
+            False,
+            lambda x: ((x & 0xFFFF) / 10.0) * (1 if (x >> 16) == 0x00 else -1),
+        ),
+        BMSdp("cycle_charge", 20, 4, False, lambda x: x / 100.0),
+        BMSdp("battery_level", 24, 1, False, lambda x: x),
         # Note: data_section[21:27] (packet bytes 25-31) contain other data (unknown fields)
         # PHYSICS-VALIDATED: Power field at data_section[28:32] (packet bytes 32-35) in 0.01W units
         # Confirmed by V×I calculations across 987 packets with 0.019% avg error (987/987 perfect matches <1% error)
-        ("power", 28, 4, lambda x: x / 100.0),  # power at data_section[28:32] (packet bytes 32-35) in 0.01W units
+        BMSdp("power", 32, 4, True, lambda x: x / 100.0),
         # Runtime field commented out - BMS firmware has bug calculating runtime at high currents
         # Base BMS class will calculate runtime from remaining capacity / current instead
         # ("runtime", 28, 2, lambda x: min(x * 20, 359940)),  # runtime at bytes 32-33 in 20-second units, cap at 99h59m (359940 seconds)
         # Note: bytes 34-39 contain additional data not currently captured
         # Note: bytes 40-43 are part of timestamp - removed bogus design_capacity field
-    ]
+    )
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize private BMS members."""
@@ -137,7 +147,9 @@ class BMS(BaseBMS):
             self._log.debug("Sending CMD_INIT")
             self._init_response_received = False
             self._data_event.clear()
-            await self._client.write_gatt_char(self.uuid_tx(), BMS.CMD_INIT, response=False)
+            await self._client.write_gatt_char(
+                self.uuid_tx(), BMS.CMD_INIT, response=False
+            )
 
             # Step 2: Wait for initialization response
             try:
@@ -151,7 +163,9 @@ class BMS(BaseBMS):
 
             # Step 3: Send ACK command
             self._log.debug("Sending CMD_ACK")
-            await self._client.write_gatt_char(self.uuid_tx(), BMS.CMD_ACK, response=True)
+            await self._client.write_gatt_char(
+                self.uuid_tx(), BMS.CMD_ACK, response=True
+            )
 
             # Small delay to ensure ACK is processed
             await asyncio.sleep(0.1)
@@ -201,38 +215,7 @@ class BMS(BaseBMS):
             self._streaming = False
             return {}
 
-        # Skip header (2), length (1), type (1) to get to data section
-        data_section = self._data[4:]
-        result: BMSsample = {}
-
-        # Parse fields using the same pattern as other plugins
-        for key, offset, size, func in BMS._FIELDS:
-            value = int.from_bytes(
-                data_section[offset:offset + size],
-                byteorder="little",
-                signed=False
-            )
-            result[key] = func(value)
-
-
-        # Parse protection status from byte 15 (offset 11 in data_section)
-        # Lower 7 bits indicate protection/error conditions
-        protection = data_section[11] & 0x7F
-        if protection:
-            result["problem_code"] = protection
-
-        # Calculate total battery capacity (design_capacity) from current state
-        # Pro BMS provides remaining capacity (cycle_charge) and SOC (battery_level) directly,
-        # so we derive total capacity: total = remaining / (SOC% / 100)
-        #
-        # This differs from most BMS devices which provide design_capacity directly
-        # and require the base class to calculate cycle_charge or battery_level
-        battery_level = result.get("battery_level", 0)
-        cycle_charge = result.get("cycle_charge", 0)
-        if battery_level > 0:
-            result["design_capacity"] = int(cycle_charge / (battery_level / 100.0))
-
-        return result
+        return BMS._decode_data(BMS._FIELDS, self._data, byteorder="little")
 
     async def disconnect(self, reset: bool = True) -> None:
         """Disconnect from the BMS device."""
