@@ -305,28 +305,6 @@ async def test_async_update_already_streaming(patch_bleak_client):
     await bms.disconnect()
 
 
-@pytest.mark.asyncio
-async def test_disconnect_resets_state(patch_bleak_client):
-    """Test that disconnect resets initialization state."""
-    device = generate_ble_device("AA:BB:CC:DD:EE:FF", "Pro BMS")
-    mock_client = MockProBMSBleakClient(device)
-    mock_client.set_test_packet(RECORDED_PACKETS["data_charging"])
-    patch_bleak_client(lambda *args, **kwargs: mock_client)
-
-    bms = BMS(device)
-
-    # Connect and verify state
-    await bms.async_update()
-    assert bms._init_complete is True
-    assert bms._streaming is True
-
-    # Disconnect and verify state is reset
-    await bms.disconnect()
-    assert bms._init_complete is False
-    assert bms._streaming is False
-    assert bms._init_response_received is False
-
-
 def test_notification_handler_invalid_header(patch_bleak_client):
     """Test notification handler with invalid header."""
     device = generate_ble_device("AA:BB:CC:DD:EE:FF", "Pro BMS")

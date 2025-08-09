@@ -137,6 +137,15 @@ class BMS(BaseBMS):
             self._data_event.set()
             self._streaming = True
 
+    async def _init_connection(
+        self, char_notify: BleakGATTCharacteristic | int | str | None = None
+    ) -> None:
+        """Initialize RX/TX characteristics and protocol state."""
+        await super()._init_connection()
+        self._init_complete = False
+        self._streaming = False
+        self._init_response_received = False
+
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         # Perform complete initialization sequence if not already done
@@ -217,10 +226,3 @@ class BMS(BaseBMS):
 
         return BMS._decode_data(BMS._FIELDS, self._data, byteorder="little")
 
-    async def disconnect(self, reset: bool = True) -> None:
-        """Disconnect from the BMS device."""
-        # Reset initialization state when disconnecting
-        self._init_complete = False
-        self._streaming = False
-        self._init_response_received = False
-        await super().disconnect(reset)
