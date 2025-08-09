@@ -30,13 +30,13 @@ class BMS(BaseBMS):
     # VALIDATED 2025-08-06: Field offsets validated against 987 Pro BMS packets with physics cross-validation
     # Power field confirmed with 0.019% average error across ALL 987 packets (987/987 perfect matches)
     _FIELDS: Final[tuple[BMSdp, ...]] = (
-        BMSdp("voltage", 8, 2, False, lambda x: x / 100.0),
+        BMSdp("voltage", 8, 2, False, lambda x: x / 100),
         BMSdp(
             "current",
             12,
             4,
             False,
-            lambda x: ((x & 0xFFFF) / 1000.0) * (-1 if (x >> 24) & 0x80 else 1),
+            lambda x: ((x & 0xFFFF) / 1000) * (-1 if (x >> 24) & 0x80 else 1),
         ),
         BMSdp("problem_code", 15, 4, False, lambda x: x & 0x7F),
         BMSdp(
@@ -44,14 +44,14 @@ class BMS(BaseBMS):
             16,
             3,
             False,
-            lambda x: ((x & 0xFFFF) / 10.0) * (1 if (x >> 16) == 0x00 else -1),
+            lambda x: ((x & 0xFFFF) / 10) * (-1 if x >> 16 else 1),
         ),
-        BMSdp("cycle_charge", 20, 4, False, lambda x: x / 100.0),
+        BMSdp("cycle_charge", 20, 4, False, lambda x: x / 100),
         BMSdp("battery_level", 24, 1, False, lambda x: x),
         # Note: data_section[21:27] (packet bytes 25-31) contain other data (unknown fields)
         # PHYSICS-VALIDATED: Power field at data_section[28:32] (packet bytes 32-35) in 0.01W units
         # Confirmed by V×I calculations across 987 packets with 0.019% avg error (987/987 perfect matches <1% error)
-        BMSdp("power", 32, 4, True, lambda x: x / 100.0),
+        BMSdp("power", 32, 4, True, lambda x: x / 100),
         # Runtime field commented out - BMS firmware has bug calculating runtime at high currents
         # Base BMS class will calculate runtime from remaining capacity / current instead
         # ("runtime", 28, 2, lambda x: min(x * 20, 359940)),  # runtime at bytes 32-33 in 20-second units, cap at 99h59m (359940 seconds)
@@ -99,16 +99,6 @@ class BMS(BaseBMS):
 
     @staticmethod
     def _calc_values() -> frozenset[BMSvalue]:
-        """Return fields for calculation in base class.
-
-        The base class will calculate:
-        - battery_charging: current > 0
-        - cycle_capacity: voltage * cycle_charge
-        - runtime: cycle_charge / abs(current) when discharging
-
-        We don't need to calculate these ourselves.
-        design_capacity is calculated directly in _async_update().
-        """
         return frozenset({"battery_charging", "cycle_capacity", "runtime"})
 
     def _notification_handler(
@@ -225,4 +215,3 @@ class BMS(BaseBMS):
             return {}
 
         return BMS._decode_data(BMS._FIELDS, self._data, byteorder="little")
-
