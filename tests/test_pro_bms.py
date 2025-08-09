@@ -8,8 +8,9 @@ Note: Test values updated on 2025-08-06 to match corrected field offsets:
 
 import asyncio
 import contextlib
-from unittest.mock import patch
+import logging
 
+# from unittest.mock import patch
 import pytest
 
 from custom_components.bms_ble.plugins.basebms import BMSsample
@@ -65,12 +66,12 @@ class MockProBMSBleakClient(MockBleakClient):
         """Mock write to handle initialization and data requests."""
         await super().write_gatt_char(char_specifier, data, response)
 
-        if data == BMS.CMD_INIT:
+        if data == BMS._CMD_INIT:
             # Send initialization response
             if self._notify_callback:
                 self._notify_callback(None, RECORDED_PACKETS["init_response"])
 
-        elif data == BMS.CMD_TRIGGER_DATA:
+        elif data == BMS._CMD_TRIGGER_DATA:
             # Start streaming data packets
             if not self._streaming_task:
                 self._stop_streaming = False
@@ -84,6 +85,7 @@ class MockProBMSBleakClient(MockBleakClient):
             with contextlib.suppress(asyncio.CancelledError):
                 await self._streaming_task
         return await super().disconnect()
+
 
 @pytest.mark.asyncio
 async def test_async_update_discharging(patch_bleak_client):
@@ -181,64 +183,51 @@ async def test_async_update_zero_soc(patch_bleak_client):
 
 
 @pytest.mark.asyncio
-async def test_async_update_incomplete_data(patch_bleak_client):
+async def test_async_update_incomplete_data(patch_bleak_client, patch_bms_timeout):
     """Test handling of incomplete data packet."""
     device = generate_ble_device("AA:BB:CC:DD:EE:FF", "Pro BMS")
     mock_client = MockProBMSBleakClient(device)
     # Set incomplete data (too short)
     mock_client.set_test_packet(bytearray.fromhex("55aa0d0480aa0170"))
+    patch_bms_timeout("pro_bms")
     patch_bleak_client(lambda *args, **kwargs: mock_client)
 
     bms = BMS(device)
 
     result: BMSsample = {}
     with pytest.raises(TimeoutError):
-        await bms.async_update() # Should return empty dict for incomplete data
+        await bms.async_update()  # Should return empty dict for incomplete data
     assert not result
 
     await bms.disconnect()
 
 
 @pytest.mark.asyncio
-async def test_async_update_timeout(patch_bleak_client):
-    """Test timeout during initialization."""
-    device = generate_ble_device("AA:BB:CC:DD:EE:FF", "Pro BMS")
-    mock_client = MockProBMSBleakClient(device)
-    patch_bleak_client(lambda *args, **kwargs: mock_client)
-
-    bms = BMS(device)
-
-    # Override wait_for to simulate timeout
-    with patch("asyncio.wait_for", side_effect=asyncio.TimeoutError):
-        result = await bms.async_update()
-        assert result == {}
-
-    await bms.disconnect()
-
-
-@pytest.mark.asyncio
-async def test_async_update_no_init_response(patch_bleak_client):
+async def test_async_update_no_init_response(
+    patch_bleak_client, patch_bms_timeout, caplog
+):
     """Test when no initialization response is received."""
     device = generate_ble_device("AA:BB:CC:DD:EE:FF", "Pro BMS")
     mock_client = MockProBMSBleakClient(device)
+    patch_bms_timeout("pro_bms")
     patch_bleak_client(lambda *args, **kwargs: mock_client)
 
     bms = BMS(device)
 
     # Override notification handler to not send init response
-    async def mock_write(char, data, response=None):
-        # Don't send any response
-        pass
+    async def mock_write(_char, data, _response=None) -> None:
+        # Send wrong response to init request
+        if data == BMS._CMD_INIT:
+            mock_client._notify_callback(None, RECORDED_PACKETS["data_zero_soc"])
 
     mock_client.write_gatt_char = mock_write
 
-    # Mock wait_for to return without timeout but no response
-    async def mock_wait_for(coro, timeout):
-        await asyncio.sleep(0.01)
-
-    with patch("asyncio.wait_for", side_effect=mock_wait_for):
+    logging.getLogger(__name__)
+    result: BMSsample = {}
+    with caplog.at_level(logging.DEBUG), pytest.raises(TimeoutError):
         result = await bms.async_update()
-        assert result == {}
+    assert not result
+    assert "failed to initialize BMS connection" in caplog.text
 
     await bms.disconnect()
 
@@ -278,39 +267,6 @@ def test_notification_handler_invalid_header(patch_bleak_client):
     assert not bms._data_event.is_set()
 
 
-def test_notification_handler_init_response(patch_bleak_client):
-    """Test notification handler with init response."""
-    device = generate_ble_device("AA:BB:CC:DD:EE:FF", "Pro BMS")
-    mock_client = MockProBMSBleakClient(device)
-    patch_bleak_client(lambda *args, **kwargs: mock_client)
-
-    bms = BMS(device)
-
-    # Init response packet (type 0x03)
-    data = RECORDED_PACKETS["init_response"]
-    bms._notification_handler(None, data)
-    # Should set data event and init response flag
-    assert bms._data_event.is_set()
-    assert bms._init_response_received is True
-
-
-def test_notification_handler_realtime_data(patch_bleak_client):
-    """Test notification handler with realtime data."""
-    device = generate_ble_device("AA:BB:CC:DD:EE:FF", "Pro BMS")
-    mock_client = MockProBMSBleakClient(device)
-    patch_bleak_client(lambda *args, **kwargs: mock_client)
-
-    bms = BMS(device)
-
-    # Valid realtime data packet
-    data = RECORDED_PACKETS["data_discharging"]
-    bms._notification_handler(None, data)
-    # Should set data event and streaming flag
-    assert bms._data_event.is_set()
-    assert bms._streaming is True
-    assert bms._data == data
-
-
 def test_notification_handler_short_packet(patch_bleak_client):
     """Test notification handler with short packet."""
     device = generate_ble_device("AA:BB:CC:DD:EE:FF", "Pro BMS")
@@ -327,10 +283,12 @@ def test_notification_handler_short_packet(patch_bleak_client):
 
 
 @pytest.mark.asyncio
-async def test_async_update_no_data_after_init(patch_bleak_client):
+async def test_async_update_no_data_after_init(patch_bleak_client, patch_bms_timeout):
     """Test when initialization completes but no valid data is received."""
     device = generate_ble_device("AA:BB:CC:DD:EE:FF", "Pro BMS")
     mock_client = MockProBMSBleakClient(device)
+
+    patch_bms_timeout("pro_bms")
     patch_bleak_client(lambda *args, **kwargs: mock_client)
 
     bms = BMS(device)
@@ -342,26 +300,26 @@ async def test_async_update_no_data_after_init(patch_bleak_client):
             char, data, response
         )
         assert mock_client._notify_callback
-        if data == BMS.CMD_INIT:
+        if data == BMS._CMD_INIT:
             # Send initialization response
             mock_client._notify_callback(None, RECORDED_PACKETS["init_response"])
-        elif data == BMS.CMD_TRIGGER_DATA:
+        elif data == BMS._CMD_TRIGGER_DATA:
             # Wait for the 1-second sleep and event clear to complete
             async def send_wrong_packet() -> None:
                 await asyncio.sleep(1.5)
-                # Send another init response instead of data - this sets the event but not _streaming
-                mock_client._notify_callback(
-                    None, RECORDED_PACKETS["init_response"]
-                )
+                # Send another init response instead of data
+                mock_client._notify_callback(None, RECORDED_PACKETS["init_response"])
 
             # Store task reference to prevent garbage collection
             task = asyncio.create_task(send_wrong_packet())  # noqa: F841, RUF006
 
     mock_client.write_gatt_char = mock_write
 
-    # This should trigger the "No valid data received" error path (lines 191-195)
-    # because the event is set (by init response) but _streaming is False
-    result = await bms.async_update()
-    assert not result
+    result: BMSsample = {}
+    with pytest.raises(TimeoutError):
+        result = await bms.async_update()
 
-    await bms.disconnect()
+    assert not result
+    assert (
+        not bms._client.is_connected
+    ), "BMS should be disconnected if streaming is not working."

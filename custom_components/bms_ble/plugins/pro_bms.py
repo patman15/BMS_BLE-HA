@@ -14,17 +14,17 @@ class BMS(BaseBMS):
     """Pro BMS Smart Shunt class implementation."""
 
     # Protocol constants
-    HEAD: Final[bytes] = bytes([0x55, 0xAA])
+    _HEAD: Final[bytes] = bytes([0x55, 0xAA])
     _MIN_LEN: Final[int] = 5
-    TYPE_INIT_RESPONSE: Final[int] = 0x03
-    TYPE_REALTIME_DATA: Final[int] = 0x04
+    _INIT_RESP: Final[int] = 0x03
+    _RT_DATA: Final[int] = 0x04
 
     # Commands from btsnoop capture
-    CMD_INIT: Final[bytes] = bytes.fromhex("55aa0a0101558004077f648e682b")
-    CMD_ACK: Final[bytes] = bytes.fromhex("55aa070101558040000095")
-    CMD_DATA_STREAM: Final[bytes] = bytes.fromhex("55aa070101558042000097")
+    _CMD_INIT: Final[bytes] = bytes.fromhex("55aa0a0101558004077f648e682b")
+    _CMD_ACK: Final[bytes] = bytes.fromhex("55aa070101558040000095")
+    _CMD_DATA_STREAM: Final[bytes] = bytes.fromhex("55aa070101558042000097")
     # Critical 4th command that triggers data streaming (Function 0x43)
-    CMD_TRIGGER_DATA: Final[bytes] = bytes.fromhex("55aa0901015580430000120084")
+    _CMD_TRIGGER_DATA: Final[bytes] = bytes.fromhex("55aa0901015580430000120084")
 
     _FIELDS: Final[tuple[BMSdp, ...]] = (
         BMSdp("voltage", 8, 2, False, lambda x: x / 100),
@@ -51,7 +51,7 @@ class BMS(BaseBMS):
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize private BMS members."""
         super().__init__(__name__, ble_device, reconnect)
-        self._valid_reply: int = BMS.TYPE_REALTIME_DATA
+        self._valid_reply: int = BMS._RT_DATA
 
     @staticmethod
     def matcher_dict_list() -> list[AdvertisementPattern]:
@@ -91,15 +91,15 @@ class BMS(BaseBMS):
     def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
     ) -> None:
-        self._log.debug("RX BLE data (%d bytes): %s", len(data), data.hex())
+        self._log.debug("RX BLE data: %s", data)
 
         # Check for valid packet header
-        if len(data) < 4 or data[:2] != BMS.HEAD:
+        if len(data) < BMS._MIN_LEN or not data.startswith(BMS._HEAD):
             self._log.debug("Invalid packet header")
             return
 
         if data[3] != self._valid_reply:
-            self._log.debug("unexpected response (type 0x%X)", self._data[3])
+            self._log.debug("unexpected response (type 0x%X)", data[3])
             return
 
         if len(data) != data[2] + BMS._MIN_LEN:
@@ -114,7 +114,7 @@ class BMS(BaseBMS):
     ) -> None:
         """Initialize RX/TX characteristics and protocol state."""
         await super()._init_connection()
-        self._valid_reply = BMS.TYPE_INIT_RESPONSE
+        self._valid_reply = BMS._INIT_RESP
 
         # Perform complete initialization sequence if not already done
         self._log.debug("Starting initialization sequence")
@@ -122,14 +122,16 @@ class BMS(BaseBMS):
         # Step 1: Send initialization command
         self._log.debug("Sending CMD_INIT")
         self._data_event.clear()
-        await self._client.write_gatt_char(self.uuid_tx(), BMS.CMD_INIT, response=False)
+        await self._client.write_gatt_char(
+            self.uuid_tx(), BMS._CMD_INIT, response=False
+        )
 
         # Step 2: Wait for initialization response
-        await asyncio.wait_for(self._wait_event(), timeout=5.0)
+        await asyncio.wait_for(self._wait_event(), timeout=BMS.TIMEOUT)
 
         # Step 3: Send ACK command
         self._log.debug("Sending CMD_ACK")
-        await self._client.write_gatt_char(self.uuid_tx(), BMS.CMD_ACK, response=True)
+        await self._client.write_gatt_char(self.uuid_tx(), BMS._CMD_ACK, response=True)
 
         # Small delay to ensure ACK is processed
         await asyncio.sleep(0.1)
@@ -137,7 +139,7 @@ class BMS(BaseBMS):
         # Step 4: Send data stream command
         self._log.debug("Sending CMD_DATA_STREAM")
         await self._client.write_gatt_char(
-            self.uuid_tx(), BMS.CMD_DATA_STREAM, response=True
+            self.uuid_tx(), BMS._CMD_DATA_STREAM, response=True
         )
 
         # Small delay to ensure data stream command is processed
@@ -146,12 +148,12 @@ class BMS(BaseBMS):
         # Step 5: Send trigger data command 0x43 - CRITICAL for starting data flow
         self._log.debug("Sending CMD_TRIGGER_DATA")
         await self._client.write_gatt_char(
-            self.uuid_tx(), BMS.CMD_TRIGGER_DATA, response=True
+            self.uuid_tx(), BMS._CMD_TRIGGER_DATA, response=True
         )
 
         self._log.debug("Initialization sequence complete")
 
-        self._valid_reply = BMS.TYPE_REALTIME_DATA
+        self._valid_reply = BMS._RT_DATA
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
