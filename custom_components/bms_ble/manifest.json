@@ -272,6 +272,10 @@
       "service_uuid": "0000fee7-0000-1000-8000-00805f9b34fb"
     },
     {
+      "local_name": "Pro BMS",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },
+    {
       "local_name": "TP_*"
     }
   ],
