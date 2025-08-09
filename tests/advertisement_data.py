@@ -916,4 +916,13 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "jbd_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/439)
+        generate_advertisement_data(
+            local_name="L-51030GBNGC2-A00263",
+            rssi=-66,
+            manufacturer_data={22618: "\xc8\x47\x80\x14\xec\x68"},
+            service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
+        ),
+        "redodo_bms",
+    ),
 ]
