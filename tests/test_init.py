@@ -1,7 +1,9 @@
 """Test the BLE Battery Management System integration initialization."""
 
+from bleak.backends.device import BLEDevice
 from habluetooth import BluetoothServiceInfoBleak
 import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
@@ -13,7 +15,7 @@ from .conftest import mock_config, mock_update_exc, mock_update_min
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_init_fail(
     monkeypatch,
-    bms_fixture,
+    bms_fixture: str,
     bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
 ) -> None:
@@ -24,7 +26,7 @@ async def test_init_fail(
         mock_update_exc,
     )
 
-    trace_fct = {"stop_called": False}
+    trace_fct: dict[str, bool] = {"stop_called": False}
 
     async def mock_coord_shutdown(_self) -> None:
         trace_fct["stop_called"] = True
@@ -36,7 +38,7 @@ async def test_init_fail(
 
     inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
-    cfg = mock_config(bms=bms_fixture)
+    cfg: MockConfigEntry = mock_config(bms=bms_fixture)
     cfg.add_to_hass(hass)
 
     assert not await hass.config_entries.async_setup(
@@ -44,7 +46,7 @@ async def test_init_fail(
     ), "test did not make setup fail!"
     await hass.async_block_till_done()
 
-    # verify it is no yet loaded
+    # verify it is not yet loaded
     assert cfg.state is ConfigEntryState.SETUP_RETRY
 
     assert trace_fct["stop_called"] is True, "Failed to call coordinator stop()."
@@ -72,7 +74,7 @@ async def test_unload_entry(
     # first load entry (see test_async_setup_entry)
     inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
-    cfg = mock_config(bms=bms_fixture)
+    cfg: MockConfigEntry = mock_config(bms=bms_fixture)
     cfg.add_to_hass(hass)
 
     monkeypatch.setattr(
@@ -120,3 +122,34 @@ async def test_unload_entry(
     assert (
         len(hass.states.async_all(["sensor", "binary_sensor"])) == 0
     ), "Failed to remove platforms."
+
+
+@pytest.mark.usefixtures("enable_bluetooth")
+async def test_device_name_none(
+    monkeypatch,
+    bt_discovery: BluetoothServiceInfoBleak,
+    hass: HomeAssistant,
+) -> None:
+    """Test that setup fails gracefully when device name is None."""
+
+    def mock_device_from_address(_hass, _address, _connectable) -> BLEDevice:
+        return BLEDevice(
+            address="cc:cc:cc:cc:cc:cc", name=None, details={"path": None}, rssi=-85
+        )
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.async_ble_device_from_address",
+        mock_device_from_address,
+    )
+
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
+
+    cfg: MockConfigEntry = mock_config(bms="dummy_bms")
+    cfg.add_to_hass(hass)
+
+    # Setup should fail with ConfigEntryNotReady
+    assert not await hass.config_entries.async_setup(cfg.entry_id)
+    await hass.async_block_till_done()
+
+    # Verify the entry is in retry state
+    assert cfg.state is ConfigEntryState.SETUP_RETRY
