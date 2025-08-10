@@ -22,6 +22,9 @@
     "device_not_found": {
       "message": "BMS ({MAC}) wurde nicht via Bluetooth gefunden."
     },
+    "adv_incomplete": {
+      "message": "Bluetooth information für BMS ({MAC}) unvollständig."
+    },
     "missing_unique_id": {
       "message": "Eindeutige ID für Gerät fehlt."
     }
