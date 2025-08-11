@@ -917,4 +917,12 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "redodo_bms",
     ),
+    (  # source pcap (https://github.com/patman15/BMS_BLE-HA/issues/444)
+        generate_advertisement_data(
+            local_name="BS202212-01-0168",
+            rssi=-91,
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+        ),
+        "jbd_bms",
+    ),
 ]
