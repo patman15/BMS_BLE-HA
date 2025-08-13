@@ -122,34 +122,28 @@ class BMS(BaseBMS):
         # Step 1: Send initialization command
         self._log.debug("Sending CMD_INIT")
         self._data_event.clear()
-        await self._client.write_gatt_char(
-            self.uuid_tx(), BMS._CMD_INIT, response=False
-        )
-
+        await self._await_reply(BMS._CMD_INIT)
         # Step 2: Wait for initialization response
-        await asyncio.wait_for(self._wait_event(), timeout=BMS.TIMEOUT)
 
         # Step 3: Send ACK command
         self._log.debug("Sending CMD_ACK")
-        await self._client.write_gatt_char(self.uuid_tx(), BMS._CMD_ACK, response=True)
+        await self._await_reply(BMS._CMD_ACK, wait_for_notify=False)
 
         # Small delay to ensure ACK is processed
         await asyncio.sleep(0.1)
 
         # Step 4: Send data stream command
         self._log.debug("Sending CMD_DATA_STREAM")
-        await self._client.write_gatt_char(
-            self.uuid_tx(), BMS._CMD_DATA_STREAM, response=True
-        )
+
+        await self._await_reply(BMS._CMD_DATA_STREAM, wait_for_notify=False)
 
         # Small delay to ensure data stream command is processed
         await asyncio.sleep(0.1)
 
         # Step 5: Send trigger data command 0x43 - CRITICAL for starting data flow
         self._log.debug("Sending CMD_TRIGGER_DATA")
-        await self._client.write_gatt_char(
-            self.uuid_tx(), BMS._CMD_TRIGGER_DATA, response=True
-        )
+        await self._await_reply(BMS._CMD_TRIGGER_DATA, wait_for_notify=False)
+
 
         self._log.debug("Initialization sequence complete")
 

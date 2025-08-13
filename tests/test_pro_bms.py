@@ -57,7 +57,6 @@ class MockProBMSBleakClient(MockBleakClient):
     async def _stream_data(self) -> None:
         """Continuously stream data packets like a real device."""
         # Wait for initialization to complete and the 1-second sleep
-        await asyncio.sleep(1.5)
 
         while not self._stop_streaming:
             if self._notify_callback and self._test_packet:
@@ -248,7 +247,6 @@ async def test_async_update_no_data_after_init(patch_bleak_client, patch_bms_tim
         elif data == BMS._CMD_TRIGGER_DATA:
             # Wait for the 1-second sleep and event clear to complete
             async def send_wrong_packet() -> None:
-                await asyncio.sleep(1.5)
                 # Send another init response instead of data
                 mock_client._notify_callback(None, RECORDED_PACKETS["init_response"])
 
@@ -287,7 +285,7 @@ async def test_invalid_response(
 ) -> None:
     """Test data up date with BMS returning invalid data."""
 
-    patch_bms_timeout("pro_bms")
+    patch_bms_timeout()
     monkeypatch.setattr(MockProBMSBleakClient, "_init_packet", wrong_response)
     patch_bleak_client(MockProBMSBleakClient)
 
