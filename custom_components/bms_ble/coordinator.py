@@ -31,17 +31,16 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
         config_entry: ConfigEntry,
     ) -> None:
         """Initialize BMS data coordinator."""
-        assert ble_device.name is not None
         super().__init__(
             hass=hass,
             logger=LOGGER,
-            name=ble_device.name,
+            name=config_entry.title,
             update_interval=timedelta(seconds=UPDATE_INTERVAL),
             always_update=False,  # only update when sensor value has changed
             config_entry=config_entry,
         )
         self._device: Final[BaseBMS] = bms_device
-        self._link_q = deque([False], maxlen=100)  # track BMS update issues
+        self._link_q: deque[bool] = deque([False], maxlen=100)  # track BMS update issues
         self._mac: Final[str] = ble_device.address
         self._stale: bool = False  # indicates no BMS response for significant time
 
