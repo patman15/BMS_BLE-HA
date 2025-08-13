@@ -109,7 +109,7 @@ async def test_async_update_discharging(patch_bleak_client):
     assert result["cycle_charge"] == pytest.approx(
         65.73, rel=0.01
     )  # 0x19ad = 6573 / 100
-    assert result["power"] == pytest.approx(32.09, rel=0.01)  # 0x0c89 = 3209 / 100
+    assert result["power"] == pytest.approx(-32.09, rel=0.01)  # 0x0c89 = 3209 / 100
     assert result["runtime"] == pytest.approx(
         96446, rel=100
     )  # Calculated by base class

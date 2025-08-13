@@ -160,4 +160,8 @@ class BMS(BaseBMS):
             await self.disconnect()
             raise
 
-        return BMS._decode_data(BMS._FIELDS, self._data, byteorder="little")
+        result: BMSsample = BMS._decode_data(
+            BMS._FIELDS, self._data, byteorder="little"
+        )
+        result["power"] *= -1 if result["current"] < 0 else 1
+        return result
