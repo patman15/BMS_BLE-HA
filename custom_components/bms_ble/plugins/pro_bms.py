@@ -130,7 +130,7 @@ class BMS(BaseBMS):
         await self._await_reply(BMS._CMD_ACK, wait_for_notify=False)
 
         # Small delay to ensure ACK is processed
-        await asyncio.sleep(0.1)
+        # await asyncio.sleep(0.1)
 
         # Step 4: Send data stream command
         self._log.debug("Sending CMD_DATA_STREAM")
@@ -138,12 +138,11 @@ class BMS(BaseBMS):
         await self._await_reply(BMS._CMD_DATA_STREAM, wait_for_notify=False)
 
         # Small delay to ensure data stream command is processed
-        await asyncio.sleep(0.1)
+        # await asyncio.sleep(0.1)
 
         # Step 5: Send trigger data command 0x43 - CRITICAL for starting data flow
         self._log.debug("Sending CMD_TRIGGER_DATA")
         await self._await_reply(BMS._CMD_TRIGGER_DATA, wait_for_notify=False)
-
 
         self._log.debug("Initialization sequence complete")
 
@@ -154,7 +153,6 @@ class BMS(BaseBMS):
 
         # Always clear the event to ensure we get fresh data on each update
         self._data_event.clear()
-
         try:
             # Wait for new data packet
             await asyncio.wait_for(self._wait_event(), timeout=BMS.TIMEOUT)
