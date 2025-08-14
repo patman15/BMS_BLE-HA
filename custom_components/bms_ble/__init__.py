@@ -49,11 +49,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> boo
             },
         )
 
-    # Check if device name is None (can happen on HA restart before device advertises)
     if ble_device.name is None:
-        LOGGER.debug("Device %s found but name not yet available", entry.unique_id)
+        # device name might be temporarily unavailable for devices sending multiple advertisements
+        LOGGER.debug("Advertisement info for device %s incomplete", entry.unique_id)
         raise ConfigEntryNotReady(
-            f"Device {entry.unique_id} found but name not yet available"
+            translation_domain=DOMAIN,
+            translation_key="adv_incomplete",
+            translation_placeholders={
+                "MAC": entry.unique_id,
+            },
         )
 
     plugin: ModuleType = await async_import_module(hass, entry.data["type"])
