@@ -13,7 +13,6 @@ from .basebms import AdvertisementPattern, BaseBMS, BMSdp, BMSsample, BMSvalue
 class BMS(BaseBMS):
     """Pro BMS Smart Shunt class implementation."""
 
-    # Protocol constants
     _HEAD: Final[bytes] = bytes([0x55, 0xAA])
     _MIN_LEN: Final[int] = 5
     _INIT_RESP: Final[int] = 0x03
@@ -23,7 +22,7 @@ class BMS(BaseBMS):
     _CMD_INIT: Final[bytes] = bytes.fromhex("55aa0a0101558004077f648e682b")
     _CMD_ACK: Final[bytes] = bytes.fromhex("55aa070101558040000095")
     _CMD_DATA_STREAM: Final[bytes] = bytes.fromhex("55aa070101558042000097")
-    # Critical 4th command that triggers data streaming (Function 0x43)
+    # command that triggers data streaming (Function 0x43)
     _CMD_TRIGGER_DATA: Final[bytes] = bytes.fromhex("55aa0901015580430000120084")
 
     _FIELDS: Final[tuple[BMSdp, ...]] = (
@@ -93,7 +92,6 @@ class BMS(BaseBMS):
     ) -> None:
         self._log.debug("RX BLE data: %s", data)
 
-        # Check for valid packet header
         if len(data) < BMS._MIN_LEN or not data.startswith(BMS._HEAD):
             self._log.debug("Invalid packet header")
             return
@@ -116,43 +114,21 @@ class BMS(BaseBMS):
         await super()._init_connection()
         self._valid_reply = BMS._INIT_RESP
 
-        # Perform complete initialization sequence if not already done
-        self._log.debug("Starting initialization sequence")
-
-        # Step 1: Send initialization command
-        self._log.debug("Sending CMD_INIT")
-        self._data_event.clear()
+        # Step 1: Send initialization command and await response
         await self._await_reply(BMS._CMD_INIT)
-        # Step 2: Wait for initialization response
 
-        # Step 3: Send ACK command
-        self._log.debug("Sending CMD_ACK")
-        await self._await_reply(BMS._CMD_ACK, wait_for_notify=False)
-
-        # Small delay to ensure ACK is processed
-        # await asyncio.sleep(0.1)
-
-        # Step 4: Send data stream command
-        self._log.debug("Sending CMD_DATA_STREAM")
-
-        await self._await_reply(BMS._CMD_DATA_STREAM, wait_for_notify=False)
-
-        # Small delay to ensure data stream command is processed
-        # await asyncio.sleep(0.1)
-
-        # Step 5: Send trigger data command 0x43 - CRITICAL for starting data flow
-        self._log.debug("Sending CMD_TRIGGER_DATA")
-        await self._await_reply(BMS._CMD_TRIGGER_DATA, wait_for_notify=False)
-
-        self._log.debug("Initialization sequence complete")
+        # Step 2: Send ACK command
+        # Step 3: Send data stream command
+        # Step 4: Send trigger data command 0x43 - start RT data stream
+        for cmd in (BMS._CMD_ACK, BMS._CMD_DATA_STREAM, BMS._CMD_TRIGGER_DATA):
+            await self._await_reply(cmd, wait_for_notify=False)
 
         self._valid_reply = BMS._RT_DATA
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
 
-        # Always clear the event to ensure we get fresh data on each update
-        self._data_event.clear()
+        self._data_event.clear()  # Clear the event to ensure fresh data on each update
         try:
             # Wait for new data packet
             await asyncio.wait_for(self._wait_event(), timeout=BMS.TIMEOUT)
