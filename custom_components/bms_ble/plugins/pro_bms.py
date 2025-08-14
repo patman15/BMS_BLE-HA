@@ -47,7 +47,7 @@ class BMS(BaseBMS):
         BMSdp("power", 32, 4, False, lambda x: x / 100),
     )
 
-    def __init__(self, ble_device: BLEDevice, reconnect: bool = True) -> None:
+    def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize private BMS members."""
         super().__init__(__name__, ble_device, reconnect)
         self._valid_reply: int = BMS._RT_DATA
