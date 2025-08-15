@@ -98,22 +98,19 @@ async def test_async_update_discharging(patch_bleak_client):
 
     bms = BMS(device)
 
-    result = await bms.async_update()
-
-    # Verify parsed values from actual packet
-    # Data section starts at packet[4], so offsets are data_section[n] = packet[4+n]
-    assert result["voltage"] == pytest.approx(13.08, rel=0.01)  # 0x051c = 1308 / 100
-    assert result["current"] == pytest.approx(-2.454, rel=0.01)  # 0x96090080: discharge
-    assert result["temperature"] == pytest.approx(22.6, rel=0.01)  # 0xe2 = 226 / 10
-    assert result["battery_level"] == 51  # 0x33
-    assert result["cycle_charge"] == pytest.approx(
-        65.73, rel=0.01
-    )  # 0x19ad = 6573 / 100
-    assert result["power"] == pytest.approx(-32.09, rel=0.01)  # 0x0c89 = 3209 / 100
-    assert result["runtime"] == pytest.approx(
-        96446, rel=100
-    )  # Calculated by base class
-    # assert result["design_capacity"] == pytest.approx(128, rel=1)  # 65.73 / 0.51
+    assert await bms.async_update() == {
+        "voltage": 13.08,
+        "current": -2.454,  # 0x96090080: discharge
+        "temperature": 22.6,
+        "battery_level": 51,
+        "battery_charging": False,
+        "cycle_charge": 65.73,
+        "cycle_capacity": 859.748,
+        "power": -32.09,
+        "runtime": 96425,
+        "problem_code": 0,
+        "problem": False,
+    }
 
     await bms.disconnect()
 
@@ -128,19 +125,18 @@ async def test_async_update_charging(patch_bleak_client):
 
     bms = BMS(device)
 
-    result = await bms.async_update()
-
-    # Verify parsed values
-    assert result["voltage"] == pytest.approx(13.39, rel=0.01)  # 0x053b = 1339 / 100
-    assert result["current"] == pytest.approx(13.414, rel=0.01)  # 0x66340000: charge
-    assert result["temperature"] == pytest.approx(21.8, rel=0.01)  # 0xda = 218 / 10
-    assert result["battery_level"] == 32  # 0x20
-    assert result["cycle_charge"] == pytest.approx(
-        41.83, rel=0.01
-    )  # 0x1057 = 4183 / 100
-    assert result["power"] == pytest.approx(179.61, rel=0.01)  # 0x4629 = 17961 / 100
-    # assert result["design_capacity"] == pytest.approx(130, rel=1)  # 41.83 / 0.32
-
+    assert await bms.async_update() == {
+        "voltage": 13.39,
+        "current": 13.414,
+        "temperature": 21.8,
+        "battery_level": 32,
+        "battery_charging": True,
+        "cycle_charge": 41.83,
+        "cycle_capacity": 560.104,
+        "power": 179.61,
+        "problem_code": 0,
+        "problem": False,
+    }
     await bms.disconnect()
 
 
@@ -154,32 +150,19 @@ async def test_async_update_with_protection(patch_bleak_client):
 
     bms = BMS(device)
 
-    result = await bms.async_update()
-
-    # Protection byte at offset 11 in data section = 0x81
-    assert result["problem_code"] == 1  # 0x81 & 0x7F = 1
-
-    await bms.disconnect()
-
-
-@pytest.mark.asyncio
-async def test_async_update_zero_soc(patch_bleak_client):
-    """Test async update with zero SOC (no design_capacity calculation)."""
-    device = generate_ble_device("AA:BB:CC:DD:EE:FF", "Pro BMS")
-    mock_client = MockProBMSBleakClient(device)
-    mock_client.set_test_packet(RECORDED_PACKETS["data_zero_soc"])
-    patch_bleak_client(lambda *args, **kwargs: mock_client)
-
-    bms = BMS(device)
-
-    result = await bms.async_update()
-
-    assert result["battery_level"] == 0
-    # design_capacity should not be calculated when battery_level is 0
-    assert "design_capacity" not in result
-    # But cycle_charge should still be present
-    assert "cycle_charge" in result
-
+    assert await bms.async_update() == {
+        "voltage": 13.08,
+        "current": -2.454,  # 0x96090080: discharge
+        "temperature": 22.6,
+        "battery_level": 51,
+        "battery_charging": False,
+        "cycle_charge": 65.73,
+        "cycle_capacity": 859.748,
+        "power": -32.09,
+        "runtime": 96425,
+        "problem_code": 1,  # 0x81 & 0x7F = 1
+        "problem": True,
+    }
     await bms.disconnect()
 
 
