@@ -22,6 +22,7 @@ BMS_TYPES: Final[list[str]] = [
     "jikong_bms",
     "neey_bms",  # active balancer
     "ogt_bms",
+    "pro_bms",
     "redodo_bms",
     "renogy_bms",
     "renogy_pro_bms",
