@@ -175,7 +175,9 @@ def bt_discovery_notsupported() -> BluetoothServiceInfoBleak:
 
 
 def mock_config(
-    bms: str, unique_id: str | None = "cc:cc:cc:cc:cc:cc"
+    bms: str,
+    title: str = "SmartBat-B12345",
+    unique_id: str | None = "cc:cc:cc:cc:cc:cc",
 ) -> MockConfigEntry:
     """Return a Mock of the HA entity config."""
     return MockConfigEntry(
@@ -184,7 +186,7 @@ def mock_config(
         minor_version=0,
         unique_id=unique_id,
         data={"type": f"custom_components.bms_ble.plugins.{bms}"},
-        title=bms,
+        title=title,
     )
 
 
