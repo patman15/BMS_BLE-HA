@@ -150,7 +150,7 @@ class BaseBMS(ABC):
         self.name: Final[str] = self._ble_device.name or "undefined"
         self._log: Final[logging.Logger] = logging.getLogger(
             f"{logger_name.replace('.plugins', '')}::{self.name}:"
-            f"{self._ble_device.address[-5:].replace(':','')})"
+            f"{self._ble_device.address[-5:].replace(':','')}"
         )
         self._inv_wr_mode: bool | None = None  # invert write mode (WNR <-> W)
 
