@@ -52,7 +52,7 @@ class BMS(BaseBMS):
         super().__init__(__name__, ble_device, reconnect)
         self._data_final: bytearray = bytearray()
         self._valid_reply: int = BMS._CMD_STAT | 0x10  # valid reply mask
-        self._exp_len: int = 0
+        self._exp_len: int = BMS._MIN_LEN
 
     @staticmethod
     def matcher_dict_list() -> list[AdvertisementPattern]:
@@ -97,7 +97,7 @@ class BMS(BaseBMS):
     ) -> None:
         """Initialize RX/TX characteristics and protocol state."""
         await super()._init_connection(char_notify)
-        self._exp_len = 0
+        self._exp_len = BMS._MIN_LEN
         self._valid_reply = BMS._CMD_DEV | 0x10
         await self._await_reply(BMS._cmd(BMS._CMD_DEV, 0x026C, 0x20))  # TODO: parse
         self._valid_reply = BMS._CMD_STAT | 0x10
