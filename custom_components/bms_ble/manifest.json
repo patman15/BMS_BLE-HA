@@ -269,7 +269,7 @@
       "manufacturer_id": 39008
     },
     {
-      "local_name": "ANT-*",
+      "local_name": "ANT-BLE*",
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
       "manufacturer_id": 8979
     },
