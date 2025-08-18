@@ -112,7 +112,7 @@ class BMS(BaseBMS):
             "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
-        if BMS._MIN_LEN < len(self._data) < self._exp_len:
+        if len(self._data) < self._exp_len:
             return
 
         if self._data[2] != self._valid_reply:

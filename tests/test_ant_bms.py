@@ -151,7 +151,7 @@ async def test_update(patch_bleak_client, reconnect_fixture) -> None:
         (MockANTBleakClient.RESP[0x1][:-2] + b"\xa1\x55", "wrong_EOF"),
         (b"\x7e\xa1\x11", "too_short"),
         (MockANTBleakClient.RESP[0x1][:-4] + b"\xff\xff\xaa\x55", "wrong_CRC"),
-        (bytearray(b""), "empty_response"),
+        (bytearray(1), "empty_response"),
     ],
     ids=lambda param: param[1],
 )
