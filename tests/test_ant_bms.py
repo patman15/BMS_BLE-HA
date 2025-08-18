@@ -20,14 +20,13 @@ _RESULT_DEFS: Final[BMSsample] = {
     "cell_count": 22,
     "temp_sensors": 4,
     "voltage": 50.88,
-    "current": 2.2,
+    "current": 2.1,
     "battery_level": 10,
-    "cycle_charge": 99,
-    "design_capacity": 800,
-    # "cycles": 8,
+    "cycle_charge": 9.957766,
+    "design_capacity": 80,
     "temperature": 29.333,
-    "cycle_capacity": 5037.12,
-    "power": 111.0,
+    "cycle_capacity": 506.651,
+    "power": 106.0,
     "battery_charging": False,
     "cell_voltages": [
         2.334,
@@ -42,7 +41,7 @@ _RESULT_DEFS: Final[BMSsample] = {
         2.19,
         2.192,
         2.338,
-        2.284,
+        2.283,
         2.336,
         2.336,
         2.335,
@@ -72,13 +71,13 @@ class MockANTBleakClient(MockBleakClient):
         0x1: bytearray(
             b"\x7e\xa1\x11\x00\x00\x9e\x05\x04\x04\x16\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
             b"\x88\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1e\x09\x1b\x09\x1e\x09"
-            b"\x1d\x09\x1d\x09\x1e\x09\x20\x09\x1e\x09\x8f\x08\x8e\x08\x90\x08\x22\x09\xec\x08"
+            b"\x1d\x09\x1d\x09\x1e\x09\x20\x09\x1e\x09\x8f\x08\x8e\x08\x90\x08\x22\x09\xeb\x08"
             b"\x20\x09\x20\x09\x1f\x09\x1e\x09\x1f\x09\x1e\x09\x1f\x09\x21\x09\x1f\x09\x1d\x00"
-            b"\x1d\x00\x1d\x00\x1d\x00\x1e\x00\x1e\x00\xe0\x13\x16\x00\x0a\x00\x64\x00\x01\x01"
-            b"\x00\x00\x00\xb4\xc4\x04\xa5\x4d\x98\x00\x2e\xed\xe8\x00\x6f\x00\x00\x00\x7a\xf2"
+            b"\x1d\x00\x1d\x00\x1d\x00\x1e\x00\x1e\x00\xe0\x13\x15\x00\x0a\x00\x64\x00\x01\x01"
+            b"\x00\x00\x00\xb4\xc4\x04\x86\xf1\x97\x00\x3a\xed\xe8\x00\x6a\x00\x00\x00\xa1\xf2"
             b"\xc0\x03\x00\x00\x00\x00\x22\x09\x0c\x00\x8e\x08\x0a\x00\x94\x00\x08\x09\x00\x00"
-            b"\x6d\x00\x6a\x00\xaf\x02\xf3\xfa\x34\x74\xe5\x00\x28\x66\xec\x00\x9c\x5d\x62\x00"
-            b"\x02\x02\x20\x0f\x00\x0b\x00\x04\x00\x1b\x10\x00\xcc\xb3\x92\x00\xd9\x85\xaa\x55"
+            b"\x6d\x00\x6a\x00\xaf\x02\xf3\xfa\x4c\x74\xe5\x00\x28\x66\xec\x00\xc3\x5d\x62\x00"
+            b"\xcc\xb3\x92\x00\xed\xc8\xaa\x55"
         ),
         0x2: bytearray(
             b"\x7e\xa1\x12\x6c\x02\x20\x32\x34\x42\x48\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -142,14 +141,16 @@ async def test_update(patch_bleak_client, reconnect_fixture) -> None:
 @pytest.fixture(
     name="wrong_response",
     params=[
-        (b"\x7e\xa1\x11" + MockANTBleakClient.RESP[0x2][3:], "wrong_type"),
-        (b"\x7e\xa1\x1f" + MockANTBleakClient.RESP[0x2][3:], "unknown_type"),
+        (b"\x6e" + MockANTBleakClient.RESP[0x1][1:], "wrong_SOF"),
+        (b"\x7e\xa1\x12" + MockANTBleakClient.RESP[0x1][3:], "wrong_type"),
+        (b"\x7e\xa1\x1f" + MockANTBleakClient.RESP[0x1][3:], "unknown_type"),
         (
-            b"\x7e\xa1\x12\x00\x00\x01" + MockANTBleakClient.RESP[0x2][6:],
+            b"\x7e\xa1\x11\x00\x00\x01" + MockANTBleakClient.RESP[0x1][6:],
             "wrong_length",
         ),
+        (MockANTBleakClient.RESP[0x1][:-2] + b"\xa1\x55", "wrong_EOF"),
         (b"\x7e\xa1\x11", "too_short"),
-        (MockANTBleakClient.RESP[0x2][:-4] + b"\xff\xff\xaa\x55", "wrong_CRC"),
+        (MockANTBleakClient.RESP[0x1][:-4] + b"\xff\xff\xaa\x55", "wrong_CRC"),
         (bytearray(b""), "empty_response"),
     ],
     ids=lambda param: param[1],
@@ -169,7 +170,7 @@ async def test_invalid_response(
     monkeypatch.setattr(
         MockANTBleakClient,
         "RESP",
-        MockANTBleakClient.RESP | {0x2: wrong_response},
+        MockANTBleakClient.RESP | {0x1: wrong_response},
     )
 
     patch_bleak_client(MockANTBleakClient)
