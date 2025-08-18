@@ -30,13 +30,11 @@ class BMS(BaseBMS):
     _CELL_POS: Final[int] = 34
     _MAX_CELLS: Final[int] = 32
     _FIELDS: Final[tuple[BMSdp, ...]] = (
-        BMSdp("battery_charging", 7, 1, False, lambda x: x == 0x2),
         BMSdp("voltage", 38, 2, False, lambda x: x / 100),
         BMSdp("current", 40, 2, True, lambda x: x / 10),
-        BMSdp("design_capacity", 50, 4, False, lambda x: x // 100000),
+        BMSdp("design_capacity", 50, 4, False, lambda x: x // 1e6),
         BMSdp("battery_level", 42, 2, False, lambda x: x),
-        BMSdp("cycle_charge", 54, 4, False, lambda x: x // 100000),
-        # BMSdp("cycles", 14, 2, False, lambda x: x),
+        BMSdp("cycle_charge", 54, 4, False, lambda x: x / 1e6),
         BMSdp("delta_voltage", 82, 2, False, lambda x: x / 1000),
         BMSdp("power", 62, 4, True, lambda x: x / 1),
     )
@@ -114,37 +112,39 @@ class BMS(BaseBMS):
             "RX BLE data (%s): %s", "start" if data == self._data else "cnt.", data
         )
 
-        # verify that data is long enough
         if BMS._MIN_LEN < len(self._data) < self._exp_len:
             return
 
-        if (self._data[2] >> 4) != 0x1:
+        if self._data[2] != self._valid_reply:
             self._log.debug("invalid response (0x%X)", self._data[2])
+            return
+
+        if len(self._data) != self._exp_len and self._data[2] != BMS._CMD_DEV | 0x10:
+            # length of CMD_DEV is incorrect, so we ignore the length check here
+            self._log.debug(
+                "invalid frame length %d != %d", len(self._data), self._exp_len
+            )
             return
 
         if not self._data.endswith(BMS._TAIL):
             self._log.debug("invalid frame end")
             return
 
-        if len(self._data) != self._exp_len:
-            self._log.debug(
-                "invalid frame length %d != %d", len(self._data), self._exp_len
-            )
-            # return # TODO: enable
-
         if self._data[2] != self._valid_reply:
             self._log.debug("unexpected response (type 0x%X)", self._data[2])
             return
 
-        if (crc := crc_modbus(self._data[1:-5])) != int.from_bytes(
-            self._data[-4:-2], "little"
+        if (crc := crc_modbus(self._data[1 : self._exp_len - 4])) != int.from_bytes(
+            self._data[self._exp_len - 4 : self._exp_len - 2], "little"
         ):
             self._log.debug(
                 "invalid checksum 0x%X != 0x%X",
-                int.from_bytes(self._data[-4:-2], "little"),
+                int.from_bytes(
+                    self._data[self._exp_len - 4 : self._exp_len - 2], "little"
+                ),
                 crc,
             )
-            # return # TODO: enable
+            return
 
         self._data_final = self._data.copy()
         self._data_event.set()
@@ -179,14 +179,15 @@ class BMS(BaseBMS):
             self._data_final[18:26], byteorder="little", signed=False
         )
         result["problem_code"] = protection | warning
-        result["cell_count"] = self._data_final[BMS._CELL_COUNT]
+        result["battery_charging"] = self._data_final[7] == 0x2
+        result["cell_count"] = min(self._data_final[BMS._CELL_COUNT], BMS._MAX_CELLS)
         result["cell_voltages"] = BMS._cell_voltages(
             self._data_final,
             cells=result["cell_count"],
             start=BMS._CELL_POS,
             byteorder="little",
         )
-        result["temp_sensors"] = self._data_final[BMS._TEMP_POS]
+        result["temp_sensors"] = min(self._data_final[BMS._TEMP_POS], BMS._MAX_TEMPS)
         result["temp_values"] = BMS._temp_sensors(
             self._data_final,
             result["temp_sensors"] + 2,  # + MOSFET, balancer temperature
