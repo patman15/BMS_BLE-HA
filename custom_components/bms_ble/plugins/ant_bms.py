@@ -116,7 +116,7 @@ class BMS(BaseBMS):
             return
 
         if self._data[2] != self._valid_reply:
-            self._log.debug("invalid response (0x%X)", self._data[2])
+            self._log.debug("unexpected response (type 0x%X)", self._data[2])
             return
 
         if len(self._data) != self._exp_len and self._data[2] != BMS._CMD_DEV | 0x10:
@@ -128,10 +128,6 @@ class BMS(BaseBMS):
 
         if not self._data.endswith(BMS._TAIL):
             self._log.debug("invalid frame end")
-            return
-
-        if self._data[2] != self._valid_reply:
-            self._log.debug("unexpected response (type 0x%X)", self._data[2])
             return
 
         if (crc := crc_modbus(self._data[1 : self._exp_len - 4])) != int.from_bytes(
