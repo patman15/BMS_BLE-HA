@@ -34,6 +34,14 @@ class BMS(BaseBMS):
         BMSdp("current", 40, 2, True, lambda x: x / 10),
         BMSdp("design_capacity", 50, 4, False, lambda x: x // 1e6),
         BMSdp("battery_level", 42, 2, False, lambda x: x),
+        BMSdp(
+            "problem_code",
+            46,
+            2,
+            False,
+            lambda x: ((x & 0xF00) if (x >> 8) not in (0x1, 0x4, 0xB, 0xF) else 0)
+            | ((x & 0xF) if (x & 0xF) not in (0x1, 0x4, 0xB, 0xC, 0xF) else 0),
+        ),
         BMSdp("cycle_charge", 54, 4, False, lambda x: x / 1e6),
         BMSdp("delta_voltage", 82, 2, False, lambda x: x / 1000),
         BMSdp("power", 62, 4, True, lambda x: x / 1),
@@ -168,13 +176,6 @@ class BMS(BaseBMS):
         await self._await_reply(BMS._cmd(BMS._CMD_STAT, 0, 0xBE))
 
         result: BMSsample = {}
-        protection: Final[int] = int.from_bytes(
-            self._data_final[10:18], byteorder="little", signed=False
-        )
-        warning: Final[int] = int.from_bytes(
-            self._data_final[18:26], byteorder="little", signed=False
-        )
-        result["problem_code"] = protection | warning
         result["battery_charging"] = self._data_final[7] == 0x2
         result["cell_count"] = min(self._data_final[BMS._CELL_COUNT], BMS._MAX_CELLS)
         result["cell_voltages"] = BMS._cell_voltages(

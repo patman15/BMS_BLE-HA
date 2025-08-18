@@ -54,9 +54,8 @@ _RESULT_DEFS: Final[BMSsample] = {
     ],
     "temp_values": [29.0, 29.0, 29.0, 29.0, 30.0, 30.0],
     "delta_voltage": 0.148,
-    # "runtime": 227368,
-    "problem": True,
-    "problem_code": 25690112,
+    "problem": False,
+    "problem_code": 0,
 }
 
 
@@ -185,60 +184,64 @@ async def test_invalid_response(
     await bms.disconnect()
 
 
-# @pytest.fixture(
-#     name="problem_response",
-#     params=[
-#         (
-#             bytearray(
-#                 b"\xa1\x00\x00\x00\x65\x00\x00\x00\x00\x00\x18\x01\x03\x44\x00\x18\x00\x48\x00\x64"
-#                 b"\x05\x31\xff\x8e\x00\x00\x27\x10\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"
-#                 b"\x00\x01\x00\x02\x00\x00\xff\xff\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00"
-#                 b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-#                 b"\x00\x00\x20\xd6"
-#             ),
-#             "first_bit",
-#         ),
-#         (
-#             bytearray(
-#                 b"\xa1\x00\x00\x00\x65\x00\x00\x00\x00\x00\x18\x01\x03\x44\x00\x18\x00\x48\x00\x64"
-#                 b"\x05\x31\xff\x8e\x00\x00\x27\x10\x00\x01\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00"
-#                 b"\x00\x01\x00\x02\x00\x00\xff\xff\x00\x00\x00\x80\x00\x00\x00\x00\x00\x00\x00\x00"
-#                 b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-#                 b"\x00\x00\x20\x0e"
-#             ),
-#             "last_bit",
-#         ),
-#     ],
-#     ids=lambda param: param[1],
-# )
-# def prb_response(request) -> tuple[bytearray, str]:
-#     """Return faulty response frame."""
-#     return request.param
+@pytest.fixture(
+    name="problem_response",
+    params=[
+        (
+            bytearray(
+                b"\x7e\xa1\x11\x00\x00\x9e\x05\x04\x04\x16\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x88\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1e\x09\x1b\x09\x1e\x09"
+                b"\x1d\x09\x1d\x09\x1e\x09\x20\x09\x1e\x09\x8f\x08\x8e\x08\x90\x08\x22\x09\xeb\x08"
+                b"\x20\x09\x20\x09\x1f\x09\x1e\x09\x1f\x09\x1e\x09\x1f\x09\x21\x09\x1f\x09\x1d\x00"
+                b"\x1d\x00\x1d\x00\x1d\x00\x1e\x00\x1e\x00\xe0\x13\x15\x00\x0a\x00\x64\x00\x02\x02"  # \x02
+                b"\x00\x00\x00\xb4\xc4\x04\x86\xf1\x97\x00\x3a\xed\xe8\x00\x6a\x00\x00\x00\xa1\xf2"
+                b"\xc0\x03\x00\x00\x00\x00\x22\x09\x0c\x00\x8e\x08\x0a\x00\x94\x00\x08\x09\x00\x00"
+                b"\x6d\x00\x6a\x00\xaf\x02\xf3\xfa\x4c\x74\xe5\x00\x28\x66\xec\x00\xc3\x5d\x62\x00"
+                b"\xcc\xb3\x92\x00\x4d\x04\xaa\x55"
+            ),
+            "low_value",
+        ),
+        (
+            bytearray(
+                b"\x7e\xa1\x11\x00\x00\x9e\x05\x04\x04\x16\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x88\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x1e\x09\x1b\x09\x1e\x09"
+                b"\x1d\x09\x1d\x09\x1e\x09\x20\x09\x1e\x09\x8f\x08\x8e\x08\x90\x08\x22\x09\xeb\x08"
+                b"\x20\x09\x20\x09\x1f\x09\x1e\x09\x1f\x09\x1e\x09\x1f\x09\x21\x09\x1f\x09\x1d\x00"
+                b"\x1d\x00\x1d\x00\x1d\x00\x1e\x00\x1e\x00\xe0\x13\x15\x00\x0a\x00\x64\x00\x0e\x0e"  # \x0e
+                b"\x00\x00\x00\xb4\xc4\x04\x86\xf1\x97\x00\x3a\xed\xe8\x00\x6a\x00\x00\x00\xa1\xf2"
+                b"\xc0\x03\x00\x00\x00\x00\x22\x09\x0c\x00\x8e\x08\x0a\x00\x94\x00\x08\x09\x00\x00"
+                b"\x6d\x00\x6a\x00\xaf\x02\xf3\xfa\x4c\x74\xe5\x00\x28\x66\xec\x00\xc3\x5d\x62\x00"
+                b"\xcc\xb3\x92\x00\xc8\xf6\xaa\x55"
+            ),
+            "high_value",
+        ),
+    ],
+    ids=lambda param: param[1],
+)
+def prb_response(request) -> tuple[bytearray, str]:
+    """Return faulty response frame."""
+    return request.param
 
 
-# async def test_problem_response(
-#     monkeypatch, patch_bleak_client, problem_response
-# ) -> None:
-#     """Test data update with BMS returning error flags."""
+async def test_problem_response(
+    monkeypatch, patch_bleak_client, problem_response
+) -> None:
+    """Test data update with BMS returning error flags."""
 
-#     monkeypatch.setattr(MockANTBleakClient, "RESP", _PROTO_DEFS[0x1])
-#     monkeypatch.setattr(
-#         MockANTBleakClient,
-#         "RESP",
-#         {
-#             0xA1: problem_response[0],
-#             0xA2: MockANTBleakClient.RESP[0xA2],
-#         },
-#     )
+    monkeypatch.setattr(
+        MockANTBleakClient,
+        "RESP",
+        MockANTBleakClient.RESP | {0x1: problem_response[0]},
+    )
 
-#     patch_bleak_client(MockANTBleakClient)
+    patch_bleak_client(MockANTBleakClient)
 
-#     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
+    bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73))
 
-#     result: BMSsample = await bms.async_update()
-#     assert result == _RESULT_DEFS[0x1] | {
-#         "problem": True,
-#         "problem_code": 1 << (0 if problem_response[1] == "first_bit" else 15),
-#     }
+    result: BMSsample = await bms.async_update()
+    assert result == _RESULT_DEFS | {
+        "problem": True,
+        "problem_code": (0x202 if problem_response[1] == "low_value" else 0xE0E),
+    }
 
-#     await bms.disconnect()
+    await bms.disconnect()
