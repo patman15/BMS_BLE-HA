@@ -8,3 +8,4 @@ repos:
     hooks:
       - id: mypy
         args: ["--allow-subclassing-any"]  # avoid HA dependency installation
+        # args: [--ignore-missing-imports]  # Optional: customize your mypy flags
