@@ -42,10 +42,10 @@ class BMS(BaseBMS):
         """Provide BluetoothMatcher definition."""
         return [
             {
-                "local_name": "GW-*",
+                "local_name": pattern,
                 "service_uuid": normalize_uuid_str("fee7"),
                 "connectable": True,
-            },
+            } for pattern in ("EK-*", "GW-*")
         ]
 
     @staticmethod
@@ -148,7 +148,7 @@ class BMS(BaseBMS):
         frame: bytearray = bytearray(
             [*BMS._HEAD_CMD, cmd[0], len(value), *value]
         ) + bytearray(13 - len(value))
-        frame.append(crc_sum(frame))
+        frame += bytes([crc_sum(frame), BMS._TAIL])
         return bytes(frame)
 
     @staticmethod
