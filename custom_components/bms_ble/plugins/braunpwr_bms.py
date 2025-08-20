@@ -24,7 +24,7 @@ class BMS(BaseBMS):
         BMSdp("cycle_charge", 15, 2, False, lambda x: x / 100, 0x1),
         BMSdp("design_capacity", 17, 2, False, lambda x: x // 100, 0x1),
         BMSdp("cycles", 23, 2, False, lambda x: x, 0x1),
-        BMSdp("problem_code", 9, 2, False, lambda x: x & 0xAAAA, 0x8),
+        BMSdp("problem_code", 31, 2, False, lambda x: x, 0x1),
     )  # problem code assumed max len 22 bytes (always cut last in case shorter)
     _CMDS: Final[set[int]] = {field.idx for field in _FIELDS} | {
         0x9,
@@ -47,7 +47,7 @@ class BMS(BaseBMS):
             AdvertisementPattern(
                 local_name="HSKS-*",
                 service_uuid=BMS.uuid_services()[0],
-                manufacturer_id=0x7B,  # Hanlynn Technologies
+                manufacturer_id=0x7B,
                 connectable=True,
             )
         ]
