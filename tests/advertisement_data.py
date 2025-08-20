@@ -706,7 +706,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         generate_advertisement_data(
             local_name="HSKS-25A-118",
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
-            manufacturer_data={123: b"\x02\xff\xff"},
+            manufacturer_data={123: b"\x02\xff\xff\x7b"},
             rssi=-70,
         ),
         "braunpwr_bms",
