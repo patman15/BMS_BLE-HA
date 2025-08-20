@@ -96,7 +96,7 @@ class MockNeeyBleakClient(MockBleakClient):
         frame: Final[bytearray] = bytearray(data)
         if (
             char_specifier != "ffe1"
-            or frame[-1] != self.TAIL
+            or frame[19] != self.TAIL
             or not frame.startswith(self.HEAD_CMD)
         ):
             return bytearray()
