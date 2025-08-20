@@ -150,7 +150,7 @@ class BaseBMS(ABC):
         self.name: Final[str] = self._ble_device.name or "undefined"
         self._log: Final[logging.Logger] = logging.getLogger(
             f"{logger_name.replace('.plugins', '')}::{self.name}:"
-            f"{self._ble_device.address[-5:].replace(':','')})"
+            f"{self._ble_device.address[-5:].replace(':','')}"
         )
         self._inv_wr_mode: bool | None = None  # invert write mode (WNR <-> W)
 
@@ -411,13 +411,14 @@ class BaseBMS(ABC):
                     await self._send_msg(
                         data, max_size, char or self.uuid_tx(), attempt, inv_wr_mode
                     )
+                    if not wait_for_notify:
+                        return  # write without wait for response selected
                     try:
-                        if wait_for_notify:
-                            await asyncio.wait_for(
-                                self._wait_event(),
-                                BaseBMS._RETRY_TIMEOUT
-                                * min(2**attempt, BaseBMS._MAX_TIMEOUT_FACTOR),
-                            )
+                        await asyncio.wait_for(
+                            self._wait_event(),
+                            BaseBMS._RETRY_TIMEOUT
+                            * min(2**attempt, BaseBMS._MAX_TIMEOUT_FACTOR),
+                        )
                     except TimeoutError:
                         self._log.debug("TX BLE request timed out.")
                         continue  # retry sending data

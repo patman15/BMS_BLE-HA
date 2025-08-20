@@ -24,7 +24,7 @@ class BMS(BaseBMS):
     _CMD_HEADS: list[int] = [0x7E, 0x1E]  # alternative command head
     _TAIL: Final[int] = 0x0D
     _CMD_VER: Final[int] = 0x00
-    _RSP_VER: Final[int] = 0x00
+    _RSP_VER: Final[frozenset[int]] = frozenset({0x00, 0x04})
     _CELL_POS: Final[int] = 0x8
     _INFO_LEN: Final[int] = 10  # minimal frame length
     _FIELDS: Final[tuple[BMSdp, ...]] = (
@@ -128,7 +128,7 @@ class BMS(BaseBMS):
             self._log.debug("frame end incorrect: %s", self._data)
             return
 
-        if self._data[1] != BMS._RSP_VER:
+        if self._data[1] not in BMS._RSP_VER:
             self._log.debug("unknown frame version: V%.1f", self._data[1] / 10)
             return
 
