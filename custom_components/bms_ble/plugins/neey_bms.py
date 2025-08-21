@@ -42,10 +42,11 @@ class BMS(BaseBMS):
         """Provide BluetoothMatcher definition."""
         return [
             {
-                "local_name": "GW-*",
+                "local_name": pattern,
                 "service_uuid": normalize_uuid_str("fee7"),
                 "connectable": True,
-            },
+            }
+            for pattern in ("EK-*", "GW-*")
         ]
 
     @staticmethod
@@ -141,14 +142,14 @@ class BMS(BaseBMS):
         self._valid_reply = 0x02  # cell information
 
     @staticmethod
-    def _cmd(cmd: bytes, value: list[int] | None = None) -> bytes:
+    def _cmd(cmd: bytes, reg: int = 0, value: list[int] | None = None) -> bytes:
         """Assemble a Neey BMS command."""
         value = [] if value is None else value
-        assert len(value) <= 13
-        frame: bytearray = bytearray(
-            [*BMS._HEAD_CMD, cmd[0], len(value), *value]
-        ) + bytearray(13 - len(value))
-        frame.append(crc_sum(frame))
+        assert len(value) <= 11
+        frame: bytearray = bytearray(  # 0x14 frame length
+            [*BMS._HEAD_CMD, cmd[0], reg & 0xFF, 0x14, *value]
+        ) + bytearray(11 - len(value))
+        frame += bytes([crc_sum(frame), BMS._TAIL])
         return bytes(frame)
 
     @staticmethod

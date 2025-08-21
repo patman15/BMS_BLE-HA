@@ -338,13 +338,15 @@ class MockJikongBleakClient(MockBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if char_specifier != 3:
+        frame: Final[bytearray] = bytearray(data)
+        if char_specifier != 3 or crc_sum(frame[:-1]) != frame[19]:
             return bytearray()
-        if bytearray(data)[0:5] == self.HEAD_CMD + self.CMD_INFO:
+
+        if frame[0:5] == self.HEAD_CMD + self.CMD_INFO:
             return (
                 bytearray(b"\x41\x54\x0d\x0a") + self._FRAME["cell"]
             )  # added AT\r\n command
-        if bytearray(data)[0:5] == self.HEAD_CMD + self.DEV_INFO:
+        if frame[0:5] == self.HEAD_CMD + self.DEV_INFO:
             return self._FRAME["dev"]
 
         return bytearray()
