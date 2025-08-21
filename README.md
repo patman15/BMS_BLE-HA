@@ -34,6 +34,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 
 ### Supported Devices
 - ABC/SOK BMS (show up as `ABC-`&#x2026;, `SOK-`&#x2026;)
+- ANT BMS (show up as `ANT-BLE`&#x2026;)
 - CBT Power BMS, Creabest batteries
 - D-powercore BMS (show up as `DXB-`&#x2026;), Fliteboard batteries (show up as `TBA-`&#x2026;)
 - Daly BMS (show up as `DL-`&#x2026;)
@@ -284,6 +285,7 @@ for helping with making the integration better.
 
 ## References
 - [Home Assistant Add-on: BatMON](https://github.com/fl4p/batmon-ha)
+- ANT BMS: [esphome-ant-bms](https://github.com/syssi/esphome-ant-bms/)
 - Daly BMS: [esp32-smart-bms-simulation](https://github.com/roccotsi2/esp32-smart-bms-simulation)
 - Jikong BMS: [esphome-jk-bms](https://github.com/syssi/esphome-jk-bms)
 - JBD BMS: [esphome-jbd-bms](https://github.com/syssi/esphome-jbd-bms)
