@@ -46,7 +46,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        super().__init__(__name__, ble_device, reconnect)
+        super().__init__(ble_device, reconnect)
         self._mac_head: Final[tuple] = tuple(
             int(self._ble_device.address.replace(":", ""), 16).to_bytes(6) + head
             for head in BMS._HEAD

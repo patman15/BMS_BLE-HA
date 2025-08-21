@@ -16,7 +16,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        super().__init__(__name__, ble_device, reconnect)
+        super().__init__(ble_device, reconnect)
 
     @staticmethod
     def matcher_dict_list() -> list[AdvertisementPattern]:
