@@ -126,9 +126,9 @@ class BaseBMS(ABC):
 
     def __init__(
         self,
-        logger_name: str,
         ble_device: BLEDevice,
         reconnect: bool = False,
+        logger_name: str = "",
     ) -> None:
         """Intialize the BMS.
 
@@ -148,6 +148,7 @@ class BaseBMS(ABC):
         self._ble_device: Final[BLEDevice] = ble_device
         self._reconnect: Final[bool] = reconnect
         self.name: Final[str] = self._ble_device.name or "undefined"
+        logger_name = logger_name or self.__class__.__module__
         self._log: Final[logging.Logger] = logging.getLogger(
             f"{logger_name.replace('.plugins', '')}::{self.name}:"
             f"{self._ble_device.address[-5:].replace(':','')}"
