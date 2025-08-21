@@ -74,7 +74,7 @@ class WMTestBMS(BaseBMS):
         reconnect: bool = False,
     ) -> None:
         """Initialize BMS."""
-        super().__init__(__name__, ble_device, reconnect)
+        super().__init__(ble_device, reconnect)
         self._char_tx_properties: list[str] = char_tx_properties
 
     @staticmethod
