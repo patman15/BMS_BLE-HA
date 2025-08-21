@@ -76,7 +76,7 @@ def test_advertisements_unique() -> None:
 
 
 def test_advertisements_ignore() -> None:
-    """Check that each advertisement to be ignored are actually ignored."""
+    """Check that each advertisement to be ignored is actually ignored."""
     for adv, reason in ADVERTISEMENTS_IGNORE:
         for bms, fct_supported in BMS_SUPPORTED_FCTS:
             supported: bool = fct_supported(
