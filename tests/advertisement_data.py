@@ -485,8 +485,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         "roypow_bms",
     ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/186)
-        generate_advertisement_data(
-            local_name="12-6C-14-39-28-1F",
+        generate_advertisement_data(  # no name advertised
             rssi=-50,
             manufacturer_data={2865: b"\x88\xa0\x12\x6c\x14\x39\x28\x1f"},
             service_uuids=[
@@ -497,8 +496,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         "roypow_bms",
     ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/186)
-        generate_advertisement_data(
-            local_name="C6-6C-15-08-A7-E9",
+        generate_advertisement_data(  # no name advertised
             rssi=-66,
             manufacturer_data={35579: b"\x88\xa0\xc6\x6c\x15\x08\xa7\xe9"},
             service_uuids=[
@@ -915,6 +913,23 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
                 "0000ff00-0000-1000-8000-00805f9b34fb",
             ],
             rssi=-48,
+        ),
+        "jbd_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/439)
+        generate_advertisement_data(
+            local_name="L-51030GBNGC2-A00263",
+            rssi=-66,
+            manufacturer_data={22618: "\xc8\x47\x80\x14\xec\x68"},
+            service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
+        ),
+        "redodo_bms",
+    ),
+    (  # source pcap (https://github.com/patman15/BMS_BLE-HA/issues/444)
+        generate_advertisement_data(
+            local_name="BS202212-01-0168",
+            rssi=-91,
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
         ),
         "jbd_bms",
     ),

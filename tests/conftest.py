@@ -20,7 +20,7 @@ from hypothesis import HealthCheck, settings
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.bms_ble.const import ATTR_VOLTAGE, BMS_TYPES, DOMAIN
+from custom_components.bms_ble.const import BMS_TYPES, DOMAIN
 from custom_components.bms_ble.plugins.basebms import (
     AdvertisementPattern,
     BaseBMS,
@@ -175,7 +175,9 @@ def bt_discovery_notsupported() -> BluetoothServiceInfoBleak:
 
 
 def mock_config(
-    bms: str, unique_id: str | None = "cc:cc:cc:cc:cc:cc"
+    bms: str,
+    title: str = "SmartBat-B12345",
+    unique_id: str | None = "cc:cc:cc:cc:cc:cc",
 ) -> MockConfigEntry:
     """Return a Mock of the HA entity config."""
     return MockConfigEntry(
@@ -184,7 +186,7 @@ def mock_config(
         minor_version=0,
         unique_id=unique_id,
         data={"type": f"custom_components.bms_ble.plugins.{bms}"},
-        title=bms,
+        title=title,
     )
 
 
@@ -437,7 +439,7 @@ class MockRespChar(BleakGATTCharacteristic):
 
 async def mock_update_min(_self) -> BMSsample:
     """Minimal version of a BMS update to mock initial coordinator update easily."""
-    return {ATTR_VOLTAGE: 12.3}
+    return {"voltage": 12.3}
 
 
 async def mock_update_exc(_self) -> BMSsample:
