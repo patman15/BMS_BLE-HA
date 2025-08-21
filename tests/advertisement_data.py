@@ -711,6 +711,15 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "braunpwr_bms",
     ),
+    (  # source LOG (https://github.com/patman15/BMS_BLE-HA/issues/303)
+        generate_advertisement_data(
+            local_name="BL-25F-170-118",
+            manufacturer_data={123: b"\x02\xff\xff\x7d"},
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            rssi=-76,
+        ),
+        "braunpwr_bms",
+    ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/291)
         generate_advertisement_data(
             local_name="GW-24Srenamed1",
