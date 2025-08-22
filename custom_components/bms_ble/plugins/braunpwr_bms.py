@@ -25,18 +25,17 @@ class BMS(BaseBMS):
         BMSdp("design_capacity", 17, 2, False, lambda x: x // 100, 0x1),
         BMSdp("cycles", 23, 2, False, lambda x: x, 0x1),
         BMSdp("problem_code", 31, 2, False, lambda x: x, 0x1),
-    )  # problem code assumed max len 22 bytes (always cut last in case shorter)
-    _CMDS: Final[set[int]] = {field.idx for field in _FIELDS} | {
-        0x9,
+    )
+    _CMDS: Final[set[int]] = {field.idx for field in _FIELDS}
+    _INIT_CMDS: Final[set[int]] = {
         0x74,  # SW version
-        0x78,
         0xF4,  # BMS program version
         0xF5,  # BMS boot version
     }
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(__name__, ble_device, reconnect)
+        super().__init__(ble_device, reconnect)
         self._data_final: dict[int, bytearray] = {}
         self._exp_reply: tuple[int] = (0x01,)
 
@@ -93,7 +92,7 @@ class BMS(BaseBMS):
         if (
             data.startswith(BMS._HEAD)
             and len(self._data) >= BMS._MIN_LEN
-            and data[1] in BMS._CMDS
+            and data[1] in {*BMS._CMDS, *BMS._INIT_CMDS}
             and len(self._data) >= BMS._MIN_LEN + self._data[2]
         ):
             self._data = bytearray()
@@ -136,6 +135,15 @@ class BMS(BaseBMS):
         assert len(data) <= 255, "data length must be a single byte."
         return bytes([*BMS._HEAD, cmd, len(data), *data, BMS._TAIL])
 
+    async def _init_connection(
+        self, char_notify: BleakGATTCharacteristic | int | str | None = None
+    ) -> None:
+        """Connect to the BMS and setup notification if not connected."""
+        await super()._init_connection()
+        for cmd in BMS._INIT_CMDS:
+            self._exp_reply = (cmd,)
+            await self._await_reply(BMS._cmd(cmd))
+
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
         self._data_final.clear()
@@ -143,8 +151,7 @@ class BMS(BaseBMS):
             self._exp_reply = (cmd,)
             await self._await_reply(BMS._cmd(cmd))
 
-        data: BMSsample = {}
-        data = BMS._decode_data(BMS._FIELDS, self._data_final)
+        data: BMSsample = BMS._decode_data(BMS._FIELDS, self._data_final)
         data["cell_voltages"] = BMS._cell_voltages(
             self._data_final[0x2], cells=data.get("cell_count", 0), start=4
         )
