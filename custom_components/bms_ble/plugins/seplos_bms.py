@@ -62,7 +62,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(__name__, ble_device, reconnect)
+        super().__init__(ble_device, reconnect)
         self._data_final: dict[int, bytearray] = {}
         self._pack_count: int = 0  # number of battery packs
         self._pkglen: int = 0  # expected packet length

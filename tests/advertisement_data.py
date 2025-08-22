@@ -263,6 +263,14 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "ogt_bms",
     ),
+    (  # Pro BMS test: name and service UUID matching
+        generate_advertisement_data(
+            local_name="Pro BMS",
+            service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
+            rssi=-60,
+        ),
+        "pro_bms",
+    ),
     (  # source PCAP
         generate_advertisement_data(
             local_name="R-24100BNN160-A00643",
@@ -833,6 +841,15 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "redodo_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/366)
+        generate_advertisement_data(
+            local_name="ANT-BLE24C-001",
+            rssi=-70,
+            manufacturer_data={8979: b"\x88\xa0\xaa\xbb\xcc\x90\x00\x01"},
+            service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
+        ),
+        "ant_bms",
+    ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/390)
         generate_advertisement_data(
             local_name="RNGRBP1228000830",
@@ -940,5 +957,16 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
         ),
         "jbd_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/454)
+        generate_advertisement_data(
+            local_name="EK-16S2EB",
+            rssi=-73,
+            service_uuids=[
+                "0000ffe0-0000-1000-8000-00805f9b34fb",
+                "0000fee7-0000-1000-8000-00805f9b34fb",
+            ],
+        ),
+        "neey_bms",
     ),
 ]

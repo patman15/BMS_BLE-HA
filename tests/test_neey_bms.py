@@ -85,6 +85,7 @@ class MockNeeyBleakClient(MockBleakClient):
     HEAD_CMD: Final = bytearray(b"\xaa\x55\x11\x01")
     DEV_INFO: Final = bytearray(b"\x01")
     CELL_INFO: Final = bytearray(b"\x02")
+    TAIL: Final = 0xFF
     _FRAME: dict[str, bytearray] = {}
 
     _task: asyncio.Task | None = None
@@ -92,11 +93,16 @@ class MockNeeyBleakClient(MockBleakClient):
     def _response(
         self, char_specifier: BleakGATTCharacteristic | int | str | UUID, data: Buffer
     ) -> bytearray:
-        if char_specifier != "ffe1":
+        frame: Final[bytearray] = bytearray(data)
+        if (
+            char_specifier != "ffe1"
+            or frame[19] != self.TAIL
+            or not frame.startswith(self.HEAD_CMD)
+        ):
             return bytearray()
-        if bytearray(data)[0:5] == self.HEAD_CMD + self.CELL_INFO:
+        if frame[4:5] == self.CELL_INFO:
             return self._FRAME["cell"]
-        if bytearray(data)[0:5] == self.HEAD_CMD + self.DEV_INFO:
+        if frame[4:5] == self.DEV_INFO:
             return self._FRAME["dev"]
 
         return bytearray()

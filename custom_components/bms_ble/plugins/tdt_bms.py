@@ -45,7 +45,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Initialize BMS."""
-        super().__init__(__name__, ble_device, reconnect)
+        super().__init__(ble_device, reconnect)
         self._data_final: dict[int, bytearray] = {}
         self._cmd_heads: list[int] = BMS._CMD_HEADS
         self._exp_len: int = 0

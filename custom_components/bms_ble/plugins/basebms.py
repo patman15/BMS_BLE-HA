@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 import asyncio
-from collections.abc import Callable
+from collections.abc import Callable, MutableMapping
 from enum import IntEnum
 import logging
 from statistics import fmean
@@ -124,11 +124,21 @@ class BaseBMS(ABC):
     _MAX_CELL_VOLT: Final[float] = 5.906  # max cell potential
     _HRS_TO_SECS: Final[int] = 60 * 60  # seconds in an hour
 
+    class PrefixAdapter(logging.LoggerAdapter):
+        """Logging adpater to add instance ID to each log message."""
+
+        def process(
+            self, msg: str, kwargs: MutableMapping[str, Any]
+        ) -> tuple[str, MutableMapping[str, Any]]:
+            """Process the logging message."""
+            prefix: str = str(self.extra.get("prefix") if self.extra else "")
+            return (f"{prefix} {msg}", kwargs)
+
     def __init__(
         self,
-        logger_name: str,
         ble_device: BLEDevice,
         reconnect: bool = False,
+        logger_name: str = "",
     ) -> None:
         """Intialize the BMS.
 
@@ -148,9 +158,10 @@ class BaseBMS(ABC):
         self._ble_device: Final[BLEDevice] = ble_device
         self._reconnect: Final[bool] = reconnect
         self.name: Final[str] = self._ble_device.name or "undefined"
-        self._log: Final[logging.Logger] = logging.getLogger(
-            f"{logger_name.replace('.plugins', '')}::{self.name}:"
-            f"{self._ble_device.address[-5:].replace(':','')}"
+        logger_name = logger_name or self.__class__.__module__
+        self._log: Final[BaseBMS.PrefixAdapter] = BaseBMS.PrefixAdapter(
+            logging.getLogger(f"{logger_name.replace('.plugins', '')}"),
+            {"prefix": f"{self.name}({self._ble_device.address[-5:].replace(':','')}):"},
         )
         self._inv_wr_mode: bool | None = None  # invert write mode (WNR <-> W)
 
