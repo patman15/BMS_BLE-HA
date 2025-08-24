@@ -951,4 +951,12 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "neey_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/454)
+        generate_advertisement_data(
+            local_name="SP95B-B2503190001",
+            rssi=-65,
+            service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
+        ),
+        "seplos_bms",
+    ),
 ]
