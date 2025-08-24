@@ -29,4 +29,11 @@ ADVERTISEMENTS_IGNORE: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "classic BT device",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/408)
+        generate_advertisement_data(
+            local_name="BMS-SMART_708BFC",
+            rssi=-78,
+        ),
+        "classic BT device",
+    ),
 ]
