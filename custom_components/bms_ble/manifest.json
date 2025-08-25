@@ -214,7 +214,7 @@
       "manufacturer_id": 21320
     },
     {
-      "local_name": "BT-Battery",
+      "local_name": "BT-Battery*",
       "manufacturer_id": 32516,
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },    

@@ -23,7 +23,7 @@ class BMS(EJBMS):
         """Provide BluetoothMatcher definition."""
         return [
             {
-                "local_name": "BT-Battery",
+                "local_name": "BT-Battery*",
                 "manufacturer_id": 32516,
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,

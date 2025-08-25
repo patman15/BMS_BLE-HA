@@ -942,7 +942,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/452)
         generate_advertisement_data(
-            local_name="BT-Battery",
+            local_name="BT-Battery          ",
             rssi=-94,
             manufacturer_data={32516: "\x0e\xf5\xe2\xad"},
             service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
