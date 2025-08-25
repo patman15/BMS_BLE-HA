@@ -32,6 +32,5 @@ jobs:
 
       - name: "Upload .zip to the release"
         uses: softprops/action-gh-release@v2.2.1
-        if: github.ref_type == 'tag'
         with:
           files: ${{ github.workspace }}/custom_components/bms_ble/bms_ble.zip
