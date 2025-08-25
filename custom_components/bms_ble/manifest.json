@@ -145,25 +145,45 @@
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
-      "local_name": "SP0*",
+      "local_name": "SP0?B*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
-      "local_name": "SP1*",
+      "local_name": "SP1?B*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
-      "local_name": "SP4*",
+      "local_name": "SP2?B*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
-      "local_name": "SP5*",
+      "local_name": "SP3?B*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },    
+    {
+      "local_name": "SP4?B*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
-      "local_name": "SP6*",
+      "local_name": "SP5?B*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
+    {
+      "local_name": "SP6?B*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "SP7?B*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "SP9?B*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "SP9?B*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },            
     {
       "local_name": "CSY*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
@@ -274,11 +294,20 @@
       "manufacturer_id": 39008
     },
     {
+      "local_name": "ANT-BLE*",
+      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
+      "manufacturer_id": 8979
+    },
+    {
       "local_name": "RNG*",
       "manufacturer_id": 57676
     },
     {
       "service_uuid": "0000fee7-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "Pro BMS",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
       "local_name": "TP_*"
@@ -300,5 +329,5 @@
   ],
   "quality_scale": "silver",
   "requirements": [],
-  "version": "1.19.2"
+  "version": "1.20.0-beta.3"
 }

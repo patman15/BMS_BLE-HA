@@ -52,7 +52,7 @@ class BMS(BaseBMS):
 
     def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
         """Intialize private BMS members."""
-        super().__init__(__name__, ble_device, reconnect)
+        super().__init__(ble_device, reconnect)
         assert self._ble_device.name is not None  # required for unlock
         self._data_final: dict[int, bytearray] = {}
 
