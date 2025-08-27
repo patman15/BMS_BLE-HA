@@ -63,7 +63,8 @@ class BMS(BaseBMS):
                 "DXD*",  # Vatrer
                 "xiaoxiang*",  # xiaoxiang BMS
                 "AL12-*",  # Aolithium
-                "BS20*", # BasenGreen
+                "BS20*",  # BasenGreen
+                "BT  LP*",  # LANPWR
             )
         ] + [
             AdvertisementPattern(
