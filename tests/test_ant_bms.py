@@ -118,9 +118,10 @@ class MockANTBleakClient(MockBleakClient):
             self._notify_callback("MockANTBleakClient", notify_data)
 
 
-async def test_update(patch_bleak_client, reconnect_fixture) -> None:
+async def test_update(patch_bms_timeout, patch_bleak_client, reconnect_fixture) -> None:
     """Test ANT BMS data update."""
 
+    patch_bms_timeout()
     patch_bleak_client(MockANTBleakClient)
 
     bms = BMS(
@@ -224,10 +225,11 @@ def prb_response(request) -> tuple[bytearray, str]:
 
 
 async def test_problem_response(
-    monkeypatch, patch_bleak_client, problem_response
+    monkeypatch, patch_bms_timeout, patch_bleak_client, problem_response
 ) -> None:
     """Test data update with BMS returning error flags."""
 
+    patch_bms_timeout()
     monkeypatch.setattr(
         MockANTBleakClient,
         "RESP",
