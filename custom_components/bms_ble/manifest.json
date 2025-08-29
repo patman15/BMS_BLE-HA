@@ -265,6 +265,9 @@
       "local_name": "F10*"
     },
     {
+      "local_name": "F07*"
+    },    
+    {
       "service_uuid": "000003c1-0000-1000-8000-00805f9b34fb",
       "manufacturer_id": 21330
     },
@@ -328,5 +331,5 @@
   ],
   "quality_scale": "silver",
   "requirements": [],
-  "version": "1.20.0-beta.2"
+  "version": "1.20.0-beta.3"
 }

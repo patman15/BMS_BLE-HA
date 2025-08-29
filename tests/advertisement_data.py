@@ -412,6 +412,13 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "felicity_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/466)
+        generate_advertisement_data(  # Felicity FLB48314TG1
+            local_name="F074204831425240169",
+            rssi=-69,
+        ),
+        "felicity_bms",
+    ),
     (  # source LOG, proxy (https://github.com/patman15/BMS_BLE-HA/issues/164#issue-2825586172)
         generate_advertisement_data(
             local_name="ECO-WORTHY 02_B8EF",
