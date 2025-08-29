@@ -3,13 +3,8 @@ name: Validate with HACS
 permissions:
   contents: read
 
-concurrency:  # Ensures only one workflow per PR/branch is active
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 on:
   push:
-  pull_request:
   workflow_dispatch:
   schedule:
     - cron:  '0 5 * * 6'  
