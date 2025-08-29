@@ -969,4 +969,21 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "neey_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/454)
+        generate_advertisement_data(
+            local_name="SP95B-B2503190001",
+            rssi=-65,
+            service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
+        ),
+        "seplos_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/463)
+        generate_advertisement_data(  # LANPWR 12V 100Ah LiFePO4
+            local_name="BT  LP07841",
+            manufacturer_data={45653: "\x60\x37\xc2\xa5"},  # MAC wrong
+            rssi=-68,
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+        ),
+        "jbd_bms",
+    ),
 ]

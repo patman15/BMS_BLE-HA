@@ -95,7 +95,6 @@ class MockOGTBleakClient(MockBleakClient):
         response: bool | None = None,
     ) -> None:
         """Issue write command to GATT."""
-        # await super().write_gatt_char(char_specifier, data, response)
         assert self._notify_callback is not None
         value: Final[bytearray] = await self._response(char_specifier, data)
 
@@ -158,10 +157,8 @@ async def test_update_16s(monkeypatch, patch_bleak_client) -> None:
         generate_ble_device("cc:cc:cc:cc:cc:cc", "SmartBat-B12294", None, -73), False
     )
 
-    result = await bms.async_update()
-
     # verify all sensors are reported
-    assert result == base_result | {
+    assert await bms.async_update() == base_result | {
         "current": 1.23,
         "delta_voltage": 0.003,
         "power": 56.188,
@@ -185,9 +182,6 @@ async def test_update_16s(monkeypatch, patch_bleak_client) -> None:
             3.303,
         ],
     }
-
-    # query again to check already connected state
-    result = await bms.async_update()
 
 
 @pytest.fixture(
@@ -245,7 +239,7 @@ async def test_invalid_bms_type(patch_bleak_client) -> None:
 
     bms = BMS(generate_ble_device("cc:cc:cc:cc:cc:cc", "SmartBat-C12294", None, -73))
 
-    result = await bms.async_update()
+    result: BMSsample = await bms.async_update()
     assert not result
     assert bms._client.is_connected
     await bms.disconnect()

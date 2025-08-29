@@ -112,7 +112,11 @@
     {
       "local_name": "BS20*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },    
+    },
+    {
+      "local_name": "BT  LP*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
     {
       "manufacturer_id": 123,
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
@@ -145,23 +149,43 @@
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
-      "local_name": "SP0*",
+      "local_name": "SP0?B*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
-      "local_name": "SP1*",
+      "local_name": "SP1?B*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
-      "local_name": "SP4*",
+      "local_name": "SP2?B*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
-      "local_name": "SP5*",
+      "local_name": "SP3?B*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
-      "local_name": "SP6*",
+      "local_name": "SP4?B*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "SP5?B*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "SP6?B*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "SP7?B*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "SP9?B*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "local_name": "SP9?B*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
@@ -304,5 +328,5 @@
   ],
   "quality_scale": "silver",
   "requirements": [],
-  "version": "1.20.0-beta.1"
+  "version": "1.20.0-beta.2"
 }
