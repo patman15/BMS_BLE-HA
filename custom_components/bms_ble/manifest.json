@@ -112,7 +112,11 @@
     {
       "local_name": "BS20*",
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },    
+    },
+    {
+      "local_name": "BT  LP*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
     {
       "manufacturer_id": 123,
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
@@ -159,7 +163,7 @@
     {
       "local_name": "SP3?B*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },    
+    },
     {
       "local_name": "SP4?B*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
@@ -183,7 +187,7 @@
     {
       "local_name": "SP9?B*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },            
+    },
     {
       "local_name": "CSY*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
@@ -324,5 +328,5 @@
   ],
   "quality_scale": "silver",
   "requirements": [],
-  "version": "1.20.0-beta.1"
+  "version": "1.20.0-beta.2"
 }
