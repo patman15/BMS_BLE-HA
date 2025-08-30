@@ -161,7 +161,7 @@ class BaseBMS(ABC):
         logger_name = logger_name or self.__class__.__module__
         self._log: Final[BaseBMS.PrefixAdapter] = BaseBMS.PrefixAdapter(
             logging.getLogger(f"{logger_name.replace('.plugins', '')}"),
-            {"prefix": f"{self.name}({self._ble_device.address[-5:].replace(':','')}):"},
+            {"prefix": f"{self.name}|{self._ble_device.address[-5:].replace(':','')}:"},
         )
         self._inv_wr_mode: bool | None = None  # invert write mode (WNR <-> W)
 

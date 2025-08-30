@@ -43,12 +43,12 @@ class BMS(EJBMS):
     @staticmethod
     def uuid_rx() -> str:
         """Return 128-bit UUID of characteristic that provides notification/read property."""
-        return "fff6"
+        return "fff1"
 
     @staticmethod
     def uuid_tx() -> str:
         """Return 128-bit UUID of characteristic that provides write property."""
-        return "fff6"
+        return "fff1"
 
     async def _async_update(self) -> BMSsample:
         """Update battery status information."""
