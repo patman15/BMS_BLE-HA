@@ -2,7 +2,9 @@
 
 from collections.abc import Callable
 
-from custom_components.bms_ble.plugins.basebms import BMSmode, BMSsample
+from aiobmsble import BMSmode
+from aiobmsble.basebms import BMSsample
+
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
@@ -21,7 +23,7 @@ from .coordinator import BTBmsCoordinator
 PARALLEL_UPDATES = 0
 
 
-class BmsBinaryEntityDescription(BinarySensorEntityDescription, frozen_or_thawed=True):
+class BmsBinaryEntityDescription(BinarySensorEntityDescription):
     """Describes BMS sensor entity."""
 
     attr_fn: Callable[[BMSsample], dict[str, int | str]] | None = None

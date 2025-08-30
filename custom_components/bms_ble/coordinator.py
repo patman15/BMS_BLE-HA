@@ -5,6 +5,8 @@ from datetime import timedelta
 from time import monotonic
 from typing import Final
 
+from aiobmsble import BMSsample
+from aiobmsble.basebms import BaseBMS
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from habluetooth import BluetoothServiceInfoBleak
@@ -17,7 +19,6 @@ from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH, DeviceIn
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN, LOGGER, UPDATE_INTERVAL
-from .plugins.basebms import BaseBMS, BMSsample
 
 
 class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
@@ -40,7 +41,9 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSsample]):
             config_entry=config_entry,
         )
         self._device: Final[BaseBMS] = bms_device
-        self._link_q: deque[bool] = deque([False], maxlen=100)  # track BMS update issues
+        self._link_q: deque[bool] = deque(
+            [False], maxlen=100
+        )  # track BMS update issues
         self._mac: Final[str] = ble_device.address
         self._stale: bool = False  # indicates no BMS response for significant time
 

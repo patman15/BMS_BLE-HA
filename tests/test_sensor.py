@@ -3,6 +3,7 @@
 from datetime import timedelta
 from typing import Final
 
+from aiobmsble.basebms import BMSsample
 from habluetooth import BluetoothServiceInfoBleak
 import pytest
 from pytest_homeassistant_custom_component.common import (
@@ -24,14 +25,12 @@ from custom_components.bms_ble.const import (
     ATTR_VOLTAGE,
     UPDATE_INTERVAL,
 )
-from custom_components.bms_ble.plugins.basebms import BMSsample
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers.entity_component import async_update_entity
 import homeassistant.util.dt as dt_util
-
-from .bluetooth import inject_bluetooth_service_info_bleak
-from .conftest import mock_config
+from tests.bluetooth import inject_bluetooth_service_info_bleak
+from tests.conftest import mock_config
 
 DEV_NAME: Final[str] = "sensor.smartbat_b12345"
 
@@ -106,7 +105,7 @@ async def test_update(
     }
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.dummy_bms.BMS.async_update",
+        "aiobmsble.bms.dummy_bms.BMS.async_update",
         patch_async_update,
     )
 

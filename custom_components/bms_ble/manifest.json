@@ -327,9 +327,10 @@
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": [
-    "bleak_retry_connector"
+    "bleak_retry_connector",
+    "aiobmsble"
   ],
   "quality_scale": "silver",
   "requirements": [],
-  "version": "1.20.0"
+  "version": "2.0.0-beta.1"
 }

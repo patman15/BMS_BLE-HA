@@ -87,7 +87,8 @@ async def async_migrate_entry(
     LOGGER.debug("Migrating from version %s", config_entry.version)
 
     if config_entry.version == 0:
-        bms_type = config_entry.data["type"]
+        bms_type: str = str(config_entry.data["type"])
+        new: dict[str, str] = {}
         if bms_type == "OGTBms":
             new = {"type": "custom_components.bms_ble.plugins.ogt_bms"}
         elif bms_type == "DalyBms":
@@ -101,6 +102,13 @@ async def async_migrate_entry(
             )
             return False
 
+        hass.config_entries.async_update_entry(
+            config_entry, data=new, minor_version=0, version=1
+        )
+
+    if config_entry.version < 2:
+        bms_type = str(config_entry.data["type"])
+        new = {"type": bms_type.rsplit(".", 1)[-1]}
         hass.config_entries.async_update_entry(
             config_entry, data=new, minor_version=0, version=1
         )

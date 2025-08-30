@@ -6,9 +6,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
-
-from .bluetooth import inject_bluetooth_service_info_bleak
-from .conftest import mock_config, mock_update_exc, mock_update_min
+from tests.bluetooth import inject_bluetooth_service_info_bleak
+from tests.conftest import mock_config, mock_update_exc, mock_update_min
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
@@ -21,7 +20,7 @@ async def test_init_fail(
     """Test entries are unloaded correctly."""
 
     monkeypatch.setattr(
-        f"custom_components.bms_ble.plugins.{bms_fixture}.BMS.async_update",
+        f"aiobmsble.bms.{bms_fixture}.BMS.async_update",
         mock_update_exc,
     )
 
@@ -77,7 +76,7 @@ async def test_unload_entry(
     cfg.add_to_hass(hass)
 
     monkeypatch.setattr(
-        f"custom_components.bms_ble.plugins.{bms_fixture}.BMS.async_update",
+        f"aiobmsble.bms.{bms_fixture}.BMS.async_update",
         mock_update_min,
     )
 
