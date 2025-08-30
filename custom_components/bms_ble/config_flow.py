@@ -7,7 +7,7 @@ from aiobmsble.basebms import BaseBMS
 import aiobmsble.utils
 import voluptuous as vol
 
-from custom_components.bms_ble.const import LOGGER
+from custom_components.bms_ble.const import DOMAIN, LOGGER
 from homeassistant import config_entries
 from homeassistant.components.bluetooth import (
     BluetoothServiceInfoBleak,
@@ -23,7 +23,7 @@ from homeassistant.helpers.selector import (
 )
 
 
-class ConfigFlow(config_entries.ConfigFlow):
+class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for BT Battery Management System."""
 
     VERSION = 1
@@ -51,9 +51,7 @@ class ConfigFlow(config_entries.ConfigFlow):
         self, discovery_info: BluetoothServiceInfoBleak
     ) -> str | None:
         """Check if device is supported by an available BMS class."""
-        bms_class: type[BaseBMS] | None = aiobmsble.utils.bms_identify(
-            discovery_info.advertisement
-        )
+        bms_class: type[BaseBMS] | None = aiobmsble.utils.bms_identify(discovery_info.advertisement)
         if bms_class:
             LOGGER.debug(
                 "Device %s (%s) detected as '%s'",

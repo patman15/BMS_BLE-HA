@@ -44,7 +44,7 @@ from .coordinator import BTBmsCoordinator
 PARALLEL_UPDATES = 0
 
 
-class BmsEntityDescription(SensorEntityDescription):
+class BmsEntityDescription(SensorEntityDescription, frozen_or_thawed=True):
     """Describes BMS sensor entity."""
 
     value_fn: Callable[[BMSsample], float | int | None]

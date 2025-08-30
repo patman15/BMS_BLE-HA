@@ -23,7 +23,7 @@ from .coordinator import BTBmsCoordinator
 PARALLEL_UPDATES = 0
 
 
-class BmsBinaryEntityDescription(BinarySensorEntityDescription):
+class BmsBinaryEntityDescription(BinarySensorEntityDescription, frozen_or_thawed=True):
     """Describes BMS sensor entity."""
 
     attr_fn: Callable[[BMSsample], dict[str, int | str]] | None = None
