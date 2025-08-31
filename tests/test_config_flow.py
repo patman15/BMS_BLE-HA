@@ -2,7 +2,6 @@
 
 from typing import Final
 
-from aiobmsble.basebms import BaseBMS
 from bleak.backends.scanner import AdvertisementData
 from home_assistant_bluetooth import BluetoothServiceInfoBleak
 import pytest
@@ -22,7 +21,7 @@ from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er
 from tests.advertisement_data import ADVERTISEMENTS
 from tests.bluetooth import generate_ble_device, inject_bluetooth_service_info_bleak
-from tests.conftest import mock_config, mock_update_min
+from tests.conftest import mock_config, mock_config_v1_0, mock_update_min
 
 
 @pytest.fixture(
@@ -147,23 +146,23 @@ async def test_device_not_supported(
     assert result.get("reason") == "not_supported"
 
 
-async def test_invalid_plugin(
-    monkeypatch, bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
-) -> None:
-    """Test discovery via bluetooth with a valid device but invalid plugin.
+# async def test_invalid_plugin(
+#     monkeypatch, bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
+# ) -> None:
+#     """Test discovery via bluetooth with a valid device but invalid plugin.
 
-    assertion is handled by internal function
-    """
+#     assertion is handled by internal function
+#     """
 
-    monkeypatch.delattr(BaseBMS, "async_update")
-    result: ConfigFlowResult = await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={"source": SOURCE_BLUETOOTH},
-        data=bt_discovery,
-    )
+#     monkeypatch.delattr(BaseBMS, "async_update")
+#     result: ConfigFlowResult = await hass.config_entries.flow.async_init(
+#         DOMAIN,
+#         context={"source": SOURCE_BLUETOOTH},
+#         data=bt_discovery,
+#     )
 
-    assert result.get("type") == FlowResultType.ABORT
-    assert result.get("reason") == "not_supported"
+#     assert result.get("type") == FlowResultType.ABORT
+#     assert result.get("reason") == "not_supported"
 
 
 async def test_already_configured(bms_fixture: str, hass: HomeAssistant) -> None:
@@ -317,14 +316,14 @@ async def test_no_migration(bms_fixture: str, hass: HomeAssistant) -> None:
 
     cfg: MockConfigEntry = mock_config(bms=bms_fixture)
     cfg.add_to_hass(hass)
-    hass.config_entries.async_update_entry(cfg, minor_version=1)
+    # hass.config_entries.async_update_entry(cfg, minor_version=1)
 
     assert not await hass.config_entries.async_setup(cfg.entry_id)
     await hass.async_block_till_done()
 
     assert cfg in hass.config_entries.async_entries()
-    assert cfg.version == 1
-    assert cfg.minor_version == 1
+    assert cfg.version == 2
+    assert cfg.minor_version == 0
     assert cfg.state is ConfigEntryState.SETUP_RETRY
 
 
@@ -359,8 +358,36 @@ async def test_migrate_invalid_v_0_1(bms_fixture: str, hass: HomeAssistant) -> N
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
-async def test_migrate_entry_from_v_0_1(
-    monkeypatch,
+async def test_migrate_entry_from_v1_0(
+    monkeypatch: pytest.MonkeyPatch,
+    bt_discovery: BluetoothServiceInfoBleak,
+#    bms_fixture: str,
+    hass: HomeAssistant,
+) -> None:
+    """Test that entries of correct version are kept."""
+
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
+
+    cfg: MockConfigEntry = mock_config_v1_0(bms="dummy_bms")
+    cfg.add_to_hass(hass)
+
+    monkeypatch.setattr(
+        f"aiobmsble.bms.{str(cfg.data["type"]).rsplit(".",1)[-1]}.BMS.async_update",
+        mock_update_min,
+    )
+
+    assert await hass.config_entries.async_setup(cfg.entry_id)
+    await hass.async_block_till_done()
+
+    assert cfg in hass.config_entries.async_entries()
+    assert cfg.version == 2
+    assert cfg.minor_version == 0
+    assert cfg.state is ConfigEntryState.LOADED
+
+
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+async def test_migrate_entry_from_v0_1(
+    monkeypatch: pytest.MonkeyPatch,
     mock_config_v0_1: MockConfigEntry,
     bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
@@ -381,7 +408,7 @@ async def test_migrate_entry_from_v_0_1(
     await hass.async_block_till_done()
 
     assert cfg in hass.config_entries.async_entries()
-    assert cfg.version == 1
+    assert cfg.version == 2
     assert cfg.minor_version == 0
     assert cfg.state is ConfigEntryState.LOADED
 

@@ -108,9 +108,9 @@ async def async_migrate_entry(
 
     if config_entry.version < 2:
         bms_type = str(config_entry.data["type"])
-        new = {"type": bms_type.rsplit(".", 1)[-1]}
+        new = {"type": f"aiobmsble.bms.{bms_type.rsplit(".", 1)[-1]}"}
         hass.config_entries.async_update_entry(
-            config_entry, data=new, minor_version=0, version=1
+            config_entry, data=new, minor_version=0, version=2
         )
 
     LOGGER.debug(
