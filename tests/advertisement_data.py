@@ -412,6 +412,13 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "felicity_bms",
     ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/466)
+        generate_advertisement_data(  # Felicity FLB48314TG1
+            local_name="F074204831425240169",
+            rssi=-69,
+        ),
+        "felicity_bms",
+    ),
     (  # source LOG, proxy (https://github.com/patman15/BMS_BLE-HA/issues/164#issue-2825586172)
         generate_advertisement_data(
             local_name="ECO-WORTHY 02_B8EF",
@@ -710,6 +717,24 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "jbd_bms",
     ),
+    (  # source pcap (https://github.com/patman15/BMS_BLE-HA/issues/303)
+        generate_advertisement_data(
+            local_name="HSKS-25A-118",
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            manufacturer_data={123: b"\x02\xff\xff\x7b"},
+            rssi=-70,
+        ),
+        "braunpwr_bms",
+    ),
+    (  # source LOG (https://github.com/patman15/BMS_BLE-HA/issues/303)
+        generate_advertisement_data(
+            local_name="BL-25F-170-118",
+            manufacturer_data={123: b"\x02\xff\xff\x7d"},
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+            rssi=-76,
+        ),
+        "braunpwr_bms",
+    ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/291)
         generate_advertisement_data(
             local_name="GW-24Srenamed1",
@@ -958,5 +983,14 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
         ),
         "seplos_bms",
+    ),
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/463)
+        generate_advertisement_data(  # LANPWR 12V 100Ah LiFePO4
+            local_name="BT  LP07841",
+            manufacturer_data={45653: "\x60\x37\xc2\xa5"},  # MAC wrong
+            rssi=-68,
+            service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
+        ),
+        "jbd_bms",
     ),
 ]

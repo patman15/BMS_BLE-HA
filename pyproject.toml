@@ -3,7 +3,7 @@
 [project]
 name        = "BMS_BLE-HA"
 classifiers = [
-    "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3.13"
 ]
 description = "Integration that allows monitoring of Bluetooth Low Energy (BLE) battery management systems (BMS) from within Home Assistant."

@@ -3,7 +3,9 @@ permissions:
   contents: read
 
 on:
-  pull_request:
+  push:
+    branches-ignore:
+      - master
   workflow_dispatch:
   schedule:
     - cron:  '1 5 * * *'

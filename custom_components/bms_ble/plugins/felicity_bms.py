@@ -39,7 +39,9 @@ class BMS(BaseBMS):
     @staticmethod
     def matcher_dict_list() -> list[AdvertisementPattern]:
         """Provide BluetoothMatcher definition."""
-        return [{"local_name": "F10*", "connectable": True}]
+        return [
+            {"local_name": pattern, "connectable": True} for pattern in ("F07*", "F10*")
+        ]
 
     @staticmethod
     def device_info() -> dict[str, str]:

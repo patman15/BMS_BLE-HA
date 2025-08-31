@@ -14,6 +14,7 @@ BMS_TYPES: Final[list[str]] = [
     "abc_bms",
     "ant_bms_legacy",
     "ant_bms",
+    "braunpwr_bms",
     "cbtpwr_bms",
     "cbtpwr_vb_bms",
     "daly_bms",

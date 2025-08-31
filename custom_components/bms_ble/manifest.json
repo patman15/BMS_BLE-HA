@@ -114,6 +114,10 @@
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
+      "local_name": "BT  LP*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
       "manufacturer_id": 123,
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
@@ -261,6 +265,9 @@
       "local_name": "F10*"
     },
     {
+      "local_name": "F07*"
+    },    
+    {
       "service_uuid": "000003c1-0000-1000-8000-00805f9b34fb",
       "manufacturer_id": 21330
     },
@@ -291,12 +298,12 @@
     {
       "local_name": "ANT-BLE*",
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
-      "manufacturer_id": 8979
+      "manufacturer_id": 1623
     },
     {
       "local_name": "ANT-BLE*",
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
-      "manufacturer_id": 1623
+      "manufacturer_id": 8979
     },
     {
       "local_name": "RNG*",
@@ -329,5 +336,5 @@
   ],
   "quality_scale": "silver",
   "requirements": [],
-  "version": "1.20.0-beta.1"
+  "version": "1.20.0"
 }

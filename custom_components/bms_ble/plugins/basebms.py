@@ -83,7 +83,7 @@ class BMSsample(TypedDict, total=False):
     pack_count: int  # [#]
     temp_sensors: int  # [#]
     temp_values: list[int | float]  # [°C]
-    problem_code: int  # BMS specific code, 0 no problem
+    problem_code: int  # BMS specific code, 0 no problem, max. 64bit
     # battery pack data
     pack_voltages: list[float]  # [V]
     pack_currents: list[float]  # [A]
@@ -158,12 +158,12 @@ class BaseBMS(ABC):
         self._ble_device: Final[BLEDevice] = ble_device
         self._reconnect: Final[bool] = reconnect
         self.name: Final[str] = self._ble_device.name or "undefined"
+        self._inv_wr_mode: bool | None = None  # invert write mode (WNR <-> W)
         logger_name = logger_name or self.__class__.__module__
         self._log: Final[BaseBMS.PrefixAdapter] = BaseBMS.PrefixAdapter(
             logging.getLogger(f"{logger_name.replace('.plugins', '')}"),
-            {"prefix": f"{self.name}({self._ble_device.address[-5:].replace(':','')}):"},
+            {"prefix": f"{self.name}|{self._ble_device.address[-5:].replace(':','')}:"},
         )
-        self._inv_wr_mode: bool | None = None  # invert write mode (WNR <-> W)
 
         self._log.debug(
             "initializing %s, BT address: %s", self.device_id(), ble_device.address
