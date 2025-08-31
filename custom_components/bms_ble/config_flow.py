@@ -3,8 +3,7 @@
 from dataclasses import dataclass
 from typing import Any, Final
 
-from aiobmsble.basebms import BaseBMS
-import aiobmsble.utils
+from aiobmsble.utils import bms_identify
 import voluptuous as vol
 
 from custom_components.bms_ble.const import DOMAIN, LOGGER
@@ -51,16 +50,15 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, discovery_info: BluetoothServiceInfoBleak
     ) -> str | None:
         """Check if device is supported by an available BMS class."""
-        bms_class: type[BaseBMS] | None = aiobmsble.utils.bms_identify(discovery_info.advertisement)
-        if bms_class:
-            LOGGER.debug(
-                "Device %s (%s) detected as '%s'",
-                discovery_info.name,
-                format_mac(discovery_info.address),
-                bms_class.device_id(),
-            )
-            return bms_class.__name__
-        return None
+        if not (bms_class := bms_identify(discovery_info.advertisement)):
+            return None
+        LOGGER.debug(
+            "Device %s (%s) detected as '%s'",
+            discovery_info.name,
+            format_mac(discovery_info.address),
+            bms_class.device_id(),
+        )
+        return str(bms_class.get_bms_module())
 
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfoBleak
@@ -71,14 +69,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(discovery_info.address)
         self._abort_if_unique_id_configured()
 
-        device_class: Final[str | None] = await self._async_device_supported(
-            discovery_info
-        )
-        if device_class is None:
+        if not (bms_module := await self._async_device_supported(discovery_info)):
             return self.async_abort(reason="not_supported")
 
         self._disc_dev = ConfigFlow.DiscoveredDevice(
-            discovery_info.name, discovery_info, device_class
+            discovery_info.name, discovery_info, bms_module
         )
         self.context["title_placeholders"] = {
             CONF_NAME: self._disc_dev.name,
@@ -129,14 +124,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             address = discovery_info.address
             if address in current_addresses or address in self._disc_devs:
                 continue
-            device_class: str | None = await self._async_device_supported(
-                discovery_info
-            )
-            if not device_class:
+            if not (bms_module := await self._async_device_supported(discovery_info)):
                 continue
 
             self._disc_devs[address] = ConfigFlow.DiscoveredDevice(
-                discovery_info.name, discovery_info, device_class
+                discovery_info.name, discovery_info, bms_module
             )
 
         if not self._disc_devs:
