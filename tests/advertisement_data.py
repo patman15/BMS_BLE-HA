@@ -993,4 +993,16 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "jbd_bms",
     ),
+    (  # source HA Bluetooth
+        generate_advertisement_data(
+            local_name="ANT-BLE16S",
+            rssi=-31,
+            manufacturer_data={1623: b"\x88\xa0\xaa\xbb\xcc\xa1\x23\x45"},
+            service_uuids=[
+                "0000ffe0-0000-1000-8000-00805f9b34fb",
+                "0000fee7-0000-1000-8000-00805f9b34fb",
+            ],
+        ),
+        "ant_bms_legacy",
+    ),
 ]
