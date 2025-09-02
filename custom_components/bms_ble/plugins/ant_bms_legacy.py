@@ -1,6 +1,7 @@
 """Module to support ANT BMS."""
 
 from enum import IntEnum
+import math
 from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -34,16 +35,17 @@ class BMS(BaseBMS):
         BMSdp("voltage", 4, 2, False, lambda x: x / 10),
         BMSdp("current", 70, 4, True, lambda x: x / -10),
         BMSdp("battery_level", 74, 1, False),
-        BMSdp("design_capacity", 75, 4, False, lambda x: x // 1e6),
+        # actual frame data always report 0 for design_capacity (to be investigated)
+        # BMSdp("design_capacity", 75, 4, False, lambda x: x // 1e6),
         BMSdp(
-            "cycle_charge", 79, 4, False, lambda x: x // 1e6
+            "cycle_charge", 79, 4, False, lambda x: round(x / 1e6, 1)
         ),  # charge remaining [Ah]
         BMSdp(
-            "total_cycled_charge", 83, 4, False, lambda x: x // 1e3
+            "total_cycled_charge", 83, 4, False, lambda x: x // 1000
         ),  # total cycled charge [Ah]
         BMSdp("runtime", 87, 4, False),
-        BMSdp("cell_high_voltage", 116, 2, False, lambda x: x / 1000),
-        BMSdp("cell_low_voltage", 119, 2, False, lambda x: x / 1000),
+        BMSdp("cell_high_voltage", 116, 2, False, lambda x: round(x / 1000, 3)),
+        BMSdp("cell_low_voltage", 119, 2, False, lambda x: round(x / 1000, 3)),
         BMSdp("cell_count", 123, 1, False),
     )
 
@@ -87,7 +89,7 @@ class BMS(BaseBMS):
     @staticmethod
     def _calc_values() -> frozenset[BMSvalue]:
         return frozenset(
-            {"battery_charging", "power"}
+            ("battery_charging", "cycle_capacity", "power")
         )  # calculate further values from BMS provided set ones
 
     def _notification_handler(
@@ -95,20 +97,31 @@ class BMS(BaseBMS):
     ) -> None:
         """Handle the RX characteristics notify event (new data arrives)."""
 
-        if data.startswith(BMS._RX_HEADER_RSP_STAT):
-            self._data = bytearray()
-            self._exp_len = BMS._RSP_STAT_LEN
-
-        _data = self._data
-        _data += data
         self._log.debug("RX BLE data: %s", data)
 
-        if len(_data) < self._exp_len:
+        if data.startswith(BMS._RX_HEADER_RSP_STAT):
+            self._data = _data = data
+            self._exp_len = BMS._RSP_STAT_LEN
+        else:
+            _data = self._data
+            if not _data:
+                self._log.debug("invalid Start of Frame")
+                return
+            _data += data
+
+        _data_len = len(_data)
+        if _data_len < self._exp_len:
+            return
+
+        if _data_len > self._exp_len:
+            self._log.debug("invalid length %d > %d", _data_len, self._exp_len)
+            self._data.clear()
             return
 
         remote_crc = _data[-1] | (_data[-2] << 8)
         if (crc := crc_sum(_data[4:-2], 2)) != remote_crc:
             self._log.debug("invalid checksum 0x%X != 0x%X", crc, remote_crc)
+            self._data.clear()
             return
 
         self._data_event.set()
@@ -138,17 +151,33 @@ class BMS(BaseBMS):
             int.from_bytes(_data[offset : offset + 2], byteorder="big") / 1000
             for offset in range(6, 6 + result["cell_count"] * 2, 2)
         ]
-        result["cycles"] = result.get("total_cycled_charge", 0) // (
-            result.get("design_capacity") or 1
-        )
-        result["delta_voltage"] = (
-            result["cell_high_voltage"] - result["cell_low_voltage"]
+        # We're not able to actually read the 'design_capacity' so this code
+        # is disabled at the moment
+        # result["cycles"] = result.get("total_cycled_charge", 0) // (
+        #     result.get("design_capacity") or 1
+        # )
+
+        # Hack 'design_capacity' until a fix to read the correct value is found
+        try:
+            result["design_capacity"] = int(
+                math.ceil((result["cycle_charge"] / result["battery_level"]) * 100)
+            )
+            result["cycles"] = int(
+                (result["total_cycled_charge"] / result["design_capacity"])
+            )
+        except (ZeroDivisionError, KeyError):
+            pass
+
+        result["delta_voltage"] = round(
+            result["cell_high_voltage"] - result["cell_low_voltage"], 3
         )
         result["temp_sensors"] = 6
         result["temp_values"] = [
-            int.from_bytes(_data[offset : offset + 2], byteorder="big")
+            int.from_bytes(_data[offset : offset + 2], byteorder="big", signed=True)
             for offset in range(91, 103, 2)
         ]
         result["temperature"] = result["temp_values"][0]
+
+        _data.clear()
 
         return result
