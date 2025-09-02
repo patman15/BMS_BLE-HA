@@ -1003,6 +1003,6 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
                 "0000fee7-0000-1000-8000-00805f9b34fb",
             ],
         ),
-        "ant_bms_legacy",
+        "ant_legacy_bms",
     ),
 ]

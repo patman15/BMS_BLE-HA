@@ -8,7 +8,7 @@ from uuid import UUID
 from bleak.backends.characteristic import BleakGATTCharacteristic
 import pytest
 
-from custom_components.bms_ble.plugins.ant_bms_legacy import BMS
+from custom_components.bms_ble.plugins.ant_legacy_bms import BMS
 from custom_components.bms_ble.plugins.basebms import BMSsample
 
 from .bluetooth import generate_ble_device
@@ -24,7 +24,7 @@ _RESULT_DEFS: Final[BMSsample] = {
     "cycle_charge": 140.0,
     "design_capacity": 140,
     "cycle_capacity": 140 * 54.2,
-    "total_cycled_charge": 188250,
+    "total_cycled_charge": 188250,  # ant_legacy_bms specific extra key
     "cycles": 1344,
     "power": -0.0,
     "battery_charging": False,
@@ -48,8 +48,8 @@ _RESULT_DEFS: Final[BMSsample] = {
         3.339,
     ],
     "delta_voltage": 0.168,
-    "cell_high_voltage": 3.506,  # ant_bms_legacy specific extra key
-    "cell_low_voltage": 3.338,  # ant_bms_legacy specific extra key
+    "cell_high_voltage": 3.506,  # ant_legacy_bms specific extra key
+    "cell_low_voltage": 3.338,  # ant_legacy_bms specific extra key
     "temp_sensors": 6,
     "temp_values": [26, 29, -5, 21, 0, 0],
     "temperature": 26,
