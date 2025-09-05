@@ -118,12 +118,15 @@ class BMS(BaseBMS):
             self._data.clear()
             return
 
-        remote_crc = _data[-1] | (_data[-2] << 8)
-        if (crc := crc_sum(_data[4:-2], 2)) != remote_crc:
+        if (crc := crc_sum(_data[4:-2], 2)) != (
+            remote_crc := _data[-1] | (_data[-2] << 8)
+        ):
             self._log.debug("invalid checksum 0x%X != 0x%X", crc, remote_crc)
             self._data.clear()
             return
 
+        self._data_final = _data.copy()
+        _data.clear()
         self._data_event.set()
 
     @staticmethod
@@ -139,7 +142,7 @@ class BMS(BaseBMS):
         """Update battery status information."""
         await self._await_reply(BMS._cmd(BMS.CMD.GET, BMS.ADR.STATUS))
 
-        _data = self._data
+        _data = self._data_final
 
         result = BMS._decode_data(
             BMS._FIELDS,
