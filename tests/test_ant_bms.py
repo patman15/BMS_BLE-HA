@@ -24,6 +24,8 @@ _RESULT_DEFS: Final[BMSsample] = {
     "battery_level": 10,
     "cycle_charge": 9.957766,
     "design_capacity": 80,
+    "total_charge": 15265,
+    "cycles": 190,
     "temperature": 29.333,
     "cycle_capacity": 506.651,
     "power": 106.0,
