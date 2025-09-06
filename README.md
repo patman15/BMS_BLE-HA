@@ -18,7 +18,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     * [Device is not Recognized](#if-your-device-is-not-recognized)
     * [Support Issues](#in-case-you-have-troubles-youd-like-to-have-help-with)
 * [Energy Dashboard Integration](#energy-dashboard-integration)
-* [FAQ](FAQ)
+* [FAQ](#faq)
 * [Outlook](#outlook)
 * [Thanks to](#thanks-to)
 * [References](#references)
@@ -48,7 +48,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - ECO-WORTHY + BW02 adapter (show up as `ECO-WORTHY`&#x2026;)
     - DCHOUSE batteries (show up as `DCHOUSE`&#x2026;)
 - Ective, Startcraft, Topband batteries (show up as `$PFLAC`&#x2026;, `NWJ20`&#x2026;, `ZM20`&#x2026;)
-- Felicity ESS batteries (show up as `F10`&#x2026;)
+- Felicity ESS (show up as `F10`&#x2026;) and FLB batteries (show up as `F07`&#x2026;)
 - JBD BMS, Jiabaida (show up as `JBD-`&#x2026;, `AP2.S`&#x2026;, `SP..S`&#x2026;)
     - accurat batteries (show up as `GJ-`&#x2026;), Aolithium batteries (show up as `AL12-`&#x2026;)
     - BasenGreen (show up as `BS20`&#x2026;),Bulltron, DCHOUSE, ECO-WORTHY (show up as `DP04S`&#x2026;, `ECO-LFP`&#x2026;), Epoch batteries
@@ -301,7 +301,7 @@ for helping with making the integration better.
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA?style=for-the-badge&color=orange&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-624_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-630_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=HACS&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
 [custint-url]: https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval
