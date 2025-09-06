@@ -3,9 +3,10 @@ repos:
     rev: v0.11.0  # ruff version, needs to match installed version
     hooks:
       - id: ruff
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.17.0  # Use the latest stable version of mypy
-    hooks:
-      - id: mypy
-        args: ["--allow-subclassing-any"]  # avoid HA dependency installation
-        # args: [--ignore-missing-imports]  # Optional: customize your mypy flags
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.17.0  # Use the latest stable version of mypy
+  #   hooks:
+  #     - id: mypy
+  #       additional_dependencies: [homeassistant==2025.7.0] # takes long thus mypy disabled here
+  #       args: ["--allow-subclassing-any"]  # avoid HA dependency installation
+  #       # args: [--ignore-missing-imports]  # Optional: customize your mypy flags

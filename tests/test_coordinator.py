@@ -16,9 +16,8 @@ from custom_components.bms_ble.const import (
 from custom_components.bms_ble.coordinator import BTBmsCoordinator
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
-
-from .bluetooth import inject_bluetooth_service_info_bleak
-from .conftest import MockBMS, mock_config
+from tests.bluetooth import inject_bluetooth_service_info_bleak
+from tests.conftest import MockBMS, mock_config
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")

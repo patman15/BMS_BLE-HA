@@ -17,8 +17,7 @@ aiohttp
 aiohttp_cors
 aiohttp-fast-url-dispatcher
 aiohttp-zlib-ng
-bleak~=0.22.3
-bleak-retry-connector~=3.9.0
+bleak>=1.0.1
 bluetooth-data-tools
 pyserial-asyncio
 pyudev

@@ -1,11 +1,12 @@
 """Config flow for BLE Battery Management System integration."""
 
 from dataclasses import dataclass
-from types import ModuleType
 from typing import Any, Final
 
+from aiobmsble.utils import bms_identify
 import voluptuous as vol
 
+from custom_components.bms_ble.const import DOMAIN, LOGGER
 from homeassistant import config_entries
 from homeassistant.components.bluetooth import (
     BluetoothServiceInfoBleak,
@@ -14,20 +15,17 @@ from homeassistant.components.bluetooth import (
 from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.const import CONF_ADDRESS, CONF_ID, CONF_MODEL, CONF_NAME
 from homeassistant.helpers.device_registry import format_mac
-from homeassistant.helpers.importlib import async_import_module
 from homeassistant.helpers.selector import (
     SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
 )
 
-from .const import BMS_TYPES, DOMAIN, LOGGER
-
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for BT Battery Management System."""
 
-    VERSION = 1
+    VERSION = 2
     MINOR_VERSION = 0
 
     @dataclass
@@ -52,22 +50,15 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, discovery_info: BluetoothServiceInfoBleak
     ) -> str | None:
         """Check if device is supported by an available BMS class."""
-        for bms_type in BMS_TYPES:
-            bms_plugin: ModuleType = await async_import_module(
-                self.hass, f"custom_components.bms_ble.plugins.{bms_type}"
-            )
-            try:
-                if bms_plugin.BMS.supported(discovery_info):
-                    LOGGER.debug(
-                        "Device %s (%s) detected as '%s'",
-                        discovery_info.name,
-                        format_mac(discovery_info.address),
-                        bms_plugin.BMS.device_id(),
-                    )
-                    return bms_plugin.__name__
-            except AttributeError:
-                LOGGER.error("Invalid BMS plugin %s", bms_type)
-        return None
+        if not (bms_class := bms_identify(discovery_info.advertisement)):
+            return None
+        LOGGER.debug(
+            "Device %s (%s) detected as '%s'",
+            discovery_info.name,
+            format_mac(discovery_info.address),
+            bms_class.device_id(),
+        )
+        return str(bms_class.get_bms_module())
 
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfoBleak
@@ -78,14 +69,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(discovery_info.address)
         self._abort_if_unique_id_configured()
 
-        device_class: Final[str | None] = await self._async_device_supported(
-            discovery_info
-        )
-        if device_class is None:
+        if not (bms_module := await self._async_device_supported(discovery_info)):
             return self.async_abort(reason="not_supported")
 
         self._disc_dev = ConfigFlow.DiscoveredDevice(
-            discovery_info.name, discovery_info, device_class
+            discovery_info.name, discovery_info, bms_module
         )
         self.context["title_placeholders"] = {
             CONF_NAME: self._disc_dev.name,
@@ -136,14 +124,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             address = discovery_info.address
             if address in current_addresses or address in self._disc_devs:
                 continue
-            device_class: str | None = await self._async_device_supported(
-                discovery_info
-            )
-            if not device_class:
+            if not (bms_module := await self._async_device_supported(discovery_info)):
                 continue
 
             self._disc_devs[address] = ConfigFlow.DiscoveredDevice(
-                discovery_info.name, discovery_info, device_class
+                discovery_info.name, discovery_info, bms_module
             )
 
         if not self._disc_devs:
