@@ -20,7 +20,7 @@ import homeassistant.util.dt as dt_util
 from tests.bluetooth import inject_bluetooth_service_info_bleak
 from tests.conftest import mock_config
 
-SEN_PREFIX: Final[str] = "binary_sensor.smartbat_b12345"
+SEN_PREFIX: Final[str] = "binary_sensor.config_test_dummy_bms"
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
@@ -39,7 +39,7 @@ async def test_update(
             "battery_mode": BMSmode.ABSORPTION,
         }
 
-    config: MockConfigEntry = mock_config(bms="dummy_bms")
+    config: MockConfigEntry = mock_config()
     config.add_to_hass(hass)
 
     inject_bluetooth_service_info_bleak(hass, bt_discovery)

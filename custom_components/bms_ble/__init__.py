@@ -78,8 +78,9 @@ async def async_migrate_entry(
     hass: HomeAssistant, config_entry: BTBmsConfigEntry
 ) -> bool:
     """Migrate old entry."""
+    _latest_version: Final[int] = 2
 
-    if config_entry.version > 1:
+    if config_entry.version > _latest_version:
         # This means the user has downgraded from a future version
         LOGGER.debug("Cannot downgrade from version %s", config_entry.version)
         return False
@@ -106,7 +107,7 @@ async def async_migrate_entry(
             config_entry, data=new, minor_version=0, version=1
         )
 
-    if config_entry.version < 2:
+    if config_entry.version == 1:
         bms_type = str(config_entry.data["type"])
         new = {"type": f"aiobmsble.bms.{bms_type.rsplit(".", 1)[-1]}"}
         hass.config_entries.async_update_entry(

@@ -32,14 +32,14 @@ import homeassistant.util.dt as dt_util
 from tests.bluetooth import inject_bluetooth_service_info_bleak
 from tests.conftest import mock_config
 
-DEV_NAME: Final[str] = "sensor.smartbat_b12345"
+DEV_NAME: Final[str] = "sensor.config_test_dummy_bms"
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_update(
     monkeypatch,
     bt_discovery: BluetoothServiceInfoBleak,
-    bool_fixture,
+    bool_fixture: bool,
     hass: HomeAssistant,
 ) -> None:
     """Test sensor value updates through coordinator."""
@@ -76,7 +76,7 @@ async def test_update(
         lambda _: True,
     )
 
-    config: MockConfigEntry = mock_config(bms="dummy_bms")
+    config: MockConfigEntry = mock_config()
     config.add_to_hass(hass)
 
     inject_bluetooth_service_info_bleak(hass, bt_discovery)

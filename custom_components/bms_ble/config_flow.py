@@ -25,7 +25,7 @@ from homeassistant.helpers.selector import (
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for BT Battery Management System."""
 
-    VERSION = 1
+    VERSION = 2
     MINOR_VERSION = 0
 
     @dataclass

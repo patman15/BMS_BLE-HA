@@ -169,7 +169,7 @@ def bt_discovery_notsupported() -> BluetoothServiceInfoBleak:
 
 
 def mock_config(
-    bms: str,
+    bms: str = "dummy_bms",
     unique_id: str | None = "cc:cc:cc:cc:cc:cc",
 ) -> MockConfigEntry:
     """Return a Mock of the HA entity config (latest version)."""
@@ -183,10 +183,7 @@ def mock_config(
     )
 
 
-def mock_config_v1_0(
-    bms: str,
-    unique_id: str | None = "cc:cc:cc:cc:cc:cc",
-) -> MockConfigEntry:
+def mock_config_v1_0(bms: str, unique_id: str = "cc:cc:cc:cc:cc:cc") -> MockConfigEntry:
     """Return a Mock of the HA entity config v1.0."""
     return MockConfigEntry(
         domain=DOMAIN,
@@ -199,7 +196,7 @@ def mock_config_v1_0(
 
 
 @pytest.fixture(params=["OGTBms", "DalyBms"])
-def mock_config_v0_1(request, unique_id="cc:cc:cc:cc:cc:cc") -> MockConfigEntry:
+def mock_config_v0_1(request, unique_id: str = "cc:cc:cc:cc:cc:cc") -> MockConfigEntry:
     """Return a Mock of the HA entity config."""
     return MockConfigEntry(
         domain=DOMAIN,
