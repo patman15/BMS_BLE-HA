@@ -60,7 +60,6 @@ class BMS(BaseBMS):
                     "connectable": True,
                 },
                 {"local_name": "SV12V*", "manufacturer_id": 33384, "connectable": True},
-                {"local_name": "LT-24*", "manufacturer_id": 22618, "connectable": True},
             ]
             + [  # LiTime
                 AdvertisementPattern(  # LiTime based on ser#
@@ -69,6 +68,13 @@ class BMS(BaseBMS):
                     connectable=True,
                 )
                 for m_id in (33384, 22618)
+            ]
+            + [  # LiTime based on ser#
+                {
+                    "local_name": "LT-24???B-A00[0-2]*",
+                    "manufacturer_id": 22618,
+                    "connectable": True,
+                }
             ]
         )
 
