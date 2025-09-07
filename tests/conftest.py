@@ -308,6 +308,7 @@ class MockBleakClient(BleakClient):
         address_or_ble_device: BLEDevice,
         disconnected_callback: Callable[[BleakClient], None] | None,
         services: Iterable[str] | None = None,
+        **kwargs,
     ) -> None:
         """Mock init."""
         LOGGER.debug("MockBleakClient init")
