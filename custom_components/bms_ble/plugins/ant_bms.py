@@ -43,6 +43,7 @@ class BMS(BaseBMS):
             | ((x & 0xF) if (x & 0xF) not in (0x1, 0x4, 0xB, 0xC, 0xF) else 0),
         ),
         BMSdp("cycle_charge", 54, 4, False, lambda x: x / 1e6),
+        BMSdp("total_charge", 58, 4, False, lambda x: x // 1000),
         BMSdp("delta_voltage", 82, 2, False, lambda x: x / 1000),
         BMSdp("power", 62, 4, True, lambda x: x / 1),
     )
@@ -89,7 +90,7 @@ class BMS(BaseBMS):
     @staticmethod
     def _calc_values() -> frozenset[BMSvalue]:
         return frozenset(
-            {"cycle_capacity", "temperature"}
+            {"cycle_capacity", "cycles", "temperature"}
         )  # calculate further values from BMS provided set ones
 
     async def _init_connection(
