@@ -111,7 +111,7 @@ class MockInvalidBleakClient(MockDalyBleakClient):
 
 
 async def test_update(
-    monkeypatch, patch_bleak_client, bool_fixture, reconnect_fixture
+    monkeypatch, patch_bleak_client, bool_fixture, keep_alive_fixture
 ) -> None:
     """Test Daly BMS data update."""
 
@@ -123,7 +123,7 @@ async def test_update(
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
-        reconnect_fixture,
+        keep_alive_fixture,
     )
 
     assert await bms.async_update() == ref_value() | (
@@ -140,7 +140,7 @@ async def test_update(
 
     # query again to check already connected state
     await bms.async_update()
-    assert bms._client and bms._client.is_connected is not reconnect_fixture
+    assert bms._client and bms._client.is_connected is keep_alive_fixture
 
     await bms.disconnect()
 

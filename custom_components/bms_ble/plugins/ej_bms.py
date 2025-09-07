@@ -7,7 +7,7 @@ from typing import Final, Literal
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSdp, BMSsample, BMSvalue
+from .basebms import BaseBMS, BMSdp, BMSsample, BMSvalue, MatcherPattern
 
 
 class Cmd(IntEnum):
@@ -40,17 +40,17 @@ class BMS(BaseBMS):
         ),  # mask status bits
     )
 
-    def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
+    def __init__(self, ble_device: BLEDevice, keep_alive: bool = True) -> None:
         """Initialize BMS."""
-        super().__init__(ble_device, reconnect)
+        super().__init__(ble_device, keep_alive)
         self._data_final: bytearray = bytearray()
 
     @staticmethod
-    def matcher_dict_list() -> list[AdvertisementPattern]:
+    def matcher_dict_list() -> list[MatcherPattern]:
         """Provide BluetoothMatcher definition."""
         return (
             [  # Lithtech Energy (2x), Volthium
-                AdvertisementPattern(local_name=pattern, connectable=True)
+                MatcherPattern(local_name=pattern, connectable=True)
                 for pattern in ("L-12V???AH-*", "LT-12V-*", "V-12V???Ah-*")
             ]
             + [  # Fliteboard, Electronix battery
@@ -63,7 +63,7 @@ class BMS(BaseBMS):
                 {"local_name": "LT-24*", "manufacturer_id": 22618, "connectable": True},
             ]
             + [  # LiTime
-                AdvertisementPattern(  # LiTime based on ser#
+                MatcherPattern(  # LiTime based on ser#
                     local_name="LT-12???BG-A0[0-6]*",
                     manufacturer_id=m_id,
                     connectable=True,

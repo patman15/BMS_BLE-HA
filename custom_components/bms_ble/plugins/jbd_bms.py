@@ -6,7 +6,7 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSdp, BMSsample, BMSvalue
+from .basebms import BaseBMS, BMSdp, BMSsample, BMSvalue, MatcherPattern
 
 
 class BMS(BaseBMS):
@@ -27,17 +27,17 @@ class BMS(BaseBMS):
         BMSdp("problem_code", 20, 2, False, lambda x: x),
     )  # general protocol v4
 
-    def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
+    def __init__(self, ble_device: BLEDevice, keep_alive: bool = True) -> None:
         """Intialize private BMS members."""
-        super().__init__(ble_device, reconnect)
+        super().__init__(ble_device, keep_alive)
         self._valid_reply: int = 0x00
         self._data_final: bytearray = bytearray()
 
     @staticmethod
-    def matcher_dict_list() -> list[AdvertisementPattern]:
+    def matcher_dict_list() -> list[MatcherPattern]:
         """Provide BluetoothMatcher definition."""
         return [
-            AdvertisementPattern(
+            MatcherPattern(
                 local_name=pattern,
                 service_uuid=BMS.uuid_services()[0],
                 connectable=True,
@@ -68,7 +68,7 @@ class BMS(BaseBMS):
                 "BT  LP*",  # LANPWR
             )
         ] + [
-            AdvertisementPattern(
+            MatcherPattern(
                 service_uuid=BMS.uuid_services()[0],
                 manufacturer_id=m_id,
                 connectable=True,
