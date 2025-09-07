@@ -103,21 +103,6 @@ class BMS(BaseBMS):
         """Parse an unsigned 16-bit integer from data at given offset."""
         return int.from_bytes(data[offset : offset + 2], byteorder="big", signed=False)
 
-    @staticmethod
-    def _parse_i16(data: bytes | bytearray, offset: int) -> int:
-        """Parse a signed 16-bit integer from data at given offset."""
-        return int.from_bytes(data[offset : offset + 2], byteorder="big", signed=True)
-
-    @staticmethod
-    def _parse_u32(data: bytes | bytearray, offset: int) -> int:
-        """Parse an unsigned 32-bit integer from data at given offset."""
-        return int.from_bytes(data[offset : offset + 4], byteorder="big", signed=False)
-
-    @staticmethod
-    def _parse_i32(data: bytes | bytearray, offset: int) -> int:
-        """Parse a signed 32-bit integer from data at given offset."""
-        return int.from_bytes(data[offset : offset + 4], byteorder="big", signed=True)
-
     def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
     ) -> None:
