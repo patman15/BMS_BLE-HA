@@ -24,7 +24,6 @@ _RESULT_DEFS: Final[BMSsample] = {
     "cycle_charge": 140.0,
     "design_capacity": 140,
     "cycle_capacity": 140 * 54.2,
-    "total_cycled_charge": 188250,  # ant_legacy_bms specific extra key
     "cycles": 1344,
     "power": -0.0,
     "battery_charging": False,
@@ -48,11 +47,9 @@ _RESULT_DEFS: Final[BMSsample] = {
         3.339,
     ],
     "delta_voltage": 0.168,
-    "cell_high_voltage": 3.506,  # ant_legacy_bms specific extra key
-    "cell_low_voltage": 3.338,  # ant_legacy_bms specific extra key
     "temp_sensors": 6,
-    "temp_values": [26, 29, -5, 21, 0, 0],
-    "temperature": 26,
+    "temp_values": [26, 29, -5, 21],
+    "temperature": 17.75,
     "problem": False,
     "runtime": 169081843,
 }
@@ -61,10 +58,10 @@ _RESULT_DEFS: Final[BMSsample] = {
 class MockANTLEGACYBleakClient(MockBleakClient):
     """Emulate a ANT (legacy) BMS BleakClient."""
 
-    CMDS: Final[dict[BMS.ADR, bytearray]] = {
+    CMDS: Final[dict[int, bytearray]] = {
         BMS.ADR.STATUS: bytearray(b"\xdb\xdb\x00\x00\x00\x00"),
     }
-    RESP: Final[dict[BMS.ADR, bytearray]] = {
+    RESP: Final[dict[int, bytearray]] = {
         BMS.ADR.STATUS: bytearray(
             b"\xaaU\xaa\xff\x02\x1e\r\n\r\x0b\r\x0b\r\x0b\rU\r?\rl"
             b"\rH\r\x88\rv\rF\r\xb2\r\x0b\r\x0b\r\x0b\r\x0b\x00\x00"
@@ -75,18 +72,6 @@ class MockANTLEGACYBleakClient(MockBleakClient):
             b"\n\r9\x10\xff\xef\x00\x80\x00\x00\x00\x00\x00\x00\x0bP4\t\x0f\r"
         ),
     }
-
-    async def _notify(self) -> None:
-        """Notify function."""
-
-        assert (
-            self._notify_callback
-        ), "write to characteristics but notification not enabled"
-
-        while True:
-            for msg in self.RESP.values():
-                self._notify_callback("MockANTBleakClient", msg)
-                await asyncio.sleep(0.1)
 
     async def write_gatt_char(
         self,
@@ -100,7 +85,7 @@ class MockANTLEGACYBleakClient(MockBleakClient):
             self._notify_callback
         ), "write to characteristics but notification not enabled"
 
-        resp: Final[bytearray] = self.RESP.get(int(bytes(data)[2]), bytearray())
+        resp = self.RESP.get(bytes(data)[2]) or bytearray()
         for notify_data in [
             resp[i : i + BT_FRAME_SIZE] for i in range(0, len(resp), BT_FRAME_SIZE)
         ]:
@@ -161,7 +146,6 @@ async def test_update_empty_battery(
         "battery_level": 0,
         "cycle_charge": 140.0,
         "cycle_capacity": 140 * 54.2,
-        "total_cycled_charge": 188250,  # ant_legacy_bms specific extra key
         "power": -0.0,
         "battery_charging": False,
         "cell_count": 16,
@@ -184,11 +168,9 @@ async def test_update_empty_battery(
             3.339,
         ],
         "delta_voltage": 0.168,
-        "cell_high_voltage": 3.506,  # ant_legacy_bms specific extra key
-        "cell_low_voltage": 3.338,  # ant_legacy_bms specific extra key
         "temp_sensors": 6,
-        "temp_values": [26, 29, -5, 21, 0, 0],
-        "temperature": 26,
+        "temp_values": [26, 29, -5, 21],
+        "temperature": 17.75,
         "problem": False,
         "runtime": 169081843,
     }
