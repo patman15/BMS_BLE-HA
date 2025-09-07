@@ -189,6 +189,10 @@
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
+      "local_name": "SP1??B*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },    
+    {
       "local_name": "CSY*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
