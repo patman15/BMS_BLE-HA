@@ -42,6 +42,9 @@ class BMS(BaseBMS):
         BMSdp(
             "cycle_charge", 79, 4, False, lambda x: round(x / 1e6, 1)
         ),  # charge remaining [Ah]
+        BMSdp(
+            "total_charge", 83, 4, False, lambda x: x // 1000
+        ),  # total discharged charge [Ah]
         BMSdp("runtime", 87, 4, False),
         BMSdp("cell_count", 123, 1, False),
     )
@@ -92,7 +95,7 @@ class BMS(BaseBMS):
     @override
     def _calc_values() -> frozenset[BMSvalue]:
         return frozenset(
-            ("battery_charging", "cycle_capacity", "power", "temperature")
+            ("battery_charging", "cycle_capacity", "cycles", "power", "temperature")
         )  # calculate further values from BMS provided set ones
 
     @staticmethod
@@ -188,13 +191,12 @@ class BMS(BaseBMS):
         #     result.get("design_capacity") or 1
         # )
 
-        total_cycled_charge = BMS._parse_u32(_data, 83) // 1000
         # Hack 'design_capacity' until a fix to read the correct value is found
         try:
             result["design_capacity"] = math.ceil(
                 (result["cycle_charge"] / result["battery_level"]) * 100
             )
-            result["cycles"] = total_cycled_charge // result["design_capacity"]
+            result["cycles"] = result["total_charge"] // result["design_capacity"]
         except (ZeroDivisionError, KeyError):
             pass
 
