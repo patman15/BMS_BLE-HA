@@ -1,6 +1,5 @@
 """Test the ANT implementation."""
 
-import asyncio
 from collections.abc import Buffer
 from typing import Final
 from uuid import UUID
