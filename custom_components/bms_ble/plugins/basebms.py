@@ -29,6 +29,7 @@ type BMSvalue = Literal[
     "cycles",
     "cycle_capacity",
     "cycle_charge",
+    "total_charge",
     "delta_voltage",
     "problem",
     "runtime",
@@ -78,7 +79,8 @@ class BMSsample(TypedDict, total=False):
     balance_current: float  # [A]
     cell_count: int  # [#]
     cell_voltages: list[float]  # [V]
-    cycle_charge: int | float  # [Ah]
+    cycle_charge: int | float  # [Ah], currently stored
+    total_charge: int  # [Ah], overall discharged
     design_capacity: int  # [Ah]
     pack_count: int  # [#]
     temp_sensors: int  # [#]
@@ -274,6 +276,10 @@ class BaseBMS(ABC):
             "cycle_capacity": (
                 {"voltage", "cycle_charge"},
                 lambda: round(data.get("voltage", 0) * data.get("cycle_charge", 0), 3),
+            ),
+            "cycles": (
+                {"design_capacity", "total_charge"},
+                lambda: data.get("total_charge", 0) // data.get("design_capacity", 0),
             ),
             "power": (
                 {"voltage", "current"},
@@ -576,7 +582,7 @@ class BaseBMS(ABC):
 
         """
         return [
-            value / divider if divider != 1 else value
+            (value - offset) / divider
             for idx in range(values)
             if (len(data) >= start + (idx + 1) * size)
             and (
@@ -585,7 +591,7 @@ class BaseBMS(ABC):
                     byteorder=byteorder,
                     signed=signed,
                 )
-                - offset
+                or offset == 0
             )
         ]
 
