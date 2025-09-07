@@ -146,25 +146,6 @@ async def test_device_not_supported(
     assert result.get("reason") == "not_supported"
 
 
-# async def test_invalid_plugin(
-#     monkeypatch, bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
-# ) -> None:
-#     """Test discovery via bluetooth with a valid device but invalid plugin.
-
-#     assertion is handled by internal function
-#     """
-
-#     monkeypatch.delattr(BaseBMS, "async_update")
-#     result: ConfigFlowResult = await hass.config_entries.flow.async_init(
-#         DOMAIN,
-#         context={"source": SOURCE_BLUETOOTH},
-#         data=bt_discovery,
-#     )
-
-#     assert result.get("type") == FlowResultType.ABORT
-#     assert result.get("reason") == "not_supported"
-
-
 async def test_already_configured(bms_fixture: str, hass: HomeAssistant) -> None:
     """Test that same device cannot be added twice."""
 

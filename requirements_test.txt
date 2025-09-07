@@ -1,17 +1,17 @@
 -r requirements.txt
 wheel
 home-assistant-bluetooth
-habluetooth==3.49.0
+habluetooth~=5.3.0
 aiousbwatcher~=1.1.1
-bluetooth-adapters
+bluetooth-adapters~=2.1.0
 hypothesis~=6.135.22
-pytest~=8.4.0
-pytest-cov~=6.1.1
+pytest~=8.4.1
+pytest-cov~=6.2.1
 pytest-socket~=0.7.0
-pytest-asyncio~=1.0.0
-sqlalchemy
-freezegun
-requests-mock
+pytest-asyncio~=1.1.0
+sqlalchemy~=2.0.41
+freezegun~=1.5.2
+requests-mock~=1.12.1
 syrupy~=4.9.1
 aiohttp
 aiohttp_cors
@@ -21,5 +21,5 @@ bleak>=1.0.1
 bluetooth-data-tools
 pyserial-asyncio
 pyudev
-pytest-homeassistant-custom-component==0.13.260
-kegtron-ble
+pytest-homeassistant-custom-component==0.13.277
+kegtron-ble~=0.4.0
