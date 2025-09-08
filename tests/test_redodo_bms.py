@@ -69,14 +69,14 @@ class MockRedodoBleakClient(MockBleakClient):
         )
 
 
-async def test_update(patch_bleak_client, reconnect_fixture) -> None:
+async def test_update(patch_bleak_client, keep_alive_fixture) -> None:
     """Test Redodo technology BMS data update."""
 
     patch_bleak_client(MockRedodoBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73),
-        reconnect_fixture,
+        keep_alive_fixture,
     )
 
     result = await bms.async_update()
@@ -85,7 +85,7 @@ async def test_update(patch_bleak_client, reconnect_fixture) -> None:
 
     # query again to check already connected state
     result = await bms.async_update()
-    assert bms._client.is_connected is not reconnect_fixture
+    assert bms._client.is_connected is keep_alive_fixture
 
     await bms.disconnect()
 

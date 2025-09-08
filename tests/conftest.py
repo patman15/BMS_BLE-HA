@@ -21,11 +21,7 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.bms_ble.const import BMS_TYPES, DOMAIN
-from custom_components.bms_ble.plugins.basebms import (
-    AdvertisementPattern,
-    BaseBMS,
-    BMSsample,
-)
+from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample, MatcherPattern
 
 from .bluetooth import generate_advertisement_data, generate_ble_device
 
@@ -219,7 +215,7 @@ def plugin_fixture(request: pytest.FixtureRequest) -> ModuleType:
 
 
 @pytest.fixture(params=[False, True], ids=["persist", "reconnect"])
-def reconnect_fixture(request: pytest.FixtureRequest) -> bool:
+def keep_alive_fixture(request: pytest.FixtureRequest) -> bool:
     """Return False, True for reconnect test."""
     return request.param
 
@@ -236,9 +232,9 @@ class MockBMS(BaseBMS):
 
     def __init__(
         self, exc: Exception | None = None, ret_value: BMSsample | None = None
-    ) -> None:  # , ble_device, reconnect: bool = False
+    ) -> None:  # , ble_device, keep_alive: bool = True
         """Initialize BMS."""
-        super().__init__(generate_ble_device(address="", details={"path": None}), False)
+        super().__init__(generate_ble_device(address="", details={"path": None}), True)
         LOGGER.debug("%s init(), Test except: %s", self.device_id(), str(exc))
         self._exception: Exception | None = exc
         self._ret_value: BMSsample = (
@@ -253,7 +249,7 @@ class MockBMS(BaseBMS):
         )  # set fixed values for dummy battery
 
     @staticmethod
-    def matcher_dict_list() -> list[AdvertisementPattern]:
+    def matcher_dict_list() -> list[MatcherPattern]:
         """Provide BluetoothMatcher definition."""
         return [{"local_name": "mock", "connectable": True}]
 

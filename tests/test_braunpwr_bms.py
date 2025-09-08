@@ -118,21 +118,21 @@ class MockBraunPWRBleakClient(MockBleakClient):
         await asyncio.sleep(0)
 
 
-async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
+async def test_update(patch_bleak_client, keep_alive_fixture: bool) -> None:
     """Test ABC BMS data update."""
 
     patch_bleak_client(MockBraunPWRBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73),
-        reconnect_fixture,
+        keep_alive_fixture,
     )
 
     assert await bms.async_update() == ref_value()
 
     # query again to check already connected state
     await bms.async_update()
-    assert bms._client.is_connected is not reconnect_fixture
+    assert bms._client.is_connected is keep_alive_fixture
 
     await bms.disconnect()
 
