@@ -188,9 +188,9 @@ class BMS(BaseBMS):
             pass
 
         # ANT-BMS carries 6 slots for temp sensors but only 4 looks like being connected by default
-        result["temp_sensors"] = 4
+        result["temp_sensors"] = 6
         result["temp_values"] = BMS._temp_values(
-            _data, values=4, start=91, size=2, byteorder=BMS._BYTES_ORDER, signed=True
+            _data, values=6, start=91, size=2, byteorder=BMS._BYTES_ORDER, signed=True
         )
 
         _data.clear()

@@ -47,9 +47,9 @@ _RESULT_DEFS: Final[BMSsample] = {
         3.339,
     ],
     "delta_voltage": 0.168,
-    "temp_sensors": 4,
-    "temp_values": [26, 29, -5, 21],
-    "temperature": 17.75,
+    "temp_sensors": 6,
+    "temp_values": [26, 29, -5, 21, 0, 0],
+    "temperature": 11.833,
     "problem": False,
     "runtime": 169081843,
 }
