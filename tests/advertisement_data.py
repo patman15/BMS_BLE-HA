@@ -1005,4 +1005,12 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "ant_legacy_bms",
     ),
+    (  # source LOG
+        generate_advertisement_data(
+            local_name="SP112B2409100524      ",
+            service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
+            rssi=-96,
+        ),
+        "seplos_bms",
+    ),
 ]
