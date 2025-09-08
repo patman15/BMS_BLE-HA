@@ -584,7 +584,7 @@ class BaseBMS(ABC):
 
         """
         return [
-            value / divider if divider != 1 else value
+            (value - offset) / divider
             for idx in range(values)
             if (len(data) >= start + (idx + 1) * size)
             and (
@@ -593,7 +593,7 @@ class BaseBMS(ABC):
                     byteorder=byteorder,
                     signed=signed,
                 )
-                - offset
+                or offset == 0
             )
         ]
 

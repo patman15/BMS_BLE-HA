@@ -76,7 +76,7 @@ class BMS(BaseBMS):
                 "service_uuid": BMS.uuid_services()[0],
                 "connectable": True,
             }
-            for pattern in {f"SP{num}?B*" for num in range(10)} | {"CSY*"}
+            for pattern in {f"SP{num}?B*" for num in range(10)} | {"CSY*"} | {"SP1??B*"}
         ]
 
     @staticmethod
