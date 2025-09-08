@@ -101,21 +101,21 @@ class MockRoyPowBleakClient(MockBleakClient):
             self._notify_callback("MockRoyPowBleakClient", notify_data)
 
 
-async def test_update(patch_bleak_client, reconnect_fixture: bool) -> None:
+async def test_update(patch_bleak_client, keep_alive_fixture: bool) -> None:
     """Test RoyPow BMS data update."""
 
     patch_bleak_client(MockRoyPowBleakClient)
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
-        reconnect_fixture,
+        keep_alive_fixture,
     )
 
     assert await bms.async_update() == ref_value()
 
     # query again to check already connected state
     await bms.async_update()
-    assert bms._client and bms._client.is_connected is not reconnect_fixture
+    assert bms._client and bms._client.is_connected is keep_alive_fixture
 
     await bms.disconnect()
 

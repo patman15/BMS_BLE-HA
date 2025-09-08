@@ -8,7 +8,7 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSdp, BMSsample, BMSvalue
+from .basebms import BaseBMS, BMSdp, BMSsample, BMSvalue, MatcherPattern
 
 
 class Cmd(IntEnum):
@@ -50,14 +50,14 @@ class BMS(BaseBMS):
     )
     _CMDS: Final[set[Cmd]] = {Cmd(field.idx) for field in _FIELDS}
 
-    def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
+    def __init__(self, ble_device: BLEDevice, keep_alive: bool = True) -> None:
         """Intialize private BMS members."""
-        super().__init__(ble_device, reconnect)
+        super().__init__(ble_device, keep_alive)
         assert self._ble_device.name is not None  # required for unlock
         self._data_final: dict[int, bytearray] = {}
 
     @staticmethod
-    def matcher_dict_list() -> list[AdvertisementPattern]:
+    def matcher_dict_list() -> list[MatcherPattern]:
         """Provide BluetoothMatcher definition."""
         return [
             {

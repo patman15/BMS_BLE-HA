@@ -6,14 +6,7 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import (
-    AdvertisementPattern,
-    BaseBMS,
-    BMSdp,
-    BMSsample,
-    BMSvalue,
-    crc_modbus,
-)
+from .basebms import BaseBMS, BMSdp, BMSsample, BMSvalue, MatcherPattern, crc_modbus
 
 
 class BMS(BaseBMS):
@@ -43,19 +36,20 @@ class BMS(BaseBMS):
             | ((x & 0xF) if (x & 0xF) not in (0x1, 0x4, 0xB, 0xC, 0xF) else 0),
         ),
         BMSdp("cycle_charge", 54, 4, False, lambda x: x / 1e6),
+        BMSdp("total_charge", 58, 4, False, lambda x: x // 1000),
         BMSdp("delta_voltage", 82, 2, False, lambda x: x / 1000),
         BMSdp("power", 62, 4, True, lambda x: x / 1),
     )
 
-    def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
+    def __init__(self, ble_device: BLEDevice, keep_alive: bool = True) -> None:
         """Initialize BMS."""
-        super().__init__(ble_device, reconnect)
+        super().__init__(ble_device, keep_alive)
         self._data_final: bytearray = bytearray()
         self._valid_reply: int = BMS._CMD_STAT | 0x10  # valid reply mask
         self._exp_len: int = BMS._MIN_LEN
 
     @staticmethod
-    def matcher_dict_list() -> list[AdvertisementPattern]:
+    def matcher_dict_list() -> list[MatcherPattern]:
         """Provide BluetoothMatcher definition."""
         return [
             {
@@ -89,7 +83,7 @@ class BMS(BaseBMS):
     @staticmethod
     def _calc_values() -> frozenset[BMSvalue]:
         return frozenset(
-            {"cycle_capacity", "temperature"}
+            {"cycle_capacity", "cycles", "temperature"}
         )  # calculate further values from BMS provided set ones
 
     async def _init_connection(

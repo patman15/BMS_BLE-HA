@@ -29,6 +29,7 @@ type BMSvalue = Literal[
     "cycles",
     "cycle_capacity",
     "cycle_charge",
+    "total_charge",
     "delta_voltage",
     "problem",
     "runtime",
@@ -78,7 +79,8 @@ class BMSsample(TypedDict, total=False):
     balance_current: float  # [A]
     cell_count: int  # [#]
     cell_voltages: list[float]  # [V]
-    cycle_charge: int | float  # [Ah]
+    cycle_charge: int | float  # [Ah], currently stored
+    total_charge: int  # [Ah], overall discharged
     design_capacity: int  # [Ah]
     pack_count: int  # [#]
     temp_sensors: int  # [#]
@@ -102,7 +104,7 @@ class BMSdp(NamedTuple):
     idx: int = -1  # array index containing the message to be parsed
 
 
-class AdvertisementPattern(TypedDict, total=False):
+class MatcherPattern(TypedDict, total=False):
     """Optional patterns that can match Bleak advertisement data."""
 
     local_name: str  # name pattern that supports Unix shell-style wildcards
@@ -137,26 +139,28 @@ class BaseBMS(ABC):
     def __init__(
         self,
         ble_device: BLEDevice,
-        reconnect: bool = False,
+        keep_alive: bool = True,
         logger_name: str = "",
     ) -> None:
         """Intialize the BMS.
 
-        notification_handler: the callback function used for notifications from 'uuid_rx()'
+        `_notification_handler`: the callback function used for notifications from `uuid_rx()`
             characteristic. Not defined as abstract in this base class, as it can be both,
             a normal or async function
 
         Args:
-            logger_name (str): name of the logger for the BMS instance (usually file name)
             ble_device (BLEDevice): the Bleak device to connect to
-            reconnect (bool): if true, the connection will be closed after each update
+            keep_alive (bool): if true, the connection will be kept active after each update.
+                Make sure to call `disconnect()` when done using the BMS class or better use
+                `async with` context manager (requires `keep_alive=True`).
+            logger_name (str): name of the logger for the BMS instance, default: module name
 
         """
         assert (
             getattr(self, "_notification_handler", None) is not None
         ), "BMS class must define _notification_handler method"
         self._ble_device: Final[BLEDevice] = ble_device
-        self._reconnect: Final[bool] = reconnect
+        self._keep_alive: Final[bool] = keep_alive
         self.name: Final[str] = self._ble_device.name or "undefined"
         self._inv_wr_mode: bool | None = None  # invert write mode (WNR <-> W)
         logger_name = logger_name or self.__class__.__module__
@@ -178,7 +182,7 @@ class BaseBMS(ABC):
 
     @staticmethod
     @abstractmethod
-    def matcher_dict_list() -> list[AdvertisementPattern]:
+    def matcher_dict_list() -> list[MatcherPattern]:
         """Return a list of Bluetooth advertisement matchers."""
 
     @staticmethod
@@ -274,6 +278,10 @@ class BaseBMS(ABC):
             "cycle_capacity": (
                 {"voltage", "cycle_charge"},
                 lambda: round(data.get("voltage", 0) * data.get("cycle_charge", 0), 3),
+            ),
+            "cycles": (
+                {"design_capacity", "total_charge"},
+                lambda: data.get("total_charge", 0) // data.get("design_capacity", 0),
             ),
             "power": (
                 {"voltage", "current"},
@@ -482,7 +490,7 @@ class BaseBMS(ABC):
         data: BMSsample = await self._async_update()
         self._add_missing_values(data, self._calc_values())
 
-        if self._reconnect:
+        if not self._keep_alive:
             # disconnect after data update to force reconnect next time (slow!)
             await self.disconnect()
 
@@ -576,7 +584,7 @@ class BaseBMS(ABC):
 
         """
         return [
-            value / divider if divider != 1 else value
+            (value - offset) / divider
             for idx in range(values)
             if (len(data) >= start + (idx + 1) * size)
             and (
@@ -585,7 +593,7 @@ class BaseBMS(ABC):
                     byteorder=byteorder,
                     signed=signed,
                 )
-                - offset
+                or offset == 0
             )
         ]
 

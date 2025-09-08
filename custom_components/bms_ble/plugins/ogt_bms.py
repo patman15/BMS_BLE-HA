@@ -8,7 +8,7 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSsample, BMSvalue
+from .basebms import BaseBMS, BMSsample, BMSvalue, MatcherPattern
 
 
 class BMS(BaseBMS):
@@ -25,9 +25,9 @@ class BMS(BaseBMS):
         reg: int
         value: int
 
-    def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
+    def __init__(self, ble_device: BLEDevice, keep_alive: bool = True) -> None:
         """Intialize private BMS members."""
-        super().__init__(ble_device, reconnect)
+        super().__init__(ble_device, keep_alive)
         self._type: str = (
             self.name[9]
             if len(self.name) >= 10 and set(self.name[10:]).issubset(digits)
@@ -82,7 +82,7 @@ class BMS(BaseBMS):
             self._log.exception("unkown device type '%c'", self._type)
 
     @staticmethod
-    def matcher_dict_list() -> list[AdvertisementPattern]:
+    def matcher_dict_list() -> list[MatcherPattern]:
         """Return a list of Bluetooth matchers."""
         return [
             {

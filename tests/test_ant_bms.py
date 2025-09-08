@@ -24,6 +24,8 @@ _RESULT_DEFS: Final[BMSsample] = {
     "battery_level": 10,
     "cycle_charge": 9.957766,
     "design_capacity": 80,
+    "total_charge": 15265,
+    "cycles": 190,
     "temperature": 29.333,
     "cycle_capacity": 506.651,
     "power": 106.0,
@@ -118,7 +120,7 @@ class MockANTBleakClient(MockBleakClient):
             self._notify_callback("MockANTBleakClient", notify_data)
 
 
-async def test_update(patch_bms_timeout, patch_bleak_client, reconnect_fixture) -> None:
+async def test_update(patch_bms_timeout, patch_bleak_client, keep_alive_fixture) -> None:
     """Test ANT BMS data update."""
 
     patch_bms_timeout()
@@ -126,14 +128,14 @@ async def test_update(patch_bms_timeout, patch_bleak_client, reconnect_fixture) 
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
-        reconnect_fixture,
+        keep_alive_fixture,
     )
 
     assert await bms.async_update() == _RESULT_DEFS
 
     # query again to check already connected state
     await bms.async_update()
-    assert bms._client and bms._client.is_connected is not reconnect_fixture
+    assert bms._client and bms._client.is_connected is keep_alive_fixture
 
     await bms.disconnect()
 

@@ -11,9 +11,9 @@ from bleak.uuids import normalize_uuid_str
 import pytest
 
 from custom_components.bms_ble.plugins.basebms import (
-    AdvertisementPattern,
     BaseBMS,
     BMSsample,
+    MatcherPattern,
     crc8,
     crc_modbus,
     crc_xmodem,
@@ -71,14 +71,14 @@ class WMTestBMS(BaseBMS):
         self,
         char_tx_properties: list[str],
         ble_device: BLEDevice,
-        reconnect: bool = False,
+        keep_alive: bool = True,
     ) -> None:
         """Initialize BMS."""
-        super().__init__(ble_device, reconnect)
+        super().__init__(ble_device, keep_alive)
         self._char_tx_properties: list[str] = char_tx_properties
 
     @staticmethod
-    def matcher_dict_list() -> list[AdvertisementPattern]:
+    def matcher_dict_list() -> list[MatcherPattern]:
         """Provide BluetoothMatcher definition."""
         return [{"local_name": "Test", "connectable": True}]
 
@@ -118,6 +118,7 @@ class WMTestBMS(BaseBMS):
         await self._await_reply(b"mock_command")
 
         return {"problem_code": int.from_bytes(self._data, "big", signed=False)}
+
 
 def test_calc_missing_values(bms_data_fixture: BMSsample) -> None:
     """Check if missing data is correctly calculated."""
@@ -172,12 +173,21 @@ def test_calc_cycle_chrg() -> None:
     BaseBMS._add_missing_values(bms_data, frozenset({"cycle_charge"}))
     assert bms_data == ref | {"cycle_charge": 91.25, "problem": False}
 
+
 def test_calc_battery_level() -> None:
     """Check if missing battery_level is correctly calculated."""
     bms_data: BMSsample = {"cycle_charge": 421, "design_capacity": 983}
     ref: BMSsample = bms_data.copy()
     BaseBMS._add_missing_values(bms_data, frozenset({"battery_level"}))
     assert bms_data == ref | {"battery_level": 42.8, "problem": False}
+
+def test_calc_cycles() -> None:
+    """Check if missing cycle is correctly calculated."""
+    bms_data: BMSsample = {"total_charge": 1234567, "design_capacity": 256}
+    ref: BMSsample = bms_data.copy()
+    BaseBMS._add_missing_values(bms_data, frozenset({"cycles"}))
+    assert bms_data == ref | {"cycles": 4822, "problem": False}
+
 
 @pytest.fixture(
     name="problem_samples",
@@ -285,6 +295,8 @@ async def test_write_mode(
             assert await bms.async_update() == {
                 "problem_code": output
             }, f"{request.node.name} failed!"
+
+
 def test_crc_calculations() -> None:
     """Check if CRC calculations are correct."""
     # Example data for CRC calculation
