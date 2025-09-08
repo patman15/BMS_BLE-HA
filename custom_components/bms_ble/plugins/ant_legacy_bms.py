@@ -101,7 +101,9 @@ class BMS(BaseBMS):
     @staticmethod
     def _parse_u16(data: bytes | bytearray, offset: int) -> int:
         """Parse an unsigned 16-bit integer from data at given offset."""
-        return int.from_bytes(data[offset : offset + 2], byteorder="big", signed=False)
+        return int.from_bytes(
+            data[offset : offset + 2], byteorder=BMS._BYTES_ORDER, signed=False
+        )
 
     def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
@@ -143,10 +145,9 @@ class BMS(BaseBMS):
     @staticmethod
     def _cmd(cmd: CMD, adr: ADR, value: int = 0x0000) -> bytes:
         """Assemble a ANT BMS command."""
-        _frame = bytearray((cmd, cmd, adr)) + int.to_bytes(
-            value, 2, byteorder=BMS._BYTES_ORDER
-        )
-        _frame += bytes((crc_sum(_frame[2:], 1),))
+        _frame = bytearray((cmd, cmd, adr))
+        _frame += value.to_bytes(2, BMS._BYTES_ORDER)
+        _frame += crc_sum(_frame[2:], 1).to_bytes(1, BMS._BYTES_ORDER)
         return bytes(_frame)
 
     @override
@@ -189,9 +190,10 @@ class BMS(BaseBMS):
         cell_low_voltage = BMS._parse_u16(_data, 119) / 1000
 
         result["delta_voltage"] = round(cell_high_voltage - cell_low_voltage, 3)
-        result["temp_sensors"] = 6
+        # ANT-BMS carries 6 slots for temp sensors but only 4 looks like being connected by default
+        result["temp_sensors"] = 4
         result["temp_values"] = BMS._temp_values(
-            _data, values=6, start=91, size=2, byteorder=BMS._BYTES_ORDER, signed=True
+            _data, values=4, start=91, size=2, byteorder=BMS._BYTES_ORDER, signed=True
         )
 
         _data.clear()

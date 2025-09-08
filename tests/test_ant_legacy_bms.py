@@ -47,7 +47,7 @@ _RESULT_DEFS: Final[BMSsample] = {
         3.339,
     ],
     "delta_voltage": 0.168,
-    "temp_sensors": 6,
+    "temp_sensors": 4,
     "temp_values": [26, 29, -5, 21],
     "temperature": 17.75,
     "problem": False,
@@ -140,41 +140,11 @@ async def test_update_empty_battery(
 
     bms = BMS(generate_ble_device(BT_ADDRESS, "MockBLEdevice", None, -73))
 
-    assert await bms.async_update() == {
-        "voltage": 54.2,
-        "current": -0.0,
-        "battery_level": 0,
-        "cycle_charge": 140.0,
-        "total_charge": 188250,
-        "cycle_capacity": 140 * 54.2,
-        "power": -0.0,
-        "battery_charging": False,
-        "cell_count": 16,
-        "cell_voltages": [
-            3.338,
-            3.339,
-            3.339,
-            3.339,
-            3.413,
-            3.391,
-            3.436,
-            3.4,
-            3.464,
-            3.446,
-            3.398,
-            3.506,
-            3.339,
-            3.339,
-            3.339,
-            3.339,
-        ],
-        "delta_voltage": 0.168,
-        "temp_sensors": 6,
-        "temp_values": [26, 29, -5, 21],
-        "temperature": 17.75,
-        "problem": False,
-        "runtime": 169081843,
-    }
+    _expected = _RESULT_DEFS.copy()
+    _expected["battery_level"] = 0
+    _expected.pop("design_capacity")
+    _expected.pop("cycles")
+    assert await bms.async_update() == _expected
 
     await bms.disconnect()
 
