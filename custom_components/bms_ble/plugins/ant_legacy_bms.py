@@ -95,15 +95,15 @@ class BMS(BaseBMS):
     @override
     def _calc_values() -> frozenset[BMSvalue]:
         return frozenset(
-            ("battery_charging", "cycle_capacity", "cycles", "power", "temperature")
+            (
+                "battery_charging",
+                "cycle_capacity",
+                "cycles",
+                "delta_voltage",
+                "power",
+                "temperature",
+            )
         )  # calculate further values from BMS provided set ones
-
-    @staticmethod
-    def _parse_u16(data: bytes | bytearray, offset: int) -> int:
-        """Parse an unsigned 16-bit integer from data at given offset."""
-        return int.from_bytes(
-            data[offset : offset + 2], byteorder=BMS._BYTES_ORDER, signed=False
-        )
 
     def _notification_handler(
         self, _sender: BleakGATTCharacteristic, data: bytearray
@@ -132,7 +132,9 @@ class BMS(BaseBMS):
             return
 
         if (local_crc := crc_sum(_data[4:-2], 2)) != (
-            remote_crc := BMS._parse_u16(_data, _data_len - 2)
+            remote_crc := int.from_bytes(
+                _data[-2:], byteorder=BMS._BYTES_ORDER, signed=False
+            )
         ):
             self._log.debug("invalid checksum 0x%X != 0x%X", local_crc, remote_crc)
             self._data.clear()
@@ -186,10 +188,6 @@ class BMS(BaseBMS):
         except (ZeroDivisionError, KeyError):
             pass
 
-        cell_high_voltage = BMS._parse_u16(_data, 116) / 1000
-        cell_low_voltage = BMS._parse_u16(_data, 119) / 1000
-
-        result["delta_voltage"] = round(cell_high_voltage - cell_low_voltage, 3)
         # ANT-BMS carries 6 slots for temp sensors but only 4 looks like being connected by default
         result["temp_sensors"] = 4
         result["temp_values"] = BMS._temp_values(
