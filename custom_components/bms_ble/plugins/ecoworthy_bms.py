@@ -7,14 +7,7 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import (
-    AdvertisementPattern,
-    BaseBMS,
-    BMSdp,
-    BMSsample,
-    BMSvalue,
-    crc_modbus,
-)
+from .basebms import BaseBMS, BMSdp, BMSsample, BMSvalue, MatcherPattern, crc_modbus
 
 
 class BMS(BaseBMS):
@@ -44,9 +37,9 @@ class BMS(BaseBMS):
 
     _CMDS: Final[set[int]] = set({field.idx for field in _FIELDS_V1})
 
-    def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
+    def __init__(self, ble_device: BLEDevice, keep_alive: bool = True) -> None:
         """Initialize BMS."""
-        super().__init__(ble_device, reconnect)
+        super().__init__(ble_device, keep_alive)
         self._mac_head: Final[tuple] = tuple(
             int(self._ble_device.address.replace(":", ""), 16).to_bytes(6) + head
             for head in BMS._HEAD
@@ -54,12 +47,10 @@ class BMS(BaseBMS):
         self._data_final: dict[int, bytearray] = {}
 
     @staticmethod
-    def matcher_dict_list() -> list[AdvertisementPattern]:
+    def matcher_dict_list() -> list[MatcherPattern]:
         """Provide BluetoothMatcher definition."""
-        return [
-            AdvertisementPattern(local_name="ECO-WORTHY 02_*", connectable=True)
-        ] + [
-            AdvertisementPattern(
+        return [MatcherPattern(local_name="ECO-WORTHY 02_*", connectable=True)] + [
+            MatcherPattern(
                 local_name=pattern,
                 service_uuid=BMS.uuid_services()[0],
                 connectable=True,

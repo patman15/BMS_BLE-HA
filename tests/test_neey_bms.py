@@ -180,7 +180,7 @@ class MockOversizedBleakClient(MockNeeyBleakClient):
 
 
 @pytest.mark.asyncio
-async def test_update(monkeypatch, patch_bleak_client, reconnect_fixture) -> None:
+async def test_update(monkeypatch, patch_bleak_client, keep_alive_fixture) -> None:
     """Test Neey BMS data update."""
 
     monkeypatch.setattr(MockNeeyBleakClient, "_FRAME", _PROTO_DEFS)
@@ -189,20 +189,20 @@ async def test_update(monkeypatch, patch_bleak_client, reconnect_fixture) -> Non
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
-        reconnect_fixture,
+        keep_alive_fixture,
     )
 
     assert await bms.async_update() == _RESULT_DEFS
 
     # query again to check already connected state
     assert await bms.async_update() == _RESULT_DEFS
-    assert bms._client and bms._client.is_connected is not reconnect_fixture
+    assert bms._client and bms._client.is_connected is keep_alive_fixture
 
     await bms.disconnect()
 
 
 async def test_stream_update(
-    monkeypatch, patch_bleak_client, reconnect_fixture
+    monkeypatch, patch_bleak_client, keep_alive_fixture
 ) -> None:
     """Test Neey BMS data update."""
 
@@ -214,14 +214,14 @@ async def test_stream_update(
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
-        reconnect_fixture,
+        keep_alive_fixture,
     )
 
     assert await bms.async_update() == _RESULT_DEFS
 
     # query again to check already connected state
     assert await bms.async_update() == _RESULT_DEFS
-    assert bms._client and bms._client.is_connected is not reconnect_fixture
+    assert bms._client and bms._client.is_connected is keep_alive_fixture
 
     await bms.disconnect()
 

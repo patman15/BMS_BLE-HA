@@ -8,7 +8,7 @@ from bleak.uuids import normalize_uuid_str
 
 from homeassistant.util.unit_conversion import _HRS_TO_SECS
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSdp, BMSsample, BMSvalue, crc_sum
+from .basebms import BaseBMS, BMSdp, BMSsample, BMSvalue, MatcherPattern, crc_sum
 
 
 class BMS(BaseBMS):
@@ -34,12 +34,12 @@ class BMS(BaseBMS):
     )
     _CMDS: Final[list[int]] = list({field.idx for field in _FIELDS})
 
-    def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
+    def __init__(self, ble_device: BLEDevice, keep_alive: bool = True) -> None:
         """Intialize private BMS members."""
-        super().__init__(ble_device, reconnect)
+        super().__init__(ble_device, keep_alive)
 
     @staticmethod
-    def matcher_dict_list() -> list[AdvertisementPattern]:
+    def matcher_dict_list() -> list[MatcherPattern]:
         """Provide BluetoothMatcher definition."""
         return [
             {"service_uuid": BMS.uuid_services()[0], "connectable": True},

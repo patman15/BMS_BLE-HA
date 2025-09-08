@@ -92,7 +92,7 @@ class MockABCBleakClient(MockBleakClient):
 
 
 async def test_update(
-    patch_bleak_client, patch_bms_timeout, reconnect_fixture: bool
+    patch_bleak_client, patch_bms_timeout, keep_alive_fixture: bool
 ) -> None:
     """Test ABC BMS data update."""
 
@@ -101,7 +101,7 @@ async def test_update(
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEDevice", None, -73),
-        reconnect_fixture,
+        keep_alive_fixture,
     )
 
     result = await bms.async_update()
@@ -126,7 +126,7 @@ async def test_update(
 
     # query again to check already connected state
     await bms.async_update()
-    assert bms._client.is_connected is not reconnect_fixture
+    assert bms._client and bms._client.is_connected is keep_alive_fixture
 
     await bms.disconnect()
 

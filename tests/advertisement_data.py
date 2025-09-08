@@ -1004,6 +1004,15 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             ],
         ),
         "ant_legacy_bms",
+    )
+    (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/472)
+        generate_advertisement_data(  # LiTime LFP 24V / 100Ah
+            local_name="LT-24100B-A00473",
+            rssi=-48,
+            manufacturer_data={22618: "\xc8\x47\x80\x0f\xad\x8b"},  # MAC correct
+            service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
+        ),
+        "redodo_bms",
     ),
     (  # source LOG
         generate_advertisement_data(

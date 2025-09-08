@@ -580,7 +580,7 @@ class MockOversizedBleakClient(MockJikongBleakClient):
 
 @pytest.mark.asyncio
 async def test_update(
-    monkeypatch, patch_bleak_client, protocol_type, reconnect_fixture
+    monkeypatch, patch_bleak_client, protocol_type, keep_alive_fixture
 ) -> None:
     """Test Jikong BMS data update."""
 
@@ -590,14 +590,14 @@ async def test_update(
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
-        reconnect_fixture,
+        keep_alive_fixture,
     )
 
     assert await bms.async_update() == _RESULT_DEFS[protocol_type]
 
     # query again to check already connected state
     assert await bms.async_update() == _RESULT_DEFS[protocol_type]
-    assert bms._client and bms._client.is_connected is not reconnect_fixture
+    assert bms._client and bms._client.is_connected is keep_alive_fixture
 
     await bms.disconnect()
 
@@ -645,7 +645,7 @@ async def test_hide_temp_sensors(
 
 
 async def test_stream_update(
-    monkeypatch, patch_bleak_client, protocol_type, reconnect_fixture
+    monkeypatch, patch_bleak_client, protocol_type, keep_alive_fixture
 ) -> None:
     """Test Jikong BMS data update."""
 
@@ -657,14 +657,14 @@ async def test_stream_update(
 
     bms = BMS(
         generate_ble_device("cc:cc:cc:cc:cc:cc", "MockBLEdevice", None, -73),
-        reconnect_fixture,
+        keep_alive_fixture,
     )
 
     assert await bms.async_update() == _RESULT_DEFS[protocol_type]
 
     # query again to check already connected state
     assert await bms.async_update() == _RESULT_DEFS[protocol_type]
-    assert bms._client and bms._client.is_connected is not reconnect_fixture
+    assert bms._client and bms._client.is_connected is keep_alive_fixture
 
     await bms.disconnect()
 

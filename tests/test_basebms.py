@@ -11,9 +11,9 @@ from bleak.uuids import normalize_uuid_str
 import pytest
 
 from custom_components.bms_ble.plugins.basebms import (
-    AdvertisementPattern,
     BaseBMS,
     BMSsample,
+    MatcherPattern,
     crc8,
     crc_modbus,
     crc_xmodem,
@@ -71,14 +71,14 @@ class WMTestBMS(BaseBMS):
         self,
         char_tx_properties: list[str],
         ble_device: BLEDevice,
-        reconnect: bool = False,
+        keep_alive: bool = True,
     ) -> None:
         """Initialize BMS."""
-        super().__init__(ble_device, reconnect)
+        super().__init__(ble_device, keep_alive)
         self._char_tx_properties: list[str] = char_tx_properties
 
     @staticmethod
-    def matcher_dict_list() -> list[AdvertisementPattern]:
+    def matcher_dict_list() -> list[MatcherPattern]:
         """Provide BluetoothMatcher definition."""
         return [{"local_name": "Test", "connectable": True}]
 
