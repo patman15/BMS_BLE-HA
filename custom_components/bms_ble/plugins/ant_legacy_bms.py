@@ -113,16 +113,15 @@ class BMS(BaseBMS):
         self._log.debug("RX BLE data: %s", data)
 
         if data.startswith(BMS._RX_HEADER_RSP_STAT):
-            self._data = _data = data
+            self._data = bytearray()
             self._exp_len = BMS._RSP_STAT_LEN
-        else:
-            _data = self._data
-            if not _data:
-                self._log.debug("invalid Start of Frame")
-                return
-            _data += data
+        elif not self._data:
+            self._log.debug("invalid Start of Frame")
+            return
 
-        _data_len = len(_data)
+        self._data += data
+
+        _data_len = len(self._data)
         if _data_len < self._exp_len:
             return
 
@@ -131,17 +130,17 @@ class BMS(BaseBMS):
             self._data.clear()
             return
 
-        if (local_crc := crc_sum(_data[4:-2], 2)) != (
+        if (local_crc := crc_sum(self._data[4:-2], 2)) != (
             remote_crc := int.from_bytes(
-                _data[-2:], byteorder=BMS._BYTES_ORDER, signed=False
+                self._data[-2:], byteorder=BMS._BYTES_ORDER, signed=False
             )
         ):
             self._log.debug("invalid checksum 0x%X != 0x%X", local_crc, remote_crc)
             self._data.clear()
             return
 
-        self._data_final = _data.copy()
-        _data.clear()
+        self._data_final = self._data.copy()
+        self._data.clear()
         self._data_event.set()
 
     @staticmethod
