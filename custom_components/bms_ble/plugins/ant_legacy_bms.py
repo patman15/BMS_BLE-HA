@@ -8,7 +8,7 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
 from bleak.uuids import normalize_uuid_str
 
-from .basebms import AdvertisementPattern, BaseBMS, BMSdp, BMSsample, BMSvalue, crc_sum
+from .basebms import BaseBMS, BMSdp, BMSsample, BMSvalue, MatcherPattern, crc_sum
 
 
 class BMS(BaseBMS):
@@ -49,14 +49,14 @@ class BMS(BaseBMS):
         BMSdp("cell_count", 123, 1, False),
     )
 
-    def __init__(self, ble_device: BLEDevice, reconnect: bool = False) -> None:
+    def __init__(self, ble_device: BLEDevice, keep_alive: bool = True) -> None:
         """Initialize BMS."""
-        super().__init__(ble_device, reconnect)
+        super().__init__(ble_device, keep_alive)
         self._exp_len = BMS._RSP_STAT_LEN
 
     @staticmethod
     @override
-    def matcher_dict_list() -> list[AdvertisementPattern]:
+    def matcher_dict_list() -> list[MatcherPattern]:
         """Provide BluetoothMatcher definition."""
         return [
             {
@@ -135,7 +135,8 @@ class BMS(BaseBMS):
                 self._data[-2:], byteorder=BMS._BYTES_ORDER, signed=False
             )
         ):
-            self._log.debug("invalid checksum 0x%X != 0x%X", local_crc, remote_crc)
+            self._log.debug("invalid checksum 0x%X != 0x%X",
+                            local_crc, remote_crc)
             self._data.clear()
             return
 
