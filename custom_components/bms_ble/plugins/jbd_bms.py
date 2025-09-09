@@ -12,8 +12,8 @@ from .basebms import BaseBMS, BMSdp, BMSsample, BMSvalue, MatcherPattern
 class BMS(BaseBMS):
     """JBD Smart BMS class implementation."""
 
-    HEAD_RSP: Final[bytes] = bytes([0xDD])  # header for responses
-    HEAD_CMD: Final[bytes] = bytes([0xDD, 0xA5])  # read header for commands
+    HEAD_RSP: Final[bytes] = bytes([0xDD, 0x00])  # header for responses
+    HEAD_CMD: Final[bytes] = bytes([0xDD, 0x00, 0xA5])  # read header for commands
     TAIL: Final[int] = 0x77  # tail for command
     INFO_LEN: Final[int] = 7  # minimum frame size
     BASIC_INFO: Final[int] = 23  # basic info data length
