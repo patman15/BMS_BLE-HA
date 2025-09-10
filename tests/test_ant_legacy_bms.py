@@ -84,7 +84,7 @@ class MockANTLEGACYBleakClient(MockBleakClient):
             self._notify_callback
         ), "write to characteristics but notification not enabled"
 
-        resp = self.RESP.get(bytes(data)[2]) or bytearray()
+        resp: bytearray = self.RESP.get(bytes(data)[2]) or bytearray()
         for notify_data in [
             resp[i : i + BT_FRAME_SIZE] for i in range(0, len(resp), BT_FRAME_SIZE)
         ]:
@@ -141,7 +141,7 @@ async def test_update_empty_battery(
 
     bms = BMS(generate_ble_device(BT_ADDRESS, "MockBLEdevice", None, -73))
 
-    _expected = _RESULT_DEFS.copy()
+    _expected: BMSsample = _RESULT_DEFS.copy()
     _expected["battery_level"] = 0
     _expected.pop("design_capacity")
     _expected.pop("cycles")
