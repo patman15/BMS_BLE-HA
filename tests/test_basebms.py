@@ -181,12 +181,27 @@ def test_calc_battery_level() -> None:
     BaseBMS._add_missing_values(bms_data, frozenset({"battery_level"}))
     assert bms_data == ref | {"battery_level": 42.8, "problem": False}
 
+
 def test_calc_cycles() -> None:
     """Check if missing cycle is correctly calculated."""
     bms_data: BMSsample = {"total_charge": 1234567, "design_capacity": 256}
     ref: BMSsample = bms_data.copy()
     BaseBMS._add_missing_values(bms_data, frozenset({"cycles"}))
     assert bms_data == ref | {"cycles": 4822, "problem": False}
+
+
+@pytest.mark.parametrize(
+    ("offset","div","expect"),
+    [(0, 10, [10.1, 10.0, 0.0, 6.4]), (40, 10, [6.1, 6.0, 2.4]), (25, 1, [76, 75, 39])],
+    ids=["no offset", "offset-40", "div-1"]
+)
+def test_temp_values(offset: float, div:int, expect: list[float]) -> None:
+    """Check temperature value calculation using different offsets / divisors."""
+    temp_data: Final[bytearray] = bytearray(b"\x65\x64\x00\x40")
+    assert (
+        BaseBMS._temp_values(temp_data, values=4, start=0, size=1, offset=offset, divider=div)
+        == expect
+    )
 
 
 @pytest.fixture(
