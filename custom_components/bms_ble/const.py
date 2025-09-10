@@ -13,7 +13,7 @@ from homeassistant.const import (  # noqa: F401  # pylint: disable=unused-import
 BMS_TYPES: Final[list[str]] = [
     "abc_bms",
     "ant_bms",
-    "ant_legacy_bms",
+    "ant_leg_bms",
     "braunpwr_bms",
     "cbtpwr_bms",
     "cbtpwr_vb_bms",

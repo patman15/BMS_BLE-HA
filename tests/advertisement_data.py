@@ -1026,7 +1026,7 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
                 "0000fee7-0000-1000-8000-00805f9b34fb",
             ],
         ),
-        "ant_legacy_bms",
+        "ant_leg_bms",
     ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/472)
         generate_advertisement_data(  # LiTime LFP 24V / 100Ah
