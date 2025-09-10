@@ -1,7 +1,7 @@
 """Module to support ANT BMS."""
 
+import contextlib
 from enum import IntEnum
-import math
 from typing import Final, override
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -37,14 +37,9 @@ class BMS(BaseBMS):
         BMSdp("voltage", 4, 2, False, lambda x: x / 10),
         BMSdp("current", 70, 4, True, lambda x: x / -10),
         BMSdp("battery_level", 74, 1, False),
-        # actual frame data always report 0 for design_capacity (to be investigated)
-        # BMSdp("design_capacity", 75, 4, False, lambda x: x // 1e6),
-        BMSdp(
-            "cycle_charge", 79, 4, False, lambda x: round(x / 1e6, 1)
-        ),  # charge remaining [Ah]
-        BMSdp(
-            "total_charge", 83, 4, False, lambda x: x // 1000
-        ),  # total discharged charge [Ah]
+        BMSdp("design_capacity", 75, 4, False, lambda x: x // 1e6),
+        BMSdp("cycle_charge", 79, 4, False, lambda x: x / 1e6),
+        BMSdp("total_charge", 83, 4, False, lambda x: x // 1000),
         BMSdp("runtime", 87, 4, False),
         BMSdp("cell_count", 123, 1, False),
     )
@@ -136,8 +131,7 @@ class BMS(BaseBMS):
                 self._data[-2:], byteorder=BMS._BYTES_ORDER, signed=False
             )
         ):
-            self._log.debug("invalid checksum 0x%X != 0x%X",
-                            local_crc, remote_crc)
+            self._log.debug("invalid checksum 0x%X != 0x%X", local_crc, remote_crc)
             self._data.clear()
             return
 
@@ -174,25 +168,18 @@ class BMS(BaseBMS):
             byteorder=BMS._BYTES_ORDER,
             divider=1000,
         )
-        # We're not able to actually read the 'design_capacity' so this code
-        # is disabled at the moment
-        # result["cycles"] = result.get("total_cycled_charge", 0) // (
-        #     result.get("design_capacity") or 1
-        # )
 
-        # Hack 'design_capacity' until a fix to read the correct value is found
-        try:
-            result["design_capacity"] = math.ceil(
-                (result["cycle_charge"] / result["battery_level"]) * 100
-            )
-            result["cycles"] = result["total_charge"] // result["design_capacity"]
-        except (ZeroDivisionError, KeyError):
-            pass
+        if not result["design_capacity"]:
+            # Workaround for some BMS always reporting 0 for design_capacity
+            result.pop("design_capacity")
+            with contextlib.suppress(ZeroDivisionError):
+                result["design_capacity"] = int(
+                    round((result["cycle_charge"] / result["battery_level"]) * 100, -1)
+                )
 
         # ANT-BMS carries 6 slots for temp sensors but only 4 looks like being connected by default
-        result["temp_sensors"] = 6
         result["temp_values"] = BMS._temp_values(
-            _data, values=6, start=91, size=2, byteorder=BMS._BYTES_ORDER, signed=True
+            _data, values=4, start=91, size=2, byteorder=BMS._BYTES_ORDER, signed=True
         )
 
         _data.clear()
