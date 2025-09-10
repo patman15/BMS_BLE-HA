@@ -25,12 +25,10 @@ class BMS(BaseBMS):
 
         STATUS = 0x00
 
-    _BYTES_ORDER: Final = "big"
-
     _RX_HEADER: Final[bytes] = b"\xaa\x55\xaa"
+    _RX_HEADER_RSP_STAT: Final[bytes] = b"\xaa\x55\xaa\xff"
 
     _RSP_STAT: Final[int] = 0xFF
-    _RX_HEADER_RSP_STAT: Final[bytes] = b"\xaa\x55\xaa\xff"
     _RSP_STAT_LEN: Final[int] = 140
 
     _FIELDS: Final[tuple[BMSdp, ...]] = (
@@ -48,7 +46,6 @@ class BMS(BaseBMS):
         """Initialize BMS."""
         super().__init__(ble_device, keep_alive)
         self._data_final: bytearray
-        self._exp_len: int = BMS._RSP_STAT_LEN
 
     @staticmethod
     @override
@@ -110,26 +107,23 @@ class BMS(BaseBMS):
 
         if data.startswith(BMS._RX_HEADER_RSP_STAT):
             self._data = bytearray()
-            self._exp_len = BMS._RSP_STAT_LEN
         elif not self._data:
-            self._log.debug("invalid Start of Frame")
+            self._log.debug("invalid start of frame")
             return
 
         self._data += data
 
         _data_len: Final[int] = len(self._data)
-        if _data_len < self._exp_len:
+        if _data_len < BMS._RSP_STAT_LEN:
             return
 
-        if _data_len > self._exp_len:
-            self._log.debug("invalid length %d > %d", _data_len, self._exp_len)
+        if _data_len > BMS._RSP_STAT_LEN:
+            self._log.debug("invalid length %d > %d", _data_len, BMS._RSP_STAT_LEN)
             self._data.clear()
             return
 
         if (local_crc := crc_sum(self._data[4:-2], 2)) != (
-            remote_crc := int.from_bytes(
-                self._data[-2:], byteorder=BMS._BYTES_ORDER, signed=False
-            )
+            remote_crc := int.from_bytes(self._data[-2:], byteorder="big", signed=False)
         ):
             self._log.debug("invalid checksum 0x%X != 0x%X", local_crc, remote_crc)
             self._data.clear()
@@ -143,8 +137,8 @@ class BMS(BaseBMS):
     def _cmd(cmd: CMD, adr: ADR, value: int = 0x0000) -> bytes:
         """Assemble a ANT BMS command."""
         _frame = bytearray((cmd, cmd, adr))
-        _frame += value.to_bytes(2, BMS._BYTES_ORDER)
-        _frame += crc_sum(_frame[2:], 1).to_bytes(1, BMS._BYTES_ORDER)
+        _frame += value.to_bytes(2, "big")
+        _frame += crc_sum(_frame[2:], 1).to_bytes(1, "big")
         return bytes(_frame)
 
     @override
@@ -154,10 +148,7 @@ class BMS(BaseBMS):
 
         _data: bytearray = self._data_final
         result: BMSsample = BMS._decode_data(
-            BMS._FIELDS,
-            _data,
-            byteorder=BMS._BYTES_ORDER,
-            offset=0,
+            BMS._FIELDS, _data, byteorder="big", offset=0
         )
 
         result["cell_voltages"] = BMS._cell_voltages(
@@ -165,7 +156,7 @@ class BMS(BaseBMS):
             cells=result["cell_count"],
             start=6,
             size=2,
-            byteorder=BMS._BYTES_ORDER,
+            byteorder="big",
             divider=1000,
         )
 
@@ -179,7 +170,7 @@ class BMS(BaseBMS):
 
         # ANT-BMS carries 6 slots for temp sensors but only 4 looks like being connected by default
         result["temp_values"] = BMS._temp_values(
-            _data, values=4, start=91, size=2, byteorder=BMS._BYTES_ORDER, signed=True
+            _data, values=4, start=91, size=2, byteorder="big", signed=True
         )
 
         return result
