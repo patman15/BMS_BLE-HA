@@ -53,6 +53,41 @@ _RESULT_DEFS: Final[BMSsample] = {
     "runtime": 169081843,
 }
 
+_RESULT_DEFS_CAP: Final[BMSsample] = {
+    "voltage": 48.8,
+    "current": -8.0,
+    "battery_level": 41,
+    "design_capacity": 170,
+    "cycle_charge": 68.769939,
+    "total_charge": 11109,
+    "runtime": 16386097,
+    "cell_count": 14,
+    "cell_voltages": [
+        3.498,
+        3.484,
+        3.492,
+        3.47,
+        3.484,
+        3.472,
+        3.508,
+        3.479,
+        3.509,
+        3.509,
+        3.496,
+        3.473,
+        3.486,
+        3.468,
+    ],
+    "temp_values": [22.0, 21.0, 21.0, 21.0],
+    "delta_voltage": 0.041,
+    "cycle_capacity": 3355.973,
+    "cycles": 65,
+    "power": -390.4,
+    "battery_charging": False,
+    "temperature": 21.25,
+    "problem": False,
+}
+
 
 class MockANTLEGACYBleakClient(MockBleakClient):
     """Emulate a ANT (legacy) BMS BleakClient."""
@@ -109,6 +144,39 @@ async def test_update(
     # query again to check already connected state
     await bms.async_update()
     assert bms._client and bms._client.is_connected is keep_alive_fixture
+
+    await bms.disconnect()
+
+
+async def test_update_with_design_cap(
+    monkeypatch, patch_bms_timeout, patch_bleak_client
+) -> None:
+    """Test ANT BMS data update with 0% battery SOC."""
+
+    patch_bms_timeout()
+
+    monkeypatch.setattr(
+        MockANTLEGACYBleakClient,
+        "RESP",
+        MockANTLEGACYBleakClient.RESP
+        | {
+            BMS.ADR.STATUS: bytearray(
+                b"\xaa\x55\xaa\xff\x01\xe8\x0d\xaa\x0d\x9c\x0d\xa4\x0d\x8e\x0d\x9c\x0d\x90\x0d\xb4\x0d"
+                b"\x97\x0d\xb5\x0d\xb5\x0d\xa8\x0d\x91\x0d\x9e\x0d\x8c\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+                b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x50\x29\x0a\x21\xfe\x80\x04\x19\x58\x93\x00"
+                b"\xa9\x84\x0f\x00\xfa\x08\x31\x00\x16\x00\x15\x00\x15\x00\x15\x00\x15\x00\x15\x01\x01"
+                b"\x00\x03\xe8\x00\x17\x00\x00\x00\x01\x86\x09\x0d\xb5\x0e\x0d\x8c\x0d\x9f\x0e\x00\x00"
+                b"\x00\x70\x00\x6b\x02\xac\x00\x00\x00\x00\x40\x01\x15\xf4"
+            )
+        },
+    )
+
+    patch_bleak_client(MockANTLEGACYBleakClient)
+
+    bms = BMS(generate_ble_device(BT_ADDRESS, "MockBLEdevice", None, -73))
+
+    assert await bms.async_update() == _RESULT_DEFS_CAP
 
     await bms.disconnect()
 
