@@ -63,13 +63,13 @@ class MockANTLEGACYBleakClient(MockBleakClient):
     }
     RESP: Final[dict[int, bytearray]] = {
         BMS.ADR.STATUS: bytearray(
-            b"\xaaU\xaa\xff\x02\x1e\r\n\r\x0b\r\x0b\r\x0b\rU\r?\rl"
-            b"\rH\r\x88\rv\rF\r\xb2\r\x0b\r\x0b\r\x0b\r\x0b\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00d\x00\x00\x00\x00\x08"
-            b"X\x1e\x02\x0b8yS\n\x13\xfb\xf3\x00\x1a\x00\x1d\xff\xfb\x00\x15\x00"
-            b"\x00\x00\x00\x02\x01\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x0c\r\xb2\x01\r"
-            b"\n\r9\x10\xff\xef\x00\x80\x00\x00\x00\x00\x00\x00\x0bP4\t\x0f\r"
+            b"\xaa\x55\xaa\xff\x02\x1e\x0d\x0a\x0d\x0b\x0d\x0b\x0d\x0b\x0d\x55\x0d\x3f\x0d\x6c\x0d"
+            b"\x48\x0d\x88\x0d\x76\x0d\x46\x0d\xb2\x0d\x0b\x0d\x0b\x0d\x0b\x0d\x0b\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x64\x00\x00\x00\x00\x08\x58\x1e\x02\x0b"
+            b"\x38\x79\x53\x0a\x13\xfb\xf3\x00\x1a\x00\x1d\xff\xfb\x00\x15\x00\x00\x00\x00\x02\x01"
+            b"\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00\x0c\x0d\xb2\x01\x0d\x0a\x0d\x39\x10\xff\xef"
+            b"\x00\x80\x00\x00\x00\x00\x00\x00\x0b\x50\x34\x09\x0f\x0d"
         ),
     }
 
@@ -87,12 +87,14 @@ class MockANTLEGACYBleakClient(MockBleakClient):
 
         resp = self.RESP.get(bytes(data)[2]) or bytearray()
         for notify_data in [
-            resp[i: i + BT_FRAME_SIZE] for i in range(0, len(resp), BT_FRAME_SIZE)
+            resp[i : i + BT_FRAME_SIZE] for i in range(0, len(resp), BT_FRAME_SIZE)
         ]:
             self._notify_callback("MockANTBleakClient", notify_data)
 
 
-async def test_update(patch_bms_timeout, patch_bleak_client, keep_alive_fixture) -> None:
+async def test_update(
+    patch_bms_timeout, patch_bleak_client, keep_alive_fixture
+) -> None:
     """Test ANT BMS data update."""
 
     patch_bms_timeout()
@@ -152,11 +154,9 @@ async def test_update_empty_battery(
 @pytest.fixture(
     name="wrong_response",
     params=[
-        (b"\x6e" +
-         MockANTLEGACYBleakClient.RESP[BMS.ADR.STATUS][1:], "wrong_SOF"),
+        (b"\x6e" + MockANTLEGACYBleakClient.RESP[BMS.ADR.STATUS][1:], "wrong_SOF"),
         (
-            b"\xaa\x55\xaa\xfe" +
-            MockANTLEGACYBleakClient.RESP[BMS.ADR.STATUS][4:],
+            b"\xaa\x55\xaa\xfe" + MockANTLEGACYBleakClient.RESP[BMS.ADR.STATUS][4:],
             "unknown_type",
         ),
         (b"\xaa\x55\xaa", "too_short"),

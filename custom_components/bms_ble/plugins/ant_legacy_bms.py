@@ -52,7 +52,8 @@ class BMS(BaseBMS):
     def __init__(self, ble_device: BLEDevice, keep_alive: bool = True) -> None:
         """Initialize BMS."""
         super().__init__(ble_device, keep_alive)
-        self._exp_len = BMS._RSP_STAT_LEN
+        self._data_final: bytearray
+        self._exp_len: int = BMS._RSP_STAT_LEN
 
     @staticmethod
     @override
@@ -121,7 +122,7 @@ class BMS(BaseBMS):
 
         self._data += data
 
-        _data_len = len(self._data)
+        _data_len: Final[int] = len(self._data)
         if _data_len < self._exp_len:
             return
 
@@ -157,8 +158,8 @@ class BMS(BaseBMS):
         """Update battery status information."""
         await self._await_reply(BMS._cmd(BMS.CMD.GET, BMS.ADR.STATUS))
 
-        _data = self._data_final
-        result = BMS._decode_data(
+        _data: bytearray = self._data_final
+        result: BMSsample = BMS._decode_data(
             BMS._FIELDS,
             _data,
             byteorder=BMS._BYTES_ORDER,
