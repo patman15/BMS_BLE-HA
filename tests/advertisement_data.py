@@ -300,7 +300,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source BTctl (https://github.com/patman15/BMS_BLE-HA/issues/145)
         generate_advertisement_data(
             local_name="JHB-501812XXXXXX",
-            manufacturer_data={260: b"\x01\x50\x18\x12\x01\xa3\xb3\x4a\x48\x42"},
+            manufacturer_data={
+                260: b"\x01\x50\x18\x12\x01\xa3\xb3\x4a\x48\x42"},
             rssi=-46,
         ),
         "daly_bms",
@@ -333,7 +334,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source LOG (https://github.com/patman15/BMS_BLE-HA/issues/144)
         generate_advertisement_data(  # ECO-WORTHY LiFePO4 12V 100Ah
             local_name="DP04S007L4S100A",
-            manufacturer_data={6226: b"\x28\x37\xc2\xa5"},  # MAC address, wrong
+            # MAC address, wrong
+            manufacturer_data={6226: b"\x28\x37\xc2\xa5"},
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
             rssi=-57,
         ),
@@ -343,7 +345,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         generate_advertisement_data(  # ECO-WORTHY LiFePO4 12V 100Ah
             local_name="DP04S007L4S100A",
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
-            manufacturer_data={8856: b"\x28\x37\xc2\xa5"},  # MAC address, wrong
+            # MAC address, wrong
+            manufacturer_data={8856: b"\x28\x37\xc2\xa5"},
             rssi=-53,
         ),
         "jbd_bms",
@@ -351,7 +354,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source bluetoothctl (https://github.com/patman15/BMS_BLE-HA/issues/141)
         generate_advertisement_data(  # https://liontron.com/download/german/LISMART1240LX.pdf
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
-            manufacturer_data={15984: b"\x97\xd1\xc1\x8c"},  # MAC address, correct
+            # MAC address, correct
+            manufacturer_data={15984: b"\x97\xd1\xc1\x8c"},
             rssi=-53,
         ),
         "jbd_bms",
@@ -359,7 +363,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source bluetoothctl (https://github.com/patman15/BMS_BLE-HA/issues/174)
         generate_advertisement_data(  # LionTron XL19110253
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
-            manufacturer_data={49572: b"\x38\x99\x15\x54"},  # MAC address, correct
+            # MAC address, correct
+            manufacturer_data={49572: b"\x38\x99\x15\x54"},
             rssi=-53,
         ),
         "jbd_bms",
@@ -368,7 +373,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         generate_advertisement_data(  # LionTron LT40AH
             local_name="LT40AH",
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
-            manufacturer_data={19011: b"\x1b\x38\xc1\xa4"},  # MAC address, wrong
+            # MAC address, wrong
+            manufacturer_data={19011: b"\x1b\x38\xc1\xa4"},
             rssi=-53,
         ),
         "jbd_bms",
@@ -377,7 +383,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         # (https://github.com/patman15/BMS_BLE-HA/issues/157)
         generate_advertisement_data(  # ECO-WORTHY LiFePO4 12V 150Ah, DCHOUSE FW v6.6
             local_name="DP04S007L4S120A",
-            manufacturer_data={42435: b"\x27\x37\xc2\xa5"},  # MAC address, wrong
+            # MAC address, wrong
+            manufacturer_data={42435: b"\x27\x37\xc2\xa5"},
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
             tx_power=-127,
             rssi=-49,
@@ -397,7 +404,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source LOG (https://github.com/patman15/BMS_BLE-HA/issues/173)
         generate_advertisement_data(  # Eleksol 12V300AH
             local_name="12300DE00013",
-            manufacturer_data={44580: b"\x27\x37\xc2\xa5"},  # MAC address, wrong
+            # MAC address, wrong
+            manufacturer_data={44580: b"\x27\x37\xc2\xa5"},
             service_uuids=[
                 "0000ff00-0000-1000-8000-00805f9b34fb",
             ],
@@ -525,7 +533,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         generate_advertisement_data(  # A4:C1:37:42:3E:D9
             local_name="AP21S002-L21S",
             rssi=-84,
-            manufacturer_data={16089: b"\x42\x37\xc1\xa4"},  # MAC address, wrong
+            # MAC address, wrong
+            manufacturer_data={16089: b"\x42\x37\xc1\xa4"},
             service_uuids=[
                 "0000ff00-0000-1000-8000-00805f9b34fb",
             ],
@@ -555,7 +564,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         generate_advertisement_data(  # Creabest
             local_name="VB024000390",
             rssi=-73,
-            manufacturer_data={16963: b"\x54\x5e\x02\x11\xf8\x2e\x0c\xa8\x89\x42"},
+            manufacturer_data={
+                16963: b"\x54\x5e\x02\x11\xf8\x2e\x0c\xa8\x89\x42"},
             service_uuids=[
                 "0000fff0-0000-1000-8000-00805f9b34fb",
                 "0000ffb0-0000-1000-8000-00805f9b34fb",
@@ -567,7 +577,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         generate_advertisement_data(
             local_name="162400552210210097",
             rssi=-35,
-            manufacturer_data={49572: b"\x37\x55\x32\xf9"},  # MAC address, correct
+            # MAC address, correct
+            manufacturer_data={49572: b"\x37\x55\x32\xf9"},
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
         ),
         "jbd_bms",
@@ -576,7 +587,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         generate_advertisement_data(
             local_name="PKT2201PB121000084",
             rssi=-46,
-            manufacturer_data={30669: b"\xe4\x38\xc1\xa4"},  # MAC address, wrong
+            # MAC address, wrong
+            manufacturer_data={30669: b"\xe4\x38\xc1\xa4"},
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
         ),
         "jbd_bms",
@@ -602,7 +614,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         generate_advertisement_data(
             local_name="BT-TH-66EDFC11",
             rssi=-65,
-            manufacturer_data={39008: b"\x66\xed\xfc\x11"},  # MAC address correct
+            # MAC address correct
+            manufacturer_data={39008: b"\x66\xed\xfc\x11"},
             service_uuids=["0000ffd0-0000-1000-8000-00805f9b34fb"],
         ),
         "renogy_bms",
@@ -610,7 +623,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source BTctl (https://github.com/patman15/BMS_BLE-HA/issues/264)
         generate_advertisement_data(
             local_name="gokwh battery",
-            manufacturer_data={16666: b"\x29\x37\xc2\xa5"},  # MAC address, wrong
+            # MAC address, wrong
+            manufacturer_data={16666: b"\x29\x37\xc2\xa5"},
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
             rssi=-72,
         ),
@@ -775,7 +789,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # proxy LOG (https://github.com/patman15/BMS_BLE-HA/issues/85)
         generate_advertisement_data(  # Bulltron battery
             local_name="DL-FB4C2E0000000",  # MAC address (Bouffalo Lab)
-            manufacturer_data={771: " \x00\xb4\xc2\xe0\x00\x00\x00\x44\x4c\x00"},
+            manufacturer_data={
+                771: " \x00\xb4\xc2\xe0\x00\x00\x00\x44\x4c\x00"},
             service_uuids=[],
             rssi=-81,
         ),
@@ -785,7 +800,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         generate_advertisement_data(
             local_name="DCHOUSE 01_4F9F",
             rssi=-68,
-            manufacturer_data={57570: b"\x5a\x72\xa7\x45"},  # MAC address correct
+            # MAC address correct
+            manufacturer_data={57570: b"\x5a\x72\xa7\x45"},
             service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
         ),
         "ecoworthy_bms",
@@ -793,7 +809,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/329)
         generate_advertisement_data(
             local_name="DWCK00309J-029",  # Vatrer battery
-            manufacturer_data={49148: b"\x34\x37\xc1\xa4"},  # MAC address, wrong
+            # MAC address, wrong
+            manufacturer_data={49148: b"\x34\x37\xc1\xa4"},
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
             rssi=-46,
         ),
@@ -824,7 +841,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/346)
         generate_advertisement_data(
             local_name="xiaoxiang BMS",
-            manufacturer_data={11313: b"\x20\x37\xc1\xa4"},  # MAC address, wrong
+            # MAC address, wrong
+            manufacturer_data={11313: b"\x20\x37\xc1\xa4"},
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
             rssi=-43,
         ),
@@ -861,7 +879,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         generate_advertisement_data(
             local_name="RNGRBP1228000830",
             rssi=-44,
-            manufacturer_data={57676: b"\x74\x57\x94\x7b"},  # MAC address, correct
+            # MAC address, correct
+            manufacturer_data={57676: b"\x74\x57\x94\x7b"},
         ),
         "renogy_pro_bms",
     ),
@@ -869,7 +888,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         generate_advertisement_data(
             local_name="LT-51230BGC-A00229",
             rssi=-64,
-            manufacturer_data={22618: b"\xc8\x47\x80\x12\xd6\x4e"},  # MAC address
+            manufacturer_data={
+                22618: b"\xc8\x47\x80\x12\xd6\x4e"},  # MAC address
             service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
         ),
         "redodo_bms",
@@ -888,7 +908,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/406)
         generate_advertisement_data(
             local_name="AL12-100-4S-B01",
-            manufacturer_data={36783: b"\x30\x37\xc1\xa4"},  # MAC address, wrong
+            # MAC address, wrong
+            manufacturer_data={36783: b"\x30\x37\xc1\xa4"},
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
             rssi=-63,
         ),
@@ -897,7 +918,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/406)
         generate_advertisement_data(
             local_name="AL12-100-4S-B02",
-            manufacturer_data={21516: b"\x50\x37\xc1\xa4"},  # MAC address, wrong
+            # MAC address, wrong
+            manufacturer_data={21516: b"\x50\x37\xc1\xa4"},
             service_uuids=["0000ff00-0000-1000-8000-00805f9b34fb"],
             rssi=-62,
         ),
@@ -934,7 +956,8 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
             manufacturer_data={
                 529: b"\x00\x00\x40\x00\x2a\xbb\x7f\xff\x2b\x38\x2b\x43\xc8\xcb\x00\x7c\x00\xbf\xbf\xbf\xc0\x00\x00\x00\x00\x25\x80"
             },
-            service_data={"0000262a-0000-1000-8000-00805f9b34fb": b"\x46\x00\x3e"},
+            service_data={
+                "0000262a-0000-1000-8000-00805f9b34fb": b"\x46\x00\x3e"},
             service_uuids=[
                 "00001800-0000-1000-8000-00805f9b34fb",
                 "00001801-0000-1000-8000-00805f9b34fb",
@@ -993,11 +1016,24 @@ ADVERTISEMENTS: Final[list[tuple[AdvertisementData, str]]] = [
         ),
         "jbd_bms",
     ),
+    (  # source HA Bluetooth
+        generate_advertisement_data(
+            local_name="ANT-BLE16S",
+            rssi=-31,
+            manufacturer_data={1623: b"\x88\xa0\xaa\xbb\xcc\xa1\x23\x45"},
+            service_uuids=[
+                "0000ffe0-0000-1000-8000-00805f9b34fb",
+                "0000fee7-0000-1000-8000-00805f9b34fb",
+            ],
+        ),
+        "ant_leg_bms",
+    ),
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/472)
         generate_advertisement_data(  # LiTime LFP 24V / 100Ah
             local_name="LT-24100B-A00473",
             rssi=-48,
-            manufacturer_data={22618: "\xc8\x47\x80\x0f\xad\x8b"},  # MAC correct
+            manufacturer_data={
+                22618: "\xc8\x47\x80\x0f\xad\x8b"},  # MAC correct
             service_uuids=["0000ffe0-0000-1000-8000-00805f9b34fb"],
         ),
         "redodo_bms",

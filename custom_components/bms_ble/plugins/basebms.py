@@ -595,7 +595,7 @@ class BaseBMS(ABC):
                         signed=signed,
                     )
                 )
-                or offset == 0
+                or (offset == 0)
             )
         ]
 
