@@ -66,6 +66,7 @@ class BMS(BaseBMS):
                 "AL12-*",  # Aolithium
                 "BS20*",  # BasenGreen
                 "BT  LP*",  # LANPWR
+                "PC-*",  # MUST LP1600
             )
         ] + [
             MatcherPattern(
