@@ -588,12 +588,14 @@ class BaseBMS(ABC):
             for idx in range(values)
             if (len(data) >= start + (idx + 1) * size)
             and (
-                value := int.from_bytes(
-                    data[start + idx * size : start + (idx + 1) * size],
-                    byteorder=byteorder,
-                    signed=signed,
+                (
+                    value := int.from_bytes(
+                        data[start + idx * size : start + (idx + 1) * size],
+                        byteorder=byteorder,
+                        signed=signed,
+                    )
                 )
-                or offset == 0
+                or (offset == 0)
             )
         ]
 

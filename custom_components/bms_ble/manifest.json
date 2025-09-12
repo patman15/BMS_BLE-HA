@@ -302,6 +302,11 @@
     {
       "local_name": "ANT-BLE*",
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
+      "manufacturer_id": 1623
+    },
+    {
+      "local_name": "ANT-BLE*",
+      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
       "manufacturer_id": 8979
     },
     {
@@ -335,5 +340,5 @@
   ],
   "quality_scale": "silver",
   "requirements": [],
-  "version": "1.20.0"
+  "version": "1.21.0"
 }
