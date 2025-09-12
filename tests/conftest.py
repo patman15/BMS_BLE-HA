@@ -224,7 +224,7 @@ def plugin_fixture(request: pytest.FixtureRequest) -> ModuleType:
 
 
 @pytest.fixture(params=[False, True], ids=["persist", "reconnect"])
-def reconnect_fixture(request: pytest.FixtureRequest) -> bool:
+def keep_alive_fixture(request: pytest.FixtureRequest) -> bool:
     """Return False, True for reconnect test."""
     return request.param
 
@@ -241,9 +241,9 @@ class MockBMS(BaseBMS):
 
     def __init__(
         self, exc: Exception | None = None, ret_value: BMSsample | None = None
-    ) -> None:  # , ble_device, reconnect: bool = False
+    ) -> None:  # , ble_device, keep_alive: bool = True
         """Initialize BMS."""
-        super().__init__(generate_ble_device(address="", details={"path": None}), False)
+        super().__init__(generate_ble_device(address="", details={"path": None}), True)
         LOGGER.debug("%s init(), Test except: %s", self.device_id(), str(exc))
         self._exception: Exception | None = exc
         self._ret_value: BMSsample = (

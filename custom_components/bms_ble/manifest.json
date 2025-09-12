@@ -189,6 +189,10 @@
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
+      "local_name": "SP1??B*",
+      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },    
+    {
       "local_name": "CSY*",
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
@@ -294,6 +298,11 @@
     {
       "service_uuid": "0000ffd0-0000-1000-8000-00805f9b34fb",
       "manufacturer_id": 39008
+    },
+    {
+      "local_name": "ANT-BLE*",
+      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
+      "manufacturer_id": 1623
     },
     {
       "local_name": "ANT-BLE*",
