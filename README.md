@@ -69,9 +69,6 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Wattcycle batteries
 - TianPower BMS (show up as `TP_`&#x2026;)
 
-> [!TIP]
-> New device types can be easily added via the plugin architecture of this integration. See the [contribution guidelines](CONTRIBUTING.md) for details.
-
 ### Provided Information
 > [!CAUTION]
 > This integration (including Home Assistant) **shall not be used for safety relevant operations**! The correctness or availability of data cannot be guaranteed (see [warranty section of the license](LICENSE)),
