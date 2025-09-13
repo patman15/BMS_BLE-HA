@@ -1,7 +1,7 @@
 # Contributing
 
 ## Issues
-In case you have troubles, please enable the debug protocol for the integration and [open an issue](https://github.com/patman15/BMS_BLE-HA/issues) with a good description of what happened and the relevant snippet from the log.
+In case you have troubles, please [enable the debug protocol](https://www.home-assistant.io/docs/configuration/troubleshooting/#debug-logs-and-diagnostics) for the [integration](https://my.home-assistant.io/redirect/integration/?domain=bms_ble) and [open an issue](https://github.com/patman15/BMS_BLE-HA/issues) with a good description of what happened and attach the log **as a file**.
 
 ## Adding a new battery management system
 
@@ -14,6 +14,7 @@ In short, when you submit code changes, your submissions are understood to be un
 ## Coding Style Guidelines
 
 In general I use guidelines very close to the ones that Home Assistant uses for core integrations. Thus, the code shall pass
+- `pytest`
 - `ruff check .`
 - `mypy .`
 
