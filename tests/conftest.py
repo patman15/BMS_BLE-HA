@@ -1,7 +1,6 @@
 """Common fixtures for the BLE Battery Management System integration tests."""
 
 from collections.abc import Awaitable, Buffer, Callable, Iterable
-import importlib
 import logging
 from types import ModuleType
 from typing import Any
@@ -10,6 +9,7 @@ from uuid import UUID
 from _pytest.config import Notset
 from aiobmsble import BMSsample, MatcherPattern
 from aiobmsble.basebms import BaseBMS
+from aiobmsble.utils import load_bms_plugins
 from bleak import BleakClient
 from bleak.backends.characteristic import (
     BleakGATTCharacteristic,
@@ -25,7 +25,7 @@ from hypothesis import HealthCheck, settings
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.bms_ble.const import BMS_TYPES, DOMAIN
+from custom_components.bms_ble.const import DOMAIN
 from tests.bluetooth import generate_advertisement_data, generate_ble_device
 
 LOGGER: logging.Logger = logging.getLogger(__name__)
@@ -65,7 +65,7 @@ def bool_fixture(request) -> bool:
     return request.param
 
 
-@pytest.fixture(params=[*BMS_TYPES, "dummy_bms"])
+@pytest.fixture(params=[bms.__name__.rsplit(".", 1)[-1] for bms in load_bms_plugins()])
 def bms_fixture(request) -> str:
     """Return all possible BMS variants."""
     return request.param
@@ -214,13 +214,10 @@ def mock_coordinator_exception(request: pytest.FixtureRequest) -> Exception:
     return request.param
 
 
-@pytest.fixture(params=[*BMS_TYPES, "dummy_bms"])
+@pytest.fixture(params=load_bms_plugins())
 def plugin_fixture(request: pytest.FixtureRequest) -> ModuleType:
     """Return module of a BMS."""
-    return importlib.import_module(
-        f"aiobmsble.bms.{request.param}",
-        package=__name__[: __name__.rfind(".")],
-    )
+    return request.param
 
 
 @pytest.fixture(params=[False, True], ids=["persist", "reconnect"])
