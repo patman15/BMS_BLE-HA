@@ -30,7 +30,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Any number of batteries in parallel
 - Native Home Assistant integration (works with all [HA installation methods](https://www.home-assistant.io/installation/#advanced-installation-methods))
 - Readout of individual cell voltages to be able to judge battery health
-- 100% test coverage plus fuzz tests for BLE data
+- 100% test coverage
 
 ### Supported Devices
 - ABC/SOK BMS (show up as `ABC-`&#x2026;, `SOK-`&#x2026;)
@@ -68,9 +68,6 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - TDT BMS
     - Wattcycle batteries
 - TianPower BMS (show up as `TP_`&#x2026;)
-
-> [!TIP]
-> New device types can be easily added via the plugin architecture of this integration. See the [contribution guidelines](CONTRIBUTING.md) for details.
 
 ### Provided Information
 > [!CAUTION]

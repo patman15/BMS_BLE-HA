@@ -4,12 +4,17 @@ from collections.abc import Awaitable, Buffer, Callable, Iterable
 import importlib
 import logging
 from types import ModuleType
-from typing import Any, Literal
+from typing import Any
 from uuid import UUID
 
 from _pytest.config import Notset
+from aiobmsble import BMSsample, MatcherPattern
+from aiobmsble.basebms import BaseBMS
 from bleak import BleakClient
-from bleak.backends.characteristic import BleakGATTCharacteristic
+from bleak.backends.characteristic import (
+    BleakGATTCharacteristic,
+    CharacteristicPropertyName,
+)
 from bleak.backends.descriptor import BleakGATTDescriptor
 from bleak.backends.device import BLEDevice
 from bleak.backends.service import BleakGATTServiceCollection
@@ -21,9 +26,7 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.bms_ble.const import BMS_TYPES, DOMAIN
-from custom_components.bms_ble.plugins.basebms import BaseBMS, BMSsample, MatcherPattern
-
-from .bluetooth import generate_advertisement_data, generate_ble_device
+from tests.bluetooth import generate_advertisement_data, generate_ble_device
 
 LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -91,7 +94,7 @@ def patch_bms_timeout(monkeypatch):
             if bms_class
             else "basebms.BaseBMS._RETRY_TIMEOUT"
         )
-        monkeypatch.setattr(f"custom_components.bms_ble.plugins.{patch_class}", timeout)
+        monkeypatch.setattr(f"aiobmsble.bms.{patch_class}", timeout)
 
     return _patch_timeout
 
@@ -102,9 +105,7 @@ def patch_default_bleak_client(monkeypatch) -> None:
 
     required because BTdiscovery cannot be used to generate a BleakClient in async_setup()
     """
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockBleakClient
-    )
+    monkeypatch.setattr("aiobmsble.basebms.BleakClient", MockBleakClient)
 
 
 @pytest.fixture
@@ -112,10 +113,7 @@ def patch_bleak_client(monkeypatch):
     """Fixture to patch BleakClient with a given MockClient."""
 
     def _patch(mock_client=MockBleakClient) -> None:
-        monkeypatch.setattr(
-            "custom_components.bms_ble.plugins.basebms.BleakClient",
-            mock_client,
-        )
+        monkeypatch.setattr("aiobmsble.basebms.BleakClient", mock_client)
 
     return _patch
 
@@ -171,23 +169,34 @@ def bt_discovery_notsupported() -> BluetoothServiceInfoBleak:
 
 
 def mock_config(
-    bms: str,
-    title: str = "SmartBat-B12345",
+    bms: str = "dummy_bms",
     unique_id: str | None = "cc:cc:cc:cc:cc:cc",
 ) -> MockConfigEntry:
-    """Return a Mock of the HA entity config."""
+    """Return a Mock of the HA entity config (latest version)."""
+    return MockConfigEntry(
+        domain=DOMAIN,
+        version=2,
+        minor_version=0,
+        unique_id=unique_id,
+        data={"type": f"aiobmsble.bms.{bms}"},
+        title=f"config_test_{bms}",
+    )
+
+
+def mock_config_v1_0(bms: str, unique_id: str = "cc:cc:cc:cc:cc:cc") -> MockConfigEntry:
+    """Return a Mock of the HA entity config v1.0."""
     return MockConfigEntry(
         domain=DOMAIN,
         version=1,
         minor_version=0,
         unique_id=unique_id,
         data={"type": f"custom_components.bms_ble.plugins.{bms}"},
-        title=title,
+        title=f"config_test_{bms}",
     )
 
 
 @pytest.fixture(params=["OGTBms", "DalyBms"])
-def mock_config_v0_1(request, unique_id="cc:cc:cc:cc:cc:cc") -> MockConfigEntry:
+def mock_config_v0_1(request, unique_id: str = "cc:cc:cc:cc:cc:cc") -> MockConfigEntry:
     """Return a Mock of the HA entity config."""
     return MockConfigEntry(
         domain=DOMAIN,
@@ -209,7 +218,7 @@ def mock_coordinator_exception(request: pytest.FixtureRequest) -> Exception:
 def plugin_fixture(request: pytest.FixtureRequest) -> ModuleType:
     """Return module of a BMS."""
     return importlib.import_module(
-        f"custom_components.bms_ble.plugins.{request.param}",
+        f"aiobmsble.bms.{request.param}",
         package=__name__[: __name__.rfind(".")],
     )
 
@@ -299,6 +308,7 @@ class MockBleakClient(BleakClient):
         address_or_ble_device: BLEDevice,
         disconnected_callback: Callable[[BleakClient], None] | None,
         services: Iterable[str] | None = None,
+        **kwargs,
     ) -> None:
         """Mock init."""
         LOGGER.debug("MockBleakClient init")
@@ -328,12 +338,11 @@ class MockBleakClient(BleakClient):
         """Mock GATT services."""
         return BleakGATTServiceCollection()
 
-    async def connect(self, *_args, **_kwargs) -> Literal[True]:
+    async def connect(self, *_args, **_kwargs) -> None:
         """Mock connect."""
         assert not self._connected, "connect called, but client already connected."
         LOGGER.debug("MockBleakClient connecting %s", self._ble_device.address)
         self._connected = True
-        return True
 
     async def start_notify(
         self,
@@ -370,15 +379,13 @@ class MockBleakClient(BleakClient):
         assert self._connected, "read_gatt_char called, but client not connected."
         return bytearray()
 
-    async def disconnect(self) -> bool:
+    async def disconnect(self) -> None:
         """Mock disconnect."""
 
         LOGGER.debug("MockBleakClient disconnecting %s", self._ble_device.address)
         self._connected = False
         if self._disconnect_callback is not None:
             self._disconnect_callback(self)
-
-        return True
 
 
 class MockRespChar(BleakGATTCharacteristic):
@@ -410,7 +417,7 @@ class MockRespChar(BleakGATTCharacteristic):
         return uuidstr_to_str(self.uuid)
 
     @property
-    def properties(self) -> list[str]:
+    def properties(self) -> list[CharacteristicPropertyName]:
         """Properties of this characteristic."""
         raise NotImplementedError
 

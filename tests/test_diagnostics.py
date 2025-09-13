@@ -14,9 +14,8 @@ from homeassistant.components.bluetooth.const import DOMAIN as BT_DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
-
-from .bluetooth import inject_bluetooth_service_info_bleak
-from .conftest import MockBleakClient, MockBMS, mock_config
+from tests.bluetooth import inject_bluetooth_service_info_bleak
+from tests.conftest import MockBleakClient, MockBMS, mock_config
 
 BT_ADAPTER: Final[dict[str, Any]] = {
     "connections": {(BT_DOMAIN, "local")},
@@ -79,9 +78,7 @@ async def test_diagnostics(
         ad.add_to_hass(hass)
         device_registry.async_get_or_create(config_entry_id=ad.entry_id, **BT_ADAPTER)
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.basebms.BleakClient", MockBleakClient
-    )
+    monkeypatch.setattr("aiobmsble.basebms.BleakClient", MockBleakClient)
 
     inject_bluetooth_service_info_bleak(hass, bt_discovery)
     await ce.runtime_data.async_refresh()
@@ -113,7 +110,7 @@ async def test_diagnostics(
     assert diag_data["device_data"]["model"] == BMS_DEV["model"]
     assert diag_data["device_data"]["manufacturer"] == BMS_DEV["manufacturer"]
     assert diag_data["entry_data"] == {
-        "type": "custom_components.bms_ble.plugins.dummy",
+        "type": "aiobmsble.bms.dummy",
     }
     assert diag_data["update_data"] == {
         "interval": timedelta(seconds=30),

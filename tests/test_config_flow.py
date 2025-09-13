@@ -9,7 +9,6 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from voluptuous import Schema
 
 from custom_components.bms_ble.const import DOMAIN
-from custom_components.bms_ble.plugins.basebms import BaseBMS
 from homeassistant.config_entries import (
     SOURCE_BLUETOOTH,
     SOURCE_USER,
@@ -20,10 +19,9 @@ from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er
-
-from .advertisement_data import ADVERTISEMENTS
-from .bluetooth import generate_ble_device, inject_bluetooth_service_info_bleak
-from .conftest import mock_config, mock_update_min
+from tests.advertisement_data import ADVERTISEMENTS
+from tests.bluetooth import generate_ble_device, inject_bluetooth_service_info_bleak
+from tests.conftest import mock_config, mock_config_v1_0, mock_update_min
 
 
 @pytest.fixture(
@@ -80,7 +78,7 @@ async def test_bluetooth_discovery(
     # BluetoothServiceInfoBleak contains BMS type as trailer to the address, see bms_advertisement
     assert (
         hass.config_entries.async_entries()[1].data["type"]
-        == f"custom_components.bms_ble.plugins.{advertisement.address.split('_',1)[-1]}"
+        == f"aiobmsble.bms.{advertisement.address.split('_',1)[-1]}"
     )
 
 
@@ -109,7 +107,7 @@ async def test_device_setup(
     inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.ogt_bms.BMS.async_update",
+        "aiobmsble.bms.ogt_bms.BMS.async_update",
         mock_update_min,
     )
 
@@ -148,25 +146,6 @@ async def test_device_not_supported(
     assert result.get("reason") == "not_supported"
 
 
-async def test_invalid_plugin(
-    monkeypatch, bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
-) -> None:
-    """Test discovery via bluetooth with a valid device but invalid plugin.
-
-    assertion is handled by internal function
-    """
-
-    monkeypatch.delattr(BaseBMS, "supported")
-    result: ConfigFlowResult = await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={"source": SOURCE_BLUETOOTH},
-        data=bt_discovery,
-    )
-
-    assert result.get("type") == FlowResultType.ABORT
-    assert result.get("reason") == "not_supported"
-
-
 async def test_already_configured(bms_fixture: str, hass: HomeAssistant) -> None:
     """Test that same device cannot be added twice."""
 
@@ -181,7 +160,7 @@ async def test_already_configured(bms_fixture: str, hass: HomeAssistant) -> None
         context={"source": SOURCE_USER},
         data={
             CONF_ADDRESS: "cc:cc:cc:cc:cc:cc",
-            "type": "custom_components.bms_ble.plugins.ogt_bms",
+            "type": "aiobmsble.bms.ogt_bms",
         },
     )
     assert result.get("type") == FlowResultType.ABORT
@@ -203,7 +182,7 @@ async def test_async_setup_entry(
     cfg.add_to_hass(hass)
 
     monkeypatch.setattr(
-        f"custom_components.bms_ble.plugins.{bms_fixture}.BMS.async_update",
+        f"aiobmsble.bms.{bms_fixture}.BMS.async_update",
         mock_update_min,
     )
 
@@ -233,7 +212,7 @@ async def test_user_setup(
     """Check config flow for user adding previously discovered device."""
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.ogt_bms.BMS.async_update",
+        "aiobmsble.bms.ogt_bms.BMS.async_update",
         mock_update_min,
     )
 
@@ -324,7 +303,7 @@ async def test_no_migration(bms_fixture: str, hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
     assert cfg in hass.config_entries.async_entries()
-    assert cfg.version == 1
+    assert cfg.version == 2
     assert cfg.minor_version == 1
     assert cfg.state is ConfigEntryState.SETUP_RETRY
 
@@ -360,8 +339,36 @@ async def test_migrate_invalid_v_0_1(bms_fixture: str, hass: HomeAssistant) -> N
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
-async def test_migrate_entry_from_v_0_1(
-    monkeypatch,
+async def test_migrate_entry_from_v1_0(
+    monkeypatch: pytest.MonkeyPatch,
+    bt_discovery: BluetoothServiceInfoBleak,
+    bms_fixture: str,
+    hass: HomeAssistant,
+) -> None:
+    """Test that entries from version 1.0 are migrate to latest version."""
+
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
+
+    cfg: MockConfigEntry = mock_config_v1_0(bms=bms_fixture)
+    cfg.add_to_hass(hass)
+
+    monkeypatch.setattr(
+        f"aiobmsble.bms.{str(cfg.data["type"]).rsplit(".",1)[-1]}.BMS.async_update",
+        mock_update_min,
+    )
+
+    assert await hass.config_entries.async_setup(cfg.entry_id)
+    await hass.async_block_till_done()
+
+    assert cfg in hass.config_entries.async_entries()
+    assert cfg.version == 2
+    assert cfg.minor_version == 0
+    assert cfg.state is ConfigEntryState.LOADED
+
+
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+async def test_migrate_entry_from_v0_1(
+    monkeypatch: pytest.MonkeyPatch,
     mock_config_v0_1: MockConfigEntry,
     bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
@@ -374,7 +381,7 @@ async def test_migrate_entry_from_v_0_1(
     cfg.add_to_hass(hass)
 
     monkeypatch.setattr(
-        f"custom_components.bms_ble.plugins.{(cfg.data["type"][:-3]).lower()}_bms.BMS.async_update",
+        f"aiobmsble.bms.{(cfg.data["type"][:-3]).lower()}_bms.BMS.async_update",
         mock_update_min,
     )
 
@@ -382,7 +389,7 @@ async def test_migrate_entry_from_v_0_1(
     await hass.async_block_till_done()
 
     assert cfg in hass.config_entries.async_entries()
-    assert cfg.version == 1
+    assert cfg.version == 2
     assert cfg.minor_version == 0
     assert cfg.state is ConfigEntryState.LOADED
 

@@ -3,10 +3,10 @@ permissions:
   contents: read
 
 on:
-  pull_request:
+#  pull_request:
   workflow_dispatch:
-  schedule:
-    - cron:  '1 5 * * *'
+#  schedule:
+#    - cron:  '1 5 * * *'
   
 jobs:
   validate:

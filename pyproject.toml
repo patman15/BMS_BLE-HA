@@ -15,8 +15,8 @@ requires-python = ">= 3.13.0"
 "Bug Reports" = "https://github.com/patman15/BMS_BLE-HA/issues"
 
 [tool.pytest.ini_options]
-minversion = "8.0"
-addopts="-n auto --cov=custom_components.bms_ble --cov-branch --cov-report=term-missing --cov-fail-under=100"
+minversion = "8.4"
+addopts="-n auto --force-enable-socket --cov=custom_components.bms_ble --cov-branch --cov-report=term-missing --cov-fail-under=100"
 pythonpath = [
     "custom_components.bms_ble",
 ]
@@ -117,7 +117,7 @@ select = [
     "S317", # suspicious-xml-sax-usage
     "S318", # suspicious-xml-mini-dom-usage
     "S319", # suspicious-xml-pull-dom-usage
-    "S320", # suspicious-xmle-tree-usage
+#    "S320", # suspicious-xmle-tree-usage
     "S601", # paramiko-call
     "S602", # subprocess-popen-with-shell-equals-true
     "S604", # call-with-shell-equals-true

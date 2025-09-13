@@ -2,7 +2,7 @@
 
 from typing import Final
 
-from .bluetooth import AdvertisementData, generate_advertisement_data
+from tests.bluetooth import AdvertisementData, generate_advertisement_data
 
 ADVERTISEMENTS_IGNORE: Final[list[tuple[AdvertisementData, str]]] = [
     (  # source advmon (https://github.com/patman15/BMS_BLE-HA/issues/282)
