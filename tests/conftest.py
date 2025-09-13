@@ -65,7 +65,14 @@ def bool_fixture(request) -> bool:
     return request.param
 
 
-@pytest.fixture(params=[bms.__name__.rsplit(".", 1)[-1] for bms in load_bms_plugins()])
+@pytest.fixture(
+    params=[
+        bms.__name__.rsplit(".", 1)[-1]
+        for bms in sorted(
+            load_bms_plugins(), key=lambda plugin: getattr(plugin, "__name__", "")
+        )
+    ]
+)
 def bms_fixture(request) -> str:
     """Return all possible BMS variants."""
     return request.param
@@ -214,7 +221,11 @@ def mock_coordinator_exception(request: pytest.FixtureRequest) -> Exception:
     return request.param
 
 
-@pytest.fixture(params=load_bms_plugins())
+@pytest.fixture(
+    params=sorted(
+        load_bms_plugins(), key=lambda plugin: getattr(plugin, "__name__", "")
+    )
+)
 def plugin_fixture(request: pytest.FixtureRequest) -> ModuleType:
     """Return module of a BMS."""
     return request.param
