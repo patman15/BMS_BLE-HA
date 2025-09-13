@@ -9,7 +9,6 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from voluptuous import Schema
 
 from custom_components.bms_ble.const import BINARY_SENSORS, DOMAIN, SENSORS
-from custom_components.bms_ble.plugins.basebms import BaseBMS
 from homeassistant.config_entries import (
     SOURCE_BLUETOOTH,
     SOURCE_USER,
