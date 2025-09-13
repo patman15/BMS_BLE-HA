@@ -8,7 +8,7 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from voluptuous import Schema
 
-from custom_components.bms_ble.const import DOMAIN
+from custom_components.bms_ble.const import BINARY_SENSORS, DOMAIN, SENSORS
 from custom_components.bms_ble.plugins.basebms import BaseBMS
 from homeassistant.config_entries import (
     SOURCE_BLUETOOTH,
@@ -123,10 +123,15 @@ async def test_device_setup(
     result_detail = result.get("result")
     assert result_detail is not None
     assert result_detail.unique_id == "cc:cc:cc:cc:cc:cc"
-    assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 11
+    assert (
+        len(hass.states.async_all(["sensor", "binary_sensor"]))
+        == BINARY_SENSORS + SENSORS
+    )
 
     entities: er.EntityRegistryItems = er.async_get(hass).entities
-    assert len(entities) == 13  # sensors, binary_sensors, rssi
+    assert (
+        len(entities) == BINARY_SENSORS + SENSORS + 2
+    )  # sensors, binary_sensors, rssi
 
     # check correct unique_id format of all sensor entries
     for entry in entities.get_entries_for_config_entry_id(result_detail.entry_id):
@@ -275,7 +280,10 @@ async def test_user_setup(
     result_detail = result.get("result")
     assert result_detail is not None
     assert result_detail.unique_id == "cc:cc:cc:cc:cc:cc"
-    assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 11
+    assert (
+        len(hass.states.async_all(["sensor", "binary_sensor"]))
+        == BINARY_SENSORS + SENSORS
+    )
 
 
 @pytest.mark.usefixtures("enable_bluetooth")

@@ -42,14 +42,18 @@ LOGGER: Final[logging.Logger] = logging.getLogger(__package__)
 UPDATE_INTERVAL: Final[int] = 30  # [s]
 
 # attributes (do not change)
+BINARY_SENSORS: Final[int] = 2
+SENSORS: Final[int] = 11
 ATTR_BALANCE_CUR: Final[str] = "balance_current"  # [A]
 ATTR_CELL_VOLTAGES: Final[str] = "cell_voltages"  # [V]
 ATTR_CURRENT: Final[str] = "current"  # [A]
 ATTR_CYCLE_CAP: Final[str] = "cycle_capacity"  # [Wh]
 ATTR_CYCLE_CHRG: Final[str] = "cycle_charge"  # [Ah]
 ATTR_CYCLES: Final[str] = "cycles"  # [#]
-ATTR_DELTA_VOLTAGE: Final[str] = "delta_voltage"  # [V]
+ATTR_DELTA_VOLTAGE: Final[str] = "delta_cell_voltage"  # [V]
 ATTR_LQ: Final[str] = "link_quality"  # [%]
+ATTR_MAX_VOLTAGE: Final[str] = "max_cell_voltage"  # [V]
+ATTR_MIN_VOLTAGE: Final[str] = "min_cell_voltage"  # [V]
 ATTR_POWER: Final[str] = "power"  # [W]
 ATTR_PROBLEM: Final[str] = "problem"  # [bool]
 ATTR_PROBLEM_CODE: Final[str] = "problem_code"  # [int]

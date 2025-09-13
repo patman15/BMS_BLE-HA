@@ -21,6 +21,12 @@
             "link_quality": {
                 "default": "mdi:link"
             },
+            "max_voltage": {
+                "default": "mdi:battery-arrow-up"
+            },
+            "min_voltage": {
+                "default": "mdi:battery-arrow-down"
+            },                        
             "rssi": {
                 "default": "mdi:bluetooth-connect"
             }

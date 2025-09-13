@@ -17,11 +17,15 @@ from custom_components.bms_ble.const import (
     ATTR_CYCLES,
     ATTR_DELTA_VOLTAGE,
     ATTR_LQ,
+    ATTR_MAX_VOLTAGE,
+    ATTR_MIN_VOLTAGE,
     ATTR_POWER,
     ATTR_RUNTIME,
     ATTR_TEMP_SENSORS,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
+    BINARY_SENSORS,
+    SENSORS,
     UPDATE_INTERVAL,
 )
 from custom_components.bms_ble.plugins.basebms import BMSsample
@@ -87,7 +91,7 @@ async def test_update(
 
     assert config in hass.config_entries.async_entries()
     assert config.state is ConfigEntryState.LOADED
-    assert len(hass.states.async_all(["sensor"])) == 11
+    assert len(hass.states.async_all(["sensor"])) == BINARY_SENSORS + SENSORS
     data: dict[str, str] = {
         entity.entity_id: entity.state for entity in hass.states.async_all(["sensor"])
     }
@@ -100,6 +104,8 @@ async def test_update(
         f"{DEV_NAME}_{ATTR_CYCLES}": "unknown",
         f"{DEV_NAME}_{ATTR_DELTA_VOLTAGE}": "unknown",
         f"{DEV_NAME}_{ATTR_LQ}": "0",
+        f"{DEV_NAME}_{ATTR_MAX_VOLTAGE}": "unknown",
+        f"{DEV_NAME}_{ATTR_MIN_VOLTAGE}": "unknown",
         f"{DEV_NAME}_{ATTR_POWER}": "18.0",
         f"{DEV_NAME}_signal_strength": "-127",
         f"{DEV_NAME}_{ATTR_RUNTIME}": "unknown",
@@ -135,6 +141,8 @@ async def test_update(
         f"{DEV_NAME}_{ATTR_CYCLES}": "unknown",
         f"{DEV_NAME}_{ATTR_DELTA_VOLTAGE}": "0.123",
         f"{DEV_NAME}_{ATTR_LQ}": "66",  # initial update + one UPDATE_INTERVAL
+        f"{DEV_NAME}_{ATTR_MAX_VOLTAGE}": "3.123",
+        f"{DEV_NAME}_{ATTR_MIN_VOLTAGE}": "3",
         f"{DEV_NAME}_{ATTR_POWER}": "unknown",
         f"{DEV_NAME}_signal_strength": "-61",
         f"{DEV_NAME}_{ATTR_RUNTIME}": "unknown",
