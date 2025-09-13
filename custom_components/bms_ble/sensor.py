@@ -3,7 +3,8 @@
 from collections.abc import Callable
 from typing import Final, cast
 
-from custom_components.bms_ble.plugins.basebms import BMSpackvalue, BMSsample
+from aiobmsble import BMSpackvalue, BMSsample
+
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.components.sensor.const import SensorDeviceClass, SensorStateClass
 from homeassistant.const import (

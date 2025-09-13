@@ -3,6 +3,7 @@
 from datetime import timedelta
 from typing import Final
 
+from aiobmsble.basebms import BMSsample
 from habluetooth import BluetoothServiceInfoBleak
 import pytest
 from pytest_homeassistant_custom_component.common import (
@@ -28,23 +29,21 @@ from custom_components.bms_ble.const import (
     SENSORS,
     UPDATE_INTERVAL,
 )
-from custom_components.bms_ble.plugins.basebms import BMSsample
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers.entity_component import async_update_entity
 import homeassistant.util.dt as dt_util
+from tests.bluetooth import inject_bluetooth_service_info_bleak
+from tests.conftest import mock_config
 
-from .bluetooth import inject_bluetooth_service_info_bleak
-from .conftest import mock_config
-
-DEV_NAME: Final[str] = "sensor.smartbat_b12345"
+DEV_NAME: Final[str] = "sensor.config_test_dummy_bms"
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_update(
     monkeypatch,
     bt_discovery: BluetoothServiceInfoBleak,
-    bool_fixture,
+    bool_fixture: bool,
     hass: HomeAssistant,
 ) -> None:
     """Test sensor value updates through coordinator."""
@@ -81,7 +80,7 @@ async def test_update(
         lambda _: True,
     )
 
-    config: MockConfigEntry = mock_config(bms="dummy_bms")
+    config: MockConfigEntry = mock_config()
     config.add_to_hass(hass)
 
     inject_bluetooth_service_info_bleak(hass, bt_discovery)
@@ -112,7 +111,7 @@ async def test_update(
     }
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.plugins.dummy_bms.BMS.async_update",
+        "aiobmsble.bms.dummy_bms.BMS.async_update",
         patch_async_update,
     )
 

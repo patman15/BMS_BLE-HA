@@ -30,7 +30,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Any number of batteries in parallel
 - Native Home Assistant integration (works with all [HA installation methods](https://www.home-assistant.io/installation/#advanced-installation-methods))
 - Readout of individual cell voltages to be able to judge battery health
-- 100% test coverage plus fuzz tests for BLE data
+- 100% test coverage
 
 ### Supported Devices
 - ABC/SOK BMS (show up as `ABC-`&#x2026;, `SOK-`&#x2026;)
@@ -69,9 +69,6 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Wattcycle batteries
 - TianPower BMS (show up as `TP_`&#x2026;)
 
-> [!TIP]
-> New device types can be easily added via the plugin architecture of this integration. See the [contribution guidelines](CONTRIBUTING.md) for details.
-
 ### Provided Information
 > [!CAUTION]
 > This integration (including Home Assistant) **shall not be used for safety relevant operations**! The correctness or availability of data cannot be guaranteed (see [warranty section of the license](LICENSE)),
@@ -80,10 +77,10 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 > 
 > **Do not rely** on the values to control actions that prevent battery damage, overheating (fire), or similar.
 
-Platform | Description | Unit | Decription | optional Attributes
+Platform | Description | Unit | Decription | Optional Attributes
 -- | -- | -- | -- | --
-`binary_sensor` | battery charging | `bool` | indicates `True` if battery is charging
-`binary_sensor` | problem | `bool` | indicates `True` if the battery reports an issue or plausibility checks on values fail
+`binary_sensor` | battery charging | `bool` | indicates `True` if battery is charging | battery mode
+`binary_sensor` | problem | `bool` | indicates `True` if the battery reports an issue or plausibility checks on values fail | problem code
 `sensor` | charge cycles | `#` | lifetime number of charge cycles | package charge cycles
 `sensor` | current | `A` | positive for charging, negative for discharging | balance current, package current
 `sensor` | delta voltage | `V` | maximum difference between any two cells | cell voltages
@@ -158,7 +155,7 @@ The internal Bluetooth adapter issues <code>AT</code> commands in regular interv
 1. If you use a BT proxy, make sure you have set `active: true` and that you do not exced the [BT proxy limit][btproxy-url] of 3 devices/proxy; check the logs of the proxy if the device is recognized. Note: The [Bluetooth proxy of Shelly devices](https://www.home-assistant.io/integrations/shelly/#bluetooth-support) does not support active connections and thus cannot be used.
 1. If above points did not help, please go to the [bluetooth integration](https://my.home-assistant.io/redirect/integration/?domain=bluetooth). On your BT adapter select `configure`.
     1.  Verify that you have connection slots available.
-    1.  Go to the [advertisement monitor](https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/) and click the device in question. Please provide the information via **`copy to clipboard`** to [a new issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) giving your BMS/battery type in the title.
+    1.  Go to the [advertisement monitor](https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/) and click the device in question. Please provide the information via **`copy to clipboard`** to [a new issue for the aiobmsble library](https://github.com/patman15/aiobmsble/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) giving your BMS/battery type in the title.
 
 ### Some/all sensors go `unavailable` temporarily or permanently
 In case sensors are reported `unavailable` please enable the diagnostic sensors, i.e. `RSSI` and `link quality` and check your connection quality. The value of `link quality` results from (temporarily) bad `RSSI` values, which are impacted by disturbances of the Bluetooth communication. Your quality should be at least *fair* according to the following table:
@@ -300,7 +297,7 @@ for helping with making the integration better.
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA?style=for-the-badge&color=orange&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-641_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-646_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=HACS&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
 [custint-url]: https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval
