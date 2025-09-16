@@ -3,11 +3,18 @@
   "name": "BLE Battery Management",
   "bluetooth": [
     {
-      "local_name": "SmartBat-[AB]*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+      "service_uuid": "0000fee7-0000-1000-8000-00805f9b34fb"
     },
     {
-      "local_name": "DL-*",
+      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },    
+    {
+      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "service_uuid": "0000ffe5-0000-1000-8000-00805f9b34fb"
+    },
+    {
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
@@ -26,196 +33,13 @@
       "manufacturer_id": 529
     },
     {
-      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
-      "manufacturer_id": 2917
-    },
-    {
-      "local_name": "JBD-*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "SP0?S*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "SP1?S*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "SP2?S*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "AP2?S*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "GJ-*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "SX1*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "LT40AH",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "121?0*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "12200*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "12300*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "PKT*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "manufacturer_id": 15984,
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "manufacturer_id": 49572,
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "gokwh*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "OGR-*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "DWC*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "DXD*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "xiaoxiang*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "AL12-*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "BS20*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "BT  LP*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "manufacturer_id": 123,
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "manufacturer_id": 6226,
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "manufacturer_id": 8856,
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
       "local_name": "ECO-WORTHY 02_*"
-    },
-    {
-      "local_name": "ECO-WORTHY*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "DCHOUSE*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "DP04S*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "ECO-LFP*",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "SP0?B*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "SP1?B*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "SP2?B*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "SP3?B*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "SP4?B*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "SP5?B*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "SP6?B*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "SP7?B*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "SP9?B*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "SP9?B*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "SP1??B*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },    
-    {
-      "local_name": "CSY*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
       "local_name": "TBA-*"
     },
     {
       "local_name": "DXB-*"
-    },
-    {
-      "service_uuid": "0000ffe5-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb",
-      "manufacturer_id": 0
-    },
-    {
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb",
-      "manufacturer_id": 16963
-    },
-    {
-      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
-      "manufacturer_id": 22618
     },
     {
       "local_name": "libatt*",
@@ -243,27 +67,7 @@
       "local_name": "V-12V???Ah-*"
     },
     {
-      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
-      "manufacturer_id": 0
-    },
-    {
-      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
-      "manufacturer_id": 65535
-    },
-    {
       "manufacturer_id": 54976
-    },
-    {
-      "local_name": "BP0?",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "BP1?",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "BP2?",
-      "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
       "local_name": "F10*"
@@ -276,49 +80,12 @@
       "manufacturer_id": 21330
     },
     {
-      "local_name": "SOK-*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "ABC-*",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
-      "manufacturer_id": 424
-    },
-    {
-      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
-      "manufacturer_id": 2865
-    },
-    {
-      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
-      "manufacturer_id": 35579
-    },
-    {
       "service_uuid": "0000ffd0-0000-1000-8000-00805f9b34fb",
       "manufacturer_id": 39008
     },
     {
-      "local_name": "ANT-BLE*",
-      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
-      "manufacturer_id": 1623
-    },
-    {
-      "local_name": "ANT-BLE*",
-      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
-      "manufacturer_id": 8979
-    },
-    {
       "local_name": "RNG*",
       "manufacturer_id": 57676
-    },
-    {
-      "service_uuid": "0000fee7-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "Pro BMS",
-      "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
       "local_name": "TP_*"
@@ -340,6 +107,6 @@
     "aiobmsble"
   ],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble==0.2.3"],
-  "version": "2.0.0-beta.2"
+  "requirements": ["aiobmsble==0.4.1"],
+  "version": "2.0.0-beta.3"
 }
