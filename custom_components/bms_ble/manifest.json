@@ -322,6 +322,10 @@
     },
     {
       "local_name": "TP_*"
+    },
+    {
+      "local_name": "CW20_BLE",
+      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb"
     }
   ],
   "codeowners": [

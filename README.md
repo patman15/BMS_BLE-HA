@@ -33,41 +33,43 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - 100% test coverage
 
 ### Supported Devices
-- ABC/SOK BMS (show up as `ABC-`&#x2026;, `SOK-`&#x2026;)
-- Braun Power BMS (show up as `BL-`&#x2026; or `HSKS-`&#x2026;)
-- ANT BMS (show up as `ANT-BLE`&#x2026;)
+- ABC/SOK BMS (show up as `ABC-`…, `SOK-`…)
+- Braun Power BMS (show up as `BL-`… or `HSKS-`…)
+- ANT BMS (show up as `ANT-BLE`…)
 - CBT Power BMS, Creabest batteries
-- D-powercore BMS (show up as `DXB-`&#x2026;), Fliteboard batteries (show up as `TBA-`&#x2026;)
-- Daly BMS (show up as `DL-`&#x2026;)
+- D-powercore BMS (show up as `DXB-`…), Fliteboard batteries (show up as `TBA-`…)
+- Daly BMS (show up as `DL-`…)
     - 100Balance BMS
     - Bulltron batteries
-- E&J Technology BMS (show ups as `libatt`&#x2026;)
-    - Elektronicx batteries (show up as `LT-`&#x2026;)
-    - Lithtech batteries (show up as `LT-12V-`&#x2026; or `L-12V`&#x2026;)
-    - Meritsun, Supervolt v1 (show up as `SV12V`&#x2026;), and Volthium (show up as `V-12V`&#x2026;) batteries
-- ECO-WORTHY + BW02 adapter (show up as `ECO-WORTHY`&#x2026;)
-    - DCHOUSE batteries (show up as `DCHOUSE`&#x2026;)
-- Ective, Startcraft, Topband batteries (show up as `$PFLAC`&#x2026;, `NWJ20`&#x2026;, `ZM20`&#x2026;)
-- Felicity ESS (show up as `F10`&#x2026;) and FLB batteries (show up as `F07`&#x2026;)
-- JBD BMS, Jiabaida (show up as `JBD-`&#x2026;, `AP2.S`&#x2026;, `SP..S`&#x2026;)
-    - accurat batteries (show up as `GJ-`&#x2026;), Aolithium batteries (show up as `AL12-`&#x2026;)
-    - BasenGreen (show up as `BS20`&#x2026;),Bulltron, DCHOUSE, ECO-WORTHY (show up as `DP04S`&#x2026;, `ECO-LFP`&#x2026;), Epoch batteries
-    - Eleksol, Liontron, LANPWR (show up as `BT  LP`&#2026;), Perfektium (show up as `PKT`&#x2026;), Ultimatron batteries (show up as `12??0`&#x2026;)
-    - SBL batteries (show up as `SBL-`&#x2026;), Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries (show up as `DWC`&#x2026; or `DXD`&#x2026;)
-- JK BMS, Jikong, (HW version &ge; 6 required)
+- E&J Technology BMS (show ups as `libatt`…)
+    - Elektronicx batteries (show up as `LT-`…)
+    - Lithtech batteries (show up as `LT-12V-`… or `L-12V`…)
+    - Meritsun, Supervolt v1 (show up as `SV12V`…), and Volthium (show up as `V-12V`…) batteries
+- ECO-WORTHY + BW02 adapter (show up as `ECO-WORTHY`…)
+    - DCHOUSE batteries (show up as `DCHOUSE`…)
+- Ective, Startcraft, Topband batteries (show up as `$PFLAC`…, `NWJ20`…, `ZM20`…)
+- Felicity ESS (show up as `F10`…) and FLB batteries (show up as `F07`…)
+- JBD BMS, Jiabaida (show up as `JBD-`…, `AP2.S`…, `SP..S`…)
+    - accurat batteries (show up as `GJ-`…), Aolithium batteries (show up as `AL12-`…)
+    - BasenGreen (show up as `BS20`…),Bulltron, DCHOUSE, ECO-WORTHY (show up as `DP04S`…, `ECO-LFP`…), Epoch batteries
+    - Eleksol, Liontron, LANPWR (show up as `BT  LP`…), Perfektium (show up as `PKT`…), Ultimatron batteries (show up as `12??0`…)
+    - SBL batteries (show up as `SBL-`…), Supervolt v3 batteries (show up as `SX1`…), Vatrer batteries (show up as `DWC`… or `DXD`…)
+- JK BMS, Jikong, (HW version ≥ 6 required)
 - LiTime, Power Queen, and Redodo batteries
-- NEEY balancer (4th gen) (show up as `GW-24S`&#x2026;)
-- Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
+- NEEY balancer (4th gen) (show up as `GW-24S`…)
+- Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`… or `SmartBat-B`…)
 - Pro BMS Smart Shunt
     - Foxwell BT630
     - Leagend CM100
+- **ATORCH CW20 Smart Shunt** (show up as `CW20_BLE`…)
 - Renogy BMS, Renogy Pro BMS
 - RoyPow batteries
 - Seplos v2 (show up as `BP[0-2]?`)
-- Seplos v3 (show up as `SP[0,1,4-6]`&#x2026;)
+- Seplos v3 (show up as `SP[0,1,4-6]`…)
 - TDT BMS
     - Wattcycle batteries
-- TianPower BMS (show up as `TP_`&#x2026;)
+- TianPower BMS (show up as `TP_`…)
+
 
 ### Provided Information
 > [!CAUTION]
