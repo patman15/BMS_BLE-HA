@@ -1,7 +1,7 @@
 """Plugin to support ATORCH CW20 DC Meter (Smart Shunt)."""
 
-from typing import Final
 import logging
+from typing import Final
 
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
