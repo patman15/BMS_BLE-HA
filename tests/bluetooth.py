@@ -1,4 +1,4 @@
-"""Test helpers for bluetooth copied from HA 2024.11.0.
+"""Test helpers for bluetooth copied from HA 2025.9.0.
 
 Source: /tests/components/bluetooth/__init__.py
 """
@@ -27,7 +27,6 @@ ADVERTISEMENT_DATA_DEFAULTS = {
 
 BLE_DEVICE_DEFAULTS = {
     "name": None,
-    "rssi": -127,
     "details": None,
 }
 
