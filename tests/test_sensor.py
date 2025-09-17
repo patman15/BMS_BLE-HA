@@ -23,13 +23,12 @@ from custom_components.bms_ble.const import (
     ATTR_POWER,
     ATTR_RUNTIME,
     ATTR_TEMP_SENSORS,
-    ATTR_TEMPERATURE,
-    ATTR_VOLTAGE,
     BINARY_SENSORS,
     SENSORS,
     UPDATE_INTERVAL,
 )
 from homeassistant.config_entries import ConfigEntryState
+from homeassistant.const import ATTR_TEMPERATURE, ATTR_VOLTAGE
 from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers.entity_component import async_update_entity
 import homeassistant.util.dt as dt_util

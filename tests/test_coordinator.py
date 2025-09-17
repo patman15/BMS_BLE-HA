@@ -7,13 +7,9 @@ from typing import Final
 from habluetooth import BluetoothServiceInfoBleak
 import pytest
 
-from custom_components.bms_ble.const import (
-    ATTR_CURRENT,
-    ATTR_CYCLE_CHRG,
-    ATTR_CYCLES,
-    ATTR_VOLTAGE,
-)
+from custom_components.bms_ble.const import ATTR_CURRENT, ATTR_CYCLE_CHRG, ATTR_CYCLES
 from custom_components.bms_ble.coordinator import BTBmsCoordinator
+from homeassistant.const import ATTR_VOLTAGE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from tests.bluetooth import inject_bluetooth_service_info_bleak

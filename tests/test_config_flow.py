@@ -2,6 +2,7 @@
 
 from typing import Final
 
+from aiobmsble.test_data import bms_advertisements
 from bleak.backends.scanner import AdvertisementData
 from home_assistant_bluetooth import BluetoothServiceInfoBleak
 import pytest
@@ -19,17 +20,16 @@ from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er
-from tests.advertisement_data import ADVERTISEMENTS
 from tests.bluetooth import generate_ble_device, inject_bluetooth_service_info_bleak
 from tests.conftest import mock_config, mock_config_v1_0, mock_update_min
 
 
 @pytest.fixture(
     name="advertisement",
-    params=ADVERTISEMENTS,
+    params=bms_advertisements(),
     ids=lambda param: param[1],
 )
-def bms_advertisement(request) -> BluetoothServiceInfoBleak:
+def bms_adv(request) -> BluetoothServiceInfoBleak:
     """Return faulty response frame."""
     dev: Final[AdvertisementData] = request.param[0]
     address: Final[str] = "c0:ff:ee:c0:ff:ee"
