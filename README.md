@@ -5,7 +5,7 @@
 [![Effort][effort-shield]](https://buymeacoffee.com/patman15)
 [![HACS][install-shield]](https://hacs.xyz/docs/use/)
 
-This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). After installation, no configuration is required. You can use the [ESPHome Bluetooth proxy][btproxy-url] to extend the bluetooth coverage range. By using standard dashboard cards, it is easy to visualize the current state of remote batteries.
+This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). After installation, no configuration is required. You can use the [ESPHome Bluetooth proxy][btproxy-url] to extend the Bluetooth coverage range. By using standard dashboard cards, it is easy to visualize the current state of remote batteries.
 
 ![dashboard](https://github.com/user-attachments/assets/56136072-db44-4ffa-94e5-dc165d0fc1b4)
 
@@ -25,7 +25,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 
 ## Features
 - Zero configuration
-- Autodetects compatible batteries
+- Auto detects compatible batteries
 - Supports [ESPHome Bluetooth proxy][btproxy-url]  (limit: 3 devices/proxy)
 - Any number of batteries in parallel
 - Native Home Assistant integration (works with all [HA installation methods](https://www.home-assistant.io/installation/#advanced-installation-methods))
@@ -77,19 +77,24 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 > 
 > **Do not rely** on the values to control actions that prevent battery damage, overheating (fire), or similar.
 
-Platform | Description | Unit | Decription | Optional Attributes
+Platform | Description | Unit | Description | Optional Attributes
 -- | -- | -- | -- | --
 `binary_sensor` | battery charging | `bool` | indicates `True` if battery is charging | battery mode
-`binary_sensor` | problem | `bool` | indicates `True` if the battery reports an issue or plausibility checks on values fail | problem code
 `sensor` | charge cycles | `#` | lifetime number of charge cycles | package charge cycles
 `sensor` | current | `A` | positive for charging, negative for discharging | balance current, package current
-`sensor` | delta voltage | `V` | maximum difference between any two cells | cell voltages
 `sensor` | power | `W` | positive for charging, negative for discharging
 `sensor` | runtime | `s` | remaining discharge time till SoC 0%, `unavailable` during idle/charging
 `sensor` | SoC | `%` | state of charge, range 100% (full) to 0% (battery empty) | package SoC
 `sensor` | stored energy | `Wh` | currently stored energy
 `sensor` | temperature | `°C` | (average) battery temperature | individual temperature values
 `sensor` | voltage | `V` | overall battery voltage | package voltage
+
+Platform | Description | Unit | Description | Optional Attributes
+-- | -- | -- | -- | --
+`binary_sensor` | problem | `bool` | indicates `True` if the battery reports an issue or plausibility checks on values fail | problem code
+`sensor` | delta cell voltage | `V` | maximum difference between any two cells in a pack | cell voltages
+`sensor` | max cell voltage | `V` | overall maximum cell voltage in the system
+`sensor` | min cell voltage | `V` | overall minimum cell voltage in the system
 `sensor`* | link quality  | `%` | successful BMS queries from the last hundred update periods
 `sensor`* | RSSI          | `dBm`| received signal strength indicator
 
@@ -132,7 +137,7 @@ ECO-WORTHY batteries that show up as <code>ECOxxxx</code> use classic Bluetooth 
 The advertisement contains <code>{"name":"ECOxxxx","service_uuids":["0000ff00-0000-1000-8000-00805f9b34fb","00000001-0000-1000-8000-00805f9b34fb"]</code>
 </details>
 <details><summary>Elektronicx, Lithtech batteries</summary>
-Bluetooth is turned off, when there is no current. Thus, device will get unavailble / cannot be added.
+Bluetooth is turned off, when there is no current. Thus, device will get unavailable / cannot be added.
 </details>
 <details><summary>Batteries with JBD BMS</summary>
 JBD BMS detection unfortunately needs to rely on name patterns. If you renamed your battery it most likely will not be detected. I do appreciate issues being raised for new vendor naming schemes to ease the life of other users. To help, please follow the instructions in the last list item for <a href="#if-your-device-is-not-recognized">non-detected devices</a>.
@@ -141,7 +146,7 @@ JBD BMS detection unfortunately needs to rely on name patterns. If you renamed y
 These batteries need a shorter interval between queries. Be a bit patient to get them added and set a <a href="[custint-url]">custom interval</a> of about 9s to keep a stable connection.
 </details>
 <details><summary>Seplos v2</summary>
-The internal Bluetooth adapter issues <code>AT</code> commands in regular intervals which can interfer with BMS messages causing them to be corrupted. This impacts data availability (<code>link quality</code>).
+The internal Bluetooth adapter issues <code>AT</code> commands in regular intervals which can interfere with BMS messages causing them to be corrupted. This impacts data availability (<code>link quality</code>).
 </details>
 
 ### If your device is not recognized
@@ -152,8 +157,8 @@ The internal Bluetooth adapter issues <code>AT</code> commands in regular interv
 1. Make sure that no other device is connected to the BMS, e.g. app on your phone
 1. Check that your are running the [latest release](https://github.com//patman15/BMS_BLE-HA/releases) of the integration
 1. Go to the [advertisement monitor](https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/) and verify that your device shows up there. Also, please ensure that your `RSSI` value is `>= -75 dBm`. If your device is missing or the `RSSI` value is `-80 dBm`or worse, please check your BT setup (is the device in range?).
-1. If you use a BT proxy, make sure you have set `active: true` and that you do not exced the [BT proxy limit][btproxy-url] of 3 devices/proxy; check the logs of the proxy if the device is recognized. Note: The [Bluetooth proxy of Shelly devices](https://www.home-assistant.io/integrations/shelly/#bluetooth-support) does not support active connections and thus cannot be used.
-1. If above points did not help, please go to the [bluetooth integration](https://my.home-assistant.io/redirect/integration/?domain=bluetooth). On your BT adapter select `configure`.
+1. If you use a BT proxy, make sure you have set `active: true` and that you do not exceed the [BT proxy limit][btproxy-url] of 3 devices/proxy; check the logs of the proxy if the device is recognized. Note: The [Bluetooth proxy of Shelly devices](https://www.home-assistant.io/integrations/shelly/#bluetooth-support) does not support active connections and thus cannot be used.
+1. If above points did not help, please go to the [Bluetooth integration](https://my.home-assistant.io/redirect/integration/?domain=bluetooth). On your BT adapter select `configure`.
     1.  Verify that you have connection slots available.
     1.  Go to the [advertisement monitor](https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/) and click the device in question. Please provide the information via **`copy to clipboard`** to [a new issue for the aiobmsble library](https://github.com/patman15/aiobmsble/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) giving your BMS/battery type in the title.
 
@@ -263,7 +268,7 @@ State template | `{%- if has_value("sensor.smartbat_..._delta_voltage") %} {{ st
 There are plenty more functions you can use, e.g. min, and the full power of [templating](https://www.home-assistant.io/docs/configuration/templating/).
 
 ### I need a discharge sensor not the charging indicator, can I have that?
-Sure, use, e.g. a [threshold sensor](https://my.home-assistant.io/redirect/config_flow_start/?domain=threshold) based on the current to/from the battery. Negative means discharging, positiv is charging.
+Sure, use, e.g. a [threshold sensor](https://my.home-assistant.io/redirect/config_flow_start/?domain=threshold) based on the current to/from the battery. Negative means discharging, positive is charging.
 
 ### My BMS needs a pin, how can I enter it?
 
