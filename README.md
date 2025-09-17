@@ -69,6 +69,8 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Wattcycle batteries
 - TianPower BMS (show up as `TP_`&#x2026;)
 
+If you would like to get your battery/BMS supported please consider raising a pull request for [aiobmsble](https://github.com/patman15/aiobmsble) following the [contribution guidelines](https://github.com/patman15/aiobmsble?tab=contributing-ov-file) or raise [a new issue for the aiobmsble library](https://github.com/patman15/aiobmsble/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) giving your BMS/battery type in the title. Please provide the information requested by the template (see *additional context*).
+
 ### Provided Information
 > [!CAUTION]
 > This integration (including Home Assistant) **shall not be used for safety relevant operations**! The correctness or availability of data cannot be guaranteed (see [warranty section of the license](LICENSE)),
