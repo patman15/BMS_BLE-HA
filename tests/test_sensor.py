@@ -55,7 +55,7 @@ async def test_update(
                 "battery_level": 42,
                 "voltage": 17.0,
                 "current": 0,
-                "cell_voltages": [3, 3.123],
+                "cell_voltages": [3.1, 3, 3.123],
                 "delta_voltage": 0.123,
                 "temperature": 43.86,
                 "problem": True,
@@ -148,13 +148,12 @@ async def test_update(
 
     # check that attributes to sensors were updated
     for sensor, attribute, value in (
+        (ATTR_MIN_VOLTAGE, "cell_number", 1),
+        (ATTR_MAX_VOLTAGE, "cell_number", 2),
         (
             ATTR_DELTA_VOLTAGE,
             ATTR_CELL_VOLTAGES,
-            [
-                3,
-                3.123,
-            ],
+            [3.1, 3, 3.123],
         ),
         (
             ATTR_TEMPERATURE,
@@ -183,4 +182,4 @@ async def test_update(
         assert pack_state is not None, f"failed to get state of sensor '{sensor}'"
         assert pack_state.attributes.get(attribute, None) == (
             ref_value if bool_fixture else None
-        ), f"faild to verify sensor '{sensor}' attribute '{attribute}'"
+        ), f"failed to verify sensor '{sensor}' attribute '{attribute}'"

@@ -93,8 +93,8 @@ Platform | Description | Unit | Description | Optional Attributes
 -- | -- | -- | -- | --
 `binary_sensor` | problem | `bool` | indicates `True` if the battery reports an issue or plausibility checks on values fail | problem code
 `sensor` | delta cell voltage | `V` | maximum difference between any two cells in a pack | cell voltages
-`sensor` | max cell voltage | `V` | overall maximum cell voltage in the system
-`sensor` | min cell voltage | `V` | overall minimum cell voltage in the system
+`sensor` | max cell voltage | `V` | overall maximum cell voltage in the system | cell number
+`sensor` | min cell voltage | `V` | overall minimum cell voltage in the system | cell number
 `sensor`* | link quality  | `%` | successful BMS queries from the last hundred update periods
 `sensor`* | RSSI          | `dBm`| received signal strength indicator
 
