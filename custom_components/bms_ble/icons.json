@@ -15,16 +15,16 @@
             "cycles": {
                 "default": "mdi:autorenew"
             },
-            "delta_voltage": {
+            "delta_cell_voltage": {
                 "default": "mdi:battery-sync"
             },
             "link_quality": {
                 "default": "mdi:link"
             },
-            "max_voltage": {
+            "max_cell_voltage": {
                 "default": "mdi:battery-arrow-up"
             },
-            "min_voltage": {
+            "min_cell_voltage": {
                 "default": "mdi:battery-arrow-down"
             },                        
             "rssi": {
