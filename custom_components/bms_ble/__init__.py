@@ -85,7 +85,7 @@ async def async_migrate_entry(
         LOGGER.debug("Cannot downgrade from version %s", config_entry.version)
         return False
 
-    LOGGER.debug("Migrating from version %s", config_entry.version)
+    LOGGER.debug("Migrating from version %s.%s", config_entry.version, config_entry.minor_version)
 
     if config_entry.version == 0:
         bms_type: str = str(config_entry.data["type"])
@@ -141,7 +141,7 @@ def migrate_sensor_entities(
             unique_id = unique_id.removesuffix("-delta_voltage") + "-delta_cell_voltage"
 
         if unique_id == entry.unique_id:
-            return
+            continue
 
         LOGGER.debug(
             "migrating %s with old unique_id '%s' to new '%s'",

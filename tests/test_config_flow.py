@@ -407,10 +407,11 @@ async def test_migrate_entry_from_v0_1(
     [
         ("myJBD-test-battery_level", f"{DOMAIN}-cc:cc:cc:cc:cc:cc-battery_level"),
         ("myBMS-delta_voltage", f"{DOMAIN}-cc:cc:cc:cc:cc:cc-delta_cell_voltage"),
+        (f"{DOMAIN}-cc:cc:cc:cc:cc:cc-delta_voltage", f"{DOMAIN}-cc:cc:cc:cc:cc:cc-delta_cell_voltage"),
         (f"{DOMAIN}-nochange-delta_cell_voltage", f"{DOMAIN}-nochange-delta_cell_voltage"),
         (f"{DOMAIN}-myJBD-test-battery_level", f"{DOMAIN}-myJBD-test-battery_level"),
     ],
-    ids=["add_domain", "cdv_upd", "cdv_keep", "no_migration"],
+    ids=["add_domain", "cdv_upd_v0", "cdv_upd_v1", "cdv_keep", "no_migration"],
 )
 async def test_migrate_unique_id(
     hass: HomeAssistant, unique_id_old, unique_id_new
