@@ -171,7 +171,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     BmsEntityDescription(
         key=ATTR_MAX_VOLTAGE,
         translation_key=ATTR_MAX_VOLTAGE,
-        name="Max cell voltage",
+        name="Maximal cell voltage",
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
@@ -189,7 +189,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     BmsEntityDescription(
         key=ATTR_MIN_VOLTAGE,
         translation_key=ATTR_MIN_VOLTAGE,
-        name="Min cell voltage",
+        name="Minimal cell voltage",
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
