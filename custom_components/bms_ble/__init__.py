@@ -140,6 +140,9 @@ def migrate_sensor_entities(
         if unique_id.endswith("-delta_voltage"):
             unique_id = unique_id.removesuffix("-delta_voltage") + "-delta_cell_voltage"
 
+        if unique_id == entry.unique_id:
+            return
+
         LOGGER.debug(
             "migrating %s with old unique_id '%s' to new '%s'",
             entry.entity_id,
