@@ -287,7 +287,7 @@ all [contributors of aiobmsble](https://github.com/patman15/aiobmsble?tab=readme
 
 ## References
 - [Home Assistant Add-on: BatMON](https://github.com/fl4p/batmon-ha)
-- [ESPHome BMS components](BMShttps://github.com/syssi)
+- [ESPHome BMS components](https://github.com/syssi)
 
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA?style=for-the-badge&color=orange&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
