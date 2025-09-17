@@ -287,14 +287,7 @@ all [contributors of aiobmsble](https://github.com/patman15/aiobmsble?tab=readme
 
 ## References
 - [Home Assistant Add-on: BatMON](https://github.com/fl4p/batmon-ha)
-- ANT BMS: [esphome-ant-bms](https://github.com/syssi/esphome-ant-bms/)
-- Daly BMS: [esp32-smart-bms-simulation](https://github.com/roccotsi2/esp32-smart-bms-simulation)
-- Jikong BMS: [esphome-jk-bms](https://github.com/syssi/esphome-jk-bms)
-- JBD BMS: [esphome-jbd-bms](https://github.com/syssi/esphome-jbd-bms)
-- D-powercore BMS: [Strom BMS monitor](https://github.com/majonessyltetoy/strom)
-- Pro BMS: [@daubman](https://github.com/patman15/BMS_BLE-HA/docs/pro_bms.md)
-- Redodo BMS: [LiTime BMS bluetooth](https://github.com/calledit/LiTime_BMS_bluetooth)
-- TianPower BMS: [esphome-tianpower-bms](https://github.com/syssi/esphome-tianpower-bms)
+- [ESPHome BMS components](BMShttps://github.com/syssi)
 
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA?style=for-the-badge&color=orange&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
