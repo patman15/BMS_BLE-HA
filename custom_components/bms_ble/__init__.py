@@ -132,15 +132,18 @@ def migrate_sensor_entities(
     entities: Final[er.EntityRegistryItems] = ent_reg.entities
 
     for entry in entities.get_entries_for_config_entry_id(config_entry.entry_id):
-        if entry.unique_id.startswith(f"{DOMAIN}-"):
-            continue
-        new_unique_id: str = (
-            f"{DOMAIN}-{format_mac(config_entry.unique_id)}-{entry.unique_id.split('-')[-1]}"
-        )
+        unique_id: str = entry.unique_id
+        # update entries from wrong old format using no domain prefix
+        if not entry.unique_id.startswith(f"{DOMAIN}-"):
+            unique_id = f"{DOMAIN}-{format_mac(config_entry.unique_id)}-{unique_id.split('-')[-1]}"
+        # rename delta_voltage sensor to be consistent with min/max cell voltage sensor
+        if unique_id.endswith("-delta_voltage"):
+            unique_id = unique_id.removesuffix("-delta_voltage") + "-delta_cell_voltage"
+
         LOGGER.debug(
             "migrating %s with old unique_id '%s' to new '%s'",
             entry.entity_id,
             entry.unique_id,
-            new_unique_id,
+            unique_id,
         )
-        ent_reg.async_update_entity(entry.entity_id, new_unique_id=new_unique_id)
+        ent_reg.async_update_entity(entry.entity_id, new_unique_id=unique_id)
