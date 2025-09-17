@@ -77,7 +77,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 > 
 > **Do not rely** on the values to control actions that prevent battery damage, overheating (fire), or similar.
 
-Platform | Description | Unit | Description | Optional Attributes
+Platform | Name | Unit | Description | Optional Attributes
 -- | -- | -- | -- | --
 `binary_sensor` | battery charging | `bool` | indicates `True` if battery is charging | battery mode
 `sensor` | charge cycles | `#` | lifetime number of charge cycles | package charge cycles
@@ -88,9 +88,8 @@ Platform | Description | Unit | Description | Optional Attributes
 `sensor` | stored energy | `Wh` | currently stored energy
 `sensor` | temperature | `°C` | (average) battery temperature | individual temperature values
 `sensor` | voltage | `V` | overall battery voltage | package voltage
-
-Platform | Description | Unit | Description | Optional Attributes
--- | -- | -- | -- | --
+||||
+|||| **Diagnosis Sensors**
 `binary_sensor` | problem | `bool` | indicates `True` if the battery reports an issue or plausibility checks on values fail | problem code
 `sensor` | delta cell voltage | `V` | maximum difference between any two cells in a pack | cell voltages
 `sensor` | max cell voltage | `V` | overall maximum cell voltage in the system | cell number
