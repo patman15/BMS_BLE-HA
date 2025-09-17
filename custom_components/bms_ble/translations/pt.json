@@ -32,11 +32,17 @@
         "name": "Ciclos"
       },
       "delta_voltage": {
-        "name": "Voltagem delta"
+        "name": "Delta napięcia ogniw"
       },
       "link_quality": {
         "name": "Qualidade de ligação"
       },
+      "max_cell_voltage": {
+        "name": "Maksymalne napięcie ogniwa"
+      },
+      "min_cell_voltage": {
+        "name": "Minimalne napięcie ogniwa"
+      },      
       "runtime": {
         "name": "Run"
       }

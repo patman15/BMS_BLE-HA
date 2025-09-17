@@ -31,12 +31,18 @@
       "cycles": {
         "name": "Zyklen"
       },
-      "delta_voltage": {
-        "name": "Differenzspannung"
+      "delta_cell_voltage": {
+        "name": "Delta Zellspannung"
       },
       "link_quality": {
         "name": "Verbindungsqualität"
       },
+      "max_cell_voltage": {
+        "name": "Maximale Zellspannung"
+      },
+      "min_cell_voltage": {
+        "name": "Minimale Zellspannung"
+      },       
       "runtime": {
         "name": "Laufzeit"
       }
