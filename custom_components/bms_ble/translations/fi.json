@@ -1,0 +1,51 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Laite on asennettu.",
+      "no_devices_found": "Bluetooth-laitteita ei löytynyt.",
+      "not_supported": "Laitetta ei tueta."
+    },
+    "flow_title": "Asenna {name} ({id}) malliltaan {model}",
+    "step": {
+      "user": {
+        "description": "Valitse asennettava laite:",
+        "data": {
+          "address": "Bluetooth nimi (MAC address) - Malli"
+        }
+      },
+      "bluetooth_confirm": {
+        "description": "Haluatko asentaa {name} ({id})?"
+      }
+    }
+  },
+  "exceptions": {
+    "device_not_found": {
+      "message": "Akunhallintajärjestelmää ({MAC}) ei löytynyt Bluetoothin kautta."
+    },
+    "missing_unique_id": {
+      "message": "Yksilöllinen ID puuttuu."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "cycles": {
+        "name": "latauskerrat"
+      },
+      "delta_voltage": {
+        "name": "Jännite-ero"
+      },
+      "link_quality": {
+        "name": "Linkin tila"
+      },
+      "max_cell_voltage": {
+        "name": "Maksimi kennojännite"
+      },
+      "min_cell_voltage": {
+        "name": "Minimi kennojännite"
+      },       
+      "runtime": {
+        "name": "Käyttöaika"
+      }
+    }
+  }  
+}
