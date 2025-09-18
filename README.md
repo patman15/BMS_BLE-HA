@@ -239,7 +239,7 @@ To create individual sensors, go to [Settings > Devices & Services > Helper](htt
 
 Field | Content
 -- | --
-State template | ```{{ iif(has_value("sensor.smartbat_..._delta_voltage"), state_attr("sensor.smartbat_..._delta_voltage", "cell_voltages")[0], None) }}```<br>The index `[0]` can be in the range from 0 to the number of cells-1, i.e. 0-3 for a 4 cell battery.
+State template | ```{{ iif(has_value("sensor.smartbat_..._delta_cell_voltage"), state_attr("sensor.smartbat_..._delta_cell_voltage", "cell_voltages")[0], None) }}```<br>The index `[0]` can be in the range from 0 to the number of cells-1, i.e. 0-3 for a 4 cell battery.
 Unit of measurement | `V`
 Device class | `Voltage`
 State class | `Measurement`
@@ -251,22 +251,21 @@ template:
   - sensor:
     - name: cell_voltage_0
       state: >-
-        {{ state_attr('sensor.smartbat_..._delta_voltage', 'cell_voltages')[0] }}
+        {{ state_attr('sensor.smartbat_..._delta_cell_voltage', 'cell_voltages')[0] }}
       unit_of_measurement: 'V'
       state_class: measurement
       device_class: voltage
       availability: >- 
-        {{ has_value('sensor.smartbat_..._delta_voltage') }}
+        {{ has_value('sensor.smartbat_..._delta_cell_voltage') }}
 ```
+There are plenty more functions you can use, please see [templating](https://www.home-assistant.io/docs/configuration/templating/).
 
-### I want to know the maximum cell voltage!
+### I want to know the cell with the lowest voltage!
 Please follow the explanations in the previous question but use the following:
 
 Field | Content
 -- | --
-State template | `{%- if has_value("sensor.smartbat_..._delta_voltage") %} {{ state_attr("sensor.smartbat_..._delta_voltage", "cell_voltages") \| max }} {% else %} None {% endif -%}`
-
-There are plenty more functions you can use, e.g. min, and the full power of [templating](https://www.home-assistant.io/docs/configuration/templating/).
+State template | `{%- if has_value("sensor.smartbat_..._minimal_cell_voltage") %} {{ state_attr("sensor.smartbat_..._minimal_cell_voltage", "cell_number") }} {% else %} None {% endif -%}`
 
 ### I need a discharge sensor not the charging indicator, can I have that?
 Sure, use, e.g. a [threshold sensor](https://my.home-assistant.io/redirect/config_flow_start/?domain=threshold) based on the current to/from the battery. Negative means discharging, positive is charging.
@@ -281,6 +280,7 @@ Then you need to pair your device first. This is procedure is only required once
 Once pairing is done, the integration should automatically detect the BMS.
 
 ## Outlook
+- Develop towards a [Home Assistant core integration](https://www.home-assistant.io/integrations/)
 - Improvements to fulfill the [Home Assistant quality scale](https://www.home-assistant.io/docs/quality_scale/)
 - Add option to only have temporary connections (lowers reliability, but helps running more devices via [ESPHome Bluetooth proxy][btproxy-url])
 
