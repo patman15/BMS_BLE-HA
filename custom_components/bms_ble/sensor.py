@@ -33,6 +33,8 @@ from .const import (
     ATTR_CYCLES,
     ATTR_DELTA_VOLTAGE,
     ATTR_LQ,
+    ATTR_MAX_VOLTAGE,
+    ATTR_MIN_VOLTAGE,
     ATTR_POWER,
     ATTR_RSSI,
     ATTR_RUNTIME,
@@ -153,7 +155,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     BmsEntityDescription(
         key=ATTR_DELTA_VOLTAGE,
         translation_key=ATTR_DELTA_VOLTAGE,
-        name="Delta voltage",
+        name="Delta cell voltage",
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         state_class=SensorStateClass.MEASUREMENT,
         device_class=SensorDeviceClass.VOLTAGE,
@@ -163,6 +165,42 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         attr_fn=lambda data: (
             {"cell_voltages": data.get("cell_voltages", [])}
             if "cell_voltages" in data
+            else {}
+        ),
+    ),
+    BmsEntityDescription(
+        key=ATTR_MAX_VOLTAGE,
+        translation_key=ATTR_MAX_VOLTAGE,
+        name="Maximal cell voltage",
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        suggested_display_precision=3,
+        value_fn=lambda data: (
+            max(cells) if (cells := data.get("cell_voltages", [])) else None
+        ),
+        attr_fn=lambda data: (
+            {"cell_number": cells.index(max(cells))}
+            if (cells := data.get("cell_voltages", []))
+            else {}
+        ),
+    ),
+    BmsEntityDescription(
+        key=ATTR_MIN_VOLTAGE,
+        translation_key=ATTR_MIN_VOLTAGE,
+        name="Minimal cell voltage",
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        state_class=SensorStateClass.MEASUREMENT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        suggested_display_precision=3,
+        value_fn=lambda data: (
+            min(cells) if (cells := data.get("cell_voltages", [])) else None
+        ),
+        attr_fn=lambda data: (
+            {"cell_number": cells.index(min(cells))}
+            if (cells := data.get("cell_voltages", []))
             else {}
         ),
     ),

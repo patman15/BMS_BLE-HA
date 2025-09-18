@@ -15,12 +15,18 @@
             "cycles": {
                 "default": "mdi:autorenew"
             },
-            "delta_voltage": {
+            "delta_cell_voltage": {
                 "default": "mdi:battery-sync"
             },
             "link_quality": {
                 "default": "mdi:link"
             },
+            "max_cell_voltage": {
+                "default": "mdi:battery-arrow-up"
+            },
+            "min_cell_voltage": {
+                "default": "mdi:battery-arrow-down"
+            },                        
             "rssi": {
                 "default": "mdi:bluetooth-connect"
             }

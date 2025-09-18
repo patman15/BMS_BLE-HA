@@ -5,7 +5,7 @@
 [![Effort][effort-shield]](https://buymeacoffee.com/patman15)
 [![HACS][install-shield]](https://hacs.xyz/docs/use/)
 
-This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). After installation, no configuration is required. You can use the [ESPHome Bluetooth proxy][btproxy-url] to extend the bluetooth coverage range. By using standard dashboard cards, it is easy to visualize the current state of remote batteries.
+This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). After installation, no configuration is required. You can use the [ESPHome Bluetooth proxy][btproxy-url] to extend the Bluetooth coverage range. By using standard dashboard cards, it is easy to visualize the current state of remote batteries.
 
 ![dashboard](https://github.com/user-attachments/assets/56136072-db44-4ffa-94e5-dc165d0fc1b4)
 
@@ -25,7 +25,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 
 ## Features
 - Zero configuration
-- Autodetects compatible batteries
+- Auto detects compatible batteries
 - Supports [ESPHome Bluetooth proxy][btproxy-url]  (limit: 3 devices/proxy)
 - Any number of batteries in parallel
 - Native Home Assistant integration (works with all [HA installation methods](https://www.home-assistant.io/installation/#advanced-installation-methods))
@@ -69,6 +69,8 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Wattcycle batteries
 - TianPower BMS (show up as `TP_`&#x2026;)
 
+If you would like to get your battery/BMS supported please consider raising a pull request for [aiobmsble](https://github.com/patman15/aiobmsble) following the [contribution guidelines](https://github.com/patman15/aiobmsble?tab=contributing-ov-file) or raise [a new issue for the aiobmsble library](https://github.com/patman15/aiobmsble/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) giving your BMS/battery type in the title. Please provide the information requested by the template (see *additional context*).
+
 ### Provided Information
 > [!CAUTION]
 > This integration (including Home Assistant) **shall not be used for safety relevant operations**! The correctness or availability of data cannot be guaranteed (see [warranty section of the license](LICENSE)),
@@ -77,19 +79,23 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 > 
 > **Do not rely** on the values to control actions that prevent battery damage, overheating (fire), or similar.
 
-Platform | Description | Unit | Decription | Optional Attributes
+Platform | Name | Unit | Description | Optional Attributes
 -- | -- | -- | -- | --
 `binary_sensor` | battery charging | `bool` | indicates `True` if battery is charging | battery mode
-`binary_sensor` | problem | `bool` | indicates `True` if the battery reports an issue or plausibility checks on values fail | problem code
 `sensor` | charge cycles | `#` | lifetime number of charge cycles | package charge cycles
 `sensor` | current | `A` | positive for charging, negative for discharging | balance current, package current
-`sensor` | delta voltage | `V` | maximum difference between any two cells | cell voltages
 `sensor` | power | `W` | positive for charging, negative for discharging
 `sensor` | runtime | `s` | remaining discharge time till SoC 0%, `unavailable` during idle/charging
 `sensor` | SoC | `%` | state of charge, range 100% (full) to 0% (battery empty) | package SoC
 `sensor` | stored energy | `Wh` | currently stored energy
 `sensor` | temperature | `°C` | (average) battery temperature | individual temperature values
 `sensor` | voltage | `V` | overall battery voltage | package voltage
+||||
+|||| **Diagnosis Sensors**
+`binary_sensor` | problem | `bool` | indicates `True` if the battery reports an issue or plausibility checks on values fail | problem code
+`sensor` | delta cell voltage | `V` | maximum difference between any two cells in a pack | cell voltages
+`sensor` | max cell voltage | `V` | overall maximum cell voltage in the system | cell number
+`sensor` | min cell voltage | `V` | overall minimum cell voltage in the system | cell number
 `sensor`* | link quality  | `%` | successful BMS queries from the last hundred update periods
 `sensor`* | RSSI          | `dBm`| received signal strength indicator
 
@@ -132,7 +138,7 @@ ECO-WORTHY batteries that show up as <code>ECOxxxx</code> use classic Bluetooth 
 The advertisement contains <code>{"name":"ECOxxxx","service_uuids":["0000ff00-0000-1000-8000-00805f9b34fb","00000001-0000-1000-8000-00805f9b34fb"]</code>
 </details>
 <details><summary>Elektronicx, Lithtech batteries</summary>
-Bluetooth is turned off, when there is no current. Thus, device will get unavailble / cannot be added.
+Bluetooth is turned off, when there is no current. Thus, device will get unavailable / cannot be added.
 </details>
 <details><summary>Batteries with JBD BMS</summary>
 JBD BMS detection unfortunately needs to rely on name patterns. If you renamed your battery it most likely will not be detected. I do appreciate issues being raised for new vendor naming schemes to ease the life of other users. To help, please follow the instructions in the last list item for <a href="#if-your-device-is-not-recognized">non-detected devices</a>.
@@ -141,7 +147,7 @@ JBD BMS detection unfortunately needs to rely on name patterns. If you renamed y
 These batteries need a shorter interval between queries. Be a bit patient to get them added and set a <a href="[custint-url]">custom interval</a> of about 9s to keep a stable connection.
 </details>
 <details><summary>Seplos v2</summary>
-The internal Bluetooth adapter issues <code>AT</code> commands in regular intervals which can interfer with BMS messages causing them to be corrupted. This impacts data availability (<code>link quality</code>).
+The internal Bluetooth adapter issues <code>AT</code> commands in regular intervals which can interfere with BMS messages causing them to be corrupted. This impacts data availability (<code>link quality</code>).
 </details>
 
 ### If your device is not recognized
@@ -152,8 +158,8 @@ The internal Bluetooth adapter issues <code>AT</code> commands in regular interv
 1. Make sure that no other device is connected to the BMS, e.g. app on your phone
 1. Check that your are running the [latest release](https://github.com//patman15/BMS_BLE-HA/releases) of the integration
 1. Go to the [advertisement monitor](https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/) and verify that your device shows up there. Also, please ensure that your `RSSI` value is `>= -75 dBm`. If your device is missing or the `RSSI` value is `-80 dBm`or worse, please check your BT setup (is the device in range?).
-1. If you use a BT proxy, make sure you have set `active: true` and that you do not exced the [BT proxy limit][btproxy-url] of 3 devices/proxy; check the logs of the proxy if the device is recognized. Note: The [Bluetooth proxy of Shelly devices](https://www.home-assistant.io/integrations/shelly/#bluetooth-support) does not support active connections and thus cannot be used.
-1. If above points did not help, please go to the [bluetooth integration](https://my.home-assistant.io/redirect/integration/?domain=bluetooth). On your BT adapter select `configure`.
+1. If you use a BT proxy, make sure you have set `active: true` and that you do not exceed the [BT proxy limit][btproxy-url] of 3 devices/proxy; check the logs of the proxy if the device is recognized. Note: The [Bluetooth proxy of Shelly devices](https://www.home-assistant.io/integrations/shelly/#bluetooth-support) does not support active connections and thus cannot be used.
+1. If above points did not help, please go to the [Bluetooth integration](https://my.home-assistant.io/redirect/integration/?domain=bluetooth). On your BT adapter select `configure`.
     1.  Verify that you have connection slots available.
     1.  Go to the [advertisement monitor](https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/) and click the device in question. Please provide the information via **`copy to clipboard`** to [a new issue for the aiobmsble library](https://github.com/patman15/aiobmsble/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) giving your BMS/battery type in the title.
 
@@ -263,7 +269,7 @@ State template | `{%- if has_value("sensor.smartbat_..._delta_voltage") %} {{ st
 There are plenty more functions you can use, e.g. min, and the full power of [templating](https://www.home-assistant.io/docs/configuration/templating/).
 
 ### I need a discharge sensor not the charging indicator, can I have that?
-Sure, use, e.g. a [threshold sensor](https://my.home-assistant.io/redirect/config_flow_start/?domain=threshold) based on the current to/from the battery. Negative means discharging, positiv is charging.
+Sure, use, e.g. a [threshold sensor](https://my.home-assistant.io/redirect/config_flow_start/?domain=threshold) based on the current to/from the battery. Negative means discharging, positive is charging.
 
 ### My BMS needs a pin, how can I enter it?
 
@@ -279,20 +285,11 @@ Once pairing is done, the integration should automatically detect the BMS.
 - Add option to only have temporary connections (lowers reliability, but helps running more devices via [ESPHome Bluetooth proxy][btproxy-url])
 
 ## Thanks to
-> [@gkathan](https://github.com/patman15/BMS_BLE-HA/issues/2), [@downset](https://github.com/patman15/BMS_BLE-HA/issues/19), [@gerritb](https://github.com/patman15/BMS_BLE-HA/issues/22), [@Goaheadz](https://github.com/patman15/BMS_BLE-HA/issues/24), [@alros100, @majonessyltetoy](https://github.com/patman15/BMS_BLE-HA/issues/52), [@snipah, @Gruni22](https://github.com/patman15/BMS_BLE-HA/issues/59), [@azisto](https://github.com/patman15/BMS_BLE-HA/issues/78), [@BikeAtor, @Karatzie](https://github.com/patman15/BMS_BLE-HA/issues/57), [@PG248](https://github.com/patman15/BMS_BLE-HA/issues/85), [@SkeLLLa,@romanshypovskyi](https://github.com/patman15/BMS_BLE-HA/issues/90), [@riogrande75, @ebagnoli, @andreas-bulling](https://github.com/patman15/BMS_BLE-HA/issues/101), [@goblinmaks, @andreitoma-github](https://github.com/patman15/BMS_BLE-HA/issues/102), [@hacsler](https://github.com/patman15/BMS_BLE-HA/issues/103), [@ViPeR5000](https://github.com/patman15/BMS_BLE-HA/pull/182), [@edelstahlratte](https://github.com/patman15/BMS_BLE-HA/issues/161), [@nezra](https://github.com/patman15/BMS_BLE-HA/issues/164), [@Fandu21](https://github.com/patman15/BMS_BLE-HA/issues/194), [@rubenclark74](https://github.com/patman15/BMS_BLE-HA/issues/186), [@geierwally1978](https://github.com/patman15/BMS_BLE-HA/issues/240), [@Tulexcorp](https://github.com/patman15/BMS_BLE-HA/issues/271), [@oliviercommelarbre](https://github.com/patman15/BMS_BLE-HA/issues/279), [@shaf](https://github.com/patman15/BMS_BLE-HA/issues/286), [@gavrilov](https://github.com/patman15/BMS_BLE-HA/issues/247), [@SOLAR-RAIDER](https://github.com/patman15/BMS_BLE-HA/issues/291), [@prodisz](https://github.com/patman15/BMS_BLE-HA/issues/303), [@thecodingmax](https://github.com/patman15/BMS_BLE-HA/issues/390), [@daubman](https://github.com/patman15/BMS_BLE-HA/pull/413), [@krahabb](https://github.com/patman15/BMS_BLE-HA/pull/468)
-
-for helping with making the integration better.
+all [contributors of aiobmsble](https://github.com/patman15/aiobmsble?tab=readme-ov-file#thanks-to) (the BMS library) for helping with making the integration better.
 
 ## References
 - [Home Assistant Add-on: BatMON](https://github.com/fl4p/batmon-ha)
-- ANT BMS: [esphome-ant-bms](https://github.com/syssi/esphome-ant-bms/)
-- Daly BMS: [esp32-smart-bms-simulation](https://github.com/roccotsi2/esp32-smart-bms-simulation)
-- Jikong BMS: [esphome-jk-bms](https://github.com/syssi/esphome-jk-bms)
-- JBD BMS: [esphome-jbd-bms](https://github.com/syssi/esphome-jbd-bms)
-- D-powercore BMS: [Strom BMS monitor](https://github.com/majonessyltetoy/strom)
-- Pro BMS: [@daubman](https://github.com/patman15/BMS_BLE-HA/docs/pro_bms.md)
-- Redodo BMS: [LiTime BMS bluetooth](https://github.com/calledit/LiTime_BMS_bluetooth)
-- TianPower BMS: [esphome-tianpower-bms](https://github.com/syssi/esphome-tianpower-bms)
+- [ESPHome BMS components](https://github.com/syssi)
 
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA?style=for-the-badge&color=orange&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400

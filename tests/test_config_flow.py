@@ -9,7 +9,7 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from voluptuous import Schema
 
-from custom_components.bms_ble.const import DOMAIN
+from custom_components.bms_ble.const import BINARY_SENSORS, DOMAIN, SENSORS
 from homeassistant.config_entries import (
     SOURCE_BLUETOOTH,
     SOURCE_USER,
@@ -121,10 +121,15 @@ async def test_device_setup(
     result_detail = result.get("result")
     assert result_detail is not None
     assert result_detail.unique_id == "cc:cc:cc:cc:cc:cc"
-    assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 11
+    assert (
+        len(hass.states.async_all(["sensor", "binary_sensor"]))
+        == BINARY_SENSORS + SENSORS
+    )
 
     entities: er.EntityRegistryItems = er.async_get(hass).entities
-    assert len(entities) == 13  # sensors, binary_sensors, rssi
+    assert (
+        len(entities) == BINARY_SENSORS + SENSORS + 2
+    )  # sensors, binary_sensors, rssi
 
     # check correct unique_id format of all sensor entries
     for entry in entities.get_entries_for_config_entry_id(result_detail.entry_id):
@@ -254,7 +259,10 @@ async def test_user_setup(
     result_detail = result.get("result")
     assert result_detail is not None
     assert result_detail.unique_id == "cc:cc:cc:cc:cc:cc"
-    assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 11
+    assert (
+        len(hass.states.async_all(["sensor", "binary_sensor"]))
+        == BINARY_SENSORS + SENSORS
+    )
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
@@ -394,7 +402,20 @@ async def test_migrate_entry_from_v0_1(
     assert cfg.state is ConfigEntryState.LOADED
 
 
-async def test_migrate_unique_id(hass: HomeAssistant) -> None:
+@pytest.mark.parametrize(
+    ("unique_id_old", "unique_id_new"),
+    [
+        ("myJBD-test-battery_level", f"{DOMAIN}-cc:cc:cc:cc:cc:cc-battery_level"),
+        ("myBMS-delta_voltage", f"{DOMAIN}-cc:cc:cc:cc:cc:cc-delta_cell_voltage"),
+        (f"{DOMAIN}-cc:cc:cc:cc:cc:cc-delta_voltage", f"{DOMAIN}-cc:cc:cc:cc:cc:cc-delta_cell_voltage"),
+        (f"{DOMAIN}-nochange-delta_cell_voltage", f"{DOMAIN}-nochange-delta_cell_voltage"),
+        (f"{DOMAIN}-myJBD-test-battery_level", f"{DOMAIN}-myJBD-test-battery_level"),
+    ],
+    ids=["add_domain", "cdv_upd_v0", "cdv_upd_v1", "cdv_keep", "no_migration"],
+)
+async def test_migrate_unique_id(
+    hass: HomeAssistant, unique_id_old, unique_id_new
+) -> None:
     """Verify that old style unique_ids are correctly migrated to new style."""
     cfg: MockConfigEntry = mock_config("jikong_bms")
     cfg.add_to_hass(hass)
@@ -404,34 +425,11 @@ async def test_migrate_unique_id(hass: HomeAssistant) -> None:
     config_entry = hass.config_entries.async_entries(domain=DOMAIN)[0]
 
     ent_reg: er.EntityRegistry = er.async_get(hass)
-    # add entry with old unique_id style to be modified
     entry_old: Final[er.RegistryEntry] = ent_reg.async_get_or_create(
-        capabilities={"state_class": "measurement"},
         config_entry=config_entry,
         domain=DOMAIN,
-        has_entity_name=True,
-        original_device_class="battery",
-        original_name="Battery",
         platform="bms_ble",
-        supported_features=0,
-        translation_key="battery_level",
-        unique_id="myJBD-test-battery_level",
-        unit_of_measurement="%",
-    )
-
-    # generate another entry that should be kept untouched
-    entry_new: Final[er.RegistryEntry] = ent_reg.async_get_or_create(
-        capabilities={"state_class": "measurement"},
-        config_entry=config_entry,
-        domain=DOMAIN,
-        has_entity_name=True,
-        original_device_class="battery",
-        original_name="Battery",
-        platform="bms_ble",
-        supported_features=0,
-        translation_key="battery_level",
-        unique_id=f"{DOMAIN}-myJBD-test-battery_level",
-        unit_of_measurement="%",
+        unique_id=unique_id_old,
     )
 
     await hass.config_entries.async_setup(cfg.entry_id)
@@ -442,11 +440,4 @@ async def test_migrate_unique_id(hass: HomeAssistant) -> None:
         entry_old.entity_id
     )
     assert (modified_entry) is not None
-    assert modified_entry.unique_id == f"{DOMAIN}-cc:cc:cc:cc:cc:cc-battery_level"
-
-    # check that "new style" entry is not modified
-    unmodified_entry: Final[er.RegistryEntry | None] = ent_reg.async_get(
-        entry_new.entity_id
-    )
-    assert (unmodified_entry) is not None
-    assert unmodified_entry.unique_id == f"{DOMAIN}-myJBD-test-battery_level"
+    assert modified_entry.unique_id == unique_id_new
