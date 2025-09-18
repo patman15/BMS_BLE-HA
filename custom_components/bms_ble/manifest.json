@@ -46,12 +46,7 @@
       "manufacturer_id": 21320
     },
     {
-      "local_name": "LT-*",
-      "manufacturer_id": 33384
-    },
-    {
-      "local_name": "LT-*",
-      "manufacturer_id": 22618
+      "local_name": "LT-*"
     },
     {
       "local_name": "SV12V*",
@@ -59,9 +54,6 @@
     },
     {
       "local_name": "L-12V???AH-*"
-    },
-    {
-      "local_name": "LT-12V-*"
     },
     {
       "local_name": "V-12V???Ah-*"
@@ -108,5 +100,5 @@
   ],
   "quality_scale": "silver",
   "requirements": ["aiobmsble==0.4.1"],
-  "version": "2.0.0-beta.4"
+  "version": "2.0.0-beta.5"
 }
