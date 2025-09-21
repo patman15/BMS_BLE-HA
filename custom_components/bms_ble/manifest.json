@@ -3,6 +3,9 @@
   "name": "BLE Battery Management",
   "bluetooth": [
     {
+      "service_uuid": "0000af30-0000-1000-8000-00805f9b34fb"
+    },
+    {
       "service_uuid": "0000fee7-0000-1000-8000-00805f9b34fb"
     },
     {
@@ -99,6 +102,6 @@
     "aiobmsble"
   ],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble==0.4.1"],
+  "requirements": ["aiobmsble@git+https://github.com/patman15/aiobmsble.git@30-ective-bms-not-detected"],
   "version": "2.0.0-beta.5"
 }
