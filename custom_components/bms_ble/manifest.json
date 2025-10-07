@@ -102,6 +102,6 @@
     "aiobmsble"
   ],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble@git+https://github.com/patman15/aiobmsble.git@fix-device-info"],
+  "requirements": ["aiobmsble==0.7.0"],
   "version": "2.0.0-beta.7"
 }
