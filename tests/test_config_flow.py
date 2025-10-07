@@ -21,7 +21,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er
 from tests.bluetooth import generate_ble_device, inject_bluetooth_service_info_bleak
-from tests.conftest import mock_config, mock_config_v1_0, mock_update_min
+from tests.conftest import (
+    mock_config,
+    mock_config_v1_0,
+    mock_devinfo_min,
+    mock_update_min,
+)
 
 
 @pytest.fixture(
@@ -186,10 +191,9 @@ async def test_async_setup_entry(
     cfg: MockConfigEntry = mock_config(bms=bms_fixture)
     cfg.add_to_hass(hass)
 
-    monkeypatch.setattr(
-        f"aiobmsble.bms.{bms_fixture}.BMS.async_update",
-        mock_update_min,
-    )
+    bms_module: Final[str] = f"aiobmsble.bms.{bms_fixture}"
+    monkeypatch.setattr(f"{bms_module}.BMS.device_info", mock_devinfo_min)
+    monkeypatch.setattr(f"{bms_module}.BMS.async_update", mock_update_min)
 
     assert await hass.config_entries.async_setup(cfg.entry_id)
     await hass.async_block_till_done()
@@ -360,10 +364,9 @@ async def test_migrate_entry_from_v1_0(
     cfg: MockConfigEntry = mock_config_v1_0(bms=bms_fixture)
     cfg.add_to_hass(hass)
 
-    monkeypatch.setattr(
-        f"aiobmsble.bms.{str(cfg.data["type"]).rsplit(".",1)[-1]}.BMS.async_update",
-        mock_update_min,
-    )
+    bms_module: Final[str] = f"aiobmsble.bms.{str(cfg.data["type"]).rsplit(".",1)[-1]}"
+    monkeypatch.setattr(f"{bms_module}.BMS.device_info", mock_devinfo_min)
+    monkeypatch.setattr(f"{bms_module}.BMS.async_update", mock_update_min)
 
     assert await hass.config_entries.async_setup(cfg.entry_id)
     await hass.async_block_till_done()
@@ -388,10 +391,9 @@ async def test_migrate_entry_from_v0_1(
     cfg: MockConfigEntry = mock_config_v0_1
     cfg.add_to_hass(hass)
 
-    monkeypatch.setattr(
-        f"aiobmsble.bms.{(cfg.data["type"][:-3]).lower()}_bms.BMS.async_update",
-        mock_update_min,
-    )
+    bms_module: Final[str] = f"aiobmsble.bms.{(cfg.data["type"][:-3]).lower()}_bms"
+    monkeypatch.setattr(f"{bms_module}.BMS.device_info", mock_devinfo_min)
+    monkeypatch.setattr(f"{bms_module}.BMS.async_update", mock_update_min)
 
     assert await hass.config_entries.async_setup(cfg.entry_id)
     await hass.async_block_till_done()
@@ -407,8 +409,14 @@ async def test_migrate_entry_from_v0_1(
     [
         ("myJBD-test-battery_level", f"{DOMAIN}-cc:cc:cc:cc:cc:cc-battery_level"),
         ("myBMS-delta_voltage", f"{DOMAIN}-cc:cc:cc:cc:cc:cc-delta_cell_voltage"),
-        (f"{DOMAIN}-cc:cc:cc:cc:cc:cc-delta_voltage", f"{DOMAIN}-cc:cc:cc:cc:cc:cc-delta_cell_voltage"),
-        (f"{DOMAIN}-nochange-delta_cell_voltage", f"{DOMAIN}-nochange-delta_cell_voltage"),
+        (
+            f"{DOMAIN}-cc:cc:cc:cc:cc:cc-delta_voltage",
+            f"{DOMAIN}-cc:cc:cc:cc:cc:cc-delta_cell_voltage",
+        ),
+        (
+            f"{DOMAIN}-nochange-delta_cell_voltage",
+            f"{DOMAIN}-nochange-delta_cell_voltage",
+        ),
         (f"{DOMAIN}-myJBD-test-battery_level", f"{DOMAIN}-myJBD-test-battery_level"),
     ],
     ids=["add_domain", "cdv_upd_v0", "cdv_upd_v1", "cdv_keep", "no_migration"],

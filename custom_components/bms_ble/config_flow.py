@@ -56,7 +56,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             "Device %s (%s) detected as '%s'",
             discovery_info.name,
             format_mac(discovery_info.address),
-            bms_class.device_id(),
+            bms_class.bms_id(),
         )
         return str(bms_class.get_bms_module())
 

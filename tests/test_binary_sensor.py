@@ -3,8 +3,8 @@
 from datetime import timedelta
 from typing import Final
 
-from aiobmsble import BMSmode
-from aiobmsble.basebms import BMSsample
+from aiobmsble import BMSMode
+from aiobmsble.basebms import BMSSample
 from habluetooth import BluetoothServiceInfoBleak
 import pytest
 from pytest_homeassistant_custom_component.common import (
@@ -18,26 +18,31 @@ from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant, State
 import homeassistant.util.dt as dt_util
 from tests.bluetooth import inject_bluetooth_service_info_bleak
-from tests.conftest import mock_config
+from tests.conftest import mock_config, mock_devinfo_min
 
 SEN_PREFIX: Final[str] = "binary_sensor.config_test_dummy_bms"
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_update(
-    monkeypatch, bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
+    monkeypatch: pytest.MonkeyPatch,
+    bt_discovery: BluetoothServiceInfoBleak,
+    hass: HomeAssistant,
 ) -> None:
     """Test binary sensor value updates through coordinator."""
 
-    async def patch_async_update(_self) -> BMSsample:
+    async def patch_async_update(_self) -> BMSSample:
         """Patch async ble device from address to return a given value."""
         return {
             "voltage": 17.0,
             "current": 0,
             "problem": True,
             "problem_code": 0x73,
-            "battery_mode": BMSmode.ABSORPTION,
+            "battery_mode": BMSMode.ABSORPTION,
         }
+
+    bms_class: Final[str] = "aiobmsble.bms.dummy_bms.BMS"
+    monkeypatch.setattr(f"{bms_class}.device_info", mock_devinfo_min)
 
     config: MockConfigEntry = mock_config()
     config.add_to_hass(hass)
@@ -59,10 +64,7 @@ async def test_update(
         assert state.state == ref_state
         assert not state.attributes.get(attribute)
 
-    monkeypatch.setattr(
-        "aiobmsble.bms.dummy_bms.BMS.async_update",
-        patch_async_update,
-    )
+    monkeypatch.setattr(f"{bms_class}.async_update", patch_async_update)
 
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=UPDATE_INTERVAL))
     await hass.async_block_till_done()

@@ -102,6 +102,6 @@
     "aiobmsble"
   ],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble@git+https://github.com/patman15/aiobmsble.git@32-vatrer-wall-mount-battery-support"],
+  "requirements": ["aiobmsble@git+https://github.com/patman15/aiobmsble.git@fix-device-info"],
   "version": "2.0.0-beta.6"
 }
