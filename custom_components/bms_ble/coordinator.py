@@ -59,20 +59,9 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
         ):
             LOGGER.debug("%s: advertisement: %s", self.name, service_info.as_dict())
 
-        # retrieve device information
-        # def_device_info: Final[BMSInfo] = self._device.def_device_info()
         self.device_info = DeviceInfo(
-            identifiers={
-                (DOMAIN, self._mac),
-                (BLUETOOTH_DOMAIN, self._mac),
-            },
+            identifiers={(DOMAIN, self._mac), (BLUETOOTH_DOMAIN, self._mac)},
             connections={(CONNECTION_BLUETOOTH, self._mac)},
-            # default_manufacturer=def_device_info.get("default_manufacturer"),
-            # default_model=def_device_info.get("default_model"),
-            # default_name=def_device_info.get("default_name"),
-            # properties used in GUI:
-            # manufacturer="manufacturer",
-            # model="model",
         )
 
     @property
