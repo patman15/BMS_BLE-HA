@@ -1,5 +1,7 @@
 """Test the BLE Battery Management System integration initialization."""
 
+from typing import Final
+
 from habluetooth import BluetoothServiceInfoBleak
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -7,21 +9,31 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from tests.bluetooth import inject_bluetooth_service_info_bleak
-from tests.conftest import mock_config, mock_update_exc, mock_update_min
+from tests.conftest import (
+    mock_config,
+    mock_devinfo_min,
+    mock_exception,
+    mock_update_min,
+)
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+@pytest.mark.parametrize("swap", [False, True], ids=["devinfo", "update"])
 async def test_init_fail(
     monkeypatch,
     bms_fixture: str,
+    swap: bool,
     bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
 ) -> None:
     """Test entries are unloaded correctly."""
 
+    bms_class: Final[str] = f"aiobmsble.bms.{bms_fixture}.BMS"
     monkeypatch.setattr(
-        f"aiobmsble.bms.{bms_fixture}.BMS.async_update",
-        mock_update_exc,
+        f"{bms_class}.device_info", mock_devinfo_min if swap else mock_exception
+    )
+    monkeypatch.setattr(
+        f"{bms_class}.async_update", mock_exception if swap else mock_update_min
     )
 
     trace_fct: dict[str, bool] = {"stop_called": False}
@@ -30,8 +42,7 @@ async def test_init_fail(
         trace_fct["stop_called"] = True
 
     monkeypatch.setattr(
-        "custom_components.bms_ble.BTBmsCoordinator.async_shutdown",
-        mock_coord_shutdown,
+        "custom_components.bms_ble.BTBmsCoordinator.async_shutdown", mock_coord_shutdown
     )
 
     inject_bluetooth_service_info_bleak(hass, bt_discovery)
@@ -75,10 +86,9 @@ async def test_unload_entry(
     cfg: MockConfigEntry = mock_config(bms=bms_fixture)
     cfg.add_to_hass(hass)
 
-    monkeypatch.setattr(
-        f"aiobmsble.bms.{bms_fixture}.BMS.async_update",
-        mock_update_min,
-    )
+    bms_module: Final[str] = f"aiobmsble.bms.{bms_fixture}"
+    monkeypatch.setattr(f"{bms_module}.BMS.device_info", mock_devinfo_min)
+    monkeypatch.setattr(f"{bms_module}.BMS.async_update", mock_update_min)
 
     def mock_coord_shutdown(_self) -> None:
         trace_fct["shutdown_called"] = True

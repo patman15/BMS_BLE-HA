@@ -3,7 +3,7 @@
 from datetime import timedelta
 from typing import Final
 
-from aiobmsble.basebms import BMSsample
+from aiobmsble.basebms import BMSSample
 from habluetooth import BluetoothServiceInfoBleak
 import pytest
 from pytest_homeassistant_custom_component.common import (
@@ -31,23 +31,23 @@ from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers.entity_component import async_update_entity
 import homeassistant.util.dt as dt_util
 from tests.bluetooth import inject_bluetooth_service_info_bleak
-from tests.conftest import mock_config
+from tests.conftest import mock_config, mock_devinfo_min
 
 DEV_NAME: Final[str] = "sensor.config_test_dummy_bms"
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_update(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     bt_discovery: BluetoothServiceInfoBleak,
     bool_fixture: bool,
     hass: HomeAssistant,
 ) -> None:
     """Test sensor value updates through coordinator."""
 
-    async def patch_async_update(_self) -> BMSsample:
+    async def patch_async_update(_self) -> BMSSample:
         """Patch async_update to return a specific value."""
-        return BMSsample(
+        return BMSSample(
             {
                 "balance_current": -1.234,
                 "battery_level": 42,
@@ -76,6 +76,8 @@ async def test_update(
         "homeassistant.helpers.entity.Entity.entity_registry_enabled_default",
         lambda _: True,
     )
+    bms_class: Final[str] = "aiobmsble.bms.dummy_bms.BMS"
+    monkeypatch.setattr(f"{bms_class}.device_info", mock_devinfo_min)
 
     config: MockConfigEntry = mock_config()
     config.add_to_hass(hass)
@@ -107,10 +109,7 @@ async def test_update(
         f"{DEV_NAME}_{ATTR_RUNTIME}": "unknown",
     }
 
-    monkeypatch.setattr(
-        "aiobmsble.bms.dummy_bms.BMS.async_update",
-        patch_async_update,
-    )
+    monkeypatch.setattr(f"{bms_class}.async_update", patch_async_update)
 
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=UPDATE_INTERVAL))
     await hass.async_block_till_done()

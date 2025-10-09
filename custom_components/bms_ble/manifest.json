@@ -18,6 +18,9 @@
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
+      "service_uuid": "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
+    },
+    {
       "manufacturer_id": 770
     },
     {
@@ -99,6 +102,6 @@
     "aiobmsble"
   ],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble==0.4.1"],
-  "version": "2.0.0-beta.5"
+  "requirements": ["aiobmsble==0.7.0"],
+  "version": "2.0.0-beta.7"
 }

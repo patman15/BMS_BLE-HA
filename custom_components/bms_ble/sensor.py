@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from typing import Final, cast
 
-from aiobmsble import BMSpackvalue, BMSsample
+from aiobmsble import BMSpackvalue, BMSSample
 
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.components.sensor.const import SensorDeviceClass, SensorStateClass
@@ -49,12 +49,12 @@ PARALLEL_UPDATES = 0
 class BmsEntityDescription(SensorEntityDescription, frozen_or_thawed=True):
     """Describes BMS sensor entity."""
 
-    value_fn: Callable[[BMSsample], float | int | None]
-    attr_fn: Callable[[BMSsample], dict[str, list[int | float]]] | None = None
+    value_fn: Callable[[BMSSample], float | int | None]
+    attr_fn: Callable[[BMSSample], dict[str, list[int | float]]] | None = None
 
 
 def _attr_pack(
-    data: BMSsample, key: BMSpackvalue, default: list[int | float]
+    data: BMSSample, key: BMSpackvalue, default: list[int | float]
 ) -> dict[str, list[int | float]]:
     """Return a dictionary with the given key and default value."""
     return (
