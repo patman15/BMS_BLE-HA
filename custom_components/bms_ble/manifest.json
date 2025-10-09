@@ -102,6 +102,6 @@
     "aiobmsble"
   ],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble==0.7.0"],
-  "version": "2.0.0-beta.7"
+  "requirements": ["aiobmsble~=0.8.1"],
+  "version": "2.0.0-beta.8"
 }
