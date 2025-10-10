@@ -32,16 +32,18 @@ from tests.conftest import (
 @pytest.fixture(
     name="advertisement",
     params=bms_advertisements(),
-    ids=lambda param: param[1],
+    ids=lambda param: param[2],
 )
-def bms_adv(request) -> BluetoothServiceInfoBleak:
+def bms_adv(request: pytest.FixtureRequest) -> BluetoothServiceInfoBleak:
     """Return faulty response frame."""
     dev: Final[AdvertisementData] = request.param[0]
-    address: Final[str] = "c0:ff:ee:c0:ff:ee"
+    address: Final[str] = request.param[1]
     return BluetoothServiceInfoBleak(
         name=str(dev.local_name),
-        address=f"{address}_{request.param[1]}",
-        device=generate_ble_device(address=address, name=dev.local_name),
+        address=address,
+        device=generate_ble_device(
+            address=address, name=dev.local_name, details=request.param[2]
+        ),
         rssi=dev.rssi,
         service_uuids=dev.service_uuids,
         manufacturer_data=dev.manufacturer_data,
@@ -66,7 +68,7 @@ async def test_bluetooth_discovery(
     flowresults: list[ConfigFlowResult] = (
         hass.config_entries.flow.async_progress_by_handler(DOMAIN)
     )
-    assert len(flowresults) == 1, f"Expected one flow result for {advertisement}"
+    assert len(flowresults) == 1, f"Expected one flow result for {advertisement}, check manifest.json!"
     result: ConfigFlowResult = flowresults[0]
     assert result.get("step_id") == "bluetooth_confirm"
     assert result.get("context", {}).get("unique_id") == advertisement.address
@@ -80,10 +82,10 @@ async def test_bluetooth_discovery(
         result.get("title") == advertisement.name or advertisement.address
     )  # address is used as name by Bleak if name is not available
 
-    # BluetoothServiceInfoBleak contains BMS type as trailer to the address, see bms_advertisement
+    # BluetoothServiceInfoBleak contains BMS type as details to BLEDevice, see bms_advertisement
     assert (
         hass.config_entries.async_entries()[1].data["type"]
-        == f"aiobmsble.bms.{advertisement.address.split('_',1)[-1]}"
+        == f"aiobmsble.bms.{advertisement.device.details}"
     )
 
 
