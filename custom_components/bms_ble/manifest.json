@@ -251,6 +251,10 @@
       "manufacturer_id": 35579
     },
     {
+      "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb",
+      "manufacturer_id": 49386
+    },
+    {
       "service_uuid": "0000ffd0-0000-1000-8000-00805f9b34fb",
       "manufacturer_id": 39008
     }
