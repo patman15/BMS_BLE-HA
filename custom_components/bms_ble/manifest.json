@@ -21,6 +21,9 @@
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
     {
+      "service_uuid": "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
+    },
+    {
       "manufacturer_id": 770
     },
     {
@@ -102,6 +105,6 @@
     "aiobmsble"
   ],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble@git+https://github.com/patman15/aiobmsble.git@30-ective-bms-not-detected"],
-  "version": "2.0.0-beta.5"
+  "requirements": ["aiobmsble==0.9.1"],
+  "version": "2.0.0-beta.9"
 }

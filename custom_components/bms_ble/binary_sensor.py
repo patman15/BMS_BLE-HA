@@ -2,8 +2,8 @@
 
 from collections.abc import Callable
 
-from aiobmsble import BMSmode
-from aiobmsble.basebms import BMSsample
+from aiobmsble import BMSMode
+from aiobmsble.basebms import BMSSample
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -26,7 +26,7 @@ PARALLEL_UPDATES = 0
 class BmsBinaryEntityDescription(BinarySensorEntityDescription, frozen_or_thawed=True):
     """Describes BMS sensor entity."""
 
-    attr_fn: Callable[[BMSsample], dict[str, int | str]] | None = None
+    attr_fn: Callable[[BMSSample], dict[str, int | str]] | None = None
 
 
 BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
@@ -35,7 +35,7 @@ BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
         translation_key=ATTR_BATTERY_CHARGING,
         device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
         attr_fn=lambda data: (
-            {"battery_mode": data.get("battery_mode", BMSmode.UNKNOWN).name.lower()}
+            {"battery_mode": data.get("battery_mode", BMSMode.UNKNOWN).name.lower()}
             if "battery_mode" in data
             else {}
         ),

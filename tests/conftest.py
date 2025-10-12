@@ -7,7 +7,7 @@ from typing import Any
 from uuid import UUID
 
 from _pytest.config import Notset
-from aiobmsble import BMSsample, MatcherPattern
+from aiobmsble import BMSInfo, BMSSample, MatcherPattern
 from aiobmsble.basebms import BaseBMS
 from aiobmsble.utils import load_bms_plugins
 from bleak import BleakClient
@@ -79,7 +79,7 @@ def bms_fixture(request) -> str:
 
 
 @pytest.fixture(params=[-13, 0, 21])
-def bms_data_fixture(request) -> BMSsample:
+def bms_data_fixture(request) -> BMSSample:
     """Return a fake BMS data dictionary."""
 
     return {
@@ -247,14 +247,16 @@ def ogt_bms_fixture(request) -> str:
 class MockBMS(BaseBMS):
     """Mock Battery Management System."""
 
+    INFO = {"default_manufacturer": "Mock Manufacturer", "default_model": "MockBMS"}
+
     def __init__(
-        self, exc: Exception | None = None, ret_value: BMSsample | None = None
+        self, exc: Exception | None = None, ret_value: BMSSample | None = None
     ) -> None:  # , ble_device, keep_alive: bool = True
         """Initialize BMS."""
         super().__init__(generate_ble_device(address="", details={"path": None}), True)
-        LOGGER.debug("%s init(), Test except: %s", self.device_id(), str(exc))
+        LOGGER.debug("%s init(), Test except: %s", MockBMS.bms_id(), str(exc))
         self._exception: Exception | None = exc
-        self._ret_value: BMSsample = (
+        self._ret_value: BMSSample = (
             ret_value
             if ret_value is not None
             else {
@@ -269,11 +271,6 @@ class MockBMS(BaseBMS):
     def matcher_dict_list() -> list[MatcherPattern]:
         """Provide BluetoothMatcher definition."""
         return [{"local_name": "mock", "connectable": True}]
-
-    @staticmethod
-    def device_info() -> dict[str, str]:
-        """Return device information for the battery management system."""
-        return {"manufacturer": "Mock Manufacturer", "model": "mock model"}
 
     @staticmethod
     def uuid_services() -> list[str]:
@@ -298,7 +295,7 @@ class MockBMS(BaseBMS):
     # async def disconnect(self) -> None:
     #     """Disconnect connection to BMS if active."""
 
-    async def _async_update(self) -> BMSsample:
+    async def _async_update(self) -> BMSSample:
         """Update battery status information."""
         await self._connect()
 
@@ -446,11 +443,16 @@ class MockRespChar(BleakGATTCharacteristic):
         raise NotImplementedError
 
 
-async def mock_update_min(_self) -> BMSsample:
-    """Minimal version of a BMS update to mock initial coordinator update easily."""
+async def mock_update_min(_self) -> BMSSample:
+    """Minimal version of a BMS update to mock initial coordinator update."""
     return {"voltage": 12.3}
 
 
-async def mock_update_exc(_self) -> BMSsample:
-    """Failing version of a BMS update to mock initial coordinator update easily."""
+async def mock_exception(_self) -> BMSSample:
+    """Failing version of a BMS update to mock initial coordinator update."""
     raise BleakError
+
+
+async def mock_devinfo_min(_self) -> BMSInfo:
+    """Minimal version of a BMS device info to mock initial coordinator update."""
+    return {"manufacturer": "Mock manufacturer"}
