@@ -56,6 +56,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - SBL batteries (show up as `SBL-`&#x2026;), Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries
 - JK BMS, Jikong, (HW version &ge; 6 required)
 - LiTime, Power Queen, and Redodo batteries
+- LiPower BMS
 - NEEY balancer (4th gen) (show up as `GW-24S`&#x2026;)
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
 - Pro BMS Smart Shunt
