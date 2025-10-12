@@ -10,7 +10,7 @@
     },
     {
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
-    },    
+    },
     {
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb"
     },
@@ -36,7 +36,7 @@
       "manufacturer_id": 260
     },
     {
-      "manufacturer_id": 529
+      "manufacturer_id": 1026
     },
     {
       "local_name": "ECO-WORTHY 02_*"
@@ -72,7 +72,7 @@
     },
     {
       "local_name": "F07*"
-    },    
+    },
     {
       "service_uuid": "000003c1-0000-1000-8000-00805f9b34fb",
       "manufacturer_id": 21330
