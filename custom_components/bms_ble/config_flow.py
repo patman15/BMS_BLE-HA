@@ -50,13 +50,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, discovery_info: BluetoothServiceInfoBleak
     ) -> str | None:
         """Check if device is supported by an available BMS class."""
-        if not (bms_class := bms_identify(discovery_info.advertisement)):
+        if not (bms_class := await bms_identify(discovery_info.advertisement)):
             return None
         LOGGER.debug(
             "Device %s (%s) detected as '%s'",
             discovery_info.name,
             format_mac(discovery_info.address),
-            bms_class.device_id(),
+            bms_class.bms_id(),
         )
         return str(bms_class.get_bms_module())
 
