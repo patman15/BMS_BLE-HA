@@ -16,7 +16,7 @@ body:
         required: true        
       - label: This only contains 1 feature request (if you have multiple feature requests, open one feature request for each feature request).
         required: true
-      - label: This issue is not a duplicate of any [previous enhancement requests](https://github.com/patman15/BMS_BLE-HA/issues?q=is%3Aissue%20label%3Aenhancement%20OR%20label%3A%22new%20device%22).
+      - label: I followed the instructions for (devices that are not recognized)[https://github.com/patman15/BMS_BLE-HA#if-your-device-is-not-recognized].
         required: true
       - label: I have checked out the latest <a href="https://github.com/patman15/BMS_BLE-HA/releases">release</a>.
         required: true
