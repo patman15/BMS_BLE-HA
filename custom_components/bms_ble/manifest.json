@@ -3,6 +3,9 @@
   "name": "BLE Battery Management",
   "bluetooth": [
     {
+      "service_uuid": "0000af30-0000-1000-8000-00805f9b34fb"
+    },
+    {
       "service_uuid": "0000fee7-0000-1000-8000-00805f9b34fb"
     },
     {
@@ -102,8 +105,6 @@
     "aiobmsble"
   ],
   "quality_scale": "silver",
-  "requirements": [
-    "aiobmsble~=0.9.0"
-  ],
-  "version": "2.0.0-beta.8"
+  "requirements": ["aiobmsble==0.9.1"],
+  "version": "2.0.0-beta.10"
 }
