@@ -59,6 +59,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - LiPower BMS
 - NEEY balancer (4th gen) (show up as `GW-24S`&#x2026;)
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
+- PaceEX BMS
 - Pro BMS Smart Shunt
     - Foxwell BT630
     - Leagend CM100
