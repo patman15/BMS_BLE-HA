@@ -66,6 +66,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - RoyPow batteries
 - Seplos v2 (show up as `BP[0-2]?`)
 - Seplos v3 (show up as `SP[0,1,4-6]`&#x2026;)
+- Super-B Epsilon BMS (show up as `Epsilon-`&#x2026;)
 - TDT BMS
     - Wattcycle batteries
 - TianPower BMS (show up as `TP_`&#x2026;)
