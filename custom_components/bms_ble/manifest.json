@@ -109,7 +109,7 @@
   ],
   "quality_scale": "silver",
   "requirements": [
-      "aiobmsble@git+https://github.com/patman15/aiobmsble.git@17-add-pace-bms-support"
+    "aiobmsble==0.9.3b1"
   ],
-  "version": "2.0.1-beta.1"
+  "version": "2.0.1-beta.2"
 }
