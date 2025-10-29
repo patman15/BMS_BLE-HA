@@ -48,6 +48,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - ECO-WORTHY + BW02 adapter (show up as `ECO-WORTHY`&#x2026;)
     - DCHOUSE batteries (show up as `DCHOUSE`&#x2026;)
 - Ective, Startcraft, Topband batteries (show up as `$PFLAC`&#x2026;, `NWJ20`&#x2026;, `ZM20`&#x2026;)
+- EG4 BMS
 - Felicity ESS (show up as `F10`&#x2026;) and FLB batteries (show up as `F07`&#x2026;)
 - JBD BMS, Jiabaida (show up as `JBD-`&#x2026;)
     - accurat batteries, Aolithium batteries
@@ -66,6 +67,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - RoyPow batteries
 - Seplos v2 (show up as `BP[0-2]?`)
 - Seplos v3 (show up as `SP[0,1,4-6]`&#x2026;)
+- Super-B Epsilon BMS (show up as `Epsilon-`&#x2026;)
 - TDT BMS
     - Wattcycle batteries
 - TianPower BMS (show up as `TP_`&#x2026;)
