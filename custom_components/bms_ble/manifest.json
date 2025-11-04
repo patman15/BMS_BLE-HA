@@ -109,7 +109,7 @@
   ],
   "quality_scale": "silver",
   "requirements": [
-      "aiobmsble@git+https://github.com/patman15/aiobmsble.git@feat-super-b"
+      "aiobmsble==0.10.0"
   ],
-  "version": "2.0.1-beta.1"
+  "version": "2.1.0"
 }
