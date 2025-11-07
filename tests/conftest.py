@@ -319,7 +319,10 @@ class MockBleakClient(BleakClient):
             address_or_ble_device.address
         )  # call with address to avoid backend resolving
         self._connected: bool = False
-        self._notify_callback: Callable | None = None
+        self._notify_callback: (
+            Callable[[BleakGATTCharacteristic, bytearray], None | Awaitable[None]]
+            | None
+        ) = None
         self._disconnect_callback: Callable[[BleakClient], None] | None = (
             disconnected_callback
         )
