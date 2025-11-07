@@ -7,7 +7,7 @@ from habluetooth import BluetoothServiceInfoBleak
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.bms_ble import DOMAIN
+from custom_components.bms_ble.const import DOMAIN
 from custom_components.bms_ble.coordinator import BTBmsCoordinator
 from custom_components.bms_ble.diagnostics import async_get_config_entry_diagnostics
 from homeassistant.components.bluetooth.const import DOMAIN as BT_DOMAIN
@@ -51,7 +51,7 @@ async def test_diagnostics(
     """Home Assistant device diagnostic download."""
 
     ce: MockConfigEntry = mock_config(
-        bms=BMS_DEV["name"], unique_id=BMS_DEV["identifiers"].pop()[1]
+        bms=BMS_DEV["name"], unique_id=next(iter(BMS_DEV["identifiers"]))[1]
     )
     config_entry: ConfigEntry[BTBmsCoordinator] = ce
     ce.runtime_data = BTBmsCoordinator(
