@@ -11,10 +11,8 @@ from aiobmsble import BMSInfo, BMSSample, MatcherPattern
 from aiobmsble.basebms import BaseBMS
 from aiobmsble.utils import load_bms_plugins
 from bleak import BleakClient
-from bleak.backends.characteristic import (
-    BleakGATTCharacteristic,
-    CharacteristicPropertyName,
-)
+from bleak.assigned_numbers import CharacteristicPropertyName
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.descriptor import BleakGATTDescriptor
 from bleak.backends.device import BLEDevice
 from bleak.backends.service import BleakGATTServiceCollection
