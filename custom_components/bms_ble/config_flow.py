@@ -123,8 +123,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data={"type": self._disc_dev.type},
             )
 
-        current_addresses: Final[set[str | None]] = self._async_current_ids()
-        for discovery_info in async_discovered_service_info(self.hass, False):
+        current_addresses: Final[set[str | None]] = self._async_current_ids(include_ignore=False)
+        for discovery_info in async_discovered_service_info(self.hass, connectable=True):
             address = discovery_info.address
             if address in current_addresses or address in self._disc_devs:
                 continue
