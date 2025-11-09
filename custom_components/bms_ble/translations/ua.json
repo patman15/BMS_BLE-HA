@@ -1,0 +1,51 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Пристрій вже налаштовано.",
+      "no_devices_found": "Не знайдено відповідних пристроїв Bluetooth.",
+      "not_supported": "Пристрій не підтримується."
+    },
+    "flow_title": "Налаштувати {name} ({id}) як {model}",
+    "step": {
+      "user": {
+        "description": "Оберіть пристрій для налаштування:",
+        "data": {
+          "address": "Bluetooth name (MAC address) - Model"
+        }
+      },
+      "bluetooth_confirm": {
+        "description": "Налаштувати {name} ({id})?"
+      }
+    }
+  },
+  "exceptions": {
+    "device_not_found": {
+      "message": "Не можу знайти BMS ({MAC}) через Bluetooth."
+    },
+    "missing_unique_id": {
+      "message": "Бракує унікального ID для пристрою."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "cycles": {
+        "name": "Циклів"
+      },
+      "delta_voltage": {
+        "name": "Дельта між комірками"
+      },
+      "link_quality": {
+        "name": "Якість звязку"
+      },
+      "max_cell_voltage": {
+        "name": "Максимальний вольтаж комірки"
+      },
+      "min_cell_voltage": {
+        "name": "Мінімальний вольтаж комірки"
+      },       
+      "runtime": {
+        "name": "Runtime"
+      }
+    }
+  }  
+}
