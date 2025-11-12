@@ -72,6 +72,41 @@ async def test_diagnostics(
         ad.add_to_hass(hass)
         device_registry.async_get_or_create(config_entry_id=ad.entry_id, **BT_ADAPTER)
 
+    expected_diag_data: Final[dict[str, Any]] = {
+        "entry_data": {
+            "type": "aiobmsble.bms.mock_BMS",
+        },
+        "adapter_data": (
+            "mock adapter, adapter mnf (adapter model/2): 14, 3"
+            if bool_fixture
+            else "unavailable"
+        ),
+        "advertisement_data": bt_discovery,
+        "bms_link_quality": 50,
+        "bms_info": {
+            "connections": {(BT_DOMAIN, ce.unique_id)},
+            "identifiers": {(BT_DOMAIN, ce.unique_id), (DOMAIN, ce.unique_id)},
+            "name": ce.title,
+            "manufacturer": MockBMS.INFO.get("default_manufacturer"),
+            "model": MockBMS.INFO.get("default_model"),
+            "sw_version": None,
+            "hw_version": None,
+            "model_id": None,
+            "serial_number": None,
+        },
+        "bms_data": {
+            "current": 1.7,
+            "cycle_charge": 19,
+            "cycles": 23,
+            "voltage": 13,
+        },
+        "update_data": {
+            "interval": timedelta(seconds=30),
+            "last_exception": None,
+            "last_update_success": True,
+        },
+    }
+
     monkeypatch.setattr("aiobmsble.basebms.BleakClient", MockBleakClient)
 
     inject_bluetooth_service_info_bleak(hass, bt_discovery)
@@ -82,37 +117,7 @@ async def test_diagnostics(
         hass, config_entry
     )
 
-    assert diag_data["entry_data"] == {
-        "type": "aiobmsble.bms.mock_BMS",
-    }
-    assert (
-        diag_data["adapter_data"]
-        == "mock adapter, adapter mnf (adapter model/2): 14, 3"
-        if bool_fixture
-        else "unavailable"
+    assert repr(diag_data.pop("advertisement_data")) == repr(
+        expected_diag_data.pop("advertisement_data")
     )
-    assert str(diag_data["advertisement_data"]) == str(bt_discovery)
-    assert diag_data["bms_link_quality"] == 50
-    assert diag_data["bms_info"] == {
-        "connections": {(BT_DOMAIN, ce.unique_id)},
-        "identifiers": {(BT_DOMAIN, ce.unique_id), (DOMAIN, ce.unique_id)},
-        "name": ce.title,  # see mock_config()
-        "manufacturer": MockBMS.INFO.get("default_manufacturer"),
-        "model": MockBMS.INFO.get("default_model"),
-        "sw_version": None,
-        "hw_version": None,
-        "model_id": None,
-        "serial_number": None,
-    }
-    assert diag_data["bms_data"] == {
-        "current": 1.7,
-        "cycle_charge": 19,
-        "cycles": 23,
-        "voltage": 13,
-    }
-
-    assert diag_data["update_data"] == {
-        "interval": timedelta(seconds=30),
-        "last_exception": None,
-        "last_update_success": True,
-    }
+    assert diag_data == expected_diag_data
