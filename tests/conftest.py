@@ -245,7 +245,7 @@ def ogt_bms_fixture(request) -> str:
 class MockBMS(BaseBMS):
     """Mock Battery Management System."""
 
-    INFO = {"default_manufacturer": "Mock Manufacturer", "default_model": "MockBMS"}
+    INFO: BMSInfo = {"default_manufacturer": "Mock Manufacturer", "default_model": "MockBMS"}
 
     def __init__(
         self, exc: Exception | None = None, ret_value: BMSSample | None = None
