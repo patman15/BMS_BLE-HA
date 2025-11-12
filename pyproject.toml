@@ -16,7 +16,7 @@ requires-python = ">= 3.13.0"
 
 [tool.pytest.ini_options]
 minversion = "8.4"
-addopts="-n auto --force-enable-socket --cov=custom_components.bms_ble --cov-branch --cov-report=term-missing --cov-fail-under=100"
+addopts="-n auto --cov=custom_components.bms_ble --cov-branch --cov-report=term-missing --cov-fail-under=100"
 pythonpath = [
     "custom_components.bms_ble",
 ]

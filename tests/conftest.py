@@ -11,10 +11,8 @@ from aiobmsble import BMSInfo, BMSSample, MatcherPattern
 from aiobmsble.basebms import BaseBMS
 from aiobmsble.utils import load_bms_plugins
 from bleak import BleakClient
-from bleak.backends.characteristic import (
-    BleakGATTCharacteristic,
-    CharacteristicPropertyName,
-)
+from bleak.assigned_numbers import CharacteristicPropertyName
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.descriptor import BleakGATTDescriptor
 from bleak.backends.device import BLEDevice
 from bleak.backends.service import BleakGATTServiceCollection
@@ -247,7 +245,7 @@ def ogt_bms_fixture(request) -> str:
 class MockBMS(BaseBMS):
     """Mock Battery Management System."""
 
-    INFO = {"default_manufacturer": "Mock Manufacturer", "default_model": "MockBMS"}
+    INFO: BMSInfo = {"default_manufacturer": "Mock Manufacturer", "default_model": "MockBMS"}
 
     def __init__(
         self, exc: Exception | None = None, ret_value: BMSSample | None = None
@@ -321,7 +319,10 @@ class MockBleakClient(BleakClient):
             address_or_ble_device.address
         )  # call with address to avoid backend resolving
         self._connected: bool = False
-        self._notify_callback: Callable | None = None
+        self._notify_callback: (
+            Callable[[BleakGATTCharacteristic, bytearray], None | Awaitable[None]]
+            | None
+        ) = None
         self._disconnect_callback: Callable[[BleakClient], None] | None = (
             disconnected_callback
         )

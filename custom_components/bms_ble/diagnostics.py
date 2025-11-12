@@ -5,26 +5,25 @@ from typing import Any, Final
 from homeassistant.components.bluetooth import async_last_service_info
 from homeassistant.components.bluetooth.const import DOMAIN as BT_DOMAIN
 from homeassistant.components.diagnostics import async_redact_data
-from homeassistant.const import ATTR_AREA_ID, ATTR_ID
+from homeassistant.const import ATTR_SERIAL_NUMBER
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 
 from . import BTBmsConfigEntry
-from .const import ATTR_LQ, ATTR_RSSI
 from .coordinator import BTBmsCoordinator
 
-TO_REDACT: frozenset[str] = frozenset({ATTR_ID, ATTR_AREA_ID})
+TO_REDACT: frozenset[str] = frozenset({ATTR_SERIAL_NUMBER})
 
 
-async def async_get_device_diagnostics(
-    hass: HomeAssistant, entry: BTBmsConfigEntry, device: dr.DeviceEntry
+async def async_get_config_entry_diagnostics(
+    hass: HomeAssistant, entry: BTBmsConfigEntry
 ) -> dict[str, Any]:
-    """Return diagnostics for a BMS device."""
+    """Return diagnostics for a config entry."""
+
     adapter_info: str = "unavailable"
     coord: Final[BTBmsCoordinator] = entry.runtime_data
-    mac: str = next(
-        (id_value for domain, id_value in device.identifiers if domain == "bms_ble"), ""
-    )
+    mac: str = str(entry.unique_id)
+
     if (adv_data := async_last_service_info(hass, address=mac, connectable=True)) and (
         adapter := dr.async_get(hass).async_get_device(
             connections={(BT_DOMAIN, adv_data.source)}
@@ -37,11 +36,11 @@ async def async_get_device_diagnostics(
 
     return {
         "entry_data": async_redact_data(entry.data, TO_REDACT),
-        "device_data": async_redact_data(device.dict_repr, TO_REDACT),
         "adapter_data": adapter_info,
-        "adv_data": adv_data,
-        "bms_data": entry.runtime_data.data,
-        "bt_data": {ATTR_RSSI: coord.rssi, ATTR_LQ: coord.link_quality},
+        "advertisement_data": adv_data,
+        "bms_link_quality": coord.link_quality,
+        "bms_info": coord.device_info,
+        "bms_data": coord.data,
         "update_data": {
             "last_update_success": coord.last_update_success,
             "last_exception": coord.last_exception,
