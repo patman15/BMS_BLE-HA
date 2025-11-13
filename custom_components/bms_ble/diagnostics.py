@@ -5,14 +5,16 @@ from typing import Any, Final
 from homeassistant.components.bluetooth import async_last_service_info
 from homeassistant.components.bluetooth.const import DOMAIN as BT_DOMAIN
 from homeassistant.components.diagnostics import async_redact_data
-from homeassistant.const import ATTR_SERIAL_NUMBER
+from homeassistant.const import ATTR_AREA_ID, ATTR_ID, ATTR_SERIAL_NUMBER
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 
 from . import BTBmsConfigEntry
 from .coordinator import BTBmsCoordinator
 
-TO_REDACT: frozenset[str] = frozenset({ATTR_SERIAL_NUMBER})
+TO_REDACT: frozenset[str] = frozenset(
+    {ATTR_AREA_ID, ATTR_ID, ATTR_SERIAL_NUMBER, "entry_id"}
+)
 
 
 async def async_get_config_entry_diagnostics(
@@ -35,11 +37,13 @@ async def async_get_config_entry_diagnostics(
         )
 
     return {
-        "entry_data": async_redact_data(entry.data, TO_REDACT),
+        "config_entry": async_redact_data(entry.as_dict(), TO_REDACT),
         "adapter_data": adapter_info,
-        "advertisement_data": adv_data,
+        "advertisement_data": async_redact_data(
+            adv_data.as_dict() if adv_data else {}, TO_REDACT | {"source"}
+        ),
         "bms_link_quality": coord.link_quality,
-        "bms_info": coord.device_info,
+        "bms_info": async_redact_data(coord.device_info, TO_REDACT),
         "bms_data": coord.data,
         "update_data": {
             "last_update_success": coord.last_update_success,
