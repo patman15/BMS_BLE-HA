@@ -181,7 +181,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
             max(cells) if (cells := data.get("cell_voltages", [])) else None
         ),
         attr_fn=lambda data: (
-            {"cell_number": cells.index(max(cells))}
+            {"cell_number": [cells.index(max(cells))]}
             if (cells := data.get("cell_voltages", []))
             else {}
         ),
@@ -199,7 +199,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
             min(cells) if (cells := data.get("cell_voltages", [])) else None
         ),
         attr_fn=lambda data: (
-            {"cell_number": cells.index(min(cells))}
+            {"cell_number": [cells.index(min(cells))]}
             if (cells := data.get("cell_voltages", []))
             else {}
         ),
