@@ -295,8 +295,8 @@ async def test_user_setup_double_configure(
 ) -> None:
     """Check config flow for user adding previously already added device."""
 
-    def patch_async_current_ids(_self) -> set[str | None]:
-        return {"cc:cc:cc:cc:cc:cc"}
+    def patch_async_current_ids(_self, include_ignore: bool = True) -> set[str | None]:
+        return {None if include_ignore else "cc:cc:cc:cc:cc:cc"}
 
     monkeypatch.setattr(
         "custom_components.bms_ble.config_flow.ConfigFlow._async_current_ids",
