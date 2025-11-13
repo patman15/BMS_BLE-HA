@@ -15,7 +15,7 @@ from homeassistant.components.bluetooth import (
 )
 from homeassistant.core import HomeAssistant
 
-ADVERTISEMENT_DATA_DEFAULTS: dict[str, Any] = {
+ADVERTISEMENT_DATA_DEFAULTS = {
     "local_name": "",
     "manufacturer_data": {},
     "service_data": {},
@@ -25,7 +25,7 @@ ADVERTISEMENT_DATA_DEFAULTS: dict[str, Any] = {
     "tx_power": -127,
 }
 
-BLE_DEVICE_DEFAULTS: dict[str, None] = {
+BLE_DEVICE_DEFAULTS = {
     "name": None,
     "details": None,
 }
@@ -33,7 +33,7 @@ BLE_DEVICE_DEFAULTS: dict[str, None] = {
 
 def generate_advertisement_data(**kwargs: Any) -> AdvertisementData:
     """Generate advertisement data with defaults."""
-    new: dict[str, Any] = kwargs.copy()
+    new = kwargs.copy()
     for key, value in ADVERTISEMENT_DATA_DEFAULTS.items():
         new.setdefault(key, value)
     return AdvertisementData(**new)
@@ -47,7 +47,7 @@ def generate_ble_device(
     **kwargs: Any,
 ) -> BLEDevice:
     """Generate a BLEDevice with defaults."""
-    new: dict[str, Any] = kwargs.copy()
+    new = kwargs.copy()
     if address is not None:
         new["address"] = address
     if name is not None:
@@ -92,7 +92,7 @@ def inject_bluetooth_service_info_bleak(
     hass: HomeAssistant, info: BluetoothServiceInfoBleak
 ) -> None:
     """Inject an advertisement into the manager with connectable status."""
-    advertisement_data: AdvertisementData = generate_advertisement_data(
+    advertisement_data = generate_advertisement_data(
         local_name=None if info.name == "" else info.name,
         manufacturer_data=info.manufacturer_data,
         service_data=info.service_data,

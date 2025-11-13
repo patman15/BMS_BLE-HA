@@ -3,7 +3,7 @@
 from collections.abc import Awaitable, Buffer, Callable, Iterable
 import logging
 from types import ModuleType
-from typing import Any, Final
+from typing import Any
 from uuid import UUID
 
 from _pytest.config import Notset
@@ -126,35 +126,25 @@ def patch_bleak_client(monkeypatch):
 @pytest.fixture
 def bt_discovery() -> BluetoothServiceInfoBleak:
     """Return a valid Bluetooth object for testing."""
-    DATA: Final[dict[str, Any]] = {
-        "name": "SmartBat-B12345",
-        "address": "cc:cc:cc:cc:cc:cc",
-        "service_uuids": ["0000fff0-0000-1000-8000-00805f9b34fb"],
-        "rssi": -61,
-        "tx_power": -76,
-    }
-
     return BluetoothServiceInfoBleak(
-        name=DATA["name"],
-        address=DATA["address"],
+        name="SmartBat-B12345",
+        address="cc:cc:cc:cc:cc:cc",
         device=generate_ble_device(
-            address=DATA["address"],
-            name=DATA["name"],
+            address="cc:cc:cc:cc:cc:cc",
+            name="SmartBat-B12345",
         ),
-        rssi=DATA["rssi"],
-        service_uuids=DATA["service_uuids"],
+        rssi=-61,
+        service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
         manufacturer_data={},
         service_data={},
         advertisement=generate_advertisement_data(
-            local_name=DATA["name"],
-            service_uuids=DATA["service_uuids"],
-            rssi=DATA["rssi"],
-            tx_power=DATA["tx_power"],
+            local_name="SmartBat-B12345",
+            service_uuids=["0000fff0-0000-1000-8000-00805f9b34fb"],
         ),
         source=SOURCE_LOCAL,
         connectable=True,
         time=0,
-        tx_power=DATA["tx_power"],
+        tx_power=-76,
     )
 
 
@@ -255,10 +245,7 @@ def ogt_bms_fixture(request) -> str:
 class MockBMS(BaseBMS):
     """Mock Battery Management System."""
 
-    INFO: BMSInfo = {
-        "default_manufacturer": "Mock Manufacturer",
-        "default_model": "MockBMS",
-    }
+    INFO: BMSInfo = {"default_manufacturer": "Mock Manufacturer", "default_model": "MockBMS"}
 
     def __init__(
         self, exc: Exception | None = None, ret_value: BMSSample | None = None

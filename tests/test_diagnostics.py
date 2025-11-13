@@ -11,7 +11,6 @@ from custom_components.bms_ble.const import DOMAIN
 from custom_components.bms_ble.coordinator import BTBmsCoordinator
 from custom_components.bms_ble.diagnostics import async_get_config_entry_diagnostics
 from homeassistant.components.bluetooth.const import DOMAIN as BT_DOMAIN
-from homeassistant.components.diagnostics.const import REDACTED
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
@@ -74,32 +73,15 @@ async def test_diagnostics(
         device_registry.async_get_or_create(config_entry_id=ad.entry_id, **BT_ADAPTER)
 
     expected_diag_data: Final[dict[str, Any]] = {
-        "config_entry": {
-            "created_at": ce.created_at.isoformat(),
-            "data": {
-                "type": "aiobmsble.bms.mock_BMS",
-            },
-            "disabled_by": None,
-            "discovery_keys": {},
-            "domain": DOMAIN,
-            "entry_id": REDACTED,
-            "minor_version": 0,
-            "modified_at": ce.modified_at.isoformat(),
-            "options": {},
-            "pref_disable_new_entities": False,
-            "pref_disable_polling": False,
-            "source": "user",
-            "subentries": [],
-            "title": "config_test_mock_BMS",
-            "unique_id": "cc:cc:cc:cc:cc:cc",
-            "version": 2,
+        "entry_data": {
+            "type": "aiobmsble.bms.mock_BMS",
         },
         "adapter_data": (
             "mock adapter, adapter mnf (adapter model/2): 14, 3"
             if bool_fixture
             else "unavailable"
         ),
-        "advertisement_data": bt_discovery.as_dict() | {"source": REDACTED },
+        "advertisement_data": bt_discovery,
         "bms_link_quality": 50,
         "bms_info": {
             "connections": {(BT_DOMAIN, ce.unique_id)},
