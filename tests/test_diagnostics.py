@@ -7,9 +7,9 @@ from habluetooth import BluetoothServiceInfoBleak
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.bms_ble import DOMAIN
+from custom_components.bms_ble.const import DOMAIN
 from custom_components.bms_ble.coordinator import BTBmsCoordinator
-from custom_components.bms_ble.diagnostics import async_get_device_diagnostics
+from custom_components.bms_ble.diagnostics import async_get_config_entry_diagnostics
 from homeassistant.components.bluetooth.const import DOMAIN as BT_DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -28,10 +28,10 @@ BT_ADAPTER: Final[dict[str, Any]] = {
 }
 
 BMS_DEV: Final[dict[str, Any]] = {
-    "connections": {("bluetooth", "CC:8D:A2:1F:70:F1")},
+    "connections": {("bluetooth", "cc:cc:cc:cc:cc:cc")},  # bt_discovery fixture
     "created_at": 1737117652.687534,
     "identifiers": {
-        ("bluetooth", "CC:8D:A2:1F:70:F1"),
+        ("bluetooth", "cc:cc:cc:cc:cc:cc"),
     },
     "labels": [],
     "manufacturer": "MyManufacturer",
@@ -50,7 +50,9 @@ async def test_diagnostics(
 ) -> None:
     """Home Assistant device diagnostic download."""
 
-    ce: MockConfigEntry = mock_config(bms="dummy")
+    ce: MockConfigEntry = mock_config(
+        bms=BMS_DEV["name"], unique_id=next(iter(BMS_DEV["identifiers"]))[1]
+    )
     config_entry: ConfigEntry[BTBmsCoordinator] = ce
     ce.runtime_data = BTBmsCoordinator(
         hass, bt_discovery.device, MockBMS(), config_entry
@@ -58,14 +60,6 @@ async def test_diagnostics(
     ce.add_to_hass(hass)
 
     device_registry: dr.DeviceRegistry = dr.async_get(hass)
-    device: dr.DeviceEntry = device_registry.async_get_or_create(
-        config_entry_id=config_entry.entry_id,
-        identifiers={(DOMAIN, ce.unique_id)} | BMS_DEV["identifiers"],
-        connections=BMS_DEV["connections"],
-        manufacturer=BMS_DEV["manufacturer"],
-        model=BMS_DEV["model"],
-        name=BMS_DEV["name"],
-    )
 
     if bool_fixture:
         ad: MockConfigEntry = MockConfigEntry(  # create Bluetooth adapter
@@ -78,42 +72,52 @@ async def test_diagnostics(
         ad.add_to_hass(hass)
         device_registry.async_get_or_create(config_entry_id=ad.entry_id, **BT_ADAPTER)
 
+    expected_diag_data: Final[dict[str, Any]] = {
+        "entry_data": {
+            "type": "aiobmsble.bms.mock_BMS",
+        },
+        "adapter_data": (
+            "mock adapter, adapter mnf (adapter model/2): 14, 3"
+            if bool_fixture
+            else "unavailable"
+        ),
+        "advertisement_data": bt_discovery,
+        "bms_link_quality": 50,
+        "bms_info": {
+            "connections": {(BT_DOMAIN, ce.unique_id)},
+            "identifiers": {(BT_DOMAIN, ce.unique_id), (DOMAIN, ce.unique_id)},
+            "name": ce.title,
+            "manufacturer": MockBMS.INFO.get("default_manufacturer"),
+            "model": MockBMS.INFO.get("default_model"),
+            "sw_version": None,
+            "hw_version": None,
+            "model_id": None,
+            "serial_number": None,
+        },
+        "bms_data": {
+            "current": 1.7,
+            "cycle_charge": 19,
+            "cycles": 23,
+            "voltage": 13,
+        },
+        "update_data": {
+            "interval": timedelta(seconds=30),
+            "last_exception": None,
+            "last_update_success": True,
+        },
+    }
+
     monkeypatch.setattr("aiobmsble.basebms.BleakClient", MockBleakClient)
 
     inject_bluetooth_service_info_bleak(hass, bt_discovery)
+    await ce.runtime_data._async_setup()
     await ce.runtime_data.async_refresh()
 
-    diag_data: dict[str, Any] = await async_get_device_diagnostics(
-        hass, config_entry, device
+    diag_data: dict[str, Any] = await async_get_config_entry_diagnostics(
+        hass, config_entry
     )
 
-    assert str(diag_data["adv_data"]) == str(bt_discovery)
-    assert diag_data["bms_data"] == {
-        "current": 1.7,
-        "cycle_charge": 19,
-        "cycles": 23,
-        "voltage": 13,
-    }
-    assert diag_data["bt_data"] == {
-        "link_quality": 50,
-        "rssi": -61,
-    }
-    assert (
-        diag_data["adapter_data"]
-        == "mock adapter, adapter mnf (adapter model/2): 14, 3"
-        if bool_fixture
-        else "unavailable"
+    assert repr(diag_data.pop("advertisement_data")) == repr(
+        expected_diag_data.pop("advertisement_data")
     )
-    assert diag_data["device_data"]["config_entries"] == [config_entry.entry_id]
-    assert diag_data["device_data"]["id"] == "**REDACTED**"
-    assert diag_data["device_data"]["name"] == BMS_DEV["name"]
-    assert diag_data["device_data"]["model"] == BMS_DEV["model"]
-    assert diag_data["device_data"]["manufacturer"] == BMS_DEV["manufacturer"]
-    assert diag_data["entry_data"] == {
-        "type": "aiobmsble.bms.dummy",
-    }
-    assert diag_data["update_data"] == {
-        "interval": timedelta(seconds=30),
-        "last_exception": None,
-        "last_update_success": True,
-    }
+    assert diag_data == expected_diag_data
