@@ -89,7 +89,7 @@
       "local_name": "TP_*"
     },
     {
-      "local_name": "Epsilon-*"
+      "local_name": "Epsilon*"
     },
     {
       "local_name": "PC-????"
@@ -112,7 +112,7 @@
   ],
   "quality_scale": "silver",
   "requirements": [
-      "aiobmsble==0.10.0"
+      "aiobmsble==0.12.0b3"
   ],
-  "version": "2.1.1"
+  "version": "2.1.2-beta.3"
 }
