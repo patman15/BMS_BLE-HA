@@ -122,6 +122,14 @@ def patch_bleak_client(monkeypatch):
 
     return _patch
 
+@pytest.fixture
+def patch_entity_enabled_default(monkeypatch) -> None:
+    """Patch Entity.entity_registry_enabled_default to always return True."""
+
+    monkeypatch.setattr(
+        "homeassistant.helpers.entity.Entity.entity_registry_enabled_default",
+        lambda _: True,
+    )
 
 @pytest.fixture
 def bt_discovery() -> BluetoothServiceInfoBleak:

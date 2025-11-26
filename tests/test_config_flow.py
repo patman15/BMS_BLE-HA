@@ -9,7 +9,12 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from voluptuous import Schema
 
-from custom_components.bms_ble.const import BINARY_SENSORS, DOMAIN, SENSORS
+from custom_components.bms_ble.const import (
+    BINARY_SENSORS,
+    DOMAIN,
+    LINK_SENSORS,
+    SENSORS,
+)
 from homeassistant.config_entries import (
     SOURCE_BLUETOOTH,
     SOURCE_USER,
@@ -68,9 +73,9 @@ async def test_bluetooth_discovery(
     flowresults: list[ConfigFlowResult] = (
         hass.config_entries.flow.async_progress_by_handler(DOMAIN)
     )
-    assert len(flowresults) == 1, (
-        f"Expected one flow result for {advertisement}, check manifest.json!"
-    )
+    assert (
+        len(flowresults) == 1
+    ), f"Expected one flow result for {advertisement}, check manifest.json!"
     result: ConfigFlowResult = flowresults[0]
     assert result.get("step_id") == "bluetooth_confirm"
     assert result.get("context", {}).get("unique_id") == advertisement.address
@@ -130,15 +135,13 @@ async def test_device_setup(
     result_detail = result.get("result")
     assert result_detail is not None
     assert result_detail.unique_id == "cc:cc:cc:cc:cc:cc"
-    assert (
-        len(hass.states.async_all(["sensor", "binary_sensor"]))
-        == BINARY_SENSORS + SENSORS
-    )
 
     entities: er.EntityRegistryItems = er.async_get(hass).entities
-    assert (
-        len(entities) == BINARY_SENSORS + SENSORS + 2
-    )  # sensors, binary_sensors, rssi
+    # check number of sensors minus the ones disabled by default
+    assert len(hass.states.async_all(["binary_sensor"])) == BINARY_SENSORS - 4
+    assert len(hass.states.async_all(["sensor"])) == SENSORS + LINK_SENSORS - 4
+    # check overall entities (including disabled sensors)
+    assert len(entities) == BINARY_SENSORS + SENSORS + LINK_SENSORS
 
     # check correct unique_id format of all sensor entries
     for entry in entities.get_entries_for_config_entry_id(result_detail.entry_id):
@@ -221,7 +224,9 @@ async def test_setup_entry_missing_unique_id(bms_fixture, hass: HomeAssistant) -
     assert cfg.state is ConfigEntryState.SETUP_ERROR
 
 
-@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+@pytest.mark.usefixtures(
+    "enable_bluetooth", "patch_default_bleak_client", "patch_entity_enabled_default"
+)
 async def test_user_setup(
     monkeypatch, bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
@@ -272,7 +277,7 @@ async def test_user_setup(
     assert result_detail.unique_id == "cc:cc:cc:cc:cc:cc"
     assert (
         len(hass.states.async_all(["sensor", "binary_sensor"]))
-        == BINARY_SENSORS + SENSORS
+        == BINARY_SENSORS + SENSORS + LINK_SENSORS
     )
 
 

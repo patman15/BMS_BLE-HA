@@ -21,7 +21,7 @@ from custom_components.bms_ble.const import (
     ATTR_POWER,
     ATTR_RUNTIME,
     ATTR_TEMP_SENSORS,
-    BINARY_SENSORS,
+    LINK_SENSORS,
     SENSORS,
     UPDATE_INTERVAL,
 )
@@ -36,7 +36,9 @@ from tests.conftest import mock_config, mock_devinfo_min
 DEV_NAME: Final[str] = "sensor.config_test_dummy_bms"
 
 
-@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+@pytest.mark.usefixtures(
+    "enable_bluetooth", "patch_default_bleak_client", "patch_entity_enabled_default"
+)  # enable bluetooth, patch bleak client and enable all sensors
 async def test_update(
     monkeypatch: pytest.MonkeyPatch,
     bt_discovery: BluetoothServiceInfoBleak,
@@ -72,10 +74,6 @@ async def test_update(
             else {}
         )
 
-    monkeypatch.setattr(
-        "homeassistant.helpers.entity.Entity.entity_registry_enabled_default",
-        lambda _: True,
-    )
     bms_class: Final[str] = "aiobmsble.bms.dummy_bms.BMS"
     monkeypatch.setattr(f"{bms_class}.device_info", mock_devinfo_min)
 
@@ -89,7 +87,7 @@ async def test_update(
 
     assert config in hass.config_entries.async_entries()
     assert config.state is ConfigEntryState.LOADED
-    assert len(hass.states.async_all(["sensor"])) == BINARY_SENSORS + SENSORS
+    assert len(hass.states.async_all(["sensor"])) == SENSORS + LINK_SENSORS
     data: dict[str, str] = {
         entity.entity_id: entity.state for entity in hass.states.async_all(["sensor"])
     }
