@@ -18,7 +18,7 @@ from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant, State
 import homeassistant.util.dt as dt_util
 from tests.bluetooth import inject_bluetooth_service_info_bleak
-from tests.conftest import mock_config, mock_devinfo_min
+from tests.conftest import mock_config, mock_devinfo_min, mock_update_full
 
 SEN_PREFIX: Final[str] = "binary_sensor.config_test_dummy_bms"
 
@@ -49,6 +49,7 @@ async def test_update(
 
     bms_class: Final[str] = "aiobmsble.bms.dummy_bms.BMS"
     monkeypatch.setattr(f"{bms_class}.device_info", mock_devinfo_min)
+    monkeypatch.setattr(f"{bms_class}.async_update", mock_update_full)
 
     config: MockConfigEntry = mock_config()
     config.add_to_hass(hass)

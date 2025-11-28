@@ -122,6 +122,7 @@ def patch_bleak_client(monkeypatch):
 
     return _patch
 
+
 @pytest.fixture
 def patch_entity_enabled_default(monkeypatch) -> None:
     """Patch Entity.entity_registry_enabled_default to always return True."""
@@ -130,6 +131,7 @@ def patch_entity_enabled_default(monkeypatch) -> None:
         "homeassistant.helpers.entity.Entity.entity_registry_enabled_default",
         lambda _: True,
     )
+
 
 @pytest.fixture
 def bt_discovery() -> BluetoothServiceInfoBleak:
@@ -467,7 +469,19 @@ class MockRespChar(BleakGATTCharacteristic):
 
 async def mock_update_min(_self) -> BMSSample:
     """Minimal version of a BMS update to mock initial coordinator update."""
-    return {"voltage": 12.3}
+    return {"voltage": 12.3, "battery_charging": False}
+
+
+async def mock_update_full(self) -> BMSSample:
+    """Full version of a BMS update to mock initial coordinator update."""
+    return await mock_update_min(self) | {
+        "problem": False,
+        "balancer": 0x0,
+        "sw_chrg_mosfet": False,
+        "sw_dischrg_mosfet": False,
+        "sw_heater": False,
+        "battery_charging": True,
+    }
 
 
 async def mock_exception(_self) -> BMSSample:

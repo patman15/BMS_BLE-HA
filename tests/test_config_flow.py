@@ -30,6 +30,7 @@ from tests.conftest import (
     mock_config,
     mock_config_v1_0,
     mock_devinfo_min,
+    mock_update_full,
     mock_update_min,
 )
 
@@ -96,11 +97,28 @@ async def test_bluetooth_discovery(
     )
 
 
+@pytest.mark.parametrize(
+    ("sensor_set", "sensor_count"),
+    [
+        ("min", (1, SENSORS - 2, 1 + SENSORS + LINK_SENSORS)),
+        (
+            "full",
+            (
+                BINARY_SENSORS - 4,
+                SENSORS - 2,  # link sensors are disabled by default
+                BINARY_SENSORS + SENSORS + LINK_SENSORS,
+            ),
+        ),
+    ],
+    ids=["minimal", "full"],
+)
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_device_setup(
     monkeypatch,
     bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
+    sensor_set: str,
+    sensor_count: tuple[int, int, int],
 ) -> None:
     """Test discovery via bluetooth with a valid device."""
 
@@ -122,7 +140,7 @@ async def test_device_setup(
 
     monkeypatch.setattr(
         "aiobmsble.bms.ogt_bms.BMS.async_update",
-        mock_update_min,
+        mock_update_full if sensor_set == "full" else mock_update_min,
     )
 
     result = await hass.config_entries.flow.async_configure(
@@ -138,10 +156,10 @@ async def test_device_setup(
 
     entities: er.EntityRegistryItems = er.async_get(hass).entities
     # check number of sensors minus the ones disabled by default
-    assert len(hass.states.async_all(["binary_sensor"])) == BINARY_SENSORS - 4
-    assert len(hass.states.async_all(["sensor"])) == SENSORS + LINK_SENSORS - 4
+    assert len(hass.states.async_all(["binary_sensor"])) == sensor_count[0]
+    assert len(hass.states.async_all(["sensor"])) == sensor_count[1]
     # check overall entities (including disabled sensors)
-    assert len(entities) == BINARY_SENSORS + SENSORS + LINK_SENSORS
+    assert len(entities) == sensor_count[2]
 
     # check correct unique_id format of all sensor entries
     for entry in entities.get_entries_for_config_entry_id(result_detail.entry_id):
@@ -234,7 +252,7 @@ async def test_user_setup(
 
     monkeypatch.setattr(
         "aiobmsble.bms.ogt_bms.BMS.async_update",
-        mock_update_min,
+        mock_update_full,
     )
 
     inject_bluetooth_service_info_bleak(hass, bt_discovery)

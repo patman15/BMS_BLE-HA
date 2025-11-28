@@ -104,6 +104,8 @@ async def async_setup_entry(
 
     bms: BTBmsCoordinator = config_entry.runtime_data
     for descr in BINARY_SENSOR_TYPES:
+        if descr.key not in bms.data:
+            continue
         async_add_entities(
             [BMSBinarySensor(bms, descr, format_mac(config_entry.unique_id))]
         )
