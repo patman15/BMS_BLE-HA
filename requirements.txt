@@ -1,5 +1,5 @@
 homeassistant==2025.9.0
-aiobmsble==0.12.0b4
+aiobmsble==0.12.0b5
 ruff~=0.12.1
 pylint~=3.3.8
 pylint-per-file-ignores~=1.4.0
