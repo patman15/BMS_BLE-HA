@@ -6,7 +6,6 @@ from typing import Any, Final
 from aiobmsble.utils import bms_identify
 import voluptuous as vol
 
-from custom_components.bms_ble.const import DOMAIN, LOGGER
 from homeassistant import config_entries
 from homeassistant.components.bluetooth import (
     BluetoothServiceInfoBleak,
@@ -20,6 +19,8 @@ from homeassistant.helpers.selector import (
     SelectSelector,
     SelectSelectorConfig,
 )
+
+from .const import DOMAIN, LOGGER
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):

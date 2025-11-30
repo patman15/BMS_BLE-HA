@@ -99,8 +99,8 @@ Platform | Name | Unit | Description | Optional Attributes
 |||| **Diagnosis Sensors**
 `binary_sensor` | problem | `bool` | indicates `True` if the battery reports an issue or plausibility checks on values fail | problem code
 `sensor` | delta cell voltage | `V` | maximum difference between any two cells in a pack | cell voltages
-`sensor` | max cell voltage | `V` | overall maximum cell voltage in the system | cell number
-`sensor` | min cell voltage | `V` | overall minimum cell voltage in the system | cell number
+`sensor`* | max cell voltage | `V` | overall maximum cell voltage in the system | cell number
+`sensor`* | min cell voltage | `V` | overall minimum cell voltage in the system | cell number
 `sensor`* | link quality  | `%` | successful BMS queries from the last hundred update periods
 `sensor`* | RSSI          | `dBm`| received signal strength indicator
 
@@ -299,7 +299,7 @@ all [contributors of aiobmsble](https://github.com/patman15/aiobmsble?tab=readme
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA?style=for-the-badge&color=orange&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-740_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-743_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=HACS&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
 [custint-url]: https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval
