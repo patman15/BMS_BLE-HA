@@ -51,6 +51,7 @@ BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
         key=ATTR_BALANCER,
         translation_key=ATTR_BALANCER,
         name="Balancer",
+        entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         attr_fn=lambda data: (
             {"cells": data.get(ATTR_BALANCER, 0)}

@@ -98,7 +98,11 @@ Platform | Name | Unit | Description | Optional Attributes
 `sensor` | voltage | `V` | overall battery voltage | package voltage
 ||||
 |||| **Diagnosis Sensors**
-`binary_sensor` | problem | `bool` | indicates `True` if the battery reports an issue or plausibility checks on values fail | problem code
+`binary_sensor` | balancer | `bool` | indicates `True` if the battery balancer is active | cell bit mask
+`binary_sensor` | chrg mosfet | `bool` | indicates `True` if the BMS charge MOSFET is activated
+`binary_sensor` | dischrg mosfet | `bool` | indicates `True` if the BMS discharge MOSFET is activated
+`binary_sensor` | heater | `bool` | indicates `True` if the battery being heated
+`binary_sensor` | problem | `bool` | indicates `True` if the BMS reports an issue or plausibility checks on values fail | problem code
 `sensor` | delta cell voltage | `V` | maximum difference between any two cells in a pack | cell voltages
 `sensor`* | max cell voltage | `V` | overall maximum cell voltage in the system | cell number
 `sensor`* | min cell voltage | `V` | overall minimum cell voltage in the system | cell number
