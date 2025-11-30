@@ -28,11 +28,20 @@
   },
   "entity": {
     "sensor": {
+      "chrg_mosfet": {
+        "name": "Lade-MOSFET"
+      },
       "cycles": {
         "name": "Zyklen"
       },
       "delta_cell_voltage": {
         "name": "Delta Zellspannung"
+      },
+      "dischrg_mosfet": {
+        "name": "Entlade-MOSFET"
+      },
+      "heater": {
+        "name": "Heizung"
       },
       "link_quality": {
         "name": "Verbindungsqualität"

@@ -17,7 +17,14 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import BTBmsConfigEntry
-from .const import ATTR_PROBLEM, DOMAIN
+from .const import (
+    ATTR_BALANCER,
+    ATTR_CHRG_MOSFET,
+    ATTR_DISCHRG_MOSFET,
+    ATTR_HEATER,
+    ATTR_PROBLEM,
+    DOMAIN,
+)
 from .coordinator import BTBmsCoordinator
 
 PARALLEL_UPDATES = 0
@@ -39,6 +46,40 @@ BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
             if "battery_mode" in data
             else {}
         ),
+    ),
+    BmsBinaryEntityDescription(
+        key=ATTR_BALANCER,
+        translation_key=ATTR_BALANCER,
+        name="Balancer",
+        entity_registry_enabled_default=False,
+        attr_fn=lambda data: (
+            {"cells": data.get(ATTR_BALANCER, 0)}
+            if isinstance(data.get(ATTR_BALANCER, 0), int)
+            else {}
+        ),
+    ),
+    BmsBinaryEntityDescription(
+        key=ATTR_CHRG_MOSFET,
+        translation_key=ATTR_CHRG_MOSFET,
+        name="Chrg MOSFET",
+        device_class=BinarySensorDeviceClass.POWER,
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    BmsBinaryEntityDescription(
+        key=ATTR_DISCHRG_MOSFET,
+        translation_key=ATTR_DISCHRG_MOSFET,
+        name="Dischrg MOSFET",
+        device_class=BinarySensorDeviceClass.POWER,
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    BmsBinaryEntityDescription(
+        key=ATTR_HEATER,
+        translation_key=ATTR_HEATER,
+        device_class=BinarySensorDeviceClass.HEAT,
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     BmsBinaryEntityDescription(
         key=ATTR_PROBLEM,
@@ -63,6 +104,8 @@ async def async_setup_entry(
 
     bms: BTBmsCoordinator = config_entry.runtime_data
     for descr in BINARY_SENSOR_TYPES:
+        if descr.key not in bms.data:
+            continue
         async_add_entities(
             [BMSBinarySensor(bms, descr, format_mac(config_entry.unique_id))]
         )

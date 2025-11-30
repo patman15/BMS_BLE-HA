@@ -28,11 +28,23 @@
   },
   "entity": {
     "sensor": {
+      "balancer": {
+        "name": "Balancer"
+      },
+      "chrg_mosfet": {
+        "name": "Charge MOSFET"
+      },
       "cycles": {
         "name": "Cycles"
       },
       "delta_voltage": {
         "name": "Delta cell voltage"
+      },
+      "dischrg_mosfet": {
+        "name": "Discharge MOSFET"
+      },
+      "heater": {
+        "name": "Heater"
       },
       "link_quality": {
         "name": "Link quality"
