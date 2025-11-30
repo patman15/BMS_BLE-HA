@@ -31,7 +31,7 @@
       "balancer": {
         "name": "Balancer"
       },
-      "sw_chrg_mosfet": {
+      "chrg_mosfet": {
         "name": "Charge MOSFET"
       },
       "cycles": {
@@ -40,10 +40,10 @@
       "delta_voltage": {
         "name": "Delta cell voltage"
       },
-      "sw_dischrg_mosfet": {
+      "dischrg_mosfet": {
         "name": "Discharge MOSFET"
       },
-      "sw_heater": {
+      "heater": {
         "name": "Heater"
       },
       "link_quality": {

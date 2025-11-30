@@ -477,9 +477,9 @@ async def mock_update_full(self) -> BMSSample:
     return await mock_update_min(self) | {
         "problem": False,
         "balancer": 0x0,
-        "sw_chrg_mosfet": False,
-        "sw_dischrg_mosfet": False,
-        "sw_heater": False,
+        "chrg_mosfet": False,
+        "dischrg_mosfet": False,
+        "heater": False,
         "battery_charging": True,
     }
 

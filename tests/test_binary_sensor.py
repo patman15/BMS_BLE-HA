@@ -40,9 +40,9 @@ async def test_update(
             "current": 0,
             "problem": True,
             "balancer": 0x31,
-            "sw_chrg_mosfet": False,
-            "sw_dischrg_mosfet": True,
-            "sw_heater": True,
+            "chrg_mosfet": False,
+            "dischrg_mosfet": True,
+            "heater": True,
             "problem_code": 0x73,
             "battery_mode": BMSMode.ABSORPTION,
         }

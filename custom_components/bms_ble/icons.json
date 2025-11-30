@@ -4,13 +4,13 @@
       "balancer": {
         "default": "mdi:transfer"
       },
-      "sw_heater": {
+      "heater": {
         "default": "mdi:snowflake-thermometer"
       },
-      "sw_chrg_mosfet": {
+      "chrg_mosfet": {
         "default": "mdi:battery-plus"
       },
-      "sw_dischrg_mosfet": {
+      "dischrg_mosfet": {
         "default": "mdi:battery-minus"
       },
       "problem": {
