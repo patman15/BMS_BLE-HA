@@ -112,7 +112,7 @@
   ],
   "quality_scale": "silver",
   "requirements": [
-      "aiobmsble==0.12.0b5"
+      "aiobmsble==0.12.1"
   ],
-  "version": "2.1.2-beta.3"
+  "version": "2.2.1"
 }

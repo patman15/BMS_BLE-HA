@@ -12,18 +12,20 @@ from pytest_homeassistant_custom_component.common import (
     async_fire_time_changed,
 )
 
-from custom_components.bms_ble.const import UPDATE_INTERVAL
+from custom_components.bms_ble.const import BINARY_SENSORS, UPDATE_INTERVAL
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant, State
 import homeassistant.util.dt as dt_util
 from tests.bluetooth import inject_bluetooth_service_info_bleak
-from tests.conftest import mock_config, mock_devinfo_min
+from tests.conftest import mock_config, mock_devinfo_min, mock_update_full
 
 SEN_PREFIX: Final[str] = "binary_sensor.config_test_dummy_bms"
 
 
-@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+@pytest.mark.usefixtures(
+    "enable_bluetooth", "patch_default_bleak_client", "patch_entity_enabled_default"
+)  # enable bluetooth, patch bleak client and enable all sensors
 async def test_update(
     monkeypatch: pytest.MonkeyPatch,
     bt_discovery: BluetoothServiceInfoBleak,
@@ -37,12 +39,17 @@ async def test_update(
             "voltage": 17.0,
             "current": 0,
             "problem": True,
+            "balancer": 0x31,
+            "chrg_mosfet": False,
+            "dischrg_mosfet": True,
+            "heater": True,
             "problem_code": 0x73,
             "battery_mode": BMSMode.ABSORPTION,
         }
 
     bms_class: Final[str] = "aiobmsble.bms.dummy_bms.BMS"
     monkeypatch.setattr(f"{bms_class}.device_info", mock_devinfo_min)
+    monkeypatch.setattr(f"{bms_class}.async_update", mock_update_full)
 
     config: MockConfigEntry = mock_config()
     config.add_to_hass(hass)
@@ -54,7 +61,7 @@ async def test_update(
 
     assert config in hass.config_entries.async_entries()
     assert config.state is ConfigEntryState.LOADED
-    assert len(hass.states.async_all(["binary_sensor"])) == 2
+    assert len(hass.states.async_all(["binary_sensor"])) == BINARY_SENSORS
     for sensor, attribute, ref_state in (
         ("charging", "battery_mode", STATE_ON),
         ("problem", "problem_code", STATE_OFF),
@@ -72,8 +79,13 @@ async def test_update(
     for sensor, attribute, ref_state, ref_value in (
         ("charging", "battery_mode", STATE_OFF, "absorption"),
         ("problem", "problem_code", STATE_ON, 0x73),
+        ("chrg_mosfet", "", STATE_OFF, None),
+        ("dischrg_mosfet", "", STATE_ON, None),
+        ("heat", "", STATE_ON, None),
+        ("balancer", "cells", STATE_ON, 0x31),
     ):
         state = hass.states.get(f"{SEN_PREFIX}_{sensor}")
-        assert state is not None
+        assert state is not None, f"no state for sensor {sensor}"
         assert state.state == ref_state
-        assert state.attributes.get(attribute) == ref_value
+        if attribute:
+            assert state.attributes.get(attribute) == ref_value

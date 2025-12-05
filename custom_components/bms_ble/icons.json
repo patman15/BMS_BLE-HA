@@ -1,35 +1,47 @@
 {
-    "entity": {
-        "binary_sensor": {
-            "problem": {
-                "default": "mdi:battery-check",
-                "state": {
-                    "on": "mdi:battery-alert"
-                }
-            }
-        },
-        "sensor": {
-            "current": {
-                "default": "mdi:current-dc"
-            },
-            "cycles": {
-                "default": "mdi:autorenew"
-            },
-            "delta_cell_voltage": {
-                "default": "mdi:battery-sync"
-            },
-            "link_quality": {
-                "default": "mdi:link"
-            },
-            "max_cell_voltage": {
-                "default": "mdi:battery-arrow-up"
-            },
-            "min_cell_voltage": {
-                "default": "mdi:battery-arrow-down"
-            },                        
-            "rssi": {
-                "default": "mdi:bluetooth-connect"
-            }
+  "entity": {
+    "binary_sensor": {
+      "balancer": {
+        "default": "mdi:transfer"
+      },
+      "heater": {
+        "default": "mdi:snowflake-thermometer"
+      },
+      "chrg_mosfet": {
+        "default": "mdi:battery-plus"
+      },
+      "dischrg_mosfet": {
+        "default": "mdi:battery-minus"
+      },
+      "problem": {
+        "default": "mdi:battery-check",
+        "state": {
+          "on": "mdi:battery-alert"
         }
+      }
+    },
+    "sensor": {
+      "current": {
+        "default": "mdi:current-dc"
+      },
+      "cycles": {
+        "default": "mdi:autorenew"
+      },
+      "delta_cell_voltage": {
+        "default": "mdi:battery-sync"
+      },
+      "link_quality": {
+        "default": "mdi:link"
+      },
+      "max_cell_voltage": {
+        "default": "mdi:battery-arrow-up"
+      },
+      "min_cell_voltage": {
+        "default": "mdi:battery-arrow-down"
+      },
+      "rssi": {
+        "default": "mdi:bluetooth-connect"
+      }
     }
+  }
 }

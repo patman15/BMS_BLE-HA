@@ -8,7 +8,7 @@
     "flow_title": "Setup {name} ({id}) as {model}",
     "step": {
       "user": {
-        "description": "Choose a device to set up:",
+        "description": "Choose a device to set up",
         "data": {
           "address": "Bluetooth name (MAC address) - Model"
         }
@@ -27,11 +27,28 @@
     }
   },
   "entity": {
+    "binary_sensor": {
+      "balancer": {
+        "name": "Balancer"
+      },
+      "chrg_mosfet": {
+        "name": "Charge MOSFET"
+      },
+      "dischrg_mosfet": {
+        "name": "Discharge MOSFET"
+      },
+      "heater": {
+        "name": "Heater"
+      }
+    },
     "sensor": {
+      "battery_health": {
+        "name": "Battery health"
+      },
       "cycles": {
         "name": "Cycles"
       },
-      "delta_voltage": {
+      "delta_cell_voltage": {
         "name": "Delta cell voltage"
       },
       "link_quality": {
