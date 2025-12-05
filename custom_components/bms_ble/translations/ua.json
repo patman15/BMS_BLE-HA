@@ -31,7 +31,7 @@
       "cycles": {
         "name": "Циклів"
       },
-      "delta_voltage": {
+      "delta_cell_voltage": {
         "name": "Дельта між комірками"
       },
       "link_quality": {

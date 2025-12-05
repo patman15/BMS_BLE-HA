@@ -31,7 +31,7 @@
       "cycles": {
         "name": "Ciclos"
       },
-      "delta_voltage": {
+      "delta_cell_voltage": {
         "name": "Delta napięcia ogniw"
       },
       "link_quality": {
