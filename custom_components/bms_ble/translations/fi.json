@@ -31,7 +31,7 @@
       "cycles": {
         "name": "latauskerrat"
       },
-      "delta_voltage": {
+      "delta_cell_voltage": {
         "name": "Jännite-ero"
       },
       "link_quality": {
