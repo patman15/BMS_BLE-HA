@@ -79,9 +79,9 @@ async def test_update(
     for sensor, attribute, ref_state, ref_value in (
         ("charging", "battery_mode", STATE_OFF, "absorption"),
         ("problem", "problem_code", STATE_ON, 0x73),
-        ("chrg_mosfet", "", STATE_OFF, None),
-        ("dischrg_mosfet", "", STATE_ON, None),
-        ("heat", "", STATE_ON, None),
+        ("charge_mosfet", "", STATE_OFF, None),
+        ("discharge_mosfet", "", STATE_ON, None),
+        ("heater", "", STATE_ON, None),
         ("balancer", "cells", STATE_ON, 0x31),
     ):
         state = hass.states.get(f"{SEN_PREFIX}_{sensor}")
