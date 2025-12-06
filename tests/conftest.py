@@ -6,7 +6,6 @@ from types import ModuleType
 from typing import Any, Final
 from uuid import UUID
 
-from _pytest.config import Notset
 from aiobmsble import BMSInfo, BMSSample, MatcherPattern
 from aiobmsble.basebms import BaseBMS
 from aiobmsble.utils import load_bms_plugins
@@ -19,7 +18,6 @@ from bleak.backends.service import BleakGATTServiceCollection
 from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str, uuidstr_to_str
 from home_assistant_bluetooth import SOURCE_LOCAL, BluetoothServiceInfoBleak
-from hypothesis import HealthCheck, settings
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -40,17 +38,6 @@ def pytest_addoption(parser) -> None:
     )
 
 
-def pytest_configure(config: pytest.Config) -> None:
-    """Configure pytest with custom settings."""
-    max_examples: int | Notset = config.getoption("--max-examples")
-    settings.register_profile(
-        "default",
-        max_examples=max_examples,
-        suppress_health_check=[HealthCheck.function_scoped_fixture],
-    )
-    settings.load_profile("default")
-
-
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(enable_custom_integrations: Any) -> None:
     """Auto add enable_custom_integrations."""
@@ -58,7 +45,7 @@ def auto_enable_custom_integrations(enable_custom_integrations: Any) -> None:
 
 
 @pytest.fixture(params=[False, True])
-def bool_fixture(request) -> bool:
+def bool_fixture(request: pytest.FixtureRequest) -> bool:
     """Return False, True for tests."""
     return request.param
 
@@ -71,13 +58,13 @@ def bool_fixture(request) -> bool:
         )
     ]
 )
-def bms_fixture(request) -> str:
+def bms_fixture(request: pytest.FixtureRequest) -> str:
     """Return all possible BMS variants."""
     return request.param
 
 
 @pytest.fixture(params=[-13, 0, 21])
-def bms_data_fixture(request) -> BMSSample:
+def bms_data_fixture(request: pytest.FixtureRequest) -> BMSSample:
     """Return a fake BMS data dictionary."""
 
     return {
@@ -90,7 +77,7 @@ def bms_data_fixture(request) -> BMSSample:
 
 
 @pytest.fixture
-def patch_bms_timeout(monkeypatch):
+def patch_bms_timeout(monkeypatch: pytest.MonkeyPatch):
     """Fixture to patch BMS.TIMEOUT for different BMS classes."""
 
     def _patch_timeout(bms_class: str | None = None, timeout: float = 0.001) -> None:
@@ -105,7 +92,7 @@ def patch_bms_timeout(monkeypatch):
 
 
 @pytest.fixture
-def patch_default_bleak_client(monkeypatch) -> None:
+def patch_default_bleak_client(monkeypatch: pytest.MonkeyPatch) -> None:
     """Patch BleakClient to a mock as BT is not available.
 
     required because BTdiscovery cannot be used to generate a BleakClient in async_setup()
@@ -114,7 +101,7 @@ def patch_default_bleak_client(monkeypatch) -> None:
 
 
 @pytest.fixture
-def patch_bleak_client(monkeypatch):
+def patch_bleak_client(monkeypatch: pytest.MonkeyPatch):
     """Fixture to patch BleakClient with a given MockClient."""
 
     def _patch(mock_client=MockBleakClient) -> None:
@@ -221,7 +208,9 @@ def mock_config_v1_0(bms: str, unique_id: str = "cc:cc:cc:cc:cc:cc") -> MockConf
 
 
 @pytest.fixture(params=["OGTBms", "DalyBms"])
-def mock_config_v0_1(request, unique_id: str = "cc:cc:cc:cc:cc:cc") -> MockConfigEntry:
+def mock_config_v0_1(
+    request: pytest.FixtureRequest, unique_id: str = "cc:cc:cc:cc:cc:cc"
+) -> MockConfigEntry:
     """Return a Mock of the HA entity config."""
     return MockConfigEntry(
         domain=DOMAIN,
@@ -257,7 +246,7 @@ def keep_alive_fixture(request: pytest.FixtureRequest) -> bool:
 
 # all names result in same encryption key for easier testing
 @pytest.fixture(params=["SmartBat-A12345", "SmartBat-B12294"])
-def ogt_bms_fixture(request) -> str:
+def ogt_bms_fixture(request: pytest.FixtureRequest) -> str:
     """Return OGT SmartBMS names."""
     return request.param
 
