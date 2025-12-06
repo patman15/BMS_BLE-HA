@@ -10,9 +10,10 @@ UPDATE_INTERVAL: Final[int] = 30  # [s]
 # attributes (do not change)
 BINARY_SENSORS: Final[int] = 6
 LINK_SENSORS: Final[int] = 2
-SENSORS: Final[int] = 11
+SENSORS: Final[int] = 12
 ATTR_BALANCER: Final[str] = "balancer"  # [bool]
 ATTR_BALANCE_CUR: Final[str] = "balance_current"  # [A]
+ATTR_BATTERY_HEALTH: Final[str] = "battery_health"  # [%]
 ATTR_CELL_VOLTAGES: Final[str] = "cell_voltages"  # [V]
 ATTR_CHRG_MOSFET: Final[str] = "chrg_mosfet"  # [bool]
 ATTR_CURRENT: Final[str] = "current"  # [A]

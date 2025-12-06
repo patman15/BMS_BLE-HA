@@ -53,6 +53,7 @@ async def test_update(
             {
                 "balance_current": -1.234,
                 "battery_level": 42,
+                "battery_health": 99,
                 "voltage": 17.0,
                 "current": 0,
                 "cell_voltages": [3.1, 3, 3.123],
