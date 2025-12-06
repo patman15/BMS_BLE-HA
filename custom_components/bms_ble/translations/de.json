@@ -27,21 +27,29 @@
     }
   },
   "entity": {
-    "sensor": {
+    "binary_sensor": {
+      "balancer": {
+        "name": "Balancer"
+      },
       "chrg_mosfet": {
         "name": "Lade-MOSFET"
-      },
-      "cycles": {
-        "name": "Zyklen"
-      },
-      "delta_cell_voltage": {
-        "name": "Delta Zellspannung"
       },
       "dischrg_mosfet": {
         "name": "Entlade-MOSFET"
       },
       "heater": {
         "name": "Heizung"
+      }
+    },
+    "sensor": {
+      "battery_health": {
+        "name": "Gesundheitszustand"
+      },
+      "cycles": {
+        "name": "Zyklen"
+      },
+      "delta_cell_voltage": {
+        "name": "Delta Zellspannung"
       },
       "link_quality": {
         "name": "Verbindungsqualität"

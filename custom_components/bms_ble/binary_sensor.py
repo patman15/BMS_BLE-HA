@@ -38,60 +38,58 @@ class BmsBinaryEntityDescription(BinarySensorEntityDescription, frozen_or_thawed
 
 BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
     BmsBinaryEntityDescription(
-        key=ATTR_BATTERY_CHARGING,
-        translation_key=ATTR_BATTERY_CHARGING,
-        device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
         attr_fn=lambda data: (
             {"battery_mode": data.get("battery_mode", BMSMode.UNKNOWN).name.lower()}
             if "battery_mode" in data
             else {}
         ),
+        device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
+        key=ATTR_BATTERY_CHARGING,
     ),
     BmsBinaryEntityDescription(
-        key=ATTR_BALANCER,
-        translation_key=ATTR_BALANCER,
-        name="Balancer",
-        entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
         attr_fn=lambda data: (
             {"cells": data.get(ATTR_BALANCER, 0)}
             if isinstance(data.get(ATTR_BALANCER, 0), int)
             else {}
         ),
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        key=ATTR_BALANCER,
+        name="Balancer",
+        translation_key=ATTR_BALANCER,
     ),
     BmsBinaryEntityDescription(
+        device_class=BinarySensorDeviceClass.POWER,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         key=ATTR_CHRG_MOSFET,
+        name="Charge MOSFET",
         translation_key=ATTR_CHRG_MOSFET,
-        name="Chrg MOSFET",
-        device_class=BinarySensorDeviceClass.POWER,
-        entity_registry_enabled_default=False,
-        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     BmsBinaryEntityDescription(
+        device_class=BinarySensorDeviceClass.POWER,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         key=ATTR_DISCHRG_MOSFET,
+        name="Discharge MOSFET",
         translation_key=ATTR_DISCHRG_MOSFET,
-        name="Dischrg MOSFET",
-        device_class=BinarySensorDeviceClass.POWER,
-        entity_registry_enabled_default=False,
-        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     BmsBinaryEntityDescription(
+        device_class=BinarySensorDeviceClass.HEAT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
         key=ATTR_HEATER,
         translation_key=ATTR_HEATER,
-        device_class=BinarySensorDeviceClass.HEAT,
-        entity_registry_enabled_default=False,
-        entity_category=EntityCategory.DIAGNOSTIC,
     ),
     BmsBinaryEntityDescription(
-        key=ATTR_PROBLEM,
-        translation_key=ATTR_PROBLEM,
-        device_class=BinarySensorDeviceClass.PROBLEM,
-        entity_category=EntityCategory.DIAGNOSTIC,
         attr_fn=lambda data: (
             {"problem_code": data.get("problem_code", 0)}
             if "problem_code" in data
             else {}
         ),
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        key=ATTR_PROBLEM,
     ),
 ]
 
