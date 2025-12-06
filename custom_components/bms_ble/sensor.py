@@ -111,7 +111,6 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=1,
-        translation_key=ATTR_TEMPERATURE,
         value_fn=lambda data: data.get("temperature"),
     ),
     BmsEntityDescription(
