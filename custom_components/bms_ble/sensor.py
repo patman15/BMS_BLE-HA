@@ -5,8 +5,12 @@ from typing import Final, cast
 
 from aiobmsble import BMSpackvalue, BMSSample
 
-from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
-from homeassistant.components.sensor.const import SensorDeviceClass, SensorStateClass
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorEntityDescription,
+    SensorStateClass,
+)
 from homeassistant.const import (
     ATTR_BATTERY_LEVEL,
     ATTR_TEMPERATURE,
@@ -28,6 +32,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import BTBmsConfigEntry
 from .const import (
+    ATTR_BATTERY_HEALTH,
     ATTR_CURRENT,
     ATTR_CYCLE_CAP,
     ATTR_CYCLES,
@@ -49,8 +54,9 @@ PARALLEL_UPDATES = 0
 class BmsEntityDescription(SensorEntityDescription, frozen_or_thawed=True):
     """Describes BMS sensor entity."""
 
-    value_fn: Callable[[BMSSample], float | int | None]
     attr_fn: Callable[[BMSSample], dict[str, list[int | float]]] | None = None
+    optional: bool = False
+    value_fn: Callable[[BMSSample], float | int | None]
 
 
 def _attr_pack(
@@ -83,6 +89,14 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         value_fn=lambda data: data.get("battery_level"),
     ),
     BmsEntityDescription(
+        key=ATTR_BATTERY_HEALTH,
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        translation_key=ATTR_BATTERY_HEALTH,
+        optional=True,
+        value_fn=lambda data: data.get("battery_health"),
+    ),
+    BmsEntityDescription(
         attr_fn=lambda data: (
             {"temperature_sensors": data.get("temp_values", [])}
             if "temp_values" in data
@@ -98,7 +112,6 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=1,
         value_fn=lambda data: data.get("temperature"),
-
     ),
     BmsEntityDescription(
         attr_fn=lambda data: (
@@ -239,6 +252,8 @@ async def async_setup_entry(
             continue
         if descr.key == ATTR_LQ:
             async_add_entities([LQSensor(bms, descr, mac)])
+            continue
+        if descr.optional and descr.key not in bms.data:
             continue
         async_add_entities([BMSSensor(bms, descr, mac)])
 
