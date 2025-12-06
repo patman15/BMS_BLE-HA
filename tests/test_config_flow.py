@@ -100,7 +100,7 @@ async def test_bluetooth_discovery(
 @pytest.mark.parametrize(
     ("sensor_set", "sensor_count"),
     [
-        ("min", (1, SENSORS - 2, 1 + SENSORS + LINK_SENSORS)),
+        ("min", (1, SENSORS - 3, 1 + (SENSORS - 1) + LINK_SENSORS)),
         (
             "full",
             (

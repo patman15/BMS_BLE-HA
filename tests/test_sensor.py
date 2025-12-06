@@ -53,7 +53,6 @@ async def test_update(
             {
                 "balance_current": -1.234,
                 "battery_level": 42,
-                "battery_health": 99,
                 "voltage": 17.0,
                 "current": 0,
                 "cell_voltages": [3.1, 3, 3.123],
@@ -88,7 +87,7 @@ async def test_update(
 
     assert config in hass.config_entries.async_entries()
     assert config.state is ConfigEntryState.LOADED
-    assert len(hass.states.async_all(["sensor"])) == SENSORS + LINK_SENSORS
+    assert len(hass.states.async_all(["sensor"])) == (SENSORS - 1) + LINK_SENSORS
     data: dict[str, str] = {
         entity.entity_id: entity.state for entity in hass.states.async_all(["sensor"])
     }

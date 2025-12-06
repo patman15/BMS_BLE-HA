@@ -473,14 +473,15 @@ async def mock_update_min(_self) -> BMSSample:
 
 
 async def mock_update_full(self) -> BMSSample:
-    """Full version of a BMS update to mock initial coordinator update."""
+    """Include optional sensors for BMS update to mock initial coordinator update."""
     return await mock_update_min(self) | {
         "problem": False,
         "balancer": 0x0,
+        "battery_charging": True,
+        "battery_health": 73,
         "chrg_mosfet": False,
         "dischrg_mosfet": False,
         "heater": False,
-        "battery_charging": True,
     }
 
 
