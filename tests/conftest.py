@@ -2,7 +2,6 @@
 
 from collections.abc import Awaitable, Buffer, Callable, Iterable
 import logging
-from types import ModuleType
 from typing import Any, Final
 from uuid import UUID
 
@@ -63,34 +62,6 @@ def bms_fixture(request: pytest.FixtureRequest) -> str:
     return request.param
 
 
-@pytest.fixture(params=[-13, 0, 21])
-def bms_data_fixture(request: pytest.FixtureRequest) -> BMSSample:
-    """Return a fake BMS data dictionary."""
-
-    return {
-        "voltage": 7.0,
-        "current": request.param,
-        "cycle_charge": 34,
-        "cell_voltages": [3.456, 3.567],
-        "temp_values": [-273.15, 0.01, 35.555, 100.0],
-    }
-
-
-@pytest.fixture
-def patch_bms_timeout(monkeypatch: pytest.MonkeyPatch):
-    """Fixture to patch BMS.TIMEOUT for different BMS classes."""
-
-    def _patch_timeout(bms_class: str | None = None, timeout: float = 0.001) -> None:
-        patch_class: str = (
-            f"{bms_class}.BMS.TIMEOUT"
-            if bms_class
-            else "basebms.BaseBMS._RETRY_TIMEOUT"
-        )
-        monkeypatch.setattr(f"aiobmsble.bms.{patch_class}", timeout)
-
-    return _patch_timeout
-
-
 @pytest.fixture
 def patch_default_bleak_client(monkeypatch: pytest.MonkeyPatch) -> None:
     """Patch BleakClient to a mock as BT is not available.
@@ -98,16 +69,6 @@ def patch_default_bleak_client(monkeypatch: pytest.MonkeyPatch) -> None:
     required because BTdiscovery cannot be used to generate a BleakClient in async_setup()
     """
     monkeypatch.setattr("aiobmsble.basebms.BleakClient", MockBleakClient)
-
-
-@pytest.fixture
-def patch_bleak_client(monkeypatch: pytest.MonkeyPatch):
-    """Fixture to patch BleakClient with a given MockClient."""
-
-    def _patch(mock_client=MockBleakClient) -> None:
-        monkeypatch.setattr("aiobmsble.basebms.BleakClient", mock_client)
-
-    return _patch
 
 
 @pytest.fixture
@@ -225,29 +186,6 @@ def mock_config_v0_1(
 @pytest.fixture(params=[TimeoutError, BleakError, EOFError])
 def mock_coordinator_exception(request: pytest.FixtureRequest) -> Exception:
     """Return possible exceptions for mock BMS update function."""
-    return request.param
-
-
-@pytest.fixture(
-    params=sorted(
-        load_bms_plugins(), key=lambda plugin: getattr(plugin, "__name__", "")
-    )
-)
-def plugin_fixture(request: pytest.FixtureRequest) -> ModuleType:
-    """Return module of a BMS."""
-    return request.param
-
-
-@pytest.fixture(params=[False, True], ids=["persist", "reconnect"])
-def keep_alive_fixture(request: pytest.FixtureRequest) -> bool:
-    """Return False, True for reconnect test."""
-    return request.param
-
-
-# all names result in same encryption key for easier testing
-@pytest.fixture(params=["SmartBat-A12345", "SmartBat-B12294"])
-def ogt_bms_fixture(request: pytest.FixtureRequest) -> str:
-    """Return OGT SmartBMS names."""
     return request.param
 
 

@@ -114,5 +114,5 @@
   "requirements": [
       "aiobmsble==0.13.0"
   ],
-  "version": "2.2.1"
+  "version": "2.3.0"
 }
