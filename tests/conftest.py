@@ -9,13 +9,11 @@ from aiobmsble import BMSInfo, BMSSample, MatcherPattern
 from aiobmsble.basebms import BaseBMS
 from aiobmsble.utils import load_bms_plugins
 from bleak import BleakClient
-from bleak.assigned_numbers import CharacteristicPropertyName
 from bleak.backends.characteristic import BleakGATTCharacteristic
-from bleak.backends.descriptor import BleakGATTDescriptor
 from bleak.backends.device import BLEDevice
 from bleak.backends.service import BleakGATTServiceCollection
 from bleak.exc import BleakError
-from bleak.uuids import normalize_uuid_str, uuidstr_to_str
+from bleak.uuids import normalize_uuid_str
 from home_assistant_bluetooth import SOURCE_LOCAL, BluetoothServiceInfoBleak
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -342,56 +340,6 @@ class MockBleakClient(BleakClient):
         self._connected = False
         if self._disconnect_callback is not None:
             self._disconnect_callback(self)
-
-
-class MockRespChar(BleakGATTCharacteristic):
-    """Mock response characteristic."""
-
-    @property
-    def service_uuid(self) -> str:
-        """The UUID of the Service containing this characteristic."""
-        raise NotImplementedError
-
-    @property
-    def service_handle(self) -> int:
-        """The integer handle of the Service containing this characteristic."""
-        raise NotImplementedError
-
-    @property
-    def handle(self) -> int:
-        """The handle for this characteristic."""
-        raise NotImplementedError
-
-    @property
-    def uuid(self) -> str:
-        """The UUID for this characteristic."""
-        return normalize_uuid_str("fff4")
-
-    @property
-    def description(self) -> str:
-        """Description for this characteristic."""
-        return uuidstr_to_str(self.uuid)
-
-    @property
-    def properties(self) -> list[CharacteristicPropertyName]:
-        """Properties of this characteristic."""
-        raise NotImplementedError
-
-    @property
-    def descriptors(self) -> list[BleakGATTDescriptor]:
-        """List of descriptors for this service."""
-        raise NotImplementedError
-
-    def get_descriptor(self, specifier: int | str | UUID) -> BleakGATTDescriptor | None:
-        """Get a descriptor by handle (int) or UUID (str or uuid.UUID)."""
-        raise NotImplementedError
-
-    def add_descriptor(self, descriptor: BleakGATTDescriptor):
-        """Add a :py:class:`~BleakGATTDescriptor` to the characteristic.
-
-        Should not be used by end user, but rather by `bleak` itself.
-        """
-        raise NotImplementedError
 
 
 async def mock_update_min(_self) -> BMSSample:
