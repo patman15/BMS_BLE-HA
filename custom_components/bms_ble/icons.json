@@ -4,14 +4,14 @@
       "balancer": {
         "default": "mdi:transfer"
       },
-      "heater": {
-        "default": "mdi:snowflake-thermometer"
-      },
       "chrg_mosfet": {
         "default": "mdi:battery-plus"
       },
       "dischrg_mosfet": {
         "default": "mdi:battery-minus"
+      },
+      "heater": {
+        "default": "mdi:snowflake-thermometer"
       },
       "problem": {
         "default": "mdi:battery-check",
@@ -21,6 +21,9 @@
       }
     },
     "sensor": {
+      "battery_health": {
+        "default": "mdi:battery-heart-variant"
+      },
       "current": {
         "default": "mdi:current-dc"
       },
