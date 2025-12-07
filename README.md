@@ -98,7 +98,7 @@ Platform | Name | Unit | Description | Optional Attributes
 `sensor` | voltage | `V` | overall battery voltage | package voltage
 ||||
 |||| **Diagnosis Sensors**
-`binary_sensor` | balancer | `bool` | indicates `True` if the battery balancer is active
+`binary_sensor` | balancer | `bool` | indicates `True` if the battery balancer is active | cell bit mask
 `binary_sensor` | chrg mosfet | `bool` | indicates `True` if the BMS charge MOSFET is activated
 `binary_sensor` | dischrg mosfet | `bool` | indicates `True` if the BMS discharge MOSFET is activated
 `binary_sensor` | heater | `bool` | indicates `True` if the battery being heated

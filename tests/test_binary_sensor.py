@@ -82,7 +82,7 @@ async def test_update(
         ("charge_mosfet", "", STATE_OFF, None),
         ("discharge_mosfet", "", STATE_ON, None),
         ("heater", "", STATE_ON, None),
-        ("balancer", "", STATE_ON, None),
+        ("balancer", "cells", STATE_ON, 0x31),
     ):
         state = hass.states.get(f"{SEN_PREFIX}_{sensor}")
         assert state is not None, f"no state for sensor {sensor}"
