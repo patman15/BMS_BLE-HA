@@ -47,11 +47,6 @@ BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
         key=ATTR_BATTERY_CHARGING,
     ),
     BmsBinaryEntityDescription(
-        attr_fn=lambda data: (
-            {"cells": data.get(ATTR_BALANCER, 0)}
-            if isinstance(data.get(ATTR_BALANCER, 0), int)
-            else {}
-        ),
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         key=ATTR_BALANCER,
