@@ -12,6 +12,9 @@
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
+      "service_uuid": "0000ffd0-0000-1000-8000-00805f9b34fb"
+    },    
+    {
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb"
     },
     {
@@ -78,10 +81,6 @@
       "manufacturer_id": 21330
     },
     {
-      "service_uuid": "0000ffd0-0000-1000-8000-00805f9b34fb",
-      "manufacturer_id": 39008
-    },
-    {
       "local_name": "RNG*",
       "manufacturer_id": 57676
     },
@@ -112,7 +111,7 @@
   ],
   "quality_scale": "silver",
   "requirements": [
-      "aiobmsble==0.13.0"
+      "aiobmsble@git+https://github.com/patman15/aiobmsble.git@feat-renogy-detection"
   ],
-  "version": "2.3.0"
+  "version": "2.3.1b1"
 }
