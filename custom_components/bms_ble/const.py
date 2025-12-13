@@ -8,11 +8,9 @@ LOGGER: Final[logging.Logger] = logging.getLogger(__package__)
 UPDATE_INTERVAL: Final[int] = 30  # [s]
 
 # attributes (do not change)
-BINARY_SENSORS: Final[int] = 6
-LINK_SENSORS: Final[int] = 2
-SENSORS: Final[int] = 11
 ATTR_BALANCER: Final[str] = "balancer"  # [bool]
 ATTR_BALANCE_CUR: Final[str] = "balance_current"  # [A]
+ATTR_BATTERY_HEALTH: Final[str] = "battery_health"  # [%]
 ATTR_CELL_VOLTAGES: Final[str] = "cell_voltages"  # [V]
 ATTR_CHRG_MOSFET: Final[str] = "chrg_mosfet"  # [bool]
 ATTR_CURRENT: Final[str] = "current"  # [A]
@@ -31,3 +29,7 @@ ATTR_PROBLEM_CODE: Final[str] = "problem_code"  # [int]
 ATTR_RSSI: Final[str] = "rssi"  # [dBm]
 ATTR_RUNTIME: Final[str] = "runtime"  # [s]
 ATTR_TEMP_SENSORS: Final[str] = "temperature_sensors"  # [°C]
+
+BINARY_SENSORS: Final[int] = 6  # total number of binary sensors
+LINK_SENSORS: Final[int] = 2
+SENSORS: Final[int] = 12  # total number of sensors
