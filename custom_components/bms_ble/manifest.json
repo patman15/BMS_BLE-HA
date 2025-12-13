@@ -112,7 +112,7 @@
   ],
   "quality_scale": "silver",
   "requirements": [
-      "aiobmsble==0.13.0"
+      "aiobmsble@git+https://github.com/patman15/aiobmsble.git@fix-creabest-detection"
   ],
   "version": "2.3.0"
 }
