@@ -4,6 +4,7 @@ from collections.abc import Awaitable, Callable
 import contextlib
 from typing import Final
 
+from aiobmsble import BMSSample
 from habluetooth import BluetoothServiceInfoBleak
 import pytest
 
@@ -12,13 +13,14 @@ from custom_components.bms_ble.coordinator import BTBmsCoordinator
 from homeassistant.const import ATTR_VOLTAGE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
-from tests.bluetooth import inject_bluetooth_service_info_bleak
-from tests.conftest import MockBMS, mock_config
+
+from .bluetooth import inject_bluetooth_service_info_bleak
+from .conftest import MockBMS, mock_config
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_update(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     bool_fixture: bool,
     bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
@@ -45,7 +47,7 @@ async def test_update(
     inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
     await coordinator.async_refresh()
-    result = coordinator.data
+    result: BMSSample = coordinator.data
     assert coordinator.last_update_success
 
     assert result == {
@@ -82,7 +84,7 @@ async def test_nodata(
     inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
     await coordinator.async_refresh()
-    result = coordinator.data
+    result: BMSSample = coordinator.data
     assert not coordinator.last_update_success
 
     await coordinator.async_shutdown()
@@ -117,7 +119,9 @@ async def test_update_exception(
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_stale_recovery(
-    monkeypatch, bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
+    monkeypatch: pytest.MonkeyPatch,
+    bt_discovery: BluetoothServiceInfoBleak,
+    hass: HomeAssistant,
 ) -> None:
     """Test if coordinator raises appropriate exception from BMS."""
     flags: dict[str, bool] = {"disconnect_called": False}

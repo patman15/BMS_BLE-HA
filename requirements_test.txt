@@ -1,5 +1,6 @@
 -r requirements.txt
 wheel
+pycares < 5.0.0
 home-assistant-bluetooth
 habluetooth~=5.3.0
 aiousbwatcher~=1.1.1

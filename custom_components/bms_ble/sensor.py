@@ -125,7 +125,6 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda data: data.get("current"),
-
     ),
     BmsEntityDescription(
         device_class=SensorDeviceClass.ENERGY_STORAGE,
@@ -267,7 +266,7 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
     def __init__(
         self, bms: BTBmsCoordinator, descr: BmsEntityDescription, unique_id: str
     ) -> None:
-        """Intitialize the BMS sensor."""
+        """Initialize the BMS sensor."""
         self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
         self._attr_device_info = bms.device_info
         self.entity_description = descr
@@ -297,7 +296,7 @@ class RSSISensor(SensorEntity):
     def __init__(
         self, bms: BTBmsCoordinator, descr: SensorEntityDescription, unique_id: str
     ) -> None:
-        """Intitialize the BMS sensor."""
+        """Initialize the BMS sensor."""
 
         self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
         self._attr_device_info = bms.device_info
@@ -326,7 +325,7 @@ class LQSensor(SensorEntity):
     def __init__(
         self, bms: BTBmsCoordinator, descr: SensorEntityDescription, unique_id: str
     ) -> None:
-        """Intitialize the BMS link quality sensor."""
+        """Initialize the BMS link quality sensor."""
 
         self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
         self._attr_device_info = bms.device_info

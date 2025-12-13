@@ -83,7 +83,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
 
     @property
     def link_quality(self) -> int:
-        """Gives the precentage of successful BMS reads out of the last 100 attempts."""
+        """Gives the percentage of successful BMS reads out of the last 100 attempts."""
 
         return self._link_q.count(True) * 100 // len(self._link_q)
 

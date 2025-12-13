@@ -3,7 +3,7 @@
 from datetime import timedelta
 from typing import Final
 
-from aiobmsble.basebms import BMSSample
+from aiobmsble import BMSSample
 from habluetooth import BluetoothServiceInfoBleak
 import pytest
 from pytest_homeassistant_custom_component.common import (
@@ -30,8 +30,9 @@ from homeassistant.const import ATTR_TEMPERATURE, ATTR_VOLTAGE
 from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers.entity_component import async_update_entity
 import homeassistant.util.dt as dt_util
-from tests.bluetooth import inject_bluetooth_service_info_bleak
-from tests.conftest import mock_config, mock_devinfo_min
+
+from .bluetooth import inject_bluetooth_service_info_bleak
+from .conftest import mock_config, mock_devinfo_min
 
 DEV_NAME: Final[str] = "sensor.config_test_dummy_bms"
 
