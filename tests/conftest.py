@@ -70,7 +70,7 @@ def patch_default_bleak_client(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture
-def patch_entity_enabled_default(monkeypatch) -> None:
+def patch_entity_enabled_default(monkeypatch: pytest.MonkeyPatch) -> None:
     """Patch Entity.entity_registry_enabled_default to always return True."""
 
     monkeypatch.setattr(
