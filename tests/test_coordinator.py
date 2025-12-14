@@ -8,9 +8,16 @@ from aiobmsble import BMSSample
 from habluetooth import BluetoothServiceInfoBleak
 import pytest
 
-from custom_components.bms_ble.const import ATTR_CURRENT, ATTR_CYCLE_CHRG, ATTR_CYCLES
+from custom_components.bms_ble.const import (
+    ATTR_CURRENT,
+    ATTR_CYCLE_CAP,
+    ATTR_CYCLE_CHRG,
+    ATTR_CYCLES,
+    ATTR_POWER,
+    ATTR_PROBLEM,
+)
 from custom_components.bms_ble.coordinator import BTBmsCoordinator
-from homeassistant.const import ATTR_VOLTAGE
+from homeassistant.const import ATTR_BATTERY_CHARGING, ATTR_VOLTAGE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
@@ -53,8 +60,12 @@ async def test_update(
     assert result == {
         ATTR_VOLTAGE: 13,
         ATTR_CURRENT: 1.7,
+        ATTR_CYCLE_CAP: 247,
         ATTR_CYCLE_CHRG: 19,
         ATTR_CYCLES: 23,
+        ATTR_POWER: 22.1,
+        ATTR_PROBLEM: False,
+        ATTR_BATTERY_CHARGING: True
     }
     assert coordinator.rssi == (-61 if advertisement_avail else None)
     assert coordinator.link_quality == 50
