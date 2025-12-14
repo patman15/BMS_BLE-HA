@@ -8,19 +8,15 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
-from tests.bluetooth import inject_bluetooth_service_info_bleak
-from tests.conftest import (
-    mock_config,
-    mock_devinfo_min,
-    mock_exception,
-    mock_update_min,
-)
+
+from .bluetooth import inject_bluetooth_service_info_bleak
+from .conftest import mock_config, mock_devinfo_min, mock_exception, mock_update_min
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 @pytest.mark.parametrize("swap", [False, True], ids=["devinfo", "update"])
 async def test_init_fail(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     bms_fixture: str,
     swap: bool,
     bt_discovery: BluetoothServiceInfoBleak,
@@ -71,7 +67,7 @@ async def test_init_fail(
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_unload_entry(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     bms_fixture: str,
     bool_fixture: bool,
     bt_discovery: BluetoothServiceInfoBleak,

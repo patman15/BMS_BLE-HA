@@ -25,8 +25,9 @@ from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er
-from tests.bluetooth import generate_ble_device, inject_bluetooth_service_info_bleak
-from tests.conftest import (
+
+from .bluetooth import generate_ble_device, inject_bluetooth_service_info_bleak
+from .conftest import (
     mock_config,
     mock_config_v1_0,
     mock_devinfo_min,
