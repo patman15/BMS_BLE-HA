@@ -7,23 +7,15 @@
     },
     "flow_title": "Setup {name} ({id}) as {model}",
     "step": {
-      "user": {
-        "description": "[%key:component::bluetooth::config::step::user::description%]",
-        "data": {
-          "address": "Bluetooth name (MAC address) - Model"
-        }
-      },
       "bluetooth_confirm": {
         "description": "Do you want to set up {name} ({id})?"
+      },
+      "user": {
+        "data": {
+          "address": "Bluetooth name (MAC address) - Model"
+        },
+        "description": "[%key:component::bluetooth::config::step::user::description%]"
       }
-    }
-  },
-  "exceptions": {
-    "device_not_found": {
-      "message": "Could not find BMS ({MAC}) via Bluetooth."
-    },
-    "missing_unique_id": {
-      "message": "Missing unique ID for device."
     }
   },
   "entity": {
@@ -59,10 +51,18 @@
       },
       "min_cell_voltage": {
         "name": "Minimal cell voltage"
-      },       
+      },
       "runtime": {
         "name": "Runtime"
       }
+    }
+  },
+  "exceptions": {
+    "device_not_found": {
+      "message": "Could not find BMS ({MAC}) via Bluetooth."
+    },
+    "missing_unique_id": {
+      "message": "Missing unique ID for device."
     }
   }
 }

@@ -2,8 +2,7 @@
 
 from collections.abc import Callable
 
-from aiobmsble import BMSMode
-from aiobmsble.basebms import BMSSample
+from aiobmsble import BMSMode, BMSSample
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -127,7 +126,7 @@ class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity):
         descr: BmsBinaryEntityDescription,
         unique_id: str,
     ) -> None:
-        """Intialize BMS binary sensor."""
+        """Initialize BMS binary sensor."""
         self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
         self._attr_device_info = bms.device_info
         self._attr_has_entity_name = True
