@@ -99,7 +99,7 @@ async def test_diagnostics(
             if bool_fixture
             else "unavailable"
         ),
-        "advertisement_data": bt_discovery.as_dict() | {"source": REDACTED },
+        "advertisement_data": bt_discovery.as_dict() | {"source": REDACTED},
         "bms_link_quality": 50,
         "bms_info": {
             "connections": {(BT_DOMAIN, ce.unique_id)},
@@ -113,9 +113,13 @@ async def test_diagnostics(
             "serial_number": None,
         },
         "bms_data": {
+            "battery_charging": True,
             "current": 1.7,
+            "cycle_capacity": 247,
             "cycle_charge": 19,
             "cycles": 23,
+            "power": 22.1,
+            "problem": False,
             "voltage": 13,
         },
         "update_data": {

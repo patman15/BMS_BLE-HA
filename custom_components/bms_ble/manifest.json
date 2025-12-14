@@ -12,6 +12,9 @@
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
+      "service_uuid": "0000ffd0-0000-1000-8000-00805f9b34fb"
+    },
+    {
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb"
     },
     {
@@ -78,10 +81,6 @@
       "manufacturer_id": 21330
     },
     {
-      "service_uuid": "0000ffd0-0000-1000-8000-00805f9b34fb",
-      "manufacturer_id": 39008
-    },
-    {
       "local_name": "RNG*",
       "manufacturer_id": 57676
     },
@@ -95,24 +94,15 @@
       "local_name": "PC-????"
     }
   ],
-  "codeowners": [
-    "@patman15"
-  ],
+  "codeowners": ["@patman15"],
   "config_flow": true,
-  "dependencies": [
-    "bluetooth_adapters"
-  ],
+  "dependencies": ["bluetooth_adapters"],
   "documentation": "https://github.com/patman15/BMS_BLE-HA",
   "integration_type": "device",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
-  "loggers": [
-    "bleak_retry_connector",
-    "aiobmsble"
-  ],
+  "loggers": ["bleak_retry_connector", "aiobmsble"],
   "quality_scale": "silver",
-  "requirements": [
-      "aiobmsble@git+https://github.com/patman15/aiobmsble.git@fix-creabest-detection"
-  ],
-  "version": "2.3.0"
+  "requirements": ["aiobmsble==0.14.0"],
+  "version": "2.4.0"
 }
