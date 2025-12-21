@@ -34,7 +34,7 @@ async def test_update(
 ) -> None:
     """Test setting up creates the sensors."""
 
-    def mock_last_service_info(hass, address, connectable) -> None:
+    def mock_last_service_info(hass: HomeAssistant, address, connectable) -> None:
         assert (
             isinstance(hass, HomeAssistant)
             and connectable is True
@@ -65,7 +65,7 @@ async def test_update(
         ATTR_CYCLES: 23,
         ATTR_POWER: 22.1,
         ATTR_PROBLEM: False,
-        ATTR_BATTERY_CHARGING: True
+        ATTR_BATTERY_CHARGING: True,
     }
     assert coordinator.rssi == (-61 if advertisement_avail else None)
     assert coordinator.link_quality == 50
@@ -108,7 +108,7 @@ async def test_nodata(
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_update_exception(
     bt_discovery: BluetoothServiceInfoBleak,
-    mock_coordinator_exception,
+    mock_coordinator_exception: Exception,
     hass: HomeAssistant,
 ) -> None:
     """Test if coordinator raises appropriate exception from BMS."""
@@ -124,7 +124,12 @@ async def test_update_exception(
     assert not coordinator.last_update_success
     assert isinstance(
         coordinator.last_exception,
-        TimeoutError if mock_coordinator_exception is TimeoutError else UpdateFailed,
+        (
+            TimeoutError
+            if isinstance(mock_coordinator_exception, type)
+            and issubclass(mock_coordinator_exception, TimeoutError)
+            else UpdateFailed
+        ),
     )
 
 
