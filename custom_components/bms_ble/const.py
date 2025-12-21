@@ -33,5 +33,5 @@ ATTR_RUNTIME: Final[str] = "runtime"  # [s]
 ATTR_TEMP_SENSORS: Final[str] = "temperature_sensors"  # [°C]
 
 BINARY_SENSORS: Final[int] = 6  # total number of binary sensors
-LINK_SENSORS: Final[int] = 2
+LINK_SENSORS: Final[int] = 2  # total number of sensors for connection quality
 SENSORS: Final[int] = 12  # total number of sensors

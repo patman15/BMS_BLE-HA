@@ -11,7 +11,7 @@
         "description": "Do you want to set up {name} ({id})?"
       },
       "user": {
-        "data": {
+        "data_description": {
           "address": "Bluetooth name (MAC address) - Model"
         },
         "description": "[%key:component::bluetooth::config::step::user::description%]"

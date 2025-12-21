@@ -36,10 +36,10 @@ rules:
   config-entry-unloading: done
   docs-configuration-parameters:
     status: exempt
-    comment: This integation has no configuration parameters
+    comment: This integration has no configuration parameters
   docs-installation-parameters:
     status: exempt
-    comment: This integation has no installation parameters  
+    comment: This integration has no installation parameters
   entity-unavailable: done
   integration-owner: done
   log-when-unavailable: done
