@@ -11,8 +11,11 @@
         "description": "Do you want to set up {name} ({id})?"
       },
       "user": {
+        "data": {
+          "address": "[%key:common::config_flow::data::device%]"
+        },
         "data_description": {
-          "address": "Bluetooth name (MAC address) - Model"
+          "address": "Bluetooth name (MAC address) - model"
         },
         "description": "[%key:component::bluetooth::config::step::user::description%]"
       }
