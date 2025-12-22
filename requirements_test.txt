@@ -1,5 +1,6 @@
 -r requirements.txt
 wheel
+pycares < 5.0.0
 home-assistant-bluetooth
 habluetooth~=5.3.0
 aiousbwatcher~=1.1.1
@@ -7,18 +8,14 @@ bluetooth-adapters~=2.1.0
 hypothesis~=6.135.22
 pycares < 5.0.0
 pytest~=8.4.1
-pytest-cov~=6.2.1
 pytest-socket~=0.7.0
-pytest-asyncio~=1.1.0
 sqlalchemy~=2.0.41
 freezegun~=1.5.2
 requests-mock~=1.12.1
-syrupy~=4.9.1
 aiohttp
 aiohttp_cors
 aiohttp-fast-url-dispatcher
 aiohttp-zlib-ng
-bleak>=1.0.1
 bluetooth-data-tools
 pyserial-asyncio
 pyudev

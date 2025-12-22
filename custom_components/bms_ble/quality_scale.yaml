@@ -1,4 +1,5 @@
 # https://developers.home-assistant.io/docs/core/integration-quality-scale/
+# https://github.com/home-assistant/core/blob/dev/script/scaffold/templates/integration/integration/quality_scale.yaml
 rules:
   # Bronze
   action-setup:
@@ -12,7 +13,7 @@ rules:
   dependency-transparency: done
   docs-actions:
     status: exempt
-    comment: This integration does not register any actions  
+    comment: This integration does not register any actions
   docs-high-level-description: done
   docs-installation-instructions: done
   docs-removal-instructions: done
@@ -31,10 +32,14 @@ rules:
   # Silver
   action-exceptions:
     status: exempt
-    comment: This integration does not register any actions  
+    comment: This integration does not register any actions
   config-entry-unloading: done
-  docs-configuration-parameters: done
-  docs-installation-parameters: done
+  docs-configuration-parameters:
+    status: exempt
+    comment: This integration has no configuration parameters
+  docs-installation-parameters:
+    status: exempt
+    comment: This integration has no installation parameters
   entity-unavailable: done
   integration-owner: done
   log-when-unavailable: done

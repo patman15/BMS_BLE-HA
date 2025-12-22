@@ -6,7 +6,6 @@ from typing import Any, Final
 from aiobmsble.utils import bms_identify
 import voluptuous as vol
 
-from custom_components.bms_ble.const import DOMAIN, LOGGER
 from homeassistant import config_entries
 from homeassistant.components.bluetooth import (
     BluetoothServiceInfoBleak,
@@ -20,6 +19,8 @@ from homeassistant.helpers.selector import (
     SelectSelector,
     SelectSelectorConfig,
 )
+
+from .const import DOMAIN, LOGGER
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -110,7 +111,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle the user step to pick discovered device."""
-        LOGGER.debug("user step")
+        LOGGER.debug(
+            f"step user for {user_input[CONF_ADDRESS] if user_input else 'selection'}"
+        )
 
         if user_input is not None:
             address: str = str(user_input[CONF_ADDRESS])
@@ -138,9 +141,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if not self._disc_devs:
             return self.async_abort(reason="no_devices_found")
 
-        titles: list[SelectOptionDict] = []
+        devices: list[SelectOptionDict] = []
         for address, discovery in self._disc_devs.items():
-            titles.append(
+            devices.append(
                 SelectOptionDict(
                     value=address,
                     label=f"{discovery.name} ({address}) - {discovery.model()}",
@@ -152,7 +155,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_ADDRESS): SelectSelector(
-                        SelectSelectorConfig(options=titles)
+                        SelectSelectorConfig(options=devices),
                     )
                 }
             ),

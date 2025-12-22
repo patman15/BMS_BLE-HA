@@ -49,9 +49,10 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - DCHOUSE batteries (show up as `DCHOUSE`&#x2026;)
 - Ective, Startcraft, Topband batteries (show up as `$PFLAC`&#x2026;, `NWJ20`&#x2026;, `ZM20`&#x2026;)
 - Felicity ESS (show up as `F10`&#x2026;) and FLB batteries (show up as `F07`&#x2026;)
-- JBD BMS, Jiabaida (show up as `JBD-`&#x2026;)
+- HumsiENK Smart BMS (show up as `HS`&#x2026;)
+- JBD BMS, Jiabaida, Xiaoxiang (show up as `JBD-`&#x2026;)
     - accurat batteries, Aolithium batteries
-    - BasenGreen, Bulltron, DCHOUSE, ECO-WORTHY, Epoch batteries
+    - BasenGreen, Bulltron, CHINS, DCHOUSE, ECO-WORTHY, Epoch batteries
     - Eleksol, Fritz Berger, Liontron, LANPWR, OGRPHY, Perfektium, Ultimatron batteries
     - SBL batteries (show up as `SBL-`&#x2026;), Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries
 - JK BMS, Jikong, (HW version &ge; 6 required)
@@ -66,7 +67,8 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Renogy BMS, Renogy Pro BMS
 - RoyPow batteries
 - Seplos v2 (show up as `BP[0-2]?`)
-- Seplos v3 (show up as `SP[0,1,4-6]`&#x2026;)
+- Seplos v3 (show up as `SP[0-99]`&#x2026;)
+    - CEG Carmine Energia Gratis (show up as `XZHX`&#x2026;)
 - Super-B Epsilon BMS (show up as `Epsilon-`&#x2026;)
 - TDT BMS
     - Wattcycle batteries
@@ -96,10 +98,14 @@ Platform | Name | Unit | Description | Optional Attributes
 `sensor` | voltage | `V` | overall battery voltage | package voltage
 ||||
 |||| **Diagnosis Sensors**
-`binary_sensor` | problem | `bool` | indicates `True` if the battery reports an issue or plausibility checks on values fail | problem code
+`binary_sensor`* | balancer | `bool` | indicates `True` if the battery balancer is active | cell bit mask
+`binary_sensor`* | chrg mosfet | `bool` | indicates `True` if the BMS charge MOSFET is activated
+`binary_sensor`* | dischrg mosfet | `bool` | indicates `True` if the BMS discharge MOSFET is activated
+`binary_sensor`* | heater | `bool` | indicates `True` if the battery being heated
+`binary_sensor` | problem | `bool` | indicates `True` if the BMS reports an issue or plausibility checks on values fail | problem code
 `sensor` | delta cell voltage | `V` | maximum difference between any two cells in a pack | cell voltages
-`sensor` | max cell voltage | `V` | overall maximum cell voltage in the system | cell number
-`sensor` | min cell voltage | `V` | overall minimum cell voltage in the system | cell number
+`sensor`* | max cell voltage | `V` | overall maximum cell voltage in the system | cell number
+`sensor`* | min cell voltage | `V` | overall minimum cell voltage in the system | cell number
 `sensor`* | link quality  | `%` | successful BMS queries from the last hundred update periods
 `sensor`* | RSSI          | `dBm`| received signal strength indicator
 
@@ -298,7 +304,7 @@ all [contributors of aiobmsble](https://github.com/patman15/aiobmsble?tab=readme
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA?style=for-the-badge&color=orange&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-740_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-798_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=HACS&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
 [custint-url]: https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval

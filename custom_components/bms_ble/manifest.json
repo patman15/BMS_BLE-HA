@@ -1,6 +1,6 @@
 {
   "domain": "bms_ble",
-  "name": "BLE Battery Management",
+  "name": "BLE Battery Management System",
   "bluetooth": [
     {
       "service_uuid": "0000af30-0000-1000-8000-00805f9b34fb"
@@ -10,6 +10,9 @@
     },
     {
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "service_uuid": "0000ffd0-0000-1000-8000-00805f9b34fb"
     },
     {
       "service_uuid": "0000ffe0-0000-1000-8000-00805f9b34fb"
@@ -74,12 +77,8 @@
       "local_name": "F07*"
     },
     {
-      "service_uuid": "000003c1-0000-1000-8000-00805f9b34fb",
-      "manufacturer_id": 21330
-    },
-    {
-      "service_uuid": "0000ffd0-0000-1000-8000-00805f9b34fb",
-      "manufacturer_id": 39008
+      "manufacturer_id": 21330,
+      "service_uuid": "000003c1-0000-1000-8000-00805f9b34fb"
     },
     {
       "local_name": "RNG*",
@@ -95,21 +94,14 @@
       "local_name": "PC-????"
     }
   ],
-  "codeowners": [
-    "@patman15"
-  ],
+  "codeowners": ["@patman15"],
   "config_flow": true,
-  "dependencies": [
-    "bluetooth_adapters"
-  ],
+  "dependencies": ["bluetooth_adapters"],
   "documentation": "https://github.com/patman15/BMS_BLE-HA",
   "integration_type": "device",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
-  "loggers": [
-    "bleak_retry_connector",
-    "aiobmsble"
-  ],
+  "loggers": ["bleak_retry_connector", "aiobmsble"],
   "quality_scale": "silver",
   "requirements": [
       "aiobmsble@git+https://github.com/patman15/aiobmsble.git@101-super-b-epsilon-v2-support"
