@@ -26,6 +26,7 @@ from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.device_registry import format_mac
 
 from .bluetooth import generate_ble_device, inject_bluetooth_service_info_bleak
 from .conftest import (
@@ -76,12 +77,14 @@ async def test_bluetooth_discovery(
     flowresults: list[ConfigFlowResult] = (
         hass.config_entries.flow.async_progress_by_handler(DOMAIN)
     )
-    assert (
-        len(flowresults) == 1
-    ), f"Expected one flow result for {advertisement}, check manifest.json!"
+    assert len(flowresults) == 1, (
+        f"Expected one flow result for {advertisement}, check manifest.json!"
+    )
     result: ConfigFlowResult = flowresults[0]
     assert result.get("step_id") == "bluetooth_confirm"
-    assert result.get("context", {}).get("unique_id") == advertisement.address
+    assert result.get("context", {}).get("unique_id") == format_mac(
+        advertisement.address
+    )
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"], user_input={"not": "empty"}
