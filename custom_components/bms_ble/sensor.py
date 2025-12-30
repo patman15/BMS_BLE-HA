@@ -97,21 +97,17 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         value_fn=lambda data: data.get("battery_health"),
     ),
     BmsEntityDescription(
-        attr_fn=lambda data: (
-            {"temperature_sensors": data.get("temp_values", [])}
-            if "temp_values" in data
-            else (
-                {"temperature_sensors": [data.get("temperature", 0.0)]}
-                if "temperature" in data
-                else {}
-            )
-        ),
-        device_class=SensorDeviceClass.TEMPERATURE,
-        key=ATTR_TEMPERATURE,
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        state_class=SensorStateClass.MEASUREMENT,
-        suggested_display_precision=1,
-        value_fn=lambda data: data.get("temperature"),
+    # We no longer use attr_fn for the array
+    device_class=SensorDeviceClass.TEMPERATURE,
+    key=ATTR_TEMPERATURE,
+    native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+    state_class=SensorStateClass.MEASUREMENT,
+    suggested_display_precision=1,
+    optional=True,
+    value_fn=lambda data, idx=None: (
+        data.get("temp_values", [data.get("temperature", 0.0)])[idx]
+        if idx is not None else None
+        )
     ),
     BmsEntityDescription(
         attr_fn=lambda data: (
@@ -256,6 +252,14 @@ async def async_setup_entry(
             continue
         if descr.optional and descr.key not in bms.data:
             continue
+
+        # Special handling for temperature probes
+        if descr.key == ATTR_TEMPERATURE:
+            temps = bms.data.get("temp_values", [bms.data.get("temperature", 0.0)])
+            for idx, _ in enumerate(temps):
+                async_add_entities([BMSSensorTemperatureProbe(bms, descr, mac, idx)])
+            continue
+
         async_add_entities([BMSSensor(bms, descr, mac)])
 
 
@@ -341,3 +345,19 @@ class LQSensor(SensorEntity):
 
         LOGGER.debug("%s: Link quality: %i %%", self._bms.name, self._attr_native_value)
         self.async_write_ha_state()
+
+class BMSSensorTemperatureProbe(BMSSensor):
+    """A single temperature probe sensor."""
+
+    def __init__(
+        self, bms: BTBmsCoordinator, descr: BmsEntityDescription, unique_id: str, idx: int
+    ) -> None:
+        """Initialize the temperature probe sensor."""
+        super().__init__(bms, descr, f"{unique_id}-temp{idx}")
+        self._idx = idx
+        self._attr_name = f"{self._attr_name} Probe {idx + 1}"  # Optional naming
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the temperature for this probe."""
+        return self.entity_description.value_fn(self.coordinator.data, self._idx)
