@@ -11,6 +11,8 @@ UPDATE_INTERVAL: Final[int] = 30  # [s]
 ATTR_BALANCER: Final[str] = "balancer"  # [bool]
 ATTR_BALANCE_CUR: Final[str] = "balance_current"  # [A]
 ATTR_BATTERY_HEALTH: Final[str] = "battery_health"  # [%]
+ATTR_BATTERY_MODE: Final[str] = "battery_mode"  # [int]
+ATTR_CELL_COUNT: Final[str] = "cell_count"  # [#]
 ATTR_CELL_VOLTAGES: Final[str] = "cell_voltages"  # [V]
 ATTR_CHRG_MOSFET: Final[str] = "chrg_mosfet"  # [bool]
 ATTR_CURRENT: Final[str] = "current"  # [A]
@@ -31,5 +33,5 @@ ATTR_RUNTIME: Final[str] = "runtime"  # [s]
 ATTR_TEMP_SENSORS: Final[str] = "temperature_sensors"  # [°C]
 
 BINARY_SENSORS: Final[int] = 6  # total number of binary sensors
-LINK_SENSORS: Final[int] = 2
+LINK_SENSORS: Final[int] = 2  # total number of sensors for connection quality
 SENSORS: Final[int] = 12  # total number of sensors

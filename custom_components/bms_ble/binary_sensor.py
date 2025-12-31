@@ -2,8 +2,7 @@
 
 from collections.abc import Callable
 
-from aiobmsble import BMSMode
-from aiobmsble.basebms import BMSSample
+from aiobmsble import BMSMode, BMSSample
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -19,6 +18,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from . import BTBmsConfigEntry
 from .const import (
     ATTR_BALANCER,
+    ATTR_BATTERY_MODE,
+    ATTR_CELL_COUNT,
     ATTR_CHRG_MOSFET,
     ATTR_DISCHRG_MOSFET,
     ATTR_HEATER,
@@ -39,8 +40,8 @@ class BmsBinaryEntityDescription(BinarySensorEntityDescription, frozen_or_thawed
 BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
     BmsBinaryEntityDescription(
         attr_fn=lambda data: (
-            {"battery_mode": data.get("battery_mode", BMSMode.UNKNOWN).name.lower()}
-            if "battery_mode" in data
+            {ATTR_BATTERY_MODE: data.get(ATTR_BATTERY_MODE, BMSMode.UNKNOWN).name.lower()}
+            if ATTR_BATTERY_MODE in data
             else {}
         ),
         device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
@@ -48,8 +49,12 @@ BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
     ),
     BmsBinaryEntityDescription(
         attr_fn=lambda data: (
-            {"cells": data.get(ATTR_BALANCER, 0)}
-            if isinstance(data.get(ATTR_BALANCER, 0), int)
+            {
+                "cells": f"{data.get(ATTR_BALANCER, 0):0{data.get(ATTR_CELL_COUNT, 8)}b}"[
+                    ::-1
+                ]
+            }
+            if isinstance(data.get(ATTR_BALANCER), int)
             else {}
         ),
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -121,7 +126,7 @@ class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity):
         descr: BmsBinaryEntityDescription,
         unique_id: str,
     ) -> None:
-        """Intialize BMS binary sensor."""
+        """Initialize BMS binary sensor."""
         self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
         self._attr_device_info = bms.device_info
         self._attr_has_entity_name = True

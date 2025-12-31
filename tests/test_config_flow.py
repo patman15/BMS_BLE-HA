@@ -18,6 +18,7 @@ from custom_components.bms_ble.const import (
 from homeassistant.config_entries import (
     SOURCE_BLUETOOTH,
     SOURCE_USER,
+    ConfigEntry,
     ConfigEntryState,
     ConfigFlowResult,
 )
@@ -25,8 +26,9 @@ from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er
-from tests.bluetooth import generate_ble_device, inject_bluetooth_service_info_bleak
-from tests.conftest import (
+
+from .bluetooth import generate_ble_device, inject_bluetooth_service_info_bleak
+from .conftest import (
     mock_config,
     mock_config_v1_0,
     mock_devinfo_min,
@@ -100,11 +102,18 @@ async def test_bluetooth_discovery(
 @pytest.mark.parametrize(
     ("sensor_set", "sensor_count"),
     [
-        ("min", (1, SENSORS - 3, 1 + (SENSORS - 1) + LINK_SENSORS)),
+        (
+            "min",
+            (
+                min(BINARY_SENSORS, 1),
+                SENSORS - 3,
+                min(BINARY_SENSORS, 1) + (SENSORS - 1) + LINK_SENSORS,
+            ),
+        ),
         (
             "full",
             (
-                BINARY_SENSORS - 4,
+                max(BINARY_SENSORS - 4, 0),
                 SENSORS - 2,  # link sensors are disabled by default
                 BINARY_SENSORS + SENSORS + LINK_SENSORS,
             ),
@@ -114,7 +123,7 @@ async def test_bluetooth_discovery(
 )
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_device_setup(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
     sensor_set: str,
@@ -150,7 +159,7 @@ async def test_device_setup(
     assert result.get("type") == FlowResultType.CREATE_ENTRY
     assert result.get("title") == "SmartBat-B12345"
 
-    result_detail = result.get("result")
+    result_detail: ConfigEntry | None = result.get("result")
     assert result_detail is not None
     assert result_detail.unique_id == "cc:cc:cc:cc:cc:cc"
 
@@ -206,7 +215,7 @@ async def test_already_configured(bms_fixture: str, hass: HomeAssistant) -> None
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_async_setup_entry(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     bms_fixture: str,
     bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
@@ -246,7 +255,9 @@ async def test_setup_entry_missing_unique_id(bms_fixture, hass: HomeAssistant) -
     "enable_bluetooth", "patch_default_bleak_client", "patch_entity_enabled_default"
 )
 async def test_user_setup(
-    monkeypatch, bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
+    monkeypatch: pytest.MonkeyPatch,
+    bt_discovery: BluetoothServiceInfoBleak,
+    hass: HomeAssistant,
 ) -> None:
     """Check config flow for user adding previously discovered device."""
 
@@ -290,7 +301,7 @@ async def test_user_setup(
     assert result.get("type") == FlowResultType.CREATE_ENTRY
     assert result.get("title") == "SmartBat-B12345"
 
-    result_detail = result.get("result")
+    result_detail: ConfigEntry | None = result.get("result")
     assert result_detail is not None
     assert result_detail.unique_id == "cc:cc:cc:cc:cc:cc"
     assert (
@@ -314,7 +325,9 @@ async def test_user_setup_invalid(
 
 @pytest.mark.usefixtures("enable_bluetooth")
 async def test_user_setup_double_configure(
-    monkeypatch, bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
+    monkeypatch: pytest.MonkeyPatch,
+    bt_discovery: BluetoothServiceInfoBleak,
+    hass: HomeAssistant,
 ) -> None:
     """Check config flow for user adding previously already added device."""
 
