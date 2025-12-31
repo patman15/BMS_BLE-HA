@@ -74,6 +74,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Wattcycle batteries
 - TianPower BMS (show up as `TP_`&#x2026;)
 - Vatrer BMS (show up as `YYMMDDVVVAAAAxx` (date, V, Ah))
+- Wattstunde Nova Core
 
 If you would like to get your battery/BMS supported please consider raising a pull request for [aiobmsble](https://github.com/patman15/aiobmsble) following the [contribution guidelines](https://github.com/patman15/aiobmsble?tab=contributing-ov-file) or raise [a new issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) giving your BMS/battery type in the title. Please provide the information requested by the template (see *additional context*).
 
