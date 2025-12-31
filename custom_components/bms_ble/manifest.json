@@ -110,8 +110,6 @@
     "aiobmsble"
   ],
   "quality_scale": "silver",
-  "requirements": [
-      "aiobmsble==0.14.0b2"
-  ],
-  "version": "2.3.1-beta.2"
+  "requirements": ["aiobmsble@git+https://github.com/patman15/aiobmsble.git@71-add-wattstunde-nova-core-bms"],
+  "version": "2.4.3-beta.1"
 }
