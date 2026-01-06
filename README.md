@@ -53,7 +53,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - JBD BMS, Jiabaida, Xiaoxiang (show up as `JBD-`&#x2026;)
     - accurat batteries, Aolithium batteries
     - BasenGreen, Bulltron, CHINS, DCHOUSE, ECO-WORTHY, Epoch batteries
-    - Eleksol, Fritz Berger, Liontron, LANPWR, OGRPHY, Perfektium, Ultimatron batteries
+    - Eleksol, Fritz Berger, JavaEnegy, Liontron, LANPWR, OGRPHY, Perfektium, Ultimatron batteries
     - SBL batteries (show up as `SBL-`&#x2026;), Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries
 - JK BMS, Jikong, (HW version &ge; 6 required)
 - LiTime, Power Queen, and Redodo batteries
@@ -104,8 +104,8 @@ Platform | Name | Unit | Description | Optional Attributes
 `binary_sensor`* | heater | `bool` | indicates `True` if the battery being heated
 `binary_sensor` | problem | `bool` | indicates `True` if the BMS reports an issue or plausibility checks on values fail | problem code
 `sensor` | delta cell voltage | `V` | maximum difference between any two cells in a pack | cell voltages
-`sensor`* | max cell voltage | `V` | overall maximum cell voltage in the system | cell number
-`sensor`* | min cell voltage | `V` | overall minimum cell voltage in the system | cell number
+`sensor`* | max cell voltage | `V` | overall highest cell voltage in the system | cell number
+`sensor`* | min cell voltage | `V` | overall lowest cell voltage in the system | cell number
 `sensor`* | link quality  | `%` | successful BMS queries from the last hundred update periods
 `sensor`* | RSSI          | `dBm`| received signal strength indicator
 
