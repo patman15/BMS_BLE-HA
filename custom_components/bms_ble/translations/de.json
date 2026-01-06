@@ -55,10 +55,10 @@
         "name": "Verbindungsqualität"
       },
       "max_cell_voltage": {
-        "name": "Maximale Zellspannung"
+        "name": "Höchste Zellspannung"
       },
       "min_cell_voltage": {
-        "name": "Minimale Zellspannung"
+        "name": "Niedrigste Zellspannung"
       },       
       "runtime": {
         "name": "Laufzeit"

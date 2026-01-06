@@ -38,10 +38,10 @@
         "name": "Qualidade de ligação"
       },
       "max_cell_voltage": {
-        "name": "Maksymalne napięcie ogniwa"
+        "name": "Najwyższe napięcie ogniwa"
       },
       "min_cell_voltage": {
-        "name": "Minimalne napięcie ogniwa"
+        "name": "Najniższe napięcie ogniwa"
       },      
       "runtime": {
         "name": "Run"
