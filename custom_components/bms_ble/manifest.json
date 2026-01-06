@@ -42,6 +42,9 @@
       "manufacturer_id": 1026
     },
     {
+      "manufacturer_id": 4660
+    },
+    {
       "local_name": "ECO-WORTHY 02_*"
     },
     {
@@ -103,6 +106,8 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bleak_retry_connector", "aiobmsble"],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble==0.14.1"],
-  "version": "2.4.0"
+  "requirements": [
+    "aiobmsble@git+https://github.com/patman15/aiobmsble.git@109-add-saftkiste-support"
+  ],
+  "version": "2.5.0-beta.3"
 }
