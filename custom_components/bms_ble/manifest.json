@@ -103,6 +103,6 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bleak_retry_connector", "aiobmsble"],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble==0.15.0"],
-  "version": "2.5.1"
+  "requirements": ["aiobmsble@git+https://github.com/patman15/aiobmsble.git@feat-litime-chrg-mosfet"],
+  "version": "2.5.2-beta.2"
 }
