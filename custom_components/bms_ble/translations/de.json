@@ -27,7 +27,24 @@
     }
   },
   "entity": {
+    "binary_sensor": {
+      "balancer": {
+        "name": "Balancer"
+      },
+      "chrg_mosfet": {
+        "name": "Lade-MOSFET"
+      },
+      "dischrg_mosfet": {
+        "name": "Entlade-MOSFET"
+      },
+      "heater": {
+        "name": "Heizung"
+      }
+    },
     "sensor": {
+      "battery_health": {
+        "name": "Gesundheitszustand"
+      },
       "cycles": {
         "name": "Zyklen"
       },
@@ -38,10 +55,10 @@
         "name": "Verbindungsqualität"
       },
       "max_cell_voltage": {
-        "name": "Maximale Zellspannung"
+        "name": "Höchste Zellspannung"
       },
       "min_cell_voltage": {
-        "name": "Minimale Zellspannung"
+        "name": "Niedrigste Zellspannung"
       },       
       "runtime": {
         "name": "Laufzeit"

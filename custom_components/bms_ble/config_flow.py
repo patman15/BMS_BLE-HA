@@ -6,7 +6,6 @@ from typing import Any, Final
 from aiobmsble.utils import bms_identify
 import voluptuous as vol
 
-from custom_components.bms_ble.const import DOMAIN, LOGGER
 from homeassistant import config_entries
 from homeassistant.components.bluetooth import (
     BluetoothServiceInfoBleak,
@@ -20,6 +19,8 @@ from homeassistant.helpers.selector import (
     SelectSelector,
     SelectSelectorConfig,
 )
+
+from .const import DOMAIN, LOGGER
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -70,7 +71,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle a flow initialized by Bluetooth discovery."""
         LOGGER.debug("Bluetooth device detected: %s", discovery_info)
 
-        await self.async_set_unique_id(discovery_info.address)
+        address: Final[str] = discovery_info.address
+        await self.async_set_unique_id(address)
         self._abort_if_unique_id_configured()
 
         if not (bms_module := await self._async_device_supported(discovery_info)):
@@ -81,7 +83,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
         self.context["title_placeholders"] = {
             CONF_NAME: self._disc_dev.name,
-            CONF_ID: self._disc_dev.discovery_info.address[8:],  # remove OUI
+            CONF_ID: address[8:],  # remove OUI
             CONF_MODEL: self._disc_dev.model(),
         }
         return await self.async_step_bluetooth_confirm()
@@ -110,7 +112,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle the user step to pick discovered device."""
-        LOGGER.debug("user step")
+        LOGGER.debug(
+            f"step user for {user_input[CONF_ADDRESS] if user_input else 'selection'}"
+        )
 
         if user_input is not None:
             address: str = str(user_input[CONF_ADDRESS])
@@ -123,8 +127,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data={"type": self._disc_dev.type},
             )
 
-        current_addresses: Final[set[str | None]] = self._async_current_ids()
-        for discovery_info in async_discovered_service_info(self.hass, False):
+        current_addresses: Final[set[str | None]] = self._async_current_ids(include_ignore=False)
+        for discovery_info in async_discovered_service_info(self.hass, connectable=True):
             address = discovery_info.address
             if address in current_addresses or address in self._disc_devs:
                 continue
@@ -138,9 +142,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if not self._disc_devs:
             return self.async_abort(reason="no_devices_found")
 
-        titles: list[SelectOptionDict] = []
+        devices: list[SelectOptionDict] = []
         for address, discovery in self._disc_devs.items():
-            titles.append(
+            devices.append(
                 SelectOptionDict(
                     value=address,
                     label=f"{discovery.name} ({address}) - {discovery.model()}",
@@ -152,7 +156,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_ADDRESS): SelectSelector(
-                        SelectSelectorConfig(options=titles)
+                        SelectSelectorConfig(options=devices),
                     )
                 }
             ),

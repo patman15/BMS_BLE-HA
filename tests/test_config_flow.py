@@ -9,10 +9,16 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from voluptuous import Schema
 
-from custom_components.bms_ble.const import BINARY_SENSORS, DOMAIN, SENSORS
+from custom_components.bms_ble.const import (
+    BINARY_SENSORS,
+    DOMAIN,
+    LINK_SENSORS,
+    SENSORS,
+)
 from homeassistant.config_entries import (
     SOURCE_BLUETOOTH,
     SOURCE_USER,
+    ConfigEntry,
     ConfigEntryState,
     ConfigFlowResult,
 )
@@ -20,11 +26,13 @@ from homeassistant.const import CONF_ADDRESS
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er
-from tests.bluetooth import generate_ble_device, inject_bluetooth_service_info_bleak
-from tests.conftest import (
+
+from .bluetooth import generate_ble_device, inject_bluetooth_service_info_bleak
+from .conftest import (
     mock_config,
     mock_config_v1_0,
     mock_devinfo_min,
+    mock_update_full,
     mock_update_min,
 )
 
@@ -68,7 +76,9 @@ async def test_bluetooth_discovery(
     flowresults: list[ConfigFlowResult] = (
         hass.config_entries.flow.async_progress_by_handler(DOMAIN)
     )
-    assert len(flowresults) == 1, f"Expected one flow result for {advertisement}, check manifest.json!"
+    assert len(flowresults) == 1, (
+        f"Expected one flow result for {advertisement}, check manifest.json!"
+    )
     result: ConfigFlowResult = flowresults[0]
     assert result.get("step_id") == "bluetooth_confirm"
     assert result.get("context", {}).get("unique_id") == advertisement.address
@@ -89,11 +99,35 @@ async def test_bluetooth_discovery(
     )
 
 
+@pytest.mark.parametrize(
+    ("sensor_set", "sensor_count"),
+    [
+        (
+            "min",
+            (
+                min(BINARY_SENSORS, 1),
+                SENSORS - 3,
+                min(BINARY_SENSORS, 1) + (SENSORS - 1) + LINK_SENSORS,
+            ),
+        ),
+        (
+            "full",
+            (
+                max(BINARY_SENSORS - 4, 0),
+                SENSORS - 2,  # link sensors are disabled by default
+                BINARY_SENSORS + SENSORS + LINK_SENSORS,
+            ),
+        ),
+    ],
+    ids=["minimal", "full"],
+)
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_device_setup(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
+    sensor_set: str,
+    sensor_count: tuple[int, int, int],
 ) -> None:
     """Test discovery via bluetooth with a valid device."""
 
@@ -115,7 +149,7 @@ async def test_device_setup(
 
     monkeypatch.setattr(
         "aiobmsble.bms.ogt_bms.BMS.async_update",
-        mock_update_min,
+        mock_update_full if sensor_set == "full" else mock_update_min,
     )
 
     result = await hass.config_entries.flow.async_configure(
@@ -125,24 +159,23 @@ async def test_device_setup(
     assert result.get("type") == FlowResultType.CREATE_ENTRY
     assert result.get("title") == "SmartBat-B12345"
 
-    result_detail = result.get("result")
+    result_detail: ConfigEntry | None = result.get("result")
     assert result_detail is not None
     assert result_detail.unique_id == "cc:cc:cc:cc:cc:cc"
-    assert (
-        len(hass.states.async_all(["sensor", "binary_sensor"]))
-        == BINARY_SENSORS + SENSORS
-    )
 
     entities: er.EntityRegistryItems = er.async_get(hass).entities
-    assert (
-        len(entities) == BINARY_SENSORS + SENSORS + 2
-    )  # sensors, binary_sensors, rssi
+    # check number of sensors minus the ones disabled by default
+    assert len(hass.states.async_all(["binary_sensor"])) == sensor_count[0]
+    assert len(hass.states.async_all(["sensor"])) == sensor_count[1]
+    # check overall entities (including disabled sensors)
+    assert len(entities) == sensor_count[2]
 
     # check correct unique_id format of all sensor entries
     for entry in entities.get_entries_for_config_entry_id(result_detail.entry_id):
         assert entry.unique_id.startswith(f"{DOMAIN}-cc:cc:cc:cc:cc:cc-")
 
 
+@pytest.mark.usefixtures("enable_bluetooth")
 async def test_device_not_supported(
     bt_discovery_notsupported: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
@@ -158,6 +191,7 @@ async def test_device_not_supported(
     assert result.get("reason") == "not_supported"
 
 
+@pytest.mark.usefixtures("enable_bluetooth")
 async def test_already_configured(bms_fixture: str, hass: HomeAssistant) -> None:
     """Test that same device cannot be added twice."""
 
@@ -181,7 +215,7 @@ async def test_already_configured(bms_fixture: str, hass: HomeAssistant) -> None
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_async_setup_entry(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     bms_fixture: str,
     bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
@@ -204,6 +238,7 @@ async def test_async_setup_entry(
     assert cfg.state is ConfigEntryState.LOADED
 
 
+@pytest.mark.usefixtures("enable_bluetooth")
 async def test_setup_entry_missing_unique_id(bms_fixture, hass: HomeAssistant) -> None:
     """Test async_setup_entry with missing unique id."""
 
@@ -216,15 +251,19 @@ async def test_setup_entry_missing_unique_id(bms_fixture, hass: HomeAssistant) -
     assert cfg.state is ConfigEntryState.SETUP_ERROR
 
 
-@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+@pytest.mark.usefixtures(
+    "enable_bluetooth", "patch_default_bleak_client", "patch_entity_enabled_default"
+)
 async def test_user_setup(
-    monkeypatch, bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
+    monkeypatch: pytest.MonkeyPatch,
+    bt_discovery: BluetoothServiceInfoBleak,
+    hass: HomeAssistant,
 ) -> None:
     """Check config flow for user adding previously discovered device."""
 
     monkeypatch.setattr(
         "aiobmsble.bms.ogt_bms.BMS.async_update",
-        mock_update_min,
+        mock_update_full,
     )
 
     inject_bluetooth_service_info_bleak(hass, bt_discovery)
@@ -262,12 +301,12 @@ async def test_user_setup(
     assert result.get("type") == FlowResultType.CREATE_ENTRY
     assert result.get("title") == "SmartBat-B12345"
 
-    result_detail = result.get("result")
+    result_detail: ConfigEntry | None = result.get("result")
     assert result_detail is not None
     assert result_detail.unique_id == "cc:cc:cc:cc:cc:cc"
     assert (
         len(hass.states.async_all(["sensor", "binary_sensor"]))
-        == BINARY_SENSORS + SENSORS
+        == BINARY_SENSORS + SENSORS + LINK_SENSORS
     )
 
 
@@ -286,12 +325,14 @@ async def test_user_setup_invalid(
 
 @pytest.mark.usefixtures("enable_bluetooth")
 async def test_user_setup_double_configure(
-    monkeypatch, bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
+    monkeypatch: pytest.MonkeyPatch,
+    bt_discovery: BluetoothServiceInfoBleak,
+    hass: HomeAssistant,
 ) -> None:
     """Check config flow for user adding previously already added device."""
 
-    def patch_async_current_ids(_self) -> set[str | None]:
-        return {"cc:cc:cc:cc:cc:cc"}
+    def patch_async_current_ids(_self, include_ignore: bool = True) -> set[str | None]:
+        return {None if include_ignore else "cc:cc:cc:cc:cc:cc"}
 
     monkeypatch.setattr(
         "custom_components.bms_ble.config_flow.ConfigFlow._async_current_ids",
@@ -306,6 +347,7 @@ async def test_user_setup_double_configure(
     assert result.get("type") == FlowResultType.ABORT
 
 
+@pytest.mark.usefixtures("enable_bluetooth")
 async def test_no_migration(bms_fixture: str, hass: HomeAssistant) -> None:
     """Test that entries of correct version are kept."""
 
@@ -322,6 +364,7 @@ async def test_no_migration(bms_fixture: str, hass: HomeAssistant) -> None:
     assert cfg.state is ConfigEntryState.SETUP_RETRY
 
 
+@pytest.mark.usefixtures("enable_bluetooth")
 async def test_migrate_entry_future_version(
     bms_fixture: str, hass: HomeAssistant
 ) -> None:
@@ -338,6 +381,7 @@ async def test_migrate_entry_future_version(
     assert cfg.state is ConfigEntryState.MIGRATION_ERROR
 
 
+@pytest.mark.usefixtures("enable_bluetooth")
 async def test_migrate_invalid_v_0_1(bms_fixture: str, hass: HomeAssistant) -> None:
     """Test migrating an invalid entry in version 0.1."""
 
@@ -366,7 +410,7 @@ async def test_migrate_entry_from_v1_0(
     cfg: MockConfigEntry = mock_config_v1_0(bms=bms_fixture)
     cfg.add_to_hass(hass)
 
-    bms_module: Final[str] = f"aiobmsble.bms.{str(cfg.data["type"]).rsplit(".",1)[-1]}"
+    bms_module: Final[str] = f"aiobmsble.bms.{str(cfg.data['type']).rsplit('.', 1)[-1]}"
     monkeypatch.setattr(f"{bms_module}.BMS.device_info", mock_devinfo_min)
     monkeypatch.setattr(f"{bms_module}.BMS.async_update", mock_update_min)
 
@@ -393,7 +437,7 @@ async def test_migrate_entry_from_v0_1(
     cfg: MockConfigEntry = mock_config_v0_1
     cfg.add_to_hass(hass)
 
-    bms_module: Final[str] = f"aiobmsble.bms.{(cfg.data["type"][:-3]).lower()}_bms"
+    bms_module: Final[str] = f"aiobmsble.bms.{(cfg.data['type'][:-3]).lower()}_bms"
     monkeypatch.setattr(f"{bms_module}.BMS.device_info", mock_devinfo_min)
     monkeypatch.setattr(f"{bms_module}.BMS.async_update", mock_update_min)
 
@@ -406,6 +450,7 @@ async def test_migrate_entry_from_v0_1(
     assert cfg.state is ConfigEntryState.LOADED
 
 
+@pytest.mark.usefixtures("enable_bluetooth")
 @pytest.mark.parametrize(
     ("unique_id_old", "unique_id_new"),
     [

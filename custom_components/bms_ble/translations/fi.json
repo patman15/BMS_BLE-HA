@@ -31,17 +31,17 @@
       "cycles": {
         "name": "latauskerrat"
       },
-      "delta_voltage": {
+      "delta_cell_voltage": {
         "name": "Jännite-ero"
       },
       "link_quality": {
         "name": "Linkin tila"
       },
       "max_cell_voltage": {
-        "name": "Maksimi kennojännite"
+        "name": "Korkein kennojännite"
       },
       "min_cell_voltage": {
-        "name": "Minimi kennojännite"
+        "name": "Alin kennojännite"
       },       
       "runtime": {
         "name": "Käyttöaika"

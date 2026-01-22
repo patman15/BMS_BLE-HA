@@ -16,7 +16,7 @@ requires-python = ">= 3.13.0"
 
 [tool.pytest.ini_options]
 minversion = "8.4"
-addopts="-n auto --force-enable-socket --cov=custom_components.bms_ble --cov-branch --cov-report=term-missing --cov-fail-under=100"
+addopts="-n auto --cov=custom_components.bms_ble --cov-branch --cov-report=term-missing --cov-fail-under=100"
 pythonpath = [
     "custom_components.bms_ble",
 ]
@@ -158,7 +158,7 @@ ignore = [
 #    "RUF002", # Docstring contains ambiguous unicode character.
 #    "RUF003", # Comment contains ambiguous unicode character.
 #    "RUF015", # Prefer next(...) over single element slice
-    "SIM102", # Use a single if statement instead of nested if statements
+#    "SIM102", # Use a single if statement instead of nested if statements
 #    "SIM103", # Return the condition {condition} directly
 #    "SIM108", # Use ternary operator {contents} instead of if-else-block
 #    "SIM115", # Use context handler for opening files
@@ -170,8 +170,6 @@ ignore = [
 
     "TRY003", # Avoid specifying long messages outside the exception class
     "TRY400", # Use `logging.exception` instead of `logging.error`
-    # Ignored due to performance: https://github.com/charliermarsh/ruff/issues/2923
-    "UP038", # Use `X | Y` in `isinstance` call instead of `(X, Y)`
 
     # May conflict with the formatter, https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
     "W191",

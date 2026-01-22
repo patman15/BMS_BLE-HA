@@ -83,7 +83,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
 
     @property
     def link_quality(self) -> int:
-        """Gives the precentage of successful BMS reads out of the last 100 attempts."""
+        """Gives the percentage of successful BMS reads out of the last 100 attempts."""
 
         return self._link_q.count(True) * 100 // len(self._link_q)
 
@@ -116,8 +116,8 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
             DeviceInfo(
                 name=bms_info.get("name") or self.name,
                 manufacturer=bms_info.get("manufacturer")
-                or self._device.INFO["default_manufacturer"],
-                model=bms_info.get("model") or self._device.INFO["default_model"],
+                or self._device.INFO.get("default_manufacturer"),
+                model=bms_info.get("model") or self._device.INFO.get("default_model"),
                 sw_version=bms_info.get("sw_version") or bms_info.get("fw_version"),
                 hw_version=bms_info.get("hw_version"),
                 model_id=bms_info.get("model_id"),

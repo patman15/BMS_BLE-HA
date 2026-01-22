@@ -2,32 +2,44 @@
   "config": {
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]",
-      "no_devices_found": "No supported devices found via Bluetooth",
-      "not_supported": "Device not supported"
+      "no_devices_found": "No supported devices found via Bluetooth.",
+      "not_supported": "Device is not supported."
     },
-    "flow_title": "Setup {name}",
+    "flow_title": "Setup {name} ({id}) as {model}",
     "step": {
+      "bluetooth_confirm": {
+        "description": "Do you want to set up {name} ({id})?"
+      },
       "user": {
-        "description": "[%key:component::bluetooth::config::step::user::description%]",
         "data": {
           "address": "[%key:common::config_flow::data::device%]"
-        }
-      },
-      "bluetooth_confirm": {
-        "description": "[%key:component::bluetooth::config::step::bluetooth_confirm::description%]"
+        },
+        "data_description": {
+          "address": "Bluetooth name (MAC address) - model"
+        },
+        "description": "[%key:component::bluetooth::config::step::user::description%]"
       }
     }
   },
-  "exceptions": {
-    "device_not_found": {
-      "message": "Could not find BMS ({MAC}) via Bluetooth"
-    },
-    "missing_unique_id": {
-      "message": "Missing unique ID for device."
-    }
-  },
   "entity": {
+    "binary_sensor": {
+      "balancer": {
+        "name": "Balancer"
+      },
+      "chrg_mosfet": {
+        "name": "Charge MOSFET"
+      },
+      "dischrg_mosfet": {
+        "name": "Discharge MOSFET"
+      },
+      "heater": {
+        "name": "Heater"
+      }
+    },
     "sensor": {
+      "battery_health": {
+        "name": "Battery health"
+      },
       "cycles": {
         "name": "Cycles"
       },
@@ -38,14 +50,22 @@
         "name": "Link quality"
       },
       "max_cell_voltage": {
-        "name": "Maximal cell voltage"
+        "name": "Highest cell voltage"
       },
       "min_cell_voltage": {
-        "name": "Minimal cell voltage"
-      },            
+        "name": "Lowest cell voltage"
+      },
       "runtime": {
         "name": "Runtime"
       }
+    }
+  },
+  "exceptions": {
+    "device_not_found": {
+      "message": "Could not find BMS ({MAC}) via Bluetooth."
+    },
+    "missing_unique_id": {
+      "message": "Missing unique ID for device."
     }
   }
 }
