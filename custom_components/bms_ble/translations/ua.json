@@ -10,7 +10,7 @@
       "user": {
         "description": "Оберіть пристрій для налаштування:",
         "data": {
-          "address": "Bluetooth name (MAC address) - Model"
+          "address": "Bluetooth-ім'я (MAC-адреса) - Модель"
         }
       },
       "bluetooth_confirm": {
@@ -44,8 +44,8 @@
         "name": "найнижча вольтаж комірки"
       },       
       "runtime": {
-        "name": "Runtime"
+        "name": "Час роботи"
       }
     }
-  }  
+  }
 }

@@ -10,7 +10,7 @@
       "user": {
         "description": "Escolha um dispositivo para configurar:",
         "data": {
-          "address": "Nome Bluetooth (endereço MAC) - modelo"
+          "address": "Nome Bluetooth (endereço MAC) - Modelo"
         }
       },
       "bluetooth_confirm": {
@@ -32,20 +32,20 @@
         "name": "Ciclos"
       },
       "delta_cell_voltage": {
-        "name": "Tensão da célula delta"
+        "name": "Diferença de tensão entre células"
       },
       "link_quality": {
         "name": "Qualidade de ligação"
       },
       "max_cell_voltage": {
-        "name": "Tensão de célula mais alta"
+        "name": "Maior tensão da célula"
       },
       "min_cell_voltage": {
-        "name": "Tensão de célula mais baixa"
-      },      
+        "name": "Menor tensão da célula"
+      },
       "runtime": {
-        "name": "tempo de execução"
+        "name": "Tempo de funcionamento"
       }
     }
-  }  
+  }
 }
