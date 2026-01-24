@@ -32,19 +32,19 @@
         "name": "Ciclos"
       },
       "delta_cell_voltage": {
-        "name": "Delta napięcia ogniw"
+        "name": "Tensão da célula delta"
       },
       "link_quality": {
         "name": "Qualidade de ligação"
       },
       "max_cell_voltage": {
-        "name": "Najwyższe napięcie ogniwa"
+        "name": "Tensão de célula mais alta"
       },
       "min_cell_voltage": {
-        "name": "Najniższe napięcie ogniwa"
+        "name": "Tensão de célula mais baixa"
       },      
       "runtime": {
-        "name": "Run"
+        "name": "tempo de execução"
       }
     }
   }  
