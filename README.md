@@ -47,7 +47,6 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Meritsun, Supervolt v1 (show up as `SV12V`&#x2026;), and Volthium (show up as `V-12V`&#x2026;) batteries
 - ECO-WORTHY + BW02 adapter (show up as `ECO-WORTHY`&#x2026;)
     - DCHOUSE batteries (show up as `DCHOUSE`&#x2026;)
-- Ective, Startcraft, Topband batteries (show up as `$PFLAC`&#x2026;, `NWJ20`&#x2026;, `ZM20`&#x2026;)
 - Felicity ESS (show up as `F10`&#x2026;) and FLB batteries (show up as `F07`&#x2026;)
 - HumsiENK Smart BMS (show up as `HS`&#x2026;)
 - JBD BMS, Jiabaida, Xiaoxiang (show up as `JBD-`&#x2026;)
@@ -58,6 +57,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - JK BMS, Jikong, (HW version &ge; 6 required)
 - LiTime, Power Queen, and Redodo batteries
 - LiPower BMS
+    - Ective batteries
 - NEEY balancer (4th gen) (show up as `GW-24S`&#x2026;)
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
 - PaceEX BMS (show up as `PC-`&#x2026;)
@@ -72,6 +72,8 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Super-B Epsilon BMS (show up as `Epsilon-`&#x2026;)
 - TDT BMS
     - Wattcycle batteries
+- Topband BMS
+    - Ective, Startcraft, KiloVault batteries
 - TianPower BMS (show up as `TP_`&#x2026;)
 - Vatrer BMS (show up as `YYMMDDVVVAAAAxx` (date, V, Ah))
 - Wattstunde Nova Core
