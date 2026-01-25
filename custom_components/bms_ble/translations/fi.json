@@ -1,7 +1,7 @@
 {
   "config": {
     "abort": {
-      "already_configured": "Laite on asennettu.",
+      "already_configured": "Laite on jo asennettu.",
       "no_devices_found": "Bluetooth-laitteita ei löytynyt.",
       "not_supported": "Laitetta ei tueta."
     },
@@ -27,7 +27,24 @@
     }
   },
   "entity": {
+    "binary_sensor": {
+      "balancer": {
+        "name": "Tasapainottaja"
+      },
+      "chrg_mosfet": {
+        "name": "Lataus-MOSFET"
+      },
+      "dischrg_mosfet": {
+        "name": "Purku-MOSFET"
+      },
+      "heater": {
+        "name": "Lämmitin"
+      }
+    },
     "sensor": {
+      "battery_health": {
+        "name": "Akun kunto"
+      },
       "cycles": {
         "name": "latauskerrat"
       },
@@ -38,14 +55,14 @@
         "name": "Linkin tila"
       },
       "max_cell_voltage": {
-        "name": "Korkein kennojännite"
+        "name": "Suurin kennojännite"
       },
       "min_cell_voltage": {
-        "name": "Alin kennojännite"
-      },       
+        "name": "Pienin kennojännite"
+      },
       "runtime": {
         "name": "Käyttöaika"
       }
     }
-  }  
+  }
 }
