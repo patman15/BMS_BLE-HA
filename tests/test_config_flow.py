@@ -477,8 +477,8 @@ async def test_migrate_entry_from_v2_0(
     await hass.async_block_till_done()
 
     assert cfg in hass.config_entries.async_entries()
-    assert cfg.version == 3
-    assert cfg.minor_version == 0
+    assert cfg.version == ConfigFlow.VERSION
+    assert cfg.minor_version == ConfigFlow.MINOR_VERSION
     assert not str(cfg.data["type"]).endswith("ective_bms")
     assert cfg.state is ConfigEntryState.LOADED
 
