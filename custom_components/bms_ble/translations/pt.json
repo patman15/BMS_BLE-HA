@@ -27,7 +27,24 @@
     }
   },
   "entity": {
+    "binary_sensor": {
+      "balancer": {
+        "name": "Balanceador"
+      },
+      "chrg_mosfet": {
+        "name": "MOSFET de carga"
+      },
+      "dischrg_mosfet": {
+        "name": "MOSFET de descarga"
+      },
+      "heater": {
+        "name": "Aquecedor"
+      }
+    },
     "sensor": {
+      "battery_health": {
+        "name": "Saúde da bateria"
+      },
       "cycles": {
         "name": "Ciclos"
       },
