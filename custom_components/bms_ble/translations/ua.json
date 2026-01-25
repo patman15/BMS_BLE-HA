@@ -10,7 +10,7 @@
       "user": {
         "description": "Оберіть пристрій для налаштування:",
         "data": {
-          "address": "Bluetooth name (MAC address) - Model"
+          "address": "Ім'я Bluetooth (MAC-адреса) - Модель"
         }
       },
       "bluetooth_confirm": {
@@ -27,7 +27,24 @@
     }
   },
   "entity": {
+    "binary_sensor": {
+      "balancer": {
+        "name": "Балансувальник"
+      },
+      "chrg_mosfet": {
+        "name": "MOSFET заряду"
+      },
+      "dischrg_mosfet": {
+        "name": "MOSFET розряду"
+      },
+      "heater": {
+        "name": "Нагрівач"
+      }
+    },
     "sensor": {
+      "battery_health": {
+        "name": "Стан акумулятора"
+      },
       "cycles": {
         "name": "Циклів"
       },
@@ -42,10 +59,10 @@
       },
       "min_cell_voltage": {
         "name": "найнижча вольтаж комірки"
-      },       
+      },
       "runtime": {
-        "name": "Runtime"
+        "name": "Час роботи"
       }
     }
-  }  
+  }
 }
