@@ -1,5 +1,6 @@
 """The BLE Battery Management System integration."""
 
+from dataclasses import dataclass
 from types import ModuleType
 from typing import Final
 
@@ -14,6 +15,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.importlib import async_import_module
 
+from .config_flow import ConfigFlow
 from .const import DOMAIN, LOGGER
 from .coordinator import BTBmsCoordinator
 
@@ -78,22 +80,33 @@ async def async_migrate_entry(
     hass: HomeAssistant, config_entry: BTBmsConfigEntry
 ) -> bool:
     """Migrate old entry."""
-    _latest_version: Final[int] = 2
 
-    if config_entry.version > _latest_version:
-        # This means the user has downgraded from a future version
+    @dataclass(repr=False, eq=False, slots=True)
+    class EntryVersion:
+        major: int
+        minor: int
+
+    if config_entry.version > ConfigFlow.VERSION:
+        # This means the user has downgraded from a future major version (incompatible)
         LOGGER.debug("Cannot downgrade from version %s", config_entry.version)
         return False
 
-    LOGGER.debug("Migrating from version %s.%s", config_entry.version, config_entry.minor_version)
+    LOGGER.debug(
+        "Migrating from version %s.%s", config_entry.version, config_entry.minor_version
+    )
 
-    if config_entry.version == 0:
-        bms_type: str = str(config_entry.data["type"])
-        new: dict[str, str] = {}
+    bms_type: Final[str] = str(config_entry.data["type"])
+    new_data: dict[str, str] = config_entry.data.copy()
+    entry_version: EntryVersion = EntryVersion(
+        config_entry.version,
+        config_entry.minor_version,
+    )
+
+    if entry_version.major == 0:
         if bms_type == "OGTBms":
-            new = {"type": "custom_components.bms_ble.plugins.ogt_bms"}
+            new_data["type"] = "custom_components.bms_ble.plugins.ogt_bms"
         elif bms_type == "DalyBms":
-            new = {"type": "custom_components.bms_ble.plugins.daly_bms"}
+            new_data["type"] = "custom_components.bms_ble.plugins.daly_bms"
         else:
             LOGGER.debug("Entry: %s", config_entry.data)
             LOGGER.error(
@@ -102,17 +115,24 @@ async def async_migrate_entry(
                 config_entry.minor_version,
             )
             return False
+        entry_version = EntryVersion(1, 0)
 
-        hass.config_entries.async_update_entry(
-            config_entry, data=new, minor_version=0, version=1
-        )
+    if entry_version.major < 2:
+        new_data["type"] = f"aiobmsble.bms.{new_data["type"].rsplit('.', 1)[-1]}"
+        entry_version = EntryVersion(2, 0)
 
-    if config_entry.version == 1:
-        bms_type = str(config_entry.data["type"])
-        new = {"type": f"aiobmsble.bms.{bms_type.rsplit('.', 1)[-1]}"}
-        hass.config_entries.async_update_entry(
-            config_entry, data=new, minor_version=0, version=2
-        )
+    if config_entry.version < 3:
+        # rename Ective BMS to Topband BMS
+        if bms_type.endswith("ective_bms"):
+            new_data["type"] = "aiobmsble.bms.topband_bms"
+        entry_version = EntryVersion(3, 0)
+
+    hass.config_entries.async_update_entry(
+        config_entry,
+        data=new_data,
+        minor_version=entry_version.minor,
+        version=entry_version.major,
+    )
 
     LOGGER.debug(
         "Migration to version %s.%s successful",

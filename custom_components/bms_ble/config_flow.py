@@ -26,7 +26,7 @@ from .const import DOMAIN, LOGGER
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for BT Battery Management System."""
 
-    VERSION = 2
+    VERSION = 3
     MINOR_VERSION = 0
 
     @dataclass
