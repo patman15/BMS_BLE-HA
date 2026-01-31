@@ -60,6 +60,54 @@
       "min_cell_voltage": {
         "name": "найнижча вольтаж комірки"
       },
+      "cell_voltage_1": {
+        "name": "Напруга комірки 1"
+      },
+      "cell_voltage_2": {
+        "name": "Напруга комірки 2"
+      },
+      "cell_voltage_3": {
+        "name": "Напруга комірки 3"
+      },
+      "cell_voltage_4": {
+        "name": "Напруга комірки 4"
+      },
+      "cell_voltage_5": {
+        "name": "Напруга комірки 5"
+      },
+      "cell_voltage_6": {
+        "name": "Напруга комірки 6"
+      },
+      "cell_voltage_7": {
+        "name": "Напруга комірки 7"
+      },
+      "cell_voltage_8": {
+        "name": "Напруга комірки 8"
+      },
+      "cell_voltage_9": {
+        "name": "Напруга комірки 9"
+      },
+      "cell_voltage_10": {
+        "name": "Напруга комірки 10"
+      },
+      "cell_voltage_11": {
+        "name": "Напруга комірки 11"
+      },
+      "cell_voltage_12": {
+        "name": "Напруга комірки 12"
+      },
+      "cell_voltage_13": {
+        "name": "Напруга комірки 13"
+      },
+      "cell_voltage_14": {
+        "name": "Напруга комірки 14"
+      },
+      "cell_voltage_15": {
+        "name": "Напруга комірки 15"
+      },
+      "cell_voltage_16": {
+        "name": "Напруга комірки 16"
+      },
       "runtime": {
         "name": "Час роботи"
       }

@@ -60,6 +60,54 @@
       "min_cell_voltage": {
         "name": "Pienin kennojännite"
       },
+      "cell_voltage_1": {
+        "name": "Kennojännite 1"
+      },
+      "cell_voltage_2": {
+        "name": "Kennojännite 2"
+      },
+      "cell_voltage_3": {
+        "name": "Kennojännite 3"
+      },
+      "cell_voltage_4": {
+        "name": "Kennojännite 4"
+      },
+      "cell_voltage_5": {
+        "name": "Kennojännite 5"
+      },
+      "cell_voltage_6": {
+        "name": "Kennojännite 6"
+      },
+      "cell_voltage_7": {
+        "name": "Kennojännite 7"
+      },
+      "cell_voltage_8": {
+        "name": "Kennojännite 8"
+      },
+      "cell_voltage_9": {
+        "name": "Kennojännite 9"
+      },
+      "cell_voltage_10": {
+        "name": "Kennojännite 10"
+      },
+      "cell_voltage_11": {
+        "name": "Kennojännite 11"
+      },
+      "cell_voltage_12": {
+        "name": "Kennojännite 12"
+      },
+      "cell_voltage_13": {
+        "name": "Kennojännite 13"
+      },
+      "cell_voltage_14": {
+        "name": "Kennojännite 14"
+      },
+      "cell_voltage_15": {
+        "name": "Kennojännite 15"
+      },
+      "cell_voltage_16": {
+        "name": "Kennojännite 16"
+      },
       "runtime": {
         "name": "Käyttöaika"
       }

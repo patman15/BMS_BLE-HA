@@ -60,6 +60,54 @@
       "min_cell_voltage": {
         "name": "Niedrigste Zellspannung"
       },
+      "cell_voltage_1": {
+        "name": "Zellspannung 1"
+      },
+      "cell_voltage_2": {
+        "name": "Zellspannung 2"
+      },
+      "cell_voltage_3": {
+        "name": "Zellspannung 3"
+      },
+      "cell_voltage_4": {
+        "name": "Zellspannung 4"
+      },
+      "cell_voltage_5": {
+        "name": "Zellspannung 5"
+      },
+      "cell_voltage_6": {
+        "name": "Zellspannung 6"
+      },
+      "cell_voltage_7": {
+        "name": "Zellspannung 7"
+      },
+      "cell_voltage_8": {
+        "name": "Zellspannung 8"
+      },
+      "cell_voltage_9": {
+        "name": "Zellspannung 9"
+      },
+      "cell_voltage_10": {
+        "name": "Zellspannung 10"
+      },
+      "cell_voltage_11": {
+        "name": "Zellspannung 11"
+      },
+      "cell_voltage_12": {
+        "name": "Zellspannung 12"
+      },
+      "cell_voltage_13": {
+        "name": "Zellspannung 13"
+      },
+      "cell_voltage_14": {
+        "name": "Zellspannung 14"
+      },
+      "cell_voltage_15": {
+        "name": "Zellspannung 15"
+      },
+      "cell_voltage_16": {
+        "name": "Zellspannung 16"
+      },
       "runtime": {
         "name": "Laufzeit"
       }
