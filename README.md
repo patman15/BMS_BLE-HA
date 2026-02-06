@@ -163,7 +163,7 @@ These batteries need a shorter interval between queries. Be a bit patient to get
 The internal Bluetooth adapter issues <code>AT</code> commands in regular intervals which can interfere with BMS messages causing them to be corrupted. This impacts data availability (<code>link quality</code>).
 </details>
 
-### If your device is not recognized
+### If your device is not recognized / initialized
 
 1. Check that your BMS type is listed as [supported device](#supported-devices)
 1. If a name detection pattern is listed ("show up as"), make sure your device matches it.
