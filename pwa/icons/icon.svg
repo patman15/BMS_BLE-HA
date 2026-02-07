@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect x="56" y="96" width="400" height="320" rx="32" fill="#1e293b" stroke="#22d3ee" stroke-width="16"/>
+  <rect x="456" y="192" width="32" height="128" rx="8" fill="#22d3ee"/>
+  <rect x="96" y="144" width="72" height="224" rx="8" fill="#22d3ee" opacity="0.9"/>
+  <rect x="184" y="144" width="72" height="224" rx="8" fill="#22d3ee" opacity="0.7"/>
+  <rect x="272" y="192" width="72" height="176" rx="8" fill="#22d3ee" opacity="0.5"/>
+  <rect x="360" y="240" width="72" height="128" rx="8" fill="#22d3ee" opacity="0.3"/>
+  <text x="256" y="480" text-anchor="middle" fill="#22d3ee" font-family="sans-serif" font-size="48" font-weight="bold">JK-BMS</text>
+</svg>

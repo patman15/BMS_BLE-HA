@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>JK-BMS Monitor</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="header-left">
+      <img src="icons/icon.svg" alt="" class="logo" width="28" height="28">
+      <h1>JK-BMS</h1>
+    </div>
+    <div class="header-right">
+      <span id="device-name" class="device-name"></span>
+      <span id="status-dot" class="dot disconnected"></span>
+      <span id="status-text" class="status-text">Disconnected</span>
+    </div>
+  </header>
+
+  <!-- Connect View -->
+  <main id="view-connect" class="view">
+    <div class="connect-card">
+      <img src="icons/icon.svg" alt="JK-BMS" width="96" height="96">
+      <h2>JK-BMS Monitor</h2>
+      <p class="muted">Connect to your JK-BMS via Bluetooth to monitor battery status in real time.</p>
+      <button id="connect-btn" class="btn-primary">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M6.5 6.5l11 11L12 23V1l5.5 5.5-11 11"/>
+        </svg>
+        Connect BMS
+      </button>
+      <p class="muted small">Requires a browser with Web Bluetooth support (Chrome, Edge, Opera).</p>
+    </div>
+  </main>
+
+  <!-- Dashboard View -->
+  <main id="view-dashboard" class="view hidden">
+
+    <!-- SoC + Direction -->
+    <section class="soc-section">
+      <div class="soc-ring-wrap">
+        <svg viewBox="0 0 120 120" class="soc-svg">
+          <circle cx="60" cy="60" r="54" fill="none" stroke="var(--surface)" stroke-width="8"/>
+          <circle id="soc-ring" cx="60" cy="60" r="54" fill="none" stroke="var(--green)"
+                  stroke-width="8" stroke-linecap="round"
+                  transform="rotate(-90 60 60)"
+                  style="transition: stroke-dashoffset 0.6s ease"/>
+        </svg>
+        <div class="soc-value" id="val-soc">--%</div>
+      </div>
+      <div class="soc-info">
+        <div id="val-direction" class="direction idle">Idle</div>
+        <div class="soc-meta">
+          <span id="val-voltage">-- V</span>
+          <span id="val-current">-- A</span>
+          <span id="val-power">-- W</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Status Indicators -->
+    <section class="indicators">
+      <span id="ind-charge" class="indicator off">CHG</span>
+      <span id="ind-discharge" class="indicator off">DSG</span>
+      <span id="ind-balance" class="indicator off">BAL</span>
+      <span id="val-warnings" class="warn">None</span>
+    </section>
+
+    <!-- Cell Voltages -->
+    <section class="card">
+      <h3>Cell Voltages</h3>
+      <div id="cells-container" class="cells-grid">
+        <p class="muted">Waiting for data...</p>
+      </div>
+    </section>
+
+    <!-- Temperature -->
+    <section class="card">
+      <h3>Temperature</h3>
+      <div class="stats-grid">
+        <div class="stat">
+          <span class="stat-label">Battery 1</span>
+          <span class="stat-value" id="val-temp1">--</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Battery 2</span>
+          <span class="stat-value" id="val-temp2">--</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">MOS</span>
+          <span class="stat-value" id="val-mos-temp">--</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Battery Info -->
+    <section class="card">
+      <h3>Battery Info</h3>
+      <div class="stats-grid cols-2">
+        <div class="stat">
+          <span class="stat-label">Cells</span>
+          <span class="stat-value" id="val-cells">--</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Cycles</span>
+          <span class="stat-value" id="val-cycles">--</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Capacity</span>
+          <span class="stat-value" id="val-capacity">--</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Delta</span>
+          <span class="stat-value" id="val-delta">--</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Min Cell</span>
+          <span class="stat-value" id="val-min-cell">--</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Max Cell</span>
+          <span class="stat-value" id="val-max-cell">--</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Uptime</span>
+          <span class="stat-value" id="val-uptime">--</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- History -->
+    <section class="card">
+      <h3>History</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>SoC</th>
+              <th>V</th>
+              <th>A</th>
+              <th>W</th>
+              <th>Temp</th>
+              <th>Delta</th>
+            </tr>
+          </thead>
+          <tbody id="history-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Disconnect -->
+    <section class="disconnect-section">
+      <button id="disconnect-btn" class="btn-secondary">Disconnect</button>
+    </section>
+
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

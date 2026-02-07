@@ -1,0 +1,19 @@
+{
+  "name": "JK-BMS Monitor",
+  "short_name": "JK-BMS",
+  "description": "Monitor your JK-BMS battery management system via Bluetooth",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["utilities"]
+}
