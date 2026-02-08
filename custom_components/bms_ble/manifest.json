@@ -3,6 +3,76 @@
   "name": "BLE Battery Management System",
   "bluetooth": [
     {
+      "local_name": "BMS-*"
+    },
+    {
+      "local_name": "DXB-*"
+    },
+    {
+      "local_name": "ECO-WORTHY 02_*"
+    },
+    {
+      "local_name": "Epsilon-*"
+    },
+    {
+      "local_name": "F07*"
+    },
+    {
+      "local_name": "F10*"
+    },
+    {
+      "local_name": "L-12V???AH-*"
+    },
+    {
+      "local_name": "LT-*"
+    },
+    {
+      "local_name": "PC-????"
+    },
+    {
+      "local_name": "TBA-*"
+    },
+    {
+      "local_name": "TP_*"
+    },
+    {
+      "local_name": "V-12V???Ah-*"
+    },
+    {
+      "local_name": "libatt*",
+      "manufacturer_id": 21320
+    },
+    {
+      "local_name": "RNG*",
+      "manufacturer_id": 57676
+    },
+    {
+      "local_name": "SV12V*",
+      "manufacturer_id": 33384
+    },
+    {
+      "manufacturer_id": 258
+    },
+    {
+      "manufacturer_id": 260
+    },
+    {
+      "manufacturer_id": 770
+    },
+    {
+      "manufacturer_id": 771
+    },
+    {
+      "manufacturer_id": 1026
+    },
+    {
+      "manufacturer_id": 54976
+    },
+    {
+      "manufacturer_id": 21330,
+      "service_uuid": "000003c1-0000-1000-8000-00805f9b34fb"
+    },
+    {
       "service_uuid": "0000af30-0000-1000-8000-00805f9b34fb"
     },
     {
@@ -25,73 +95,6 @@
     },
     {
       "service_uuid": "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
-    },
-    {
-      "manufacturer_id": 770
-    },
-    {
-      "manufacturer_id": 771
-    },
-    {
-      "manufacturer_id": 258
-    },
-    {
-      "manufacturer_id": 260
-    },
-    {
-      "manufacturer_id": 1026
-    },
-    {
-      "local_name": "ECO-WORTHY 02_*"
-    },
-    {
-      "local_name": "TBA-*"
-    },
-    {
-      "local_name": "DXB-*"
-    },
-    {
-      "local_name": "libatt*",
-      "manufacturer_id": 21320
-    },
-    {
-      "local_name": "LT-*"
-    },
-    {
-      "local_name": "SV12V*",
-      "manufacturer_id": 33384
-    },
-    {
-      "local_name": "L-12V???AH-*"
-    },
-    {
-      "local_name": "V-12V???Ah-*"
-    },
-    {
-      "manufacturer_id": 54976
-    },
-    {
-      "local_name": "F10*"
-    },
-    {
-      "local_name": "F07*"
-    },
-    {
-      "manufacturer_id": 21330,
-      "service_uuid": "000003c1-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "RNG*",
-      "manufacturer_id": 57676
-    },
-    {
-      "local_name": "TP_*"
-    },
-    {
-      "local_name": "Epsilon-*"
-    },
-    {
-      "local_name": "PC-????"
     }
   ],
   "codeowners": ["@patman15"],
