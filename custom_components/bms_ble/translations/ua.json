@@ -18,14 +18,6 @@
       }
     }
   },
-  "exceptions": {
-    "device_not_found": {
-      "message": "Не можу знайти BMS ({MAC}) через Bluetooth."
-    },
-    "missing_unique_id": {
-      "message": "Бракує унікального ID для пристрою."
-    }
-  },
   "entity": {
     "binary_sensor": {
       "balancer": {
@@ -63,6 +55,14 @@
       "runtime": {
         "name": "Час роботи"
       }
+    }
+  },
+  "exceptions": {
+    "device_not_found": {
+      "message": "Не можу знайти BMS ({MAC}) через Bluetooth."
+    },
+    "missing_unique_id": {
+      "message": "Бракує унікального ID для пристрою."
     }
   }
 }

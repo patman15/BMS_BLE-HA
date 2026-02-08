@@ -18,14 +18,6 @@
       }
     }
   },
-  "exceptions": {
-    "device_not_found": {
-      "message": "Akunhallintajärjestelmää ({MAC}) ei löytynyt Bluetoothin kautta."
-    },
-    "missing_unique_id": {
-      "message": "Yksilöllinen ID puuttuu."
-    }
-  },
   "entity": {
     "binary_sensor": {
       "balancer": {
@@ -63,6 +55,14 @@
       "runtime": {
         "name": "Käyttöaika"
       }
+    }
+  },
+  "exceptions": {
+    "device_not_found": {
+      "message": "Akunhallintajärjestelmää ({MAC}) ei löytynyt Bluetoothin kautta."
+    },
+    "missing_unique_id": {
+      "message": "Yksilöllinen ID puuttuu."
     }
   }
 }

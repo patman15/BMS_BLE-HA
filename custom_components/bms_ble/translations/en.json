@@ -18,14 +18,6 @@
       }
     }
   },
-  "exceptions": {
-    "device_not_found": {
-      "message": "Could not find BMS ({MAC}) via Bluetooth."
-    },
-    "missing_unique_id": {
-      "message": "Missing unique ID for device."
-    }
-  },
   "entity": {
     "binary_sensor": {
       "balancer": {
@@ -64,5 +56,19 @@
         "name": "Runtime"
       }
     }
-  }  
+  },  
+  "exceptions": {
+    "bms_com_fail": {
+      "message": "BMS communication failed: {err_msg}"
+    },
+    "bms_timeout": {
+      "message": "BMS communication timed out."
+    },    
+    "device_not_found": {
+      "message": "Could not find BMS ({MAC}) via Bluetooth."
+    },
+    "missing_unique_id": {
+      "message": "Missing unique ID for device."
+    }
+  }
 }

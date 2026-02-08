@@ -18,14 +18,6 @@
       }
     }
   },
-  "exceptions": {
-    "device_not_found": {
-      "message": "BMS ({MAC}) wurde nicht via Bluetooth gefunden."
-    },
-    "missing_unique_id": {
-      "message": "Eindeutige ID für Gerät fehlt."
-    }
-  },
   "entity": {
     "binary_sensor": {
       "balancer": {
@@ -64,5 +56,19 @@
         "name": "Laufzeit"
       }
     }
-  }
+  },
+  "exceptions": {
+    "bms_com_fail": {
+      "message": "BMS Kommunikation fehlgeschlagen: {err_msg}"
+    },
+    "bms_timeout": {
+      "message": "Zeitüberschreitung bei BMS Kommunikation."
+    },     
+    "device_not_found": {
+      "message": "BMS ({MAC}) wurde nicht via Bluetooth gefunden."
+    },
+    "missing_unique_id": {
+      "message": "Eindeutige ID für Gerät fehlt."
+    }
+  }  
 }
