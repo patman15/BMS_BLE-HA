@@ -18,14 +18,6 @@
       }
     }
   },
-  "exceptions": {
-    "device_not_found": {
-      "message": "Não foi possível encontrar o BMS ({MAC}) via Bluetooth."
-    },
-    "missing_unique_id": {
-      "message": "ID único em falta para o dispositivo."
-    }
-  },
   "entity": {
     "binary_sensor": {
       "balancer": {
@@ -64,5 +56,13 @@
         "name": "Tempo de funcionamento"
       }
     }
-  }
+  },
+  "exceptions": {
+    "device_not_found": {
+      "message": "Não foi possível encontrar o BMS ({MAC}) via Bluetooth."
+    },
+    "missing_unique_id": {
+      "message": "ID único em falta para o dispositivo."
+    }
+  }  
 }
