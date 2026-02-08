@@ -146,6 +146,7 @@ def main() -> None:
     args: argparse.Namespace = parser.parse_args()
     base_path: Path = Path(args.base_path)
     versions: dict[str, str | None] = {}
+    source_file: Path = Path()
 
     try:
         # Read and merge all source files

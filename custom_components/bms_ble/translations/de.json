@@ -2,7 +2,7 @@
   "config": {
     "abort": {
       "already_configured": "Gerät ist bereits konfiguriert.",
-      "no_devices_found": "Keine unterstützen Geräte via Bluetooth gefunden.",
+      "no_devices_found": "Keine unterstützten Geräte via Bluetooth gefunden.",
       "not_supported": "Gerät wird nicht unterstützt."
     },
     "flow_title": "Setup {name} ({id}) als {model}",
@@ -59,7 +59,7 @@
       },
       "min_cell_voltage": {
         "name": "Niedrigste Zellspannung"
-      },       
+      },
       "runtime": {
         "name": "Laufzeit"
       }

@@ -10,7 +10,7 @@
       "user": {
         "description": "Escolha um dispositivo para configurar:",
         "data": {
-          "address": "Nome Bluetooth (endereço MAC) - modelo"
+          "address": "Nome Bluetooth (endereço MAC) - Modelo"
         }
       },
       "bluetooth_confirm": {
@@ -27,25 +27,42 @@
     }
   },
   "entity": {
+    "binary_sensor": {
+      "balancer": {
+        "name": "Balanceador"
+      },
+      "chrg_mosfet": {
+        "name": "MOSFET de carga"
+      },
+      "dischrg_mosfet": {
+        "name": "MOSFET de descarga"
+      },
+      "heater": {
+        "name": "Aquecedor"
+      }
+    },
     "sensor": {
+      "battery_health": {
+        "name": "Saúde da bateria"
+      },
       "cycles": {
         "name": "Ciclos"
       },
       "delta_cell_voltage": {
-        "name": "Delta napięcia ogniw"
+        "name": "Diferença de tensão entre células"
       },
       "link_quality": {
         "name": "Qualidade de ligação"
       },
       "max_cell_voltage": {
-        "name": "Najwyższe napięcie ogniwa"
+        "name": "Maior tensão da célula"
       },
       "min_cell_voltage": {
-        "name": "Najniższe napięcie ogniwa"
-      },      
+        "name": "Menor tensão da célula"
+      },
       "runtime": {
-        "name": "Run"
+        "name": "Tempo de funcionamento"
       }
     }
-  }  
+  }
 }
