@@ -9,6 +9,7 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 from voluptuous import Schema
 
+from custom_components.bms_ble.config_flow import ConfigFlow
 from custom_components.bms_ble.const import (
     BINARY_SENSORS,
     DOMAIN,
@@ -31,6 +32,7 @@ from .bluetooth import generate_ble_device, inject_bluetooth_service_info_bleak
 from .conftest import (
     mock_config,
     mock_config_v1_0,
+    mock_config_v2_0,
     mock_devinfo_min,
     mock_update_full,
     mock_update_min,
@@ -76,9 +78,9 @@ async def test_bluetooth_discovery(
     flowresults: list[ConfigFlowResult] = (
         hass.config_entries.flow.async_progress_by_handler(DOMAIN)
     )
-    assert len(flowresults) == 1, (
-        f"Expected one flow result for {advertisement}, check manifest.json!"
-    )
+    assert (
+        len(flowresults) == 1
+    ), f"Expected one flow result for {advertisement}, check manifest.json!"
     result: ConfigFlowResult = flowresults[0]
     assert result.get("step_id") == "bluetooth_confirm"
     assert result.get("context", {}).get("unique_id") == advertisement.address
@@ -359,7 +361,7 @@ async def test_no_migration(bms_fixture: str, hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
     assert cfg in hass.config_entries.async_entries()
-    assert cfg.version == 2
+    assert cfg.version == ConfigFlow.VERSION
     assert cfg.minor_version == 1
     assert cfg.state is ConfigEntryState.SETUP_RETRY
 
@@ -397,33 +399,6 @@ async def test_migrate_invalid_v_0_1(bms_fixture: str, hass: HomeAssistant) -> N
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
-async def test_migrate_entry_from_v1_0(
-    monkeypatch: pytest.MonkeyPatch,
-    bt_discovery: BluetoothServiceInfoBleak,
-    bms_fixture: str,
-    hass: HomeAssistant,
-) -> None:
-    """Test that entries from version 1.0 are migrate to latest version."""
-
-    inject_bluetooth_service_info_bleak(hass, bt_discovery)
-
-    cfg: MockConfigEntry = mock_config_v1_0(bms=bms_fixture)
-    cfg.add_to_hass(hass)
-
-    bms_module: Final[str] = f"aiobmsble.bms.{str(cfg.data['type']).rsplit('.', 1)[-1]}"
-    monkeypatch.setattr(f"{bms_module}.BMS.device_info", mock_devinfo_min)
-    monkeypatch.setattr(f"{bms_module}.BMS.async_update", mock_update_min)
-
-    assert await hass.config_entries.async_setup(cfg.entry_id)
-    await hass.async_block_till_done()
-
-    assert cfg in hass.config_entries.async_entries()
-    assert cfg.version == 2
-    assert cfg.minor_version == 0
-    assert cfg.state is ConfigEntryState.LOADED
-
-
-@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 async def test_migrate_entry_from_v0_1(
     monkeypatch: pytest.MonkeyPatch,
     mock_config_v0_1: MockConfigEntry,
@@ -445,8 +420,66 @@ async def test_migrate_entry_from_v0_1(
     await hass.async_block_till_done()
 
     assert cfg in hass.config_entries.async_entries()
-    assert cfg.version == 2
-    assert cfg.minor_version == 0
+    assert cfg.version == ConfigFlow.VERSION
+    assert cfg.minor_version == ConfigFlow.MINOR_VERSION
+    assert cfg.state is ConfigEntryState.LOADED
+
+
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+async def test_migrate_entry_from_v1_0(
+    monkeypatch: pytest.MonkeyPatch,
+    bt_discovery: BluetoothServiceInfoBleak,
+    bms_fixture: str,
+    hass: HomeAssistant,
+) -> None:
+    """Test that entries from version 1.0 are migrate to latest version."""
+
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
+
+    cfg: MockConfigEntry = mock_config_v1_0(bms=bms_fixture)
+    cfg.add_to_hass(hass)
+
+    bms_module: Final[str] = f"aiobmsble.bms.{str(cfg.data['type']).rsplit('.', 1)[-1]}"
+    monkeypatch.setattr(f"{bms_module}.BMS.device_info", mock_devinfo_min)
+    monkeypatch.setattr(f"{bms_module}.BMS.async_update", mock_update_min)
+
+    assert await hass.config_entries.async_setup(cfg.entry_id)
+    await hass.async_block_till_done()
+
+    assert cfg in hass.config_entries.async_entries()
+    assert cfg.version == ConfigFlow.VERSION
+    assert cfg.minor_version == ConfigFlow.MINOR_VERSION
+    assert cfg.state is ConfigEntryState.LOADED
+
+
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+@pytest.mark.parametrize("bms_fixture", ["dummy_bms", "ective_bms"])
+async def test_migrate_entry_from_v2_0(
+    monkeypatch: pytest.MonkeyPatch,
+    bt_discovery: BluetoothServiceInfoBleak,
+    bms_fixture: str,
+    hass: HomeAssistant,
+) -> None:
+    """Test that entries from version 2.0 are migrate to latest version."""
+
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
+
+    cfg: MockConfigEntry = mock_config_v2_0(bms=bms_fixture)
+    cfg.add_to_hass(hass)
+
+    bms_module: Final[str] = (
+        f"aiobmsble.bms.{bms_fixture if bms_fixture != 'ective_bms' else 'topband_bms'}"
+    )
+    monkeypatch.setattr(f"{bms_module}.BMS.device_info", mock_devinfo_min)
+    monkeypatch.setattr(f"{bms_module}.BMS.async_update", mock_update_min)
+
+    assert await hass.config_entries.async_setup(cfg.entry_id)
+    await hass.async_block_till_done()
+
+    assert cfg in hass.config_entries.async_entries()
+    assert cfg.version == ConfigFlow.VERSION
+    assert cfg.minor_version == ConfigFlow.MINOR_VERSION
+    assert not str(cfg.data["type"]).endswith("ective_bms")
     assert cfg.state is ConfigEntryState.LOADED
 
 

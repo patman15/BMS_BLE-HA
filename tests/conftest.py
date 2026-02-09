@@ -18,6 +18,7 @@ from home_assistant_bluetooth import SOURCE_LOCAL, BluetoothServiceInfoBleak
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.bms_ble.config_flow import ConfigFlow
 from custom_components.bms_ble.const import DOMAIN
 from tests.bluetooth import generate_advertisement_data, generate_ble_device
 
@@ -146,11 +147,26 @@ def mock_config(
     """Return a Mock of the HA entity config (latest version)."""
     return MockConfigEntry(
         domain=DOMAIN,
-        version=2,
-        minor_version=0,
+        version=ConfigFlow.VERSION,
+        minor_version=ConfigFlow.MINOR_VERSION,
         unique_id=unique_id,
         data={"type": f"aiobmsble.bms.{bms}"},
         title=f"config_test_{bms}",
+    )
+
+
+@pytest.fixture(params=["OGTBms", "DalyBms"])
+def mock_config_v0_1(
+    request: pytest.FixtureRequest, unique_id: str = "cc:cc:cc:cc:cc:cc"
+) -> MockConfigEntry:
+    """Return a Mock of the HA entity config v0.1."""
+    return MockConfigEntry(
+        domain=DOMAIN,
+        version=0,
+        minor_version=1,
+        unique_id=unique_id,
+        data={"type": request.param},
+        title="ogt_bms_v0_1",
     )
 
 
@@ -166,25 +182,16 @@ def mock_config_v1_0(bms: str, unique_id: str = "cc:cc:cc:cc:cc:cc") -> MockConf
     )
 
 
-@pytest.fixture(params=["OGTBms", "DalyBms"])
-def mock_config_v0_1(
-    request: pytest.FixtureRequest, unique_id: str = "cc:cc:cc:cc:cc:cc"
-) -> MockConfigEntry:
-    """Return a Mock of the HA entity config."""
+def mock_config_v2_0(bms: str, unique_id: str = "cc:cc:cc:cc:cc:cc") -> MockConfigEntry:
+    """Return a Mock of the HA entity config v2.0."""
     return MockConfigEntry(
         domain=DOMAIN,
-        version=0,
-        minor_version=1,
+        version=2,
+        minor_version=0,
         unique_id=unique_id,
-        data={"type": request.param},
-        title="ogt_bms_v0_1",
+        data={"type": f"aiobmsble.bms.{bms}"},
+        title=f"config_test_{bms}",
     )
-
-
-@pytest.fixture(params=[TimeoutError, BleakError, EOFError])
-def mock_coordinator_exception(request: pytest.FixtureRequest) -> Exception:
-    """Return possible exceptions for mock BMS update function."""
-    return request.param
 
 
 class MockBMS(BaseBMS):

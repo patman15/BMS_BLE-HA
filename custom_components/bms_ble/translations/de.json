@@ -2,7 +2,7 @@
   "config": {
     "abort": {
       "already_configured": "Gerät ist bereits konfiguriert.",
-      "no_devices_found": "Keine unterstützen Geräte via Bluetooth gefunden.",
+      "no_devices_found": "Keine unterstützten Geräte via Bluetooth gefunden.",
       "not_supported": "Gerät wird nicht unterstützt."
     },
     "flow_title": "Setup {name} ({id}) als {model}",
@@ -16,14 +16,6 @@
       "bluetooth_confirm": {
         "description": "Möchtest Du {name} ({id}) einrichten?"
       }
-    }
-  },
-  "exceptions": {
-    "device_not_found": {
-      "message": "BMS ({MAC}) wurde nicht via Bluetooth gefunden."
-    },
-    "missing_unique_id": {
-      "message": "Eindeutige ID für Gerät fehlt."
     }
   },
   "entity": {
@@ -59,10 +51,24 @@
       },
       "min_cell_voltage": {
         "name": "Niedrigste Zellspannung"
-      },       
+      },
       "runtime": {
         "name": "Laufzeit"
       }
     }
-  }
+  },
+  "exceptions": {
+    "bms_com_fail": {
+      "message": "BMS Kommunikation fehlgeschlagen: {err_msg}"
+    },
+    "bms_timeout": {
+      "message": "Zeitüberschreitung bei BMS Kommunikation."
+    },     
+    "device_not_found": {
+      "message": "BMS ({MAC}) wurde nicht via Bluetooth gefunden."
+    },
+    "missing_unique_id": {
+      "message": "Eindeutige ID für Gerät fehlt."
+    }
+  }  
 }

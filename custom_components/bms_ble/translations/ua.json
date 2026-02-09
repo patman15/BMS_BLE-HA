@@ -10,7 +10,7 @@
       "user": {
         "description": "Оберіть пристрій для налаштування:",
         "data": {
-          "address": "Bluetooth name (MAC address) - Model"
+          "address": "Ім'я Bluetooth (MAC-адреса) - Модель"
         }
       },
       "bluetooth_confirm": {
@@ -18,16 +18,25 @@
       }
     }
   },
-  "exceptions": {
-    "device_not_found": {
-      "message": "Не можу знайти BMS ({MAC}) через Bluetooth."
-    },
-    "missing_unique_id": {
-      "message": "Бракує унікального ID для пристрою."
-    }
-  },
   "entity": {
+    "binary_sensor": {
+      "balancer": {
+        "name": "Балансувальник"
+      },
+      "chrg_mosfet": {
+        "name": "MOSFET заряду"
+      },
+      "dischrg_mosfet": {
+        "name": "MOSFET розряду"
+      },
+      "heater": {
+        "name": "Нагрівач"
+      }
+    },
     "sensor": {
+      "battery_health": {
+        "name": "Стан акумулятора"
+      },
       "cycles": {
         "name": "Циклів"
       },
@@ -38,14 +47,22 @@
         "name": "Якість звязку"
       },
       "max_cell_voltage": {
-        "name": "Найвища вольтаж комірки"
+        "name": "Найвища напруга комірки"
       },
       "min_cell_voltage": {
-        "name": "найнижча вольтаж комірки"
-      },       
+        "name": "Найнижча напруга комірки"
+      },
       "runtime": {
-        "name": "Runtime"
+        "name": "Час роботи"
       }
     }
-  }  
+  },
+  "exceptions": {
+    "device_not_found": {
+      "message": "Не можу знайти BMS ({MAC}) через Bluetooth."
+    },
+    "missing_unique_id": {
+      "message": "Бракує унікального ID для пристрою."
+    }
+  }
 }

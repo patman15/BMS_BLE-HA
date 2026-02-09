@@ -26,7 +26,7 @@ from .const import DOMAIN, LOGGER
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for BT Battery Management System."""
 
-    VERSION = 2
+    VERSION = 3
     MINOR_VERSION = 0
 
     @dataclass
@@ -39,7 +39,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         def model(self) -> str:
             """Return BMS type in capital letters, e.g. 'DUMMY BMS'."""
-            return self.type.rsplit(".", 1)[-1].replace("_", " ").upper()
+            return self.type.rsplit(".", 1)[1].replace("_", " ").upper()
 
     def __init__(self) -> None:
         """Initialize the config flow."""
