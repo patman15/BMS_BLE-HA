@@ -73,6 +73,9 @@
       "service_uuid": "000003c1-0000-1000-8000-00805f9b34fb"
     },
     {
+      "service_uuid": "00001000-0000-1000-8000-00805f9b34fb"
+    },
+    {
       "service_uuid": "0000af30-0000-1000-8000-00805f9b34fb"
     },
     {
@@ -107,5 +110,5 @@
   "loggers": ["bleak_retry_connector", "aiobmsble"],
   "quality_scale": "silver",
   "requirements": ["aiobmsble@git+https://github.com/patman15/aiobmsble.git@48-eg4-bms-support"],
-  "version": "2.8.0-beta.1"
+  "version": "2.8.0-beta.2"
 }
