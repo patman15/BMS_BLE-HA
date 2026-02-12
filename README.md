@@ -47,6 +47,8 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Meritsun, Supervolt v1 (show up as `SV12V`&#x2026;), and Volthium (show up as `V-12V`&#x2026;) batteries
 - ECO-WORTHY + BW02 adapter (show up as `ECO-WORTHY`&#x2026;)
     - DCHOUSE batteries (show up as `DCHOUSE`&#x2026;)
+- Ective, Startcraft, Topband batteries (show up as `$PFLAC`&#x2026;, `NWJ20`&#x2026;, `ZM20`&#x2026;)
+- EG4 LL BMS
 - Felicity ESS (show up as `F10`&#x2026;) and FLB batteries (show up as `F07`&#x2026;)
 - Gobel Power BMS (show up as `BMS-`&#x2026;)
 - HumsiENK Smart BMS (show up as `HS`&#x2026;)
