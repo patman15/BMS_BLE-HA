@@ -39,7 +39,6 @@
       "local_name": "V-12V???Ah-*"
     },
     {
-      "local_name": "libatt*",
       "manufacturer_id": 21320
     },
     {
@@ -106,6 +105,6 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bleak_retry_connector", "aiobmsble"],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble==0.17.0"],
-  "version": "2.7.0"
+  "requirements": ["aiobmsble@git+https://github.com/patman15/aiobmsble.git@feat-agpower-battery-support"],
+  "version": "2.7.1-beta.1"
 }
