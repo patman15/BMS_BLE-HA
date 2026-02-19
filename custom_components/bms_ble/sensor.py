@@ -170,7 +170,6 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         device_class=SensorDeviceClass.VOLTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
         key=ATTR_DELTA_VOLTAGE,
-        name="Delta cell voltage",
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=3,
