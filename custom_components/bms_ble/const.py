@@ -5,7 +5,7 @@ from typing import Final
 
 DOMAIN: Final[str] = "bms_ble"
 LOGGER: Final[logging.Logger] = logging.getLogger(__package__)
-LOW_RSSI: Final = -75  # dBm considered low signal strength
+LOW_RSSI: Final[int] = -75  # dBm considered low signal strength
 UPDATE_INTERVAL: Final[int] = 30  # [s]
 
 # attributes (do not change)
