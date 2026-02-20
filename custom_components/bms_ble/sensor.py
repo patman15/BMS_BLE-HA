@@ -219,7 +219,6 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         key=ATTR_RSSI,
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         state_class=SensorStateClass.MEASUREMENT,
-        translation_key=ATTR_RSSI,
         value_fn=lambda data: None,  # RSSI is handled in a separate class
     ),
     BmsEntityDescription(
@@ -243,16 +242,19 @@ async def async_setup_entry(
 
     bms: Final = config_entry.runtime_data
     mac: Final = format_mac(config_entry.unique_id)
+    entities: list[SensorEntity] = []
     for descr in SENSOR_TYPES:
         if descr.key == ATTR_RSSI:
-            async_add_entities([RSSISensor(bms, descr, mac)])
+            entities.append(RSSISensor(bms, descr, mac))
             continue
         if descr.key == ATTR_LQ:
-            async_add_entities([LQSensor(bms, descr, mac)])
+            entities.append(LQSensor(bms, descr, mac))
             continue
         if descr.optional and descr.key not in bms.data:
             continue
-        async_add_entities([BMSSensor(bms, descr, mac)])
+        entities.append(BMSSensor(bms, descr, mac))
+
+    async_add_entities(entities)
 
 
 class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
@@ -273,7 +275,7 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, list[int | float]] | None:
         """Return entity specific state attributes, e.g. cell voltages."""
-        if self.entity_description.attr_fn:
+        if self.coordinator.data and self.entity_description.attr_fn:
             return self.entity_description.attr_fn(self.coordinator.data)
 
         return None
@@ -281,7 +283,11 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
     @property
     def native_value(self) -> int | float | None:
         """Return the sensor value."""
-        return self.entity_description.value_fn(self.coordinator.data)
+        return (
+            self.entity_description.value_fn(self.coordinator.data)
+            if self.coordinator.data
+            else None
+        )
 
 
 class RSSISensor(SensorEntity):
@@ -289,7 +295,6 @@ class RSSISensor(SensorEntity):
 
     LIMIT: Final = 127  # limit to +/- this range
     _attr_has_entity_name = True
-    _attr_native_value = -LIMIT
 
     def __init__(
         self, bms: BTBmsCoordinator, descr: SensorEntityDescription, unique_id: str
@@ -310,7 +315,6 @@ class RSSISensor(SensorEntity):
         self._attr_available = self._bms.rssi is not None
 
         LOGGER.debug("%s: RSSI value: %i dBm", self._bms.name, self._attr_native_value)
-        self.async_write_ha_state()
 
 
 class LQSensor(SensorEntity):
@@ -336,4 +340,3 @@ class LQSensor(SensorEntity):
         self._attr_native_value = self._bms.link_quality
 
         LOGGER.debug("%s: Link quality: %i %%", self._bms.name, self._attr_native_value)
-        self.async_write_ha_state()
