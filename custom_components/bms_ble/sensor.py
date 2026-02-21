@@ -242,6 +242,7 @@ async def async_setup_entry(
 
     bms: Final = config_entry.runtime_data
     mac: Final = format_mac(config_entry.unique_id)
+
     entities: list[SensorEntity] = []
     for descr in SENSOR_TYPES:
         if descr.key == ATTR_RSSI:
