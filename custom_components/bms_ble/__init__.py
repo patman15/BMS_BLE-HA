@@ -50,8 +50,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> boo
     coordinator = BTBmsCoordinator(hass, ble_device, plugin.BMS(ble_device), entry)
 
     # Query the device the first time, initialise coordinator.data
-    await coordinator.async_config_entry_first_refresh()
-    entry.runtime_data = coordinator
+    started = False
+    try:
+        await coordinator.async_config_entry_first_refresh()
+        entry.runtime_data = coordinator
+        started = True
+    finally:
+        if not started:
+            await coordinator.async_shutdown()
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
