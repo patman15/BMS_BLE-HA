@@ -59,8 +59,11 @@
   },
   "exceptions": {
     "bms_com_fail": {
-      "message": "BMS Kommunikation fehlgeschlagen: {err_msg}"
+      "message": "BMS Kommunikation fehlgeschlagen: {err_msg}, Signalstärke {rssi} dBm."
     },
+    "bms_com_fail_rssi": {
+      "message": "BMS Kommunikation fehlgeschlagen: {err_msg}, bitte Signalstärke ({rssi} dBm) verbessern!"
+    },    
     "bms_timeout": {
       "message": "Zeitüberschreitung bei BMS Kommunikation."
     },     
