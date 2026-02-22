@@ -90,14 +90,16 @@ async def test_bluetooth_discovery(
     )
     await hass.async_block_till_done()
     assert result.get("type") == FlowResultType.CREATE_ENTRY
-    assert (
-        result.get("title") == advertisement.name or advertisement.address
+    assert result.get("title") in (
+        advertisement.name,
+        advertisement.address,
     )  # address is used as name by Bleak if name is not available
 
     # BluetoothServiceInfoBleak contains BMS type as details to BLEDevice, see bms_advertisement
+    bms_entries: Final = hass.config_entries.async_entries(DOMAIN)
+    assert len(bms_entries) == 1, f"Expected 1 BMS entry, got {len(bms_entries)}"
     assert (
-        hass.config_entries.async_entries()[1].data["type"]
-        == f"aiobmsble.bms.{advertisement.device.details}"
+        bms_entries[0].data["type"] == f"aiobmsble.bms.{advertisement.device.details}"
     )
 
 
@@ -194,10 +196,10 @@ async def test_device_not_supported(
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
-async def test_already_configured(bms_fixture: str, hass: HomeAssistant) -> None:
+async def test_already_configured(hass: HomeAssistant) -> None:
     """Test that same device cannot be added twice."""
 
-    cfg: MockConfigEntry = mock_config(bms_fixture)
+    cfg: MockConfigEntry = mock_config()
     cfg.add_to_hass(hass)
 
     await hass.config_entries.async_setup(cfg.entry_id)
@@ -208,7 +210,7 @@ async def test_already_configured(bms_fixture: str, hass: HomeAssistant) -> None
         context={"source": SOURCE_USER},
         data={
             CONF_ADDRESS: "cc:cc:cc:cc:cc:cc",
-            "type": "aiobmsble.bms.ogt_bms",
+            "type": "aiobmsble.bms.dummy_bms",
         },
     )
     assert result.get("type") == FlowResultType.ABORT

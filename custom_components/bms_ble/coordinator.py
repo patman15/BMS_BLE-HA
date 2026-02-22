@@ -5,26 +5,26 @@ from datetime import timedelta
 from time import monotonic
 from typing import Final
 
-from aiobmsble import BMSInfo, BMSSample
+from aiobmsble import BMSSample
 from aiobmsble.basebms import BaseBMS
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
-from habluetooth import BluetoothServiceInfoBleak
 
-from homeassistant.components.bluetooth import async_last_service_info
+from homeassistant.components.bluetooth import (
+    BluetoothServiceInfoBleak,
+    async_last_service_info,
+)
 from homeassistant.components.bluetooth.const import DOMAIN as BLUETOOTH_DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH, DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DOMAIN, LOGGER, UPDATE_INTERVAL
+from .const import DOMAIN, LOGGER, LOW_RSSI, UPDATE_INTERVAL
 
 
 class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
     """Update coordinator for a battery management system."""
-
-    _LOW_RSSI: Final = -75  # dBm considered low signal strength
 
     def __init__(
         self,
@@ -42,11 +42,11 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
             always_update=False,  # only update when sensor value has changed
             config_entry=config_entry,
         )
-        self._device: Final[BaseBMS] = bms_device
+        self._device: Final = bms_device
         self._link_q: deque[bool] = deque(
             [False], maxlen=100
         )  # track BMS update issues
-        self._mac: Final[str] = ble_device.address
+        self._mac: Final = ble_device.address
         self._stale: bool = False  # indicates no BMS response for significant time
 
         LOGGER.debug(
@@ -75,14 +75,6 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
         )
         return service_info.rssi if service_info else None
 
-    def _rssi_msg(self) -> str:
-        """Return check RSSI message if below _LOW_RSSI dBm."""
-        return (
-            f", check signal strength ({self.rssi} dBm)"
-            if self.rssi and self.rssi < self._LOW_RSSI
-            else ""
-        )
-
     @property
     def link_quality(self) -> int:
         """Gives the percentage of successful BMS reads out of the last 100 attempts."""
@@ -103,17 +95,20 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
             and self.link_quality <= 10
             and list(self._link_q)[-10:] == [False] * 10
         ):
+            rssi: Final = self.rssi
             LOGGER.error(
                 "%s: BMS is stale, triggering reconnect%s!",
                 self.name,
-                self._rssi_msg(),
+                f", check signal strength ({rssi} dBm)"
+                if rssi is not None and rssi < LOW_RSSI
+                else "",
             )
             self._stale = True
 
         return self._stale
 
     async def _async_setup(self) -> None:
-        bms_info: Final[BMSInfo] = await self._device.device_info()
+        bms_info: Final = await self._device.device_info()
         self.device_info.update(
             DeviceInfo(
                 name=bms_info.get("name") or self.name,
@@ -135,30 +130,23 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
         if self._device_stale():
             await self._device.disconnect(reset=True)
 
-        start: Final[float] = monotonic()
+        start: Final = monotonic()
         try:
             if not (bms_data := await self._device.async_update()):
-                LOGGER.debug("%s: no valid data received", self.name)
                 raise UpdateFailed("no valid data received.")
         except TimeoutError as err:
-            LOGGER.debug(
-                "%s: BMS communication timed out%s", self.name, self._rssi_msg()
-            )
             raise UpdateFailed(
-                translation_domain=DOMAIN, translation_key=("bms_timeout")
+                translation_domain=DOMAIN, translation_key="bms_timeout"
             ) from err
         except (BleakError, EOFError) as err:
-            LOGGER.debug(
-                "%s: BMS communication failed%s: %s (%s)",
-                self.name,
-                self._rssi_msg(),
-                err,
-                type(err).__name__,
-            )
+            rssi: Final = self.rssi
             raise UpdateFailed(
                 translation_domain=DOMAIN,
-                translation_key=("bms_com_fail"),
+                translation_key="bms_com_fail_rssi"
+                if rssi is not None and rssi < LOW_RSSI
+                else "bms_com_fail",
                 translation_placeholders={
+                    "rssi": f"{rssi}" if rssi is not None else "--",
                     "err_msg": f"{err!s} ({type(err).__name__})",
                 },
             ) from err
