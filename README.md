@@ -42,6 +42,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - 100Balance BMS
     - Bulltron batteries
 - E&J Technology BMS (show ups as `libatt`&#x2026;)
+    - Chins batteries (show up as `G-..V...Ah`&#x2026;)
     - Elektronicx batteries (show up as `LT-`&#x2026;)
     - Lithtech batteries (show up as `LT-12V-`&#x2026; or `L-12V`&#x2026;)
     - Meritsun, Supervolt v1 (show up as `SV12V`&#x2026;), and Volthium (show up as `V-12V`&#x2026;) batteries
@@ -69,6 +70,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Leagend CM100
 - Renogy BMS, Renogy Pro BMS
 - RoyPow batteries
+    - Lion Energy Safari
 - Seplos v2 (show up as `BP[0-2]?`)
 - Seplos v3 (show up as `SP[00-199]B`&#x2026; or `CSY`&#x2026;)
     - CEG Carmine Energia Gratis (show up as `XZHX`&#x2026;)
