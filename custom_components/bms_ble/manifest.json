@@ -39,7 +39,6 @@
       "local_name": "V-12V???Ah-*"
     },
     {
-      "local_name": "libatt*",
       "manufacturer_id": 21320
     },
     {
@@ -71,6 +70,9 @@
     {
       "manufacturer_id": 21330,
       "service_uuid": "000003c1-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "service_uuid": "00001000-0000-1000-8000-00805f9b34fb"
     },
     {
       "service_uuid": "0000af30-0000-1000-8000-00805f9b34fb"
@@ -106,6 +108,6 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bleak_retry_connector", "aiobmsble"],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble==0.17.0"],
-  "version": "2.7.0"
+  "requirements": ["aiobmsble==0.18.1"],
+  "version": "2.8.0"
 }
