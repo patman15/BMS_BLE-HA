@@ -52,6 +52,54 @@
       "min_cell_voltage": {
         "name": "Menor tensão da célula"
       },
+      "cell_voltage_1": {
+        "name": "Tensão da Célula 1"
+      },
+      "cell_voltage_2": {
+        "name": "Tensão da Célula 2"
+      },
+      "cell_voltage_3": {
+        "name": "Tensão da Célula 3"
+      },
+      "cell_voltage_4": {
+        "name": "Tensão da Célula 4"
+      },
+      "cell_voltage_5": {
+        "name": "Tensão da Célula 5"
+      },
+      "cell_voltage_6": {
+        "name": "Tensão da Célula 6"
+      },
+      "cell_voltage_7": {
+        "name": "Tensão da Célula 7"
+      },
+      "cell_voltage_8": {
+        "name": "Tensão da Célula 8"
+      },
+      "cell_voltage_9": {
+        "name": "Tensão da Célula 9"
+      },
+      "cell_voltage_10": {
+        "name": "Tensão da Célula 10"
+      },
+      "cell_voltage_11": {
+        "name": "Tensão da Célula 11"
+      },
+      "cell_voltage_12": {
+        "name": "Tensão da Célula 12"
+      },
+      "cell_voltage_13": {
+        "name": "Tensão da Célula 13"
+      },
+      "cell_voltage_14": {
+        "name": "Tensão da Célula 14"
+      },
+      "cell_voltage_15": {
+        "name": "Tensão da Célula 15"
+      },
+      "cell_voltage_16": {
+        "name": "Tensão da Célula 16"
+      },
       "runtime": {
         "name": "Tempo de funcionamento"
       }

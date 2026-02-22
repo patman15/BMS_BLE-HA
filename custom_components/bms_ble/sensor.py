@@ -231,6 +231,26 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     ),
 ]
 
+# Add individual cell voltage sensors (disabled by default)
+CELL_COUNT_MAX = 16
+for i in range(CELL_COUNT_MAX):
+    cell_idx = i  # Capture the loop variable to avoid closure issues
+    SENSOR_TYPES.append(BmsEntityDescription(
+        key=f"cell_voltage_{i+1}",
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=3,
+        translation_key=f"cell_voltage_{i+1}",
+        value_fn=lambda data, idx=cell_idx: (
+            data.get("cell_voltages", [])[idx]
+            if (cells := data.get("cell_voltages")) and len(cells) > idx
+            else None
+        ),
+    ))
+
 
 async def async_setup_entry(
     _hass: HomeAssistant,
@@ -250,6 +270,10 @@ async def async_setup_entry(
         if descr.key == ATTR_LQ:
             entities.append(LQSensor(bms, descr, mac))
             continue
+        if descr.key.startswith("cell_voltage_"):
+            cell_index = int(descr.key.split("_")[-1]) - 1
+            if cell_index >= len(bms.data.get("cell_voltages", [])):
+                continue
         if descr.optional and descr.key not in bms.data:
             continue
         entities.append(BMSSensor(bms, descr, mac))
