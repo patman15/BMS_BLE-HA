@@ -74,7 +74,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         address: Final = discovery_info.address
         await self.async_set_unique_id(address)
-        self._abort_if_unique_id_configured()
 
         if not (bms_module := await self._async_device_supported(discovery_info)):
             return self.async_abort(reason="not_supported")
@@ -97,6 +96,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         LOGGER.debug("confirm step for %s", self._disc_dev.name)
 
         if user_input is not None:
+            self._abort_if_unique_id_configured()
             return self.async_create_entry(
                 title=self._disc_dev.name,
                 data={"type": self._disc_dev.type},
