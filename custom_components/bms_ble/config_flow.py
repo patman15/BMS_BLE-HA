@@ -74,7 +74,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         address: Final = discovery_info.address
         await self.async_set_unique_id(address)
-        # abort early if we already have this device configured
         self._abort_if_unique_id_configured()
 
         if not (bms_module := await self._async_device_supported(discovery_info)):
