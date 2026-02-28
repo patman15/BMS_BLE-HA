@@ -41,7 +41,7 @@
         "name": "Циклів"
       },
       "delta_cell_voltage": {
-        "name": "Дельта між комірками"
+        "name": "Різниця напруги між комірками"
       },
       "link_quality": {
         "name": "Якість звязку"
@@ -58,6 +58,15 @@
     }
   },
   "exceptions": {
+    "bms_com_fail": {
+      "message": "Помилка зв’язку з BMS: {err_msg}, рівень сигналу становить {rssi} dBm."
+    },
+    "bms_com_fail_rssi": {
+      "message": "Помилка зв’язку з BMS: {err_msg}, спробуйте покращити рівень сигналу ({rssi} dBm)!"
+    },
+    "bms_timeout": {
+      "message": "Перевищено час очікування зв’язку з BMS."
+    },    
     "device_not_found": {
       "message": "Не можу знайти BMS ({MAC}) через Bluetooth."
     },
