@@ -68,7 +68,7 @@
       "message": "Перевищено час очікування зв’язку з BMS."
     },    
     "device_not_found": {
-      "message": "Не можу знайти BMS ({MAC}) через Bluetooth."
+      "message": "Не можу знайти BMS ({mac}) через Bluetooth."
     },
     "missing_unique_id": {
       "message": "Бракує унікального ID для пристрою."

@@ -59,7 +59,7 @@
   },
   "exceptions": {
     "device_not_found": {
-      "message": "Não foi possível encontrar o BMS ({MAC}) via Bluetooth."
+      "message": "Não foi possível encontrar o BMS ({mac}) via Bluetooth."
     },
     "missing_unique_id": {
       "message": "ID único em falta para o dispositivo."

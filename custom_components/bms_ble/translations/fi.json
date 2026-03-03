@@ -59,7 +59,7 @@
   },
   "exceptions": {
     "device_not_found": {
-      "message": "Akunhallintajärjestelmää ({MAC}) ei löytynyt Bluetoothin kautta."
+      "message": "Akunhallintajärjestelmää ({mac}) ei löytynyt Bluetoothin kautta."
     },
     "missing_unique_id": {
       "message": "Yksilöllinen ID puuttuu."
