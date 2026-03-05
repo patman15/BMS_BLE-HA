@@ -61,6 +61,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - SBL batteries (show up as `SBL-`&#x2026;), Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries
 - JK BMS, Jikong, (HW version &ge; 6 required)
 - LiTime, Power Queen, and Redodo batteries
+- Lithionics NeverDie smart BMS (show up as `Li.-`&#x2026;)
 - LiPower BMS
     - Ective batteries
 - NEEY balancer (4th gen) (show up as `GW-24S`&#x2026;)
@@ -76,6 +77,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Seplos v3 (show up as `SP[00-199]B`&#x2026; or `CSY`&#x2026;)
     - CEG Carmine Energia Gratis (show up as `XZHX`&#x2026;)
 - Super-B Epsilon BMS (show up as `Epsilon-`&#x2026;)
+- Super-B Epsilon v2 BMS (show up as `Epsilon`&#x2026;)
 - TDT BMS
     - Wattcycle batteries
 - Topband BMS

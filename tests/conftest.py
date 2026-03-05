@@ -226,9 +226,9 @@ class MockBMS(BaseBMS):
         return [{"local_name": "mock", "connectable": True}]
 
     @staticmethod
-    def uuid_services() -> list[str]:
+    def uuid_services() -> tuple[str, ...]:
         """Return list of services required by BMS."""
-        return [normalize_uuid_str("cafe")]
+        return (normalize_uuid_str("cafe"),)
 
     @staticmethod
     def uuid_rx() -> str:
