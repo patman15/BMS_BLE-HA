@@ -97,6 +97,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         LOGGER.debug("confirm step for %s", self._disc_dev.name)
 
         if user_input is not None:
+            self._abort_if_unique_id_configured()
             return self.async_create_entry(
                 title=self._disc_dev.name,
                 data={"type": self._disc_dev.type},
