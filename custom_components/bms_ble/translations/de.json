@@ -68,7 +68,7 @@
       "message": "Zeitüberschreitung bei BMS Kommunikation."
     },     
     "device_not_found": {
-      "message": "BMS ({MAC}) wurde nicht via Bluetooth gefunden."
+      "message": "BMS ({mac}) wurde nicht via Bluetooth gefunden."
     },
     "missing_unique_id": {
       "message": "Eindeutige ID für Gerät fehlt."
