@@ -123,6 +123,9 @@
       "local_name": "DXB-*"
     },
     {
+      "local_name": "CDZG*"
+    },
+    {
       "local_name": "libatt*",
       "manufacturer_id": 21320
     },
@@ -175,6 +178,8 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bleak_retry_connector", "aiobmsble"],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble==0.19.0"],
-  "version": "2.9.0"
+  "requirements": [
+    "aiobmsble@git+https://github.com/patman15/aiobmsble.git@feat-buknuwo"
+  ],
+  "version": "2.9.1-beta.1"
 }
