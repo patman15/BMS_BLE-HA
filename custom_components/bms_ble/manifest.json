@@ -84,6 +84,9 @@
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
+      "service_uuid": "0000ff06-0000-1000-8000-00805f9b34fb"
+    },    
+    {
       "service_uuid": "0000ffd0-0000-1000-8000-00805f9b34fb"
     },
     {
@@ -175,6 +178,8 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bleak_retry_connector", "aiobmsble"],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble==0.19.0"],
-  "version": "2.9.0"
+  "requirements": [
+    "aiobmsble@git+https://github.com/patman15/aiobmsble.git@feat-add-eleksol-support"
+  ],
+  "version": "2.9.1-beta.2"
 }
