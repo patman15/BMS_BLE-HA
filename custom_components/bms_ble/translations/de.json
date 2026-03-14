@@ -73,5 +73,22 @@
     "missing_unique_id": {
       "message": "Eindeutige ID für Gerät fehlt."
     }
+  },
+  "options": {
+    "abort": {
+      "device_has_no_options": "Dieses Gerät unterstützt keine Konfigurationsoptionen.",
+      "not_supported": "Nicht unterstützte Gerätekonfiguration."
+    },
+    "step": {
+      "init": {
+        "data": {
+          "password": "Gerätepasswort"
+        },
+        "data_description": {
+          "password": "Optionales Passwort zum Entsperren des Geräts."
+        },
+        "title": "Verbindungsoptionen"
+      }
+    }
   }  
 }

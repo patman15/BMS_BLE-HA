@@ -3,7 +3,8 @@
 from dataclasses import dataclass
 from typing import Any, Final
 
-from aiobmsble.utils import bms_identify
+from aiobmsble.basebms import BaseBMS
+from aiobmsble.utils import bms_cls, bms_identify
 import voluptuous as vol
 
 from homeassistant import config_entries
@@ -11,13 +12,27 @@ from homeassistant.components.bluetooth import (
     BluetoothServiceInfoBleak,
     async_discovered_service_info,
 )
-from homeassistant.config_entries import ConfigFlowResult
-from homeassistant.const import CONF_ADDRESS, CONF_ID, CONF_MODEL, CONF_NAME
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlowResult,
+    OptionsFlowWithReload,
+)
+from homeassistant.const import (
+    CONF_ADDRESS,
+    CONF_ID,
+    CONF_MODEL,
+    CONF_NAME,
+    CONF_PASSWORD,
+)
+from homeassistant.core import callback
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.selector import (
     SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
 )
 
 from .const import DOMAIN, LOGGER
@@ -164,5 +179,57 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         SelectSelectorConfig(options=devices),
                     )
                 }
+            ),
+        )
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(
+        config_entry: ConfigEntry,
+    ) -> OptionsFlowWithReload:
+        """Create the options flow."""
+        return OptionsFlowHandler(config_entry)
+
+
+class OptionsFlowHandler(OptionsFlowWithReload):
+    """Manage the options of the BMS class."""
+
+    def __init__(self, config_entry: ConfigEntry) -> None:
+        """Initialize options flow."""
+        self._bms_type: Final[str] = config_entry.data["type"]
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Manage the options."""
+        if user_input is not None:
+            return self.async_create_entry(data=user_input)
+
+        bms_class: type[BaseBMS] | None = await bms_cls(
+            self._bms_type.rsplit(".", 1)[-1]
+        )
+        if not bms_class:
+            return self.async_abort(reason="not_supported")
+        if not bms_class.accept_secret:
+            LOGGER.debug("No options for %s", bms_class.bms_id())
+            return self.async_abort(
+                reason="device_has_no_options",
+                description_placeholders={"model": bms_class.bms_id()},
+            )
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=self.add_suggested_values_to_schema(
+                vol.Schema(
+                    {
+                        vol.Optional(
+                            CONF_PASSWORD,
+                            default=self.config_entry.options.get(CONF_PASSWORD, ""),
+                        ): TextSelector(
+                            TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                        ),
+                    }
+                ),
+                self.config_entry.options,
             ),
         )
