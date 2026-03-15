@@ -224,7 +224,6 @@ class OptionsFlowHandler(OptionsFlowWithReload):
                     {
                         vol.Optional(
                             CONF_PASSWORD,
-                            default=self.config_entry.options.get(CONF_PASSWORD, ""),
                         ): TextSelector(
                             TextSelectorConfig(type=TextSelectorType.PASSWORD)
                         ),

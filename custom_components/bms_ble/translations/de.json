@@ -63,10 +63,10 @@
     },
     "bms_com_fail_rssi": {
       "message": "BMS Kommunikation fehlgeschlagen: {err_msg}, bitte Signalstärke ({rssi} dBm) verbessern!"
-    },    
+    },
     "bms_timeout": {
       "message": "Zeitüberschreitung bei BMS Kommunikation."
-    },     
+    },
     "device_not_found": {
       "message": "BMS ({mac}) wurde nicht via Bluetooth gefunden."
     },
@@ -90,5 +90,5 @@
         "title": "Verbindungsoptionen"
       }
     }
-  }  
+  }
 }
