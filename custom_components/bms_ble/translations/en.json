@@ -51,12 +51,12 @@
       },
       "min_cell_voltage": {
         "name": "Lowest cell voltage"
-      },       
+      },
       "runtime": {
         "name": "Runtime"
       }
     }
-  },  
+  },
   "exceptions": {
     "bms_com_fail": {
       "message": "BMS communication failed: {err_msg}, signal strength is {rssi} dBm."
@@ -66,12 +66,29 @@
     },
     "bms_timeout": {
       "message": "BMS communication timed out."
-    },    
+    },
     "device_not_found": {
       "message": "Could not find BMS ({mac}) via Bluetooth."
     },
     "missing_unique_id": {
       "message": "Missing unique ID for device."
+    }
+  },
+  "options": {
+    "abort": {
+      "device_has_no_options": "This device does not support configuration options.",
+      "not_supported": "Unsupported device configuration."
+    },
+    "step": {
+      "init": {
+        "data": {
+          "password": "Device password"
+        },
+        "data_description": {
+          "password": "Optional password to unlock device."
+        },
+        "title": "Connection options"
+      }
     }
   }
 }
