@@ -10,7 +10,7 @@
       "user": {
         "description": "Escolha um dispositivo para configurar:",
         "data": {
-          "address": "Nome Bluetooth (endereço MAC) - modelo"
+          "address": "Nome Bluetooth (endereço MAC) - Modelo"
         }
       },
       "bluetooth_confirm": {
@@ -18,34 +18,51 @@
       }
     }
   },
-  "exceptions": {
-    "device_not_found": {
-      "message": "Não foi possível encontrar o BMS ({MAC}) via Bluetooth."
-    },
-    "missing_unique_id": {
-      "message": "ID único em falta para o dispositivo."
-    }
-  },
   "entity": {
+    "binary_sensor": {
+      "balancer": {
+        "name": "Balanceador"
+      },
+      "chrg_mosfet": {
+        "name": "MOSFET de carga"
+      },
+      "dischrg_mosfet": {
+        "name": "MOSFET de descarga"
+      },
+      "heater": {
+        "name": "Aquecedor"
+      }
+    },
     "sensor": {
+      "battery_health": {
+        "name": "Saúde da bateria"
+      },
       "cycles": {
         "name": "Ciclos"
       },
       "delta_cell_voltage": {
-        "name": "Delta napięcia ogniw"
+        "name": "Diferença de tensão entre células"
       },
       "link_quality": {
         "name": "Qualidade de ligação"
       },
       "max_cell_voltage": {
-        "name": "Maksymalne napięcie ogniwa"
+        "name": "Maior tensão da célula"
       },
       "min_cell_voltage": {
-        "name": "Minimalne napięcie ogniwa"
-      },      
+        "name": "Menor tensão da célula"
+      },
       "runtime": {
-        "name": "Run"
+        "name": "Tempo de funcionamento"
       }
+    }
+  },
+  "exceptions": {
+    "device_not_found": {
+      "message": "Não foi possível encontrar o BMS ({mac}) via Bluetooth."
+    },
+    "missing_unique_id": {
+      "message": "ID único em falta para o dispositivo."
     }
   }  
 }
