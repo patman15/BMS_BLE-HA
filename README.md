@@ -301,6 +301,13 @@ Then you need to pair your device first. This is procedure is only required once
 
 Once pairing is done, the integration should automatically detect the BMS.
 
+### Can I have control functionality of my BMS integrated?
+BMSs are [safety critical devices](#provided-information). That means setting wrong parameters can harm the battery, reduce the life-time, or even cause severe damage to it or the surroundings. 
+
+Therefore, for the time being, I will stay away from implementing control function as there is no official documentation for them. This avoids accidentally wrong commands/effects caused by e.g. change of firmware, Bluetooth issue. Also, some manufacturers already expressed concerns about 3rd party applications interfeering with the intended use of their product. Consequently, I will stay pure with monitoring functionality.
+
+I would change my opinion if vendors provide an official documentation, i.e. published on their website.
+
 ## Outlook
 - Develop towards a [Home Assistant core integration](https://www.home-assistant.io/integrations/)
 - Improvements to fulfill the [Home Assistant quality scale](https://www.home-assistant.io/docs/quality_scale/)
