@@ -143,15 +143,17 @@ def bt_discovery_notsupported() -> BluetoothServiceInfoBleak:
 def mock_config(
     bms: str = "dummy_bms",
     unique_id: str | None = "cc:cc:cc:cc:cc:cc",
+    options: dict[str, str] | None = None,
 ) -> MockConfigEntry:
     """Return a Mock of the HA entity config (latest version)."""
     return MockConfigEntry(
-        domain=DOMAIN,
-        version=ConfigFlow.VERSION,
-        minor_version=ConfigFlow.MINOR_VERSION,
-        unique_id=unique_id,
         data={"type": f"aiobmsble.bms.{bms}"},
+        domain=DOMAIN,
+        minor_version=ConfigFlow.MINOR_VERSION,
+        options=options,
+        unique_id=unique_id,
         title=f"config_test_{bms}",
+        version=ConfigFlow.VERSION,
     )
 
 
