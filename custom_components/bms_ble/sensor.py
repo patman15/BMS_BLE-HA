@@ -183,7 +183,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     ),
     BmsEntityDescription(
         attr_fn=lambda data: (
-            {ATTR_CELL_NUMBER: [cells.index(max(cells))]}
+            {ATTR_CELL_NUMBER: [cells.index(max(cells)) + 1]}
             if (cells := data.get("cell_voltages", []))
             else {}
         ),
@@ -201,7 +201,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     ),
     BmsEntityDescription(
         attr_fn=lambda data: (
-            {ATTR_CELL_NUMBER: [cells.index(min(cells))]}
+            {ATTR_CELL_NUMBER: [cells.index(min(cells)) + 1]}
             if (cells := data.get("cell_voltages", []))
             else {}
         ),
@@ -247,7 +247,6 @@ async def async_setup_entry(
 
     bms: Final = config_entry.runtime_data
     mac: Final = format_mac(config_entry.unique_id)
-
     entities: list[SensorEntity] = []
     for descr in SENSOR_TYPES:
         if descr.key == ATTR_RSSI:
