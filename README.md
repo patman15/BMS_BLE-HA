@@ -51,16 +51,18 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - DCHOUSE batteries (show up as `DCHOUSE`&#x2026;)
 - Ective, Startcraft, Topband batteries (show up as `$PFLAC`&#x2026;, `NWJ20`&#x2026;, `ZM20`&#x2026;)
 - EG4 LL BMS
+- Eleksol batteries
 - Felicity ESS (show up as `F10`&#x2026;) and FLB batteries (show up as `F07`&#x2026;)
 - Gobel Power BMS (show up as `BMS-`&#x2026;)
 - HumsiENK Smart BMS (show up as `HS`&#x2026;)
 - JBD BMS, Jiabaida, Xiaoxiang (show up as `JBD-`&#x2026;)
     - accurat batteries, Aolithium batteries
     - BasenGreen, Bulltron, CHINS, DCHOUSE, ECO-WORTHY, Epoch batteries
-    - Eleksol, Elfhub, Fritz Berger, JavaEnegy, Liontron, LANPWR, OGRPHY, Perfektium, Ultimatron batteries
+    - Eleksol, Elfhub, Fritz Berger, JavaEnegy, Liontron, LANPWR, Norström, OGRPHY, Perfektium, Ultimatron batteries
     - SBL batteries (show up as `SBL-`&#x2026;), Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries
 - JK BMS, Jikong, (HW version &ge; 6 required)
-- LiTime, Power Queen, and Redodo batteries
+- Redodo BMS
+    - LiTime, Power Queen, Starry Sea batteries `S-*`&#x2026; or `SS-*`&#x2026;
 - Lithionics NeverDie smart BMS (show up as `Li.-`&#x2026;)
 - LiPower BMS
     - Ective batteries
@@ -71,7 +73,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Foxwell BT630
     - Leagend CM100
 - Renogy BMS, Renogy Pro BMS
-- RoyPow batteries
+- RoyPow (Fish) batteries
     - Lion Energy Safari
 - Seplos v2 (show up as `BP[0-2]?`)
 - Seplos v3 (show up as `SP[00-199]B`&#x2026; or `CSY`&#x2026;)
