@@ -23,7 +23,7 @@ from homeassistant.config_entries import (
     ConfigEntryState,
     ConfigFlowResult,
 )
-from homeassistant.const import CONF_ADDRESS
+from homeassistant.const import CONF_ADDRESS, CONF_PASSWORD
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er
@@ -407,6 +407,66 @@ async def test_user_setup_double_configure(
         DOMAIN, context={"source": SOURCE_USER}
     )
     assert result.get("type") == FlowResultType.ABORT
+
+
+@pytest.mark.usefixtures("enable_bluetooth")
+async def test_options_flow(
+    monkeypatch: pytest.MonkeyPatch, hass: HomeAssistant
+) -> None:
+    """Test config options flow."""
+
+    # pick one type with password option
+    cfg: MockConfigEntry = mock_config(bms="jbd_bms")
+    cfg.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(cfg.entry_id)
+    await hass.async_block_till_done()
+
+    result: ConfigFlowResult = await hass.config_entries.options.async_init(
+        cfg.entry_id
+    )
+
+    assert result.get("type") is FlowResultType.FORM
+    assert result.get("step_id") == "init"
+
+    monkeypatch.setattr(
+        "custom_components.bms_ble.async_setup_entry",
+        lambda hass, entry: True,
+    )
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={CONF_PASSWORD: "123456"},
+    )
+    await hass.async_block_till_done()
+
+    assert result.get("type") is FlowResultType.CREATE_ENTRY
+    assert cfg.options == {
+        CONF_PASSWORD: "123456",
+    }
+
+
+@pytest.mark.usefixtures("enable_bluetooth")
+@pytest.mark.parametrize("bms_type", ["dummy_bms", "invalid_bms"])
+async def test_invalid_options_flow(hass: HomeAssistant, bms_type: str) -> None:
+    """Test config options flow."""
+
+    cfg: MockConfigEntry = mock_config(bms=bms_type)
+    cfg.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(cfg.entry_id)
+    await hass.async_block_till_done()
+
+    result: ConfigFlowResult = await hass.config_entries.options.async_init(
+        cfg.entry_id
+    )
+
+    assert result.get("type") is FlowResultType.ABORT
+    assert (
+        result.get("reason") == "device_has_no_options"
+        if bms_type == "dummy_bms"
+        else "not_supported"
+    )
 
 
 @pytest.mark.usefixtures("enable_bluetooth")

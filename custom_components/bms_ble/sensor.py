@@ -15,6 +15,7 @@ from homeassistant.const import (
     ATTR_BATTERY_LEVEL,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
+    MATCH_ALL,
     PERCENTAGE,
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
     EntityCategory,
@@ -32,7 +33,10 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import BTBmsConfigEntry
 from .const import (
+    ATTR_BALANCE_CUR,
     ATTR_BATTERY_HEALTH,
+    ATTR_CELL_NUMBER,
+    ATTR_CELL_VOLTAGES,
     ATTR_CURRENT,
     ATTR_CYCLE_CAP,
     ATTR_CYCLES,
@@ -101,9 +105,11 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         attr_fn=lambda data: (
             {ATTR_TEMP_SENSORS: data.get("temp_values", [])}
             if "temp_values" in data
-            else {ATTR_TEMP_SENSORS: [data.get("temperature", 0.0)]}
-            if "temperature" in data
-            else {}
+            else (
+                {ATTR_TEMP_SENSORS: [data.get("temperature", 0.0)]}
+                if "temperature" in data
+                else {}
+            )
         ),
         device_class=SensorDeviceClass.TEMPERATURE,
         key=ATTR_TEMPERATURE,
@@ -115,7 +121,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     BmsEntityDescription(
         attr_fn=lambda data: (
             (
-                {"balance_current": [data.get("balance_current", 0.0)]}
+                {ATTR_BALANCE_CUR: [data.get("balance_current", 0.0)]}
                 if "balance_current" in data
                 else {}
             )
@@ -162,7 +168,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     ),
     BmsEntityDescription(
         attr_fn=lambda data: (
-            {"cell_voltages": data.get("cell_voltages", [])}
+            {ATTR_CELL_VOLTAGES: data.get("cell_voltages", [])}
             if "cell_voltages" in data
             else {}
         ),
@@ -177,7 +183,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     ),
     BmsEntityDescription(
         attr_fn=lambda data: (
-            {"cell_number": [cells.index(max(cells))]}
+            {ATTR_CELL_NUMBER: [cells.index(max(cells)) + 1]}
             if (cells := data.get("cell_voltages", []))
             else {}
         ),
@@ -195,7 +201,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     ),
     BmsEntityDescription(
         attr_fn=lambda data: (
-            {"cell_number": [cells.index(min(cells))]}
+            {ATTR_CELL_NUMBER: [cells.index(min(cells)) + 1]}
             if (cells := data.get("cell_voltages", []))
             else {}
         ),
@@ -241,7 +247,6 @@ async def async_setup_entry(
 
     bms: Final = config_entry.runtime_data
     mac: Final = format_mac(config_entry.unique_id)
-
     entities: list[SensorEntity] = []
     for descr in SENSOR_TYPES:
         if descr.key == ATTR_RSSI:
@@ -260,6 +265,7 @@ async def async_setup_entry(
 class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
     """The generic BMS sensor implementation."""
 
+    _unrecorded_attributes: frozenset[str] = frozenset({MATCH_ALL})
     _attr_has_entity_name = True
     entity_description: BmsEntityDescription
 

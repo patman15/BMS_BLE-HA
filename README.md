@@ -51,16 +51,18 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - DCHOUSE batteries (show up as `DCHOUSE`&#x2026;)
 - Ective, Startcraft, Topband batteries (show up as `$PFLAC`&#x2026;, `NWJ20`&#x2026;, `ZM20`&#x2026;)
 - EG4 LL BMS
+- Eleksol batteries
 - Felicity ESS (show up as `F10`&#x2026;) and FLB batteries (show up as `F07`&#x2026;)
 - Gobel Power BMS (show up as `BMS-`&#x2026;)
 - HumsiENK Smart BMS (show up as `HS`&#x2026;)
 - JBD BMS, Jiabaida, Xiaoxiang (show up as `JBD-`&#x2026;)
     - accurat batteries, Aolithium batteries
     - BasenGreen, Bulltron, CHINS, DCHOUSE, ECO-WORTHY, Epoch batteries
-    - Eleksol, Elfhub, Fritz Berger, JavaEnegy, Liontron, LANPWR, OGRPHY, Perfektium, Ultimatron batteries
+    - Eleksol, Elfhub, Fritz Berger, JavaEnegy, Liontron, LANPWR, Norström, OGRPHY, Perfektium, Ultimatron batteries
     - SBL batteries (show up as `SBL-`&#x2026;), Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries
 - JK BMS, Jikong, (HW version &ge; 6 required)
-- LiTime, Power Queen, and Redodo batteries
+- Redodo BMS
+    - LiTime, Power Queen, Starry Sea batteries `S-*`&#x2026; or `SS-*`&#x2026;
 - Lithionics NeverDie smart BMS (show up as `Li.-`&#x2026;)
 - LiPower BMS
     - Ective batteries
@@ -71,7 +73,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Foxwell BT630
     - Leagend CM100
 - Renogy BMS, Renogy Pro BMS
-- RoyPow batteries
+- RoyPow (Fish) batteries
     - Lion Energy Safari
 - Seplos v2 (show up as `BP[0-2]?`)
 - Seplos v3 (show up as `SP[00-199]B`&#x2026; or `CSY`&#x2026;)
@@ -302,11 +304,11 @@ Then you need to pair your device first. This is procedure is only required once
 Once pairing is done, the integration should automatically detect the BMS.
 
 ### Can I have control functionality of my BMS integrated?
-BMSs are [safety critical devices](#provided-information). That means setting wrong parameters can harm the battery, reduce the life-time, or even cause severe damage to it or the surroundings. 
+BMSs are [safety critical devices](#provided-information). Incorrect parameter settings can harm the battery, shorten its lifespan, or even cause severe damage to the device or its surroundings.
 
-Therefore, for the time being, I will stay away from implementing control function as there is no official documentation for them. This avoids accidentally wrong commands/effects caused by e.g. change of firmware, Bluetooth issue. Also, some manufacturers already expressed concerns about 3rd party applications interfeering with the intended use of their product. Consequently, I will stay pure with monitoring functionality.
+For that reason, I currently avoid implementing any control functions, as there is no official documentation available for them. This helps prevent unintended commands or side effects that could arise from firmware changes, Bluetooth issues, or similar factors. In addition, several manufacturers have expressed concerns about third‑party applications interfering with the intended use of their products. Consequently, I focus exclusively on monitoring functionality.
 
-I would change my opinion if vendors provide an official documentation, i.e. published on their website.
+I would reconsider this position if vendors were to publish official documentation on their websites.
 
 ## Outlook
 - Develop towards a [Home Assistant core integration](https://www.home-assistant.io/integrations/)
@@ -323,7 +325,7 @@ all [contributors of aiobmsble](https://github.com/patman15/aiobmsble?tab=readme
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA?style=for-the-badge&color=orange&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-916_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-954_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=HACS&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
 [custint-url]: https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval

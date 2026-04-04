@@ -1,11 +1,14 @@
 """The BLE Battery Management System integration."""
 
 from dataclasses import dataclass
+from types import ModuleType
 from typing import Final
+
+from bleak.backends.device import BLEDevice
 
 from homeassistant.components.bluetooth import async_ble_device_from_address
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
+from homeassistant.const import CONF_PASSWORD, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryError, ConfigEntryNotReady
 from homeassistant.helpers import entity_registry as er
@@ -23,7 +26,7 @@ type BTBmsConfigEntry = ConfigEntry[BTBmsCoordinator]
 
 async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> bool:
     """Set up BT Battery Management System from a config entry."""
-    LOGGER.debug("Setup of %s", repr(entry))
+    LOGGER.debug("Setup of %r", entry)
 
     if entry.unique_id is None:
         raise ConfigEntryError(
@@ -34,7 +37,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> boo
     # migrate old entries
     migrate_sensor_entities(hass, entry)
 
-    ble_device = async_ble_device_from_address(hass, entry.unique_id, True)
+    ble_device: BLEDevice | None = async_ble_device_from_address(
+        hass, entry.unique_id, True
+    )
 
     if ble_device is None:
         LOGGER.debug("Failed to discover device %s via Bluetooth", entry.unique_id)
@@ -46,8 +51,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> boo
             },
         )
 
-    plugin = await async_import_module(hass, entry.data["type"])
-    coordinator = BTBmsCoordinator(hass, ble_device, plugin.BMS(ble_device), entry)
+    plugin: ModuleType = await async_import_module(hass, entry.data["type"])
+    coordinator = BTBmsCoordinator(
+        hass,
+        ble_device,
+        plugin.BMS(ble_device, secret=entry.options.get(CONF_PASSWORD, "")),
+        entry,
+    )
 
     # Query the device the first time, initialise coordinator.data
     started = False
@@ -69,7 +79,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> bo
     unload_ok: Final = await hass.config_entries.async_unload_platforms(
         entry, PLATFORMS
     )
-    LOGGER.debug("Unloaded config entry: %s, ok? %s!", entry.unique_id, str(unload_ok))
+    LOGGER.debug("Unloaded config entry: %s, ok? %s!", entry.unique_id, unload_ok)
 
     if unload_ok and getattr(entry, "runtime_data", None) is not None:
         await entry.runtime_data.async_shutdown()

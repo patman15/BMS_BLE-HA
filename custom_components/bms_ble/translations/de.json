@@ -62,16 +62,36 @@
       "message": "BMS Kommunikation fehlgeschlagen: {err_msg}, Signalstärke {rssi} dBm."
     },
     "bms_com_fail_rssi": {
-      "message": "BMS Kommunikation fehlgeschlagen: {err_msg}, bitte Signalstärke ({rssi} dBm) verbessern!"
+      "message": "BMS Kommunikation fehlgeschlagen: {err_msg}. Bitte Signalstärke ({rssi} dBm) verbessern!"
+    },
+    "bms_no_valid_data": {
+      "message": "Das BMS hat keine gültigen Daten gesendet."
     },    
     "bms_timeout": {
       "message": "Zeitüberschreitung bei BMS Kommunikation."
-    },     
+    },
     "device_not_found": {
       "message": "BMS ({mac}) wurde nicht via Bluetooth gefunden."
     },
     "missing_unique_id": {
       "message": "Eindeutige ID für Gerät fehlt."
     }
-  }  
+  },
+  "options": {
+    "abort": {
+      "device_has_no_options": "Dieses Gerät unterstützt keine Konfigurationsoptionen.",
+      "not_supported": "Nicht unterstützte Gerätekonfiguration."
+    },
+    "step": {
+      "init": {
+        "data": {
+          "password": "Gerätepasswort"
+        },
+        "data_description": {
+          "password": "Optionales Passwort zum Entsperren des Geräts."
+        },
+        "title": "Verbindungsoptionen"
+      }
+    }
+  }
 }

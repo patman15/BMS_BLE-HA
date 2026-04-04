@@ -5,7 +5,7 @@ from typing import Any, Final
 from homeassistant.components.bluetooth import async_last_service_info
 from homeassistant.components.bluetooth.const import DOMAIN as BT_DOMAIN
 from homeassistant.components.diagnostics import async_redact_data
-from homeassistant.const import ATTR_AREA_ID, ATTR_ID, ATTR_SERIAL_NUMBER
+from homeassistant.const import ATTR_AREA_ID, ATTR_ID, ATTR_SERIAL_NUMBER, CONF_PASSWORD
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 
@@ -13,7 +13,7 @@ from . import BTBmsConfigEntry
 from .coordinator import BTBmsCoordinator
 
 TO_REDACT: frozenset[str] = frozenset(
-    {ATTR_AREA_ID, ATTR_ID, ATTR_SERIAL_NUMBER, "entry_id"}
+    {ATTR_AREA_ID, ATTR_ID, ATTR_SERIAL_NUMBER, CONF_PASSWORD, "entry_id"}
 )
 
 

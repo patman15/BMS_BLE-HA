@@ -12,7 +12,7 @@
       "local_name": "ECO-WORTHY 02_*"
     },
     {
-      "local_name": "Epsilon-*"
+      "local_name": "Epsilon*"
     },
     {
       "local_name": "F07*"
@@ -40,9 +40,6 @@
     },
     {
       "local_name": "V-12V???Ah-*"
-    },
-    {
-      "manufacturer_id": 21320
     },
     {
       "local_name": "RNG*",
@@ -87,6 +84,9 @@
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
     },
     {
+      "service_uuid": "0000ff06-0000-1000-8000-00805f9b34fb"
+    },    
+    {
       "service_uuid": "0000ffd0-0000-1000-8000-00805f9b34fb"
     },
     {
@@ -117,56 +117,7 @@
       "manufacturer_id": 1026
     },
     {
-      "local_name": "ECO-WORTHY 02_*"
-    },
-    {
-      "local_name": "TBA-*"
-    },
-    {
-      "local_name": "DXB-*"
-    },
-    {
-      "local_name": "libatt*",
       "manufacturer_id": 21320
-    },
-    {
-      "local_name": "LT-*"
-    },
-    {
-      "local_name": "SV12V*",
-      "manufacturer_id": 33384
-    },
-    {
-      "local_name": "L-12V???AH-*"
-    },
-    {
-      "local_name": "V-12V???Ah-*"
-    },
-    {
-      "manufacturer_id": 54976
-    },
-    {
-      "local_name": "F10*"
-    },
-    {
-      "local_name": "F07*"
-    },
-    {
-      "manufacturer_id": 21330,
-      "service_uuid": "000003c1-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "RNG*",
-      "manufacturer_id": 57676
-    },
-    {
-      "local_name": "TP_*"
-    },
-    {
-      "local_name": "Epsilon*"
-    },
-    {
-      "local_name": "PC-????"
     }
   ],
   "codeowners": ["@patman15"],
@@ -181,5 +132,5 @@
   "requirements": [
     "aiobmsble@git+https://github.com/patman15/aiobmsble.git@feat-Dyness-Junior-Box-BMS"
   ],
-  "version": "2.10.0-beta.6"
+  "version": "2.11.0-beta.1"
 }
