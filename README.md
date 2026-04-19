@@ -169,6 +169,9 @@ JBD BMS detection unfortunately needs to rely on name patterns. If you renamed y
 <details><summary>Liontron batteries</summary>
 These batteries need a shorter interval between queries. Be a bit patient to get them added and set a <a href="[custint-url]">custom interval</a> of about 9s to keep a stable connection.
 </details>
+<details><summary>Litime batteries</summary>
+Versions of these batteries support a "Bluetooth encryption" feature. When enabled you cannot connect using this integration. Remove the 6-digit Bluetooth password to get them working.
+</details>
 <details><summary>Seplos v2</summary>
 The internal Bluetooth adapter issues <code>AT</code> commands in regular intervals which can interfere with BMS messages causing them to be corrupted. This impacts data availability (<code>link quality</code>).
 </details>
