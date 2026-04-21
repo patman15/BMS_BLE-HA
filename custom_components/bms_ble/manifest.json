@@ -9,6 +9,9 @@
       "local_name": "DXB-*"
     },
     {
+      "local_name": "CDZG*"
+    },
+    {
       "local_name": "ECO-WORTHY 02_*"
     },
     {
@@ -82,7 +85,7 @@
     },
     {
       "service_uuid": "0000ff06-0000-1000-8000-00805f9b34fb"
-    },    
+    },
     {
       "service_uuid": "0000ffd0-0000-1000-8000-00805f9b34fb"
     },
@@ -95,6 +98,9 @@
     {
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
     },
+    {
+      "service_uuid": "0000fffa-0000-1000-8000-00805f9b34fb"
+    },        
     {
       "service_uuid": "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
     },
@@ -126,6 +132,6 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bleak_retry_connector", "aiobmsble"],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble==0.20.0"],
-  "version": "2.10.0"
+  "requirements": ["aiobmsble==0.21.0"],
+  "version": "2.11.0"
 }
