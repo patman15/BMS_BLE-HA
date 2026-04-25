@@ -34,7 +34,6 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 
 ### Supported Devices
 - ABC/SOK BMS (show up as `ABC-`&#x2026;, `SOK-`&#x2026;)
-- Braun Power BMS (show up as `BL-`&#x2026; or `HSKS-`&#x2026;)
 - Buknuwo batteries (show up as `CDZG`&#x2026;)
 - ANT BMS (show up as `ANT-BLE`&#x2026;)
 - CBT Power BMS, Creabest batteries
@@ -63,6 +62,9 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Eleksol, Elfhub, Fritz Berger, JavaEnegy, Liontron, LANPWR, Norström, OGRPHY, Perfektium, Ultimatron batteries
     - SBL batteries (show up as `SBL-`&#x2026;), Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries
 - JK BMS, Jikong, (HW version &ge; 6 required)
+- KS48x00 series BMS (show up as `BL-`&#x2026; or `HSKS-`&#x2026;)
+    - BEMORY batteries, Braun Power batteries
+    - Docan Energy/power batteries, VoltPolska batteries
 - Redodo BMS
     - LiTime, Power Queen, Starry Sea batteries `S-*`&#x2026; or `SS-*`&#x2026;
 - Lithionics NeverDie smart BMS (show up as `Li.-`&#x2026;)
