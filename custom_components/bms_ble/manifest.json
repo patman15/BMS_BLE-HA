@@ -132,6 +132,8 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bleak_retry_connector", "aiobmsble"],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble==0.21.0"],
-  "version": "2.11.0"
+  "requirements": [
+    "aiobmsble@git+https://github.com/patman15/aiobmsble.git@feat-seplos-detection"
+  ],
+  "version": "2.12.0-beta.4"
 }
