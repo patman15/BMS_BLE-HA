@@ -90,7 +90,7 @@
         },
         "data_description": {
           "password": "Optionales Passwort zum Entsperren des Geräts.",
-          "keep_alive": "Wenn deaktiviert, wird die Bluetooth-Verbindung nach jedem Update getrennt. Empfohlen bei gemeinsamer Nutzung eines Adapters mit nur einer Verbindung (z. B. Realtek RTL8761B) mit anderen Integrationen."
+          "keep_alive": "Hält die Bluetooth-Verbindung zwischen den Update-Zyklen offen. Das Deaktivieren verschlechtert die Verbindungszuverlässigkeit des BMS und wird nur als letztes Mittel empfohlen, wenn ein Bluetooth-Adapter mit nur einer Verbindung (z. B. Realtek RTL8761B) mit anderen Integrationen geteilt wird. Verwende nach Möglichkeit einen dedizierten Bluetooth-Adapter."
         },
         "title": "Verbindungsoptionen"
       }

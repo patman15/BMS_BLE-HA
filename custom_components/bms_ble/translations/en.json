@@ -90,7 +90,7 @@
         },
         "data_description": {
           "password": "Optional password to unlock device.",
-          "keep_alive": "If disabled, the Bluetooth connection is released after each update. Recommended when sharing a single-connection Bluetooth adapter (e.g. Realtek RTL8761B) with other integrations."
+          "keep_alive": "Keep the Bluetooth connection open between update cycles. Disabling this degrades BMS connection reliability and is only recommended as a last resort when sharing a single-connection Bluetooth adapter (e.g. Realtek RTL8761B) with other integrations. Consider using a dedicated Bluetooth adapter instead."
         },
         "title": "Connection options"
       }
