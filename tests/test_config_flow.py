@@ -447,11 +447,10 @@ async def test_options_flow(
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
-@pytest.mark.parametrize("bms_type", ["dummy_bms", "invalid_bms"])
-async def test_invalid_options_flow(hass: HomeAssistant, bms_type: str) -> None:
-    """Test config options flow."""
+async def test_invalid_options_flow(hass: HomeAssistant) -> None:
+    """Test config options flow for unsupported BMS type."""
 
-    cfg: MockConfigEntry = mock_config(bms=bms_type)
+    cfg: MockConfigEntry = mock_config(bms="invalid_bms")
     cfg.add_to_hass(hass)
 
     await hass.config_entries.async_setup(cfg.entry_id)
@@ -462,11 +461,26 @@ async def test_invalid_options_flow(hass: HomeAssistant, bms_type: str) -> None:
     )
 
     assert result.get("type") is FlowResultType.ABORT
-    assert (
-        result.get("reason") == "device_has_no_options"
-        if bms_type == "dummy_bms"
-        else "not_supported"
+    assert result.get("reason") == "not_supported"
+
+
+@pytest.mark.usefixtures("enable_bluetooth")
+async def test_options_flow_no_secret(hass: HomeAssistant) -> None:
+    """Test options flow for BMS without secret shows keep_alive toggle."""
+
+    cfg: MockConfigEntry = mock_config(bms="dummy_bms")
+    cfg.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(cfg.entry_id)
+    await hass.async_block_till_done()
+
+    result: ConfigFlowResult = await hass.config_entries.options.async_init(
+        cfg.entry_id
     )
+
+    assert result.get("type") is FlowResultType.FORM
+    assert result.get("step_id") == "init"
+    assert "keep_alive" in result["data_schema"].schema
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
