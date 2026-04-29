@@ -66,7 +66,7 @@
     },
     "bms_no_valid_data": {
       "message": "Das BMS hat keine gültigen Daten gesendet."
-    },    
+    },
     "bms_timeout": {
       "message": "Zeitüberschreitung bei BMS Kommunikation."
     },
@@ -85,10 +85,12 @@
     "step": {
       "init": {
         "data": {
-          "password": "Gerätepasswort"
+          "password": "Gerätepasswort",
+          "keep_alive": "Verbindung zwischen Updates aufrechterhalten"
         },
         "data_description": {
-          "password": "Optionales Passwort zum Entsperren des Geräts."
+          "password": "Optionales Passwort zum Entsperren des Geräts.",
+          "keep_alive": "Wenn deaktiviert, wird die Bluetooth-Verbindung nach jedem Update getrennt. Empfohlen bei gemeinsamer Nutzung eines Adapters mit nur einer Verbindung (z. B. Realtek RTL8761B) mit anderen Integrationen."
         },
         "title": "Verbindungsoptionen"
       }

@@ -91,13 +91,15 @@
     "step": {
       "init": {
         "data": {
-          "password": "Device password"
+          "password": "Device password",
+          "keep_alive": "Keep connection alive between updates"
         },
         "data_description": {
-          "password": "Optional password to unlock device."
+          "password": "Optional password to unlock device.",
+          "keep_alive": "If disabled, the Bluetooth connection is released after each update. Recommended when sharing a single-connection Bluetooth adapter (e.g. Realtek RTL8761B) with other integrations."
         },
         "title": "Connection options"
       }
     }
-  }  
+  }
 }
