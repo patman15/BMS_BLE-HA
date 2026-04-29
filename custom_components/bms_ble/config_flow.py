@@ -27,6 +27,7 @@ from homeassistant.const import (
 from homeassistant.core import callback
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.selector import (
+    BooleanSelector,
     SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
@@ -35,7 +36,7 @@ from homeassistant.helpers.selector import (
     TextSelectorType,
 )
 
-from .const import DOMAIN, LOGGER
+from .const import CONF_KEEP_ALIVE, DOMAIN, LOGGER
 
 
 @dataclass
@@ -210,25 +211,19 @@ class OptionsFlowHandler(OptionsFlowWithReload):
         )
         if not bms_class:
             return self.async_abort(reason="not_supported")
-        if not bms_class.accept_secret:
-            LOGGER.debug("No options for %s", bms_class.bms_id())
-            return self.async_abort(
-                reason="device_has_no_options",
-                description_placeholders={"model": bms_class.bms_id()},
+        schema_dict: dict = {
+            vol.Optional(CONF_KEEP_ALIVE, default=True): BooleanSelector(),
+        }
+
+        if bms_class.accept_secret:
+            schema_dict[vol.Optional(CONF_PASSWORD)] = TextSelector(
+                TextSelectorConfig(type=TextSelectorType.PASSWORD)
             )
 
         return self.async_show_form(
             step_id="init",
             data_schema=self.add_suggested_values_to_schema(
-                vol.Schema(
-                    {
-                        vol.Optional(
-                            CONF_PASSWORD,
-                        ): TextSelector(
-                            TextSelectorConfig(type=TextSelectorType.PASSWORD)
-                        ),
-                    }
-                ),
+                vol.Schema(schema_dict),
                 self.config_entry.options,
             ),
         )

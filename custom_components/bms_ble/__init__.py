@@ -16,7 +16,7 @@ from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.importlib import async_import_module
 
 from .config_flow import ConfigFlow
-from .const import DOMAIN, LOGGER
+from .const import CONF_KEEP_ALIVE, DOMAIN, LOGGER
 from .coordinator import BTBmsCoordinator
 
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
@@ -55,7 +55,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> boo
     coordinator = BTBmsCoordinator(
         hass,
         ble_device,
-        plugin.BMS(ble_device, secret=entry.options.get(CONF_PASSWORD, "")),
+        plugin.BMS(
+            ble_device,
+            keep_alive=entry.options.get(CONF_KEEP_ALIVE, True),
+            secret=entry.options.get(CONF_PASSWORD, ""),
+        ),
         entry,
     )
 
@@ -129,7 +133,7 @@ async def async_migrate_entry(
         entry_version = EntryVersion(1, 0)
 
     if entry_version.major < 2:
-        new_data["type"] = f"aiobmsble.bms.{new_data["type"].rsplit('.', 1)[-1]}"
+        new_data["type"] = f"aiobmsble.bms.{new_data['type'].rsplit('.', 1)[-1]}"
         entry_version = EntryVersion(2, 0)
 
     if config_entry.version < 3:
@@ -166,7 +170,7 @@ def migrate_sensor_entities(
         unique_id: str = entry.unique_id
         # update entries from wrong old format using no domain prefix
         if not entry.unique_id.startswith(f"{DOMAIN}-"):
-            unique_id = f"{DOMAIN}-{format_mac(config_entry.unique_id)}-{unique_id.split('-')[-1]}"
+            unique_id = f"{DOMAIN}-{format_mac(config_entry.unique_id)}-{unique_id.rsplit('-', maxsplit=1)[-1]}"
         # rename delta_voltage sensor to be consistent with min/max cell voltage sensor
         if unique_id.endswith("-delta_voltage"):
             unique_id = unique_id.removesuffix("-delta_voltage") + "-delta_cell_voltage"
