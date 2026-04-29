@@ -12,6 +12,7 @@ from voluptuous import Schema
 from custom_components.bms_ble.config_flow import ConfigFlow
 from custom_components.bms_ble.const import (
     BINARY_SENSORS,
+    CONF_KEEP_ALIVE,
     DOMAIN,
     LINK_SENSORS,
     SENSORS,
@@ -436,13 +437,14 @@ async def test_options_flow(
 
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
-        user_input={CONF_PASSWORD: "123456"},
+        user_input={CONF_PASSWORD: "123456", CONF_KEEP_ALIVE: True},
     )
     await hass.async_block_till_done()
 
     assert result.get("type") is FlowResultType.CREATE_ENTRY
     assert cfg.options == {
         CONF_PASSWORD: "123456",
+        CONF_KEEP_ALIVE: True,
     }
 
 
