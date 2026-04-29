@@ -46,23 +46,23 @@ async def test_init_fail(
     cfg: MockConfigEntry = mock_config(bms=bms_fixture)
     cfg.add_to_hass(hass)
 
-    assert not await hass.config_entries.async_setup(
-        cfg.entry_id
-    ), "test did not make setup fail!"
+    assert not await hass.config_entries.async_setup(cfg.entry_id), (
+        "test did not make setup fail!"
+    )
     await hass.async_block_till_done()
 
     # verify it is not yet loaded
     assert cfg.state is ConfigEntryState.SETUP_RETRY
 
     assert trace_fct["stop_called"] is True, "Failed to call coordinator stop()."
-    assert (
-        cfg in hass.config_entries.async_entries()
-    ), "Incorrect configuration entry found."
+    assert cfg in hass.config_entries.async_entries(), (
+        "Incorrect configuration entry found."
+    )
     # Assert platforms unloaded
     await hass.async_block_till_done()
-    assert (
-        len(hass.states.async_all(["sensor", "binary_sensor"])) == 0
-    ), "Failure: config entry generated sensors."
+    assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 0, (
+        "Failure: config entry generated sensors."
+    )
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
@@ -118,10 +118,10 @@ async def test_unload_entry(
     assert (  # shutdown is only called if entry unload succeeded
         trace_fct["shutdown_called"] or unload_fail
     ), "Failed to call coordinator async_shutdown()."
-    assert (
-        cfg not in hass.config_entries.async_entries()
-    ), "Failed to remove configuration entry."
+    assert cfg not in hass.config_entries.async_entries(), (
+        "Failed to remove configuration entry."
+    )
     # Assert platforms unloaded
-    assert (
-        len(hass.states.async_all(["sensor", "binary_sensor"])) == 0
-    ), "Failed to remove platforms."
+    assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 0, (
+        "Failed to remove platforms."
+    )

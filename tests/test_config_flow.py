@@ -78,9 +78,9 @@ async def test_bluetooth_discovery(
     flowresults: list[ConfigFlowResult] = (
         hass.config_entries.flow.async_progress_by_handler(DOMAIN)
     )
-    assert (
-        len(flowresults) == 1
-    ), f"Expected one flow result for {advertisement}, check manifest.json!"
+    assert len(flowresults) == 1, (
+        f"Expected one flow result for {advertisement}, check manifest.json!"
+    )
     result: ConfigFlowResult = flowresults[0]
     assert result.get("step_id") == "bluetooth_confirm"
     assert result.get("context", {}).get("unique_id") == advertisement.address
