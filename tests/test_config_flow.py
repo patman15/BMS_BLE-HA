@@ -482,7 +482,9 @@ async def test_options_flow_no_secret(hass: HomeAssistant) -> None:
 
     assert result.get("type") is FlowResultType.FORM
     assert result.get("step_id") == "init"
-    assert "keep_alive" in result["data_schema"].schema
+    data_schema = result.get("data_schema")
+    assert data_schema is not None
+    assert "keep_alive" in data_schema.schema
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
