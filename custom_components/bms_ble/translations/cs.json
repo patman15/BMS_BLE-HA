@@ -1,0 +1,99 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Zařízení je již nakonfigurováno.",
+      "no_devices_found": "Nebyla nalezena žádná podporovaná zařízení přes Bluetooth.",
+      "not_supported": "Zařízení není podporováno."
+    },
+    "flow_title": "Nastavení {name} ({id}) jako {model}",
+    "step": {
+      "bluetooth_confirm": {
+        "description": "Chcete nastavit {name} ({id})?"
+      },
+      "user": {
+        "data": {
+          "address": "Název Bluetooth (MAC adresa) - Model"
+        },
+        "description": "Vyberte zařízení k nastavení"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "balancer": {
+        "name": "Vyrovnávač"
+      },
+      "chrg_mosfet": {
+        "name": "MOSFET nabíjení"
+      },
+      "dischrg_mosfet": {
+        "name": "MOSFET vybíjení"
+      },
+      "heater": {
+        "name": "Ohřívač"
+      }
+    },
+    "sensor": {
+      "battery_health": {
+        "name": "Zdraví baterie"
+      },
+      "cycles": {
+        "name": "Cykly"
+      },
+      "delta_cell_voltage": {
+        "name": "Rozdíl napětí článků"
+      },
+      "link_quality": {
+        "name": "Kvalita spojení"
+      },
+      "max_cell_voltage": {
+        "name": "Nejvyšší napětí článku"
+      },
+      "min_cell_voltage": {
+        "name": "Nejnižší napětí článku"
+      },
+      "runtime": {
+        "name": "Doba provozu"
+      }
+    }
+  },
+  "exceptions": {
+    "bms_com_fail": {
+      "message": "Komunikace s BMS selhala: {err_msg}, síla signálu {rssi} dBm."
+    },
+    "bms_com_fail_rssi": {
+      "message": "Komunikace s BMS selhala: {err_msg}. Zkuste zvýšit sílu signálu z {rssi} dBm."
+    },
+    "bms_no_valid_data": {
+      "message": "BMS neposkytlo platná data."
+    },
+    "bms_timeout": {
+      "message": "Komunikace s BMS vypršela."
+    },
+    "device_not_found": {
+      "message": "BMS ({mac}) nebylo nalezeno přes Bluetooth."
+    },
+    "missing_unique_id": {
+      "message": "Chybí jedinečné ID zařízení."
+    }
+  },
+  "options": {
+    "abort": {
+      "device_has_no_options": "Toto zařízení nepodporuje možnosti konfigurace.",
+      "not_supported": "Nepodporovaná konfigurace zařízení."
+    },
+    "step": {
+      "init": {
+        "title": "Možnosti připojení",
+        "data": {
+          "password": "Heslo zařízení",
+          "keep_alive": "Udržovat připojení mezi aktualizacemi"
+        },
+        "data_description": {
+          "password": "Volitelné heslo pro odemčení zařízení.",
+          "keep_alive": "Udržuje Bluetooth připojení otevřené mezi cykly aktualizací. Vypnutí snižuje spolehlivost připojení BMS a doporučuje se pouze jako krajní řešení při sdílení adaptéru s jediným připojením (např. Realtek RTL8761B) s jinými integracemi. Zvažte raději použití dedikovaného Bluetooth adaptéru."
+        }
+      }
+    }
+  }
+}

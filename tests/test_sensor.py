@@ -163,9 +163,9 @@ async def test_update(
         ),
     ):
         state: State | None = hass.states.get(f"{DEV_NAME}_{sensor}")
-        assert (
-            state is not None and state.attributes[attribute] == value
-        ), f"failed to verify attribute {attribute} for sensor {sensor}"
+        assert state is not None and state.attributes[attribute] == value, (
+            f"failed to verify attribute {attribute} for sensor {sensor}"
+        )
 
     # check battery pack attributes
     for sensor, attribute, ref_value in (

@@ -161,3 +161,5 @@ cython_debug/
 #custom_components/bms_ble/plugins/dummy_bms.py
 TODO.md
 
+# macOS
+.DS_Store
