@@ -75,6 +75,9 @@
       "service_uuid": "00001000-0000-1000-8000-00805f9b34fb"
     },
     {
+      "service_uuid": "0000180f-0000-1000-8000-00805f9b34fb"
+    },
+    {
       "service_uuid": "0000af30-0000-1000-8000-00805f9b34fb"
     },
     {
@@ -100,7 +103,10 @@
     },
     {
       "service_uuid": "0000fffa-0000-1000-8000-00805f9b34fb"
-    },        
+    },
+    {
+      "service_uuid": "00035b03-58e6-07dd-021a-08123a000300"
+    },
     {
       "service_uuid": "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
     },
@@ -132,6 +138,6 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bleak_retry_connector", "aiobmsble"],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble==0.21.0"],
-  "version": "2.11.0"
+  "requirements": ["aiobmsble==0.22.0"],
+  "version": "2.12.0"
 }
