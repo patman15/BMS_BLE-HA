@@ -212,7 +212,7 @@ class OptionsFlowHandler(OptionsFlowWithReload):
         if not bms_class:
             return self.async_abort(reason="not_supported")
         schema_dict: dict = {
-            vol.Optional(CONF_KEEP_ALIVE, default=True): BooleanSelector(),
+            vol.Optional(CONF_KEEP_ALIVE, default=True, description={"advanced": True}): BooleanSelector(),
         }
 
         if bms_class.accept_secret:
