@@ -133,7 +133,7 @@ async def async_migrate_entry(
         entry_version = EntryVersion(1, 0)
 
     if entry_version.major < 2:
-        new_data["type"] = f"aiobmsble.bms.{new_data['type'].rsplit('.', 1)[-1]}"
+        new_data["type"] = f"aiobmsble.bms.{new_data["type"].rsplit('.', 1)[-1]}"
         entry_version = EntryVersion(2, 0)
 
     if config_entry.version < 3:
