@@ -424,7 +424,7 @@ async def test_options_flow(
     await hass.async_block_till_done()
 
     result: ConfigFlowResult = await hass.config_entries.options.async_init(
-        cfg.entry_id
+        cfg.entry_id, context={"show_advanced_options": True}
     )
 
     assert result.get("type") is FlowResultType.FORM
@@ -477,7 +477,7 @@ async def test_options_flow_no_secret(hass: HomeAssistant) -> None:
     await hass.async_block_till_done()
 
     result: ConfigFlowResult = await hass.config_entries.options.async_init(
-        cfg.entry_id
+        cfg.entry_id, context={"show_advanced_options": True}
     )
 
     assert result.get("type") is FlowResultType.FORM
