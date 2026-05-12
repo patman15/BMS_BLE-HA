@@ -86,10 +86,10 @@
       "init": {
         "title": "Možnosti připojení",
         "data": {
-          "password": "Heslo zařízení",
+          "password": "Heslo zařízení"
         },
         "data_description": {
-          "password": "Volitelné heslo pro odemčení zařízení.",
+          "password": "Volitelné heslo pro odemčení zařízení."
         }
       }
     }
