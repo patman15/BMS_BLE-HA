@@ -211,14 +211,22 @@ class OptionsFlowHandler(OptionsFlowWithReload):
         )
         if not bms_class:
             return self.async_abort(reason="not_supported")
-        schema_dict: dict = {
-            vol.Optional(CONF_KEEP_ALIVE, default=True, description={"advanced": True}): BooleanSelector(),
-        }
+        if not bms_class.accept_secret and not self.show_advanced_options:
+            LOGGER.debug("No options for %s", bms_class.bms_id())
+            return self.async_abort(
+                reason="device_has_no_options",
+                description_placeholders={"model": bms_class.bms_id()},
+            )
+
+        schema_dict: dict = {}
 
         if bms_class.accept_secret:
             schema_dict[vol.Optional(CONF_PASSWORD)] = TextSelector(
                 TextSelectorConfig(type=TextSelectorType.PASSWORD)
             )
+
+        if self.show_advanced_options:
+            schema_dict[vol.Optional(CONF_KEEP_ALIVE, default=True)] = BooleanSelector()
 
         return self.async_show_form(
             step_id="init",

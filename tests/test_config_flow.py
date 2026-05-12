@@ -468,20 +468,26 @@ async def test_invalid_options_flow(hass: HomeAssistant) -> None:
 
 @pytest.mark.usefixtures("enable_bluetooth")
 async def test_options_flow_no_secret(hass: HomeAssistant) -> None:
-    """Test options flow for BMS without secret shows keep_alive toggle."""
-
+    """Test options flow for BMS without secret aborts without advanced mode."""
     cfg: MockConfigEntry = mock_config(bms="dummy_bms")
     cfg.add_to_hass(hass)
-
     await hass.config_entries.async_setup(cfg.entry_id)
     await hass.async_block_till_done()
-
+    # Without advanced mode: abort
     result: ConfigFlowResult = await hass.config_entries.options.async_init(
+        cfg.entry_id
+    )
+    assert result.get("type") is FlowResultType.ABORT
+    assert result.get("reason") == "device_has_no_options"
+    # With advanced mode: show keep_alive toggle
+    result = await hass.config_entries.options.async_init(
         cfg.entry_id, context={"show_advanced_options": True}
     )
-
     assert result.get("type") is FlowResultType.FORM
     assert result.get("step_id") == "init"
+    data_schema = result.get("data_schema")
+    assert data_schema is not None
+    assert "keep_alive" in data_schema.schema
     data_schema = result.get("data_schema")
     assert data_schema is not None
     assert "keep_alive" in data_schema.schema
