@@ -447,6 +447,24 @@ async def test_options_flow(
         CONF_KEEP_ALIVE: True,
     }
 
+@pytest.mark.usefixtures("enable_bluetooth")
+async def test_options_flow_no_advanced_mode(hass: HomeAssistant) -> None:
+    """Test options flow without advanced mode hides keep_alive for BMS with secret."""
+    cfg: MockConfigEntry = mock_config(bms="jbd_bms")
+    cfg.add_to_hass(hass)
+    await hass.config_entries.async_setup(cfg.entry_id)
+    await hass.async_block_till_done()
+    result: ConfigFlowResult = await hass.config_entries.options.async_init(
+        cfg.entry_id
+    )
+    assert result.get("type") is FlowResultType.FORM
+    assert result.get("step_id") == "init"
+    data_schema = result.get("data_schema")
+    assert data_schema is not None
+    assert CONF_PASSWORD in [str(k) for k in data_schema.schema]
+    assert CONF_KEEP_ALIVE not in [str(k) for k in data_schema.schema]
+
+
 
 @pytest.mark.usefixtures("enable_bluetooth")
 async def test_invalid_options_flow(hass: HomeAssistant) -> None:
