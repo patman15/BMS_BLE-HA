@@ -84,15 +84,25 @@
     },
     "step": {
       "init": {
-        "title": "Možnosti připojení",
         "data": {
-          "password": "Heslo zařízení",
-          "keep_alive": "Udržovat připojení mezi aktualizacemi"
+          "password": "Heslo zařízení"
         },
         "data_description": {
-          "password": "Volitelné heslo pro odemčení zařízení.",
-          "keep_alive": "Udržuje Bluetooth připojení otevřené mezi cykly aktualizací. Vypnutí snižuje spolehlivost připojení BMS a doporučuje se pouze jako krajní řešení při sdílení adaptéru s jediným připojením (např. Realtek RTL8761B) s jinými integracemi. Zvažte raději použití dedikovaného Bluetooth adaptéru."
-        }
+          "password": "Volitelné heslo pro odemčení zařízení."
+        },
+        "sections": {
+          "advanced_options": {
+            "data": {
+              "keep_alive": "Udržovat připojení mezi aktualizacemi"
+            },
+            "data_description": {
+              "keep_alive": "Udržuje Bluetooth připojení otevřené mezi cykly aktualizací. Vypnutí snižuje spolehlivost připojení BMS a doporučuje se pouze jako krajní řešení při sdílení adaptéru s jediným připojením (např. Realtek RTL8761B) s jinými integracemi. Zvažte raději použití dedikovaného Bluetooth adaptéru."
+            },
+            "name": "Pokročilá nastavení"
+          }
+        },
+        "title": "Možnosti připojení",
+        "description": "Možnost zadání hesla je dostupná pouze v případě, že tuto funkcionalitu zařízení podporuje."        
       }
     }
   }

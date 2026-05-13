@@ -85,14 +85,24 @@
     "step": {
       "init": {
         "data": {
-          "password": "Gerätepasswort",
-          "keep_alive": "Verbindung zwischen Updates aufrechterhalten"
+          "password": "Gerätepasswort"
         },
         "data_description": {
-          "password": "Optionales Passwort zum Entsperren des Geräts.",
-          "keep_alive": "Hält die Bluetooth-Verbindung zwischen den Update-Zyklen offen. Das Deaktivieren verschlechtert die Verbindungszuverlässigkeit des BMS und wird nur als letztes Mittel empfohlen, wenn ein Bluetooth-Adapter mit nur einer Verbindung (z. B. Realtek RTL8761B) mit anderen Integrationen geteilt wird. Verwende nach Möglichkeit einen dedizierten Bluetooth-Adapter."
+          "password": "Optionales Passwort zum Entsperren des Geräts."
         },
-        "title": "Verbindungsoptionen"
+        "sections": {
+          "advanced_options": {
+            "data": {
+              "keep_alive": "Verbindung zwischen Updates aufrechterhalten"
+            },
+            "data_description": {
+               "keep_alive": "Hält die Bluetooth-Verbindung zwischen den Update-Zyklen. Das Deaktivieren verschlechtert die Verbindungszuverlässigkeit des BMS und wird nur als letztes Mittel empfohlen, wenn ein Bluetooth-Adapter mit nur einer Verbindung (z. B. Realtek RTL8761B) mit anderen Integrationen geteilt wird. Verwende nach Möglichkeit einen dedizierten Bluetooth-Adapter."
+            },
+            "name": "Erweiterte Optionen"
+          }
+        },
+        "title": "Verbindungsoptionen",
+        "description": "Die Passwortoption ist nur verfügbar, wenn vom Gerät unterstützt."
       }
     }
   }
