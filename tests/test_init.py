@@ -17,14 +17,13 @@ from .conftest import mock_config, mock_devinfo_min, mock_exception, mock_update
 @pytest.mark.parametrize("swap", [False, True], ids=["devinfo", "update"])
 async def test_init_fail(
     monkeypatch: pytest.MonkeyPatch,
-    bms_fixture: str,
     swap: bool,
     bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
 ) -> None:
-    """Test entries are unloaded correctly."""
+    """Test entry is unloaded correctly."""
 
-    bms_class: Final[str] = f"aiobmsble.bms.{bms_fixture}.BMS"
+    bms_class: Final[str] = "aiobmsble.bms.dummy_bms.BMS"
     monkeypatch.setattr(
         f"{bms_class}.device_info", mock_devinfo_min if swap else mock_exception
     )
@@ -43,26 +42,26 @@ async def test_init_fail(
 
     inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
-    cfg: MockConfigEntry = mock_config(bms=bms_fixture)
+    cfg: MockConfigEntry = mock_config(bms="dummy_bms")
     cfg.add_to_hass(hass)
 
-    assert not await hass.config_entries.async_setup(
-        cfg.entry_id
-    ), "test did not make setup fail!"
+    assert not await hass.config_entries.async_setup(cfg.entry_id), (
+        "test did not make setup fail!"
+    )
     await hass.async_block_till_done()
 
     # verify it is not yet loaded
     assert cfg.state is ConfigEntryState.SETUP_RETRY
 
     assert trace_fct["stop_called"] is True, "Failed to call coordinator stop()."
-    assert (
-        cfg in hass.config_entries.async_entries()
-    ), "Incorrect configuration entry found."
+    assert cfg in hass.config_entries.async_entries(), (
+        "Incorrect configuration entry found."
+    )
     # Assert platforms unloaded
     await hass.async_block_till_done()
-    assert (
-        len(hass.states.async_all(["sensor", "binary_sensor"])) == 0
-    ), "Failure: config entry generated sensors."
+    assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 0, (
+        "Failure: config entry generated sensors."
+    )
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
@@ -118,10 +117,10 @@ async def test_unload_entry(
     assert (  # shutdown is only called if entry unload succeeded
         trace_fct["shutdown_called"] or unload_fail
     ), "Failed to call coordinator async_shutdown()."
-    assert (
-        cfg not in hass.config_entries.async_entries()
-    ), "Failed to remove configuration entry."
+    assert cfg not in hass.config_entries.async_entries(), (
+        "Failed to remove configuration entry."
+    )
     # Assert platforms unloaded
-    assert (
-        len(hass.states.async_all(["sensor", "binary_sensor"])) == 0
-    ), "Failed to remove platforms."
+    assert len(hass.states.async_all(["sensor", "binary_sensor"])) == 0, (
+        "Failed to remove platforms."
+    )

@@ -25,8 +25,10 @@ from homeassistant.const import (
     CONF_PASSWORD,
 )
 from homeassistant.core import callback
+from homeassistant.data_entry_flow import section
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.selector import (
+    BooleanSelector,
     SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
@@ -34,8 +36,9 @@ from homeassistant.helpers.selector import (
     TextSelectorConfig,
     TextSelectorType,
 )
+from homeassistant.helpers.typing import VolDictType
 
-from .const import DOMAIN, LOGGER
+from .const import CONF_ADVANCED_OPTIONS, CONF_KEEP_ALIVE, DOMAIN, LOGGER
 
 
 @dataclass
@@ -210,25 +213,34 @@ class OptionsFlowHandler(OptionsFlowWithReload):
         )
         if not bms_class:
             return self.async_abort(reason="not_supported")
-        if not bms_class.accept_secret:
+        if not bms_class.accept_secret and not self.show_advanced_options:
             LOGGER.debug("No options for %s", bms_class.bms_id())
             return self.async_abort(
                 reason="device_has_no_options",
                 description_placeholders={"model": bms_class.bms_id()},
             )
 
+        schema_dict: VolDictType = {
+            vol.Optional(CONF_PASSWORD): TextSelector(
+                TextSelectorConfig(
+                    type=TextSelectorType.PASSWORD,
+                    read_only=not bms_class.accept_secret,
+                )
+            )
+        }
+
+        if self.show_advanced_options:
+            schema_dict[vol.Optional(CONF_ADVANCED_OPTIONS)] = section(
+                vol.Schema(
+                    {vol.Optional(CONF_KEEP_ALIVE, default=True): BooleanSelector()}
+                ),
+                {"collapsed": True},
+            )
+
         return self.async_show_form(
             step_id="init",
             data_schema=self.add_suggested_values_to_schema(
-                vol.Schema(
-                    {
-                        vol.Optional(
-                            CONF_PASSWORD,
-                        ): TextSelector(
-                            TextSelectorConfig(type=TextSelectorType.PASSWORD)
-                        ),
-                    }
-                ),
+                vol.Schema(schema_dict),
                 self.config_entry.options,
             ),
         )

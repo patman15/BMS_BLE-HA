@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from types import ModuleType
-from typing import Final
+from typing import Any, Final
 
 from bleak.backends.device import BLEDevice
 
@@ -16,7 +16,7 @@ from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.importlib import async_import_module
 
 from .config_flow import ConfigFlow
-from .const import DOMAIN, LOGGER
+from .const import CONF_ADVANCED_OPTIONS, CONF_KEEP_ALIVE, DOMAIN, LOGGER
 from .coordinator import BTBmsCoordinator
 
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
@@ -52,10 +52,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> boo
         )
 
     plugin: ModuleType = await async_import_module(hass, entry.data["type"])
+    advanced_options: dict[str, Any] = entry.options.get(CONF_ADVANCED_OPTIONS, {})
     coordinator = BTBmsCoordinator(
         hass,
         ble_device,
-        plugin.BMS(ble_device, secret=entry.options.get(CONF_PASSWORD, "")),
+        plugin.BMS(
+            ble_device,
+            keep_alive=advanced_options.get(CONF_KEEP_ALIVE, True),
+            secret=entry.options.get(CONF_PASSWORD, ""),
+        ),
         entry,
     )
 
