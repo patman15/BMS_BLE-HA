@@ -27,7 +27,7 @@ from homeassistant.config_entries import (
 )
 from homeassistant.const import CONF_ADDRESS, CONF_PASSWORD
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.data_entry_flow import FlowResultType, InvalidData
 from homeassistant.helpers import entity_registry as er
 
 from .bluetooth import generate_ble_device, inject_bluetooth_service_info_bleak
@@ -303,7 +303,7 @@ async def test_async_setup_entry(
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
-async def test_setup_entry_missing_unique_id(bms_fixture, hass: HomeAssistant) -> None:
+async def test_setup_entry_missing_unique_id(bms_fixture: str, hass: HomeAssistant) -> None:
     """Test async_setup_entry with missing unique id."""
 
     cfg: MockConfigEntry = mock_config(bms=bms_fixture, unique_id=None)
@@ -453,16 +453,11 @@ async def test_options_flow(
 
 @pytest.mark.usefixtures("enable_bluetooth")
 @pytest.mark.parametrize("show_adv_opt", [True, False], ids=["adv_opt", "no_adv_opt"])
-async def test_options_flow_no_secret(
-    monkeypatch: pytest.MonkeyPatch, hass: HomeAssistant, show_adv_opt: bool
-) -> None:
+async def test_options_flow_no_secret(hass: HomeAssistant, show_adv_opt: bool) -> None:
     """Test if options flow for BMS without secret and disabled advanced mode."""
 
-    cfg: MockConfigEntry = mock_config(bms="dummy_bms")
+    cfg: MockConfigEntry = mock_config()
     cfg.add_to_hass(hass)
-
-    await hass.config_entries.async_setup(cfg.entry_id)
-    await hass.async_block_till_done()
 
     result: ConfigFlowResult = await hass.config_entries.options.async_init(
         cfg.entry_id, context={"show_advanced_options": show_adv_opt}
@@ -475,11 +470,6 @@ async def test_options_flow_no_secret(
     assert result.get("type") is FlowResultType.FORM
     assert result.get("step_id") == "init"
 
-    monkeypatch.setattr(
-        "custom_components.bms_ble.async_setup_entry",
-        lambda hass, entry: True,
-    )
-
     OPTIONS: Final[dict[str, Any]] = {CONF_ADVANCED_OPTIONS: {CONF_KEEP_ALIVE: True}}
 
     result = await hass.config_entries.options.async_configure(
@@ -489,6 +479,71 @@ async def test_options_flow_no_secret(
 
     assert result.get("type") is FlowResultType.CREATE_ENTRY
     assert cfg.options == OPTIONS
+
+
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+@pytest.mark.parametrize("keep_alive", [True, False])
+async def test_options_effect(
+    monkeypatch: pytest.MonkeyPatch,
+    hass: HomeAssistant,
+    bt_discovery: BluetoothServiceInfoBleak,
+    keep_alive: bool,
+) -> None:
+    """Test if options settings reach BMS class."""
+
+    options: dict[str, Any] = {}
+
+    def mock_bms_init(
+        _self,
+        ble_device: Any,
+        keep_alive: bool = True,
+        secret: str = "",
+        logger_name: str = "",
+    ) -> None:
+        options[CONF_KEEP_ALIVE] = keep_alive
+        options[CONF_PASSWORD] = secret
+
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
+
+    cfg: MockConfigEntry = mock_config()
+    cfg.add_to_hass(hass)
+
+    bms_module: Final[str] = "aiobmsble.bms.dummy_bms"
+    monkeypatch.setattr(f"{bms_module}.BMS.__init__", mock_bms_init)
+    monkeypatch.setattr(f"{bms_module}.BMS.device_info", mock_devinfo_min)
+    monkeypatch.setattr(f"{bms_module}.BMS.async_update", mock_update_min)
+
+    await hass.async_block_till_done()
+
+    result: ConfigFlowResult = await hass.config_entries.options.async_init(
+        cfg.entry_id, context={"show_advanced_options": True}
+    )
+    assert result.get("type") is FlowResultType.FORM
+    assert result.get("step_id") == "init"
+
+    # check options flow enforces schema
+    with pytest.raises(InvalidData):
+        await hass.config_entries.options.async_configure(
+            result["flow_id"], user_input={"invalid": "option"}
+        )
+
+    OPTIONS: dict[str, Any] = {
+        CONF_PASSWORD: "123abc",
+        CONF_ADVANCED_OPTIONS: {CONF_KEEP_ALIVE: keep_alive},
+    }
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], user_input=OPTIONS
+    )
+    await hass.async_block_till_done()
+
+    assert cfg in hass.config_entries.async_entries()
+    assert cfg.state is ConfigEntryState.LOADED
+    assert cfg.options == OPTIONS
+    assert (
+        options[CONF_KEEP_ALIVE] == keep_alive
+    ), f"keep_alive value {keep_alive} not set."
+    assert options.get(CONF_PASSWORD) == "123abc"
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
