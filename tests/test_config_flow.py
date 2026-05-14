@@ -529,12 +529,10 @@ async def test_no_migration(bms_fixture: str, hass: HomeAssistant) -> None:
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
-async def test_migrate_entry_future_version(
-    bms_fixture: str, hass: HomeAssistant
-) -> None:
+async def test_migrate_entry_future_version(hass: HomeAssistant) -> None:
     """Test migrating entries from future version."""
 
-    cfg: MockConfigEntry = mock_config(bms=bms_fixture)
+    cfg: MockConfigEntry = mock_config(bms="dummy_bms")
     cfg.add_to_hass(hass)
     hass.config_entries.async_update_entry(cfg, version=999)
 

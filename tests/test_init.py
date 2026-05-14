@@ -17,14 +17,13 @@ from .conftest import mock_config, mock_devinfo_min, mock_exception, mock_update
 @pytest.mark.parametrize("swap", [False, True], ids=["devinfo", "update"])
 async def test_init_fail(
     monkeypatch: pytest.MonkeyPatch,
-    bms_fixture: str,
     swap: bool,
     bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
 ) -> None:
-    """Test entries are unloaded correctly."""
+    """Test entry is unloaded correctly."""
 
-    bms_class: Final[str] = f"aiobmsble.bms.{bms_fixture}.BMS"
+    bms_class: Final[str] = "aiobmsble.bms.dummy_bms.BMS"
     monkeypatch.setattr(
         f"{bms_class}.device_info", mock_devinfo_min if swap else mock_exception
     )
@@ -43,7 +42,7 @@ async def test_init_fail(
 
     inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
-    cfg: MockConfigEntry = mock_config(bms=bms_fixture)
+    cfg: MockConfigEntry = mock_config(bms="dummy_bms")
     cfg.add_to_hass(hass)
 
     assert not await hass.config_entries.async_setup(cfg.entry_id), (
