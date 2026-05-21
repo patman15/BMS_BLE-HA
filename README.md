@@ -59,7 +59,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - JBD BMS, Jiabaida, Xiaoxiang (show up as `JBD-`&#x2026;)
     - accurat batteries, Aolithium batteries
     - BasenGreen, Bulltron, CHINS, DCHOUSE, ECO-WORTHY, Epoch batteries
-    - Eleksol, Elfhub, Fritz Berger, JavaEnegy, Liontron, LANPWR, Norström, OGRPHY, Perfektium, Ultimatron batteries
+    - Eleksol, Elfhub, Fritz Berger, JavaEnegy, LANPWR, Liontron, Lossigy, Norström, OGRPHY, Perfektium, Ultimatron batteries
     - SBL batteries (show up as `SBL-`&#x2026;), Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries
 - JK BMS, Jikong, (HW version &ge; 6 required)
 - KS48x00 series BMS (show up as `BL-`&#x2026; or `HSKS-`&#x2026;)
@@ -70,7 +70,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Lithionics NeverDie smart BMS (show up as `Li.-`&#x2026;)
 - LiPower BMS
     - Ective batteries, Ective BM X monitor
-- NEEY balancer (4th gen) (show up as `GW-24S`&#x2026;)
+- NEEY balancer (4th gen) (show up as `GW-24S`&#x2026;), NEEY BMS v2
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
 - PaceEX BMS (show up as `PC-`&#x2026;)
 - Pro BMS Smart Shunt
