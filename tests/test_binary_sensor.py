@@ -43,7 +43,7 @@ async def test_update(
             "chrg_mosfet": False,
             "dischrg_mosfet": True,
             "heater": True,
-            "problem_code": 0x73,
+            "problem_code": "0x73",
             "battery_mode": BMSMode.ABSORPTION,
         }
 
@@ -78,7 +78,7 @@ async def test_update(
 
     for sensor, attribute, ref_state, ref_value in (
         ("charging", "battery_mode", STATE_OFF, "absorption"),
-        ("problem", "problem_code", STATE_ON, 0x73),
+        ("problem", "problem_code", STATE_ON, "0x73"),
         ("charge_mosfet", "", STATE_OFF, None),
         ("discharge_mosfet", "", STATE_ON, None),
         ("heater", "", STATE_ON, None),
