@@ -18,5 +18,5 @@ aiohttp-zlib-ng
 bluetooth-data-tools
 pyserial-asyncio
 pyudev
-pytest-homeassistant-custom-component==0.13.277
+pytest-homeassistant-custom-component==0.13.316
 kegtron-ble~=0.4.0
