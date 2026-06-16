@@ -29,6 +29,9 @@ jobs:
 
         - name: "Run Ruff"
           run: python3 -m ruff check .
+
+        - name: "Run Pylint"
+          run: python3 -m pylint .
         
         - name: "Run MyPy"
           run: python3 -m mypy .
