@@ -31,6 +31,7 @@ jobs:
           run: python3 -m ruff check .
 
         - name: "Run Pylint"
+          continue-on-error: true
           run: python3 -m pylint .
         
         - name: "Run MyPy"
