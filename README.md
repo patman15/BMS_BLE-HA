@@ -52,6 +52,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - DCHOUSE batteries (show up as `DCHOUSE`&#x2026;)
 - Ective, Startcraft, Topband batteries (show up as `$PFLAC`&#x2026;, `NWJ20`&#x2026;, `ZM20`&#x2026;)
 - EG4 LL BMS
+    - Sungold batteries
 - Eleksol batteries
 - Felicity ESS (show up as `F10`&#x2026;) and FLB batteries (show up as `F07`&#x2026;)
 - Gobel Power BMS (show up as `BMS-`&#x2026;)
