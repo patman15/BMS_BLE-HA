@@ -261,6 +261,9 @@ Then go to the [energy dashboard configuration](https://my.home-assistant.io/red
 ### My sensors show unknown/unavailable at startup!
 The polling interval is 30 seconds. So at startup it takes a few minutes to detect the battery and query the sensors. Then data will be available.
 
+### Why is the RSSI sensor not updated or is unavailable?
+The `RSSI` value is only measured by Home Assistant when a device is not connected. Thus, you will see updates only in case a connection is lost or after a restart. The integration by default tries to maintain a permanent connection to improve data availability and avoid constant reconnect not appreciated by some BMSs.
+
 ### Can I set a custom polling interval?
 Yes, but I strongly discourage that for stability reasons. If you still want to do so, please see the default way to define a [custom interval][custint-url] by Home Assistant. Note that Bluetooth discoveries can take up to a minute in worst case. Thus, please expect side effects, when changing the default of 30 seconds!
 
