@@ -58,7 +58,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - HumsiENK Smart BMS (show up as `HS`&#x2026;)
 - JBD BMS, Jiabaida, Xiaoxiang (show up as `JBD-`&#x2026;)
     - accurat batteries, Aolithium batteries
-    - BasenGreen, Bulltron, CHINS, DCHOUSE, ECO-WORTHY, Epoch batteries
+    - BasenGreen, Bulltron, CHINS, Cloud Energy, DCHOUSE, ECO-WORTHY, Epoch batteries
     - Eleksol, Elfhub, Fritz Berger, JavaEnegy, Liontron, LANPWR, Norström, OGRPHY, Perfektium, Ultimatron batteries
     - SBL batteries (show up as `SBL-`&#x2026;), Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries
 - JK BMS, Jikong, (HW version &ge; 6 required)
