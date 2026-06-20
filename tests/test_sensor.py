@@ -93,7 +93,7 @@ async def test_update(
         entity.entity_id: entity.state for entity in hass.states.async_all(["sensor"])
     }
     assert data == {
-        f"{DEV_NAME}_{ATTR_VOLTAGE}": "12",
+        f"{DEV_NAME}_{ATTR_VOLTAGE}": "12.0",
         f"{DEV_NAME}_battery": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_TEMPERATURE}": "27.182",
         f"{DEV_NAME}_{ATTR_CURRENT}": "1.5",
