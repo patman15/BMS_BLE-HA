@@ -34,14 +34,15 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 
 ### Supported Devices
 - ABC/SOK BMS (show up as `ABC-`&#x2026;, `SOK-`&#x2026;)
-- Braun Power BMS (show up as `BL-`&#x2026; or `HSKS-`&#x2026;)
+- Buknuwo batteries (show up as `CDZG`&#x2026;)
 - ANT BMS (show up as `ANT-BLE`&#x2026;)
 - CBT Power BMS, Creabest batteries
 - D-powercore BMS (show up as `DXB-`&#x2026;), Fliteboard batteries (show up as `TBA-`&#x2026;)
 - Daly BMS (show up as `DL-`&#x2026;)
     - 100Balance BMS
     - Bulltron batteries
-- E&J Technology BMS (show ups as `libatt`&#x2026;)
+- Daren BMS (show up as `DWF`&#x2026;), JBD with modified FW
+- E&J Technology BMS (show up as `libatt`&#x2026;)
     - AG Automotive batteries (show up as `AG...L`&#x2026;)
     - Chins batteries (show up as `G-..V...Ah`&#x2026;)
     - Elektronicx batteries (show up as `LT-`&#x2026;)
@@ -58,15 +59,18 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - JBD BMS, Jiabaida, Xiaoxiang (show up as `JBD-`&#x2026;)
     - accurat batteries, Aolithium batteries
     - BasenGreen, Bulltron, CHINS, DCHOUSE, ECO-WORTHY, Epoch batteries
-    - Eleksol, Elfhub, Fritz Berger, JavaEnegy, Liontron, LANPWR, Norström, OGRPHY, Perfektium, Ultimatron batteries
+    - Eleksol, Elfhub, Fritz Berger, JavaEnegy, LANPWR, Liontron, Lossigy, Norström, OGRPHY, Perfektium, Ultimatron batteries
     - SBL batteries (show up as `SBL-`&#x2026;), Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries
 - JK BMS, Jikong, (HW version &ge; 6 required)
+- KS48x00 series BMS (show up as `BL-`&#x2026; or `HSKS-`&#x2026;)
+    - BEMORY batteries, Braun Power batteries
+    - Docan Energy/power batteries, VoltPolska batteries
 - Redodo BMS
     - LiTime, Power Queen, Starry Sea batteries `S-*`&#x2026; or `SS-*`&#x2026;
 - Lithionics NeverDie smart BMS (show up as `Li.-`&#x2026;)
 - LiPower BMS
-    - Ective batteries
-- NEEY balancer (4th gen) (show up as `GW-24S`&#x2026;)
+    - Ective batteries, Ective BM X monitor
+- NEEY balancer (4th gen) (show up as `GW-24S`&#x2026;), NEEY BMS v2
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
 - PaceEX BMS (show up as `PC-`&#x2026;)
 - Pro BMS Smart Shunt
@@ -75,6 +79,9 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Renogy BMS, Renogy Pro BMS
 - RoyPow (Fish) batteries
     - Lion Energy Safari
+- Pylontech RT series batteries (show up as `RT12`&#x2026;, `RT24`&#x2026;, `RT48`&#x2026;)
+- Saihang BMS (show up as `SH`&#x2026;)
+    - Anenji, Aninerel batteries
 - Seplos v2 (show up as `BP[0-2]?`)
 - Seplos v3 (show up as `SP[00-199]B`&#x2026; or `CSY`&#x2026;)
     - CEG Carmine Energia Gratis (show up as `XZHX`&#x2026;)
@@ -86,6 +93,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Ective, Startcraft, KiloVault batteries
 - TianPower BMS (show up as `TP_`&#x2026;)
 - Vatrer BMS (show up as `YYMMDDVVVAAAAxx` (date, V, Ah))
+- Volta Power Systems myVolta CAN BLE adapter (show up as `VPS-`&#x2026;)
 - Wattstunde Nova Core
 
 If you would like to get your battery/BMS supported please consider raising a pull request for [aiobmsble](https://github.com/patman15/aiobmsble) following the [contribution guidelines](https://github.com/patman15/aiobmsble?tab=contributing-ov-file) or raise [a new issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) giving your BMS/battery type in the title. Please provide the information requested by the template (see *additional context*).
@@ -168,6 +176,9 @@ JBD BMS detection unfortunately needs to rely on name patterns. If you renamed y
 </details>
 <details><summary>Liontron batteries</summary>
 These batteries need a shorter interval between queries. Be a bit patient to get them added and set a <a href="[custint-url]">custom interval</a> of about 9s to keep a stable connection.
+</details>
+<details><summary>Litime batteries</summary>
+Versions of these batteries support a "Bluetooth encryption" feature. When enabled you cannot connect using this integration. Remove the 6-digit Bluetooth password to get them working.
 </details>
 <details><summary>Seplos v2</summary>
 The internal Bluetooth adapter issues <code>AT</code> commands in regular intervals which can interfere with BMS messages causing them to be corrupted. This impacts data availability (<code>link quality</code>).
@@ -325,7 +336,7 @@ all [contributors of aiobmsble](https://github.com/patman15/aiobmsble?tab=readme
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA?style=for-the-badge&color=orange&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-954_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-1016_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=HACS&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
 [custint-url]: https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval

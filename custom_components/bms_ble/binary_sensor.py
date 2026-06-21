@@ -42,7 +42,11 @@ class BmsBinaryEntityDescription(BinarySensorEntityDescription, frozen_or_thawed
 BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
     BmsBinaryEntityDescription(
         attr_fn=lambda data: (
-            {ATTR_BATTERY_MODE: data.get(ATTR_BATTERY_MODE, BMSMode.UNKNOWN).name.lower()}
+            {
+                ATTR_BATTERY_MODE: data.get(
+                    ATTR_BATTERY_MODE, BMSMode.UNKNOWN
+                ).name.lower()
+            }
             if ATTR_BATTERY_MODE in data
             else {}
         ),
@@ -90,7 +94,7 @@ BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
     ),
     BmsBinaryEntityDescription(
         attr_fn=lambda data: (
-            {ATTR_PROBLEM_CODE: data.get("problem_code", 0)}
+            {ATTR_PROBLEM_CODE: hex(data.get("problem_code", 0))}
             if "problem_code" in data
             else {}
         ),
