@@ -3,16 +3,21 @@
 import logging
 from typing import Final
 
-DOMAIN: Final[str] = "bms_ble"
+DOMAIN: Final = "bms_ble"
 LOGGER: Final[logging.Logger] = logging.getLogger(__package__)
+LOW_RSSI: Final[int] = -75  # dBm considered low signal strength
 UPDATE_INTERVAL: Final[int] = 30  # [s]
+CONF_KEEP_ALIVE: Final[str] = "keep_alive"
+CONF_ADVANCED_OPTIONS: Final[str] = "advanced_options"
 
 # attributes (do not change)
 ATTR_BALANCER: Final[str] = "balancer"  # [bool]
 ATTR_BALANCE_CUR: Final[str] = "balance_current"  # [A]
 ATTR_BATTERY_HEALTH: Final[str] = "battery_health"  # [%]
 ATTR_BATTERY_MODE: Final[str] = "battery_mode"  # [int]
+ATTR_CELLS: Final[str] = "cells"  # [bitmask]
 ATTR_CELL_COUNT: Final[str] = "cell_count"  # [#]
+ATTR_CELL_NUMBER: Final[str] = "cell_number"  # [#]
 ATTR_CELL_VOLTAGES: Final[str] = "cell_voltages"  # [V]
 ATTR_CHRG_MOSFET: Final[str] = "chrg_mosfet"  # [bool]
 ATTR_CURRENT: Final[str] = "current"  # [A]

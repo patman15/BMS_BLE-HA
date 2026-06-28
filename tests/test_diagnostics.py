@@ -92,7 +92,7 @@ async def test_diagnostics(
             "subentries": [],
             "title": "config_test_mock_BMS",
             "unique_id": "cc:cc:cc:cc:cc:cc",
-            "version": 2,
+            "version": 3,
         },
         "adapter_data": (
             "mock adapter, adapter mnf (adapter model/2): 14, 3"

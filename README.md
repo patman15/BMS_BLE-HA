@@ -26,7 +26,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 ## Features
 - Zero configuration
 - Auto detects compatible batteries
-- Supports [ESPHome Bluetooth proxy][btproxy-url]  (limit: 3 devices/proxy)
+- Supports [ESPHome Bluetooth proxy][btproxy-url]
 - Any number of batteries in parallel
 - Native Home Assistant integration (works with all [HA installation methods](https://www.home-assistant.io/installation/#advanced-installation-methods))
 - Readout of individual cell voltages to be able to judge battery health
@@ -34,46 +34,67 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 
 ### Supported Devices
 - ABC/SOK BMS (show up as `ABC-`&#x2026;, `SOK-`&#x2026;)
-- Braun Power BMS (show up as `BL-`&#x2026; or `HSKS-`&#x2026;)
+- Buknuwo batteries (show up as `CDZG`&#x2026;)
 - ANT BMS (show up as `ANT-BLE`&#x2026;)
 - CBT Power BMS, Creabest batteries
 - D-powercore BMS (show up as `DXB-`&#x2026;), Fliteboard batteries (show up as `TBA-`&#x2026;)
 - Daly BMS (show up as `DL-`&#x2026;)
     - 100Balance BMS
     - Bulltron batteries
-- E&J Technology BMS (show ups as `libatt`&#x2026;)
+- Daren BMS (show up as `DWF`&#x2026;), JBD with modified FW
+- E&J Technology BMS (show up as `libatt`&#x2026;)
+    - AG Automotive batteries (show up as `AG...L`&#x2026;)
+    - Chins batteries (show up as `G-..V...Ah`&#x2026;)
     - Elektronicx batteries (show up as `LT-`&#x2026;)
     - Lithtech batteries (show up as `LT-12V-`&#x2026; or `L-12V`&#x2026;)
     - Meritsun, Supervolt v1 (show up as `SV12V`&#x2026;), and Volthium (show up as `V-12V`&#x2026;) batteries
 - ECO-WORTHY + BW02 adapter (show up as `ECO-WORTHY`&#x2026;)
     - DCHOUSE batteries (show up as `DCHOUSE`&#x2026;)
 - Ective, Startcraft, Topband batteries (show up as `$PFLAC`&#x2026;, `NWJ20`&#x2026;, `ZM20`&#x2026;)
+- EG4 LL BMS
+- Eleksol batteries
 - Felicity ESS (show up as `F10`&#x2026;) and FLB batteries (show up as `F07`&#x2026;)
+- Gobel Power BMS (show up as `BMS-`&#x2026;)
 - HumsiENK Smart BMS (show up as `HS`&#x2026;)
 - JBD BMS, Jiabaida, Xiaoxiang (show up as `JBD-`&#x2026;)
     - accurat batteries, Aolithium batteries
     - BasenGreen, Bulltron, CHINS, DCHOUSE, ECO-WORTHY, Epoch batteries
-    - Eleksol, Fritz Berger, Liontron, LANPWR, OGRPHY, Perfektium, Ultimatron batteries
+    - Eleksol, Elfhub, Fritz Berger, JavaEnegy, LANPWR, Liontron, Lossigy, Norström, OGRPHY, Perfektium, Ultimatron batteries
     - SBL batteries (show up as `SBL-`&#x2026;), Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries
 - JK BMS, Jikong, (HW version &ge; 6 required)
-- LiTime, Power Queen, and Redodo batteries
+- KS48x00 series BMS (show up as `BL-`&#x2026; or `HSKS-`&#x2026;)
+    - BEMORY batteries, Braun Power batteries
+    - Docan Energy/power batteries, VoltPolska batteries
+- Redodo BMS
+    - LiTime, Power Queen, Starry Sea batteries `S-*`&#x2026; or `SS-*`&#x2026;
+- Lithionics NeverDie smart BMS (show up as `Li.-`&#x2026;)
 - LiPower BMS
-- NEEY balancer (4th gen) (show up as `GW-24S`&#x2026;)
+    - Ective batteries, Ective BM X monitor
+- NEEY balancer (4th gen) (show up as `GW-24S`&#x2026;), NEEY BMS v2
 - Offgridtec LiFePo4 Smart Pro: type A & B (show up as `SmartBat-A`&#x2026; or `SmartBat-B`&#x2026;)
 - PaceEX BMS (show up as `PC-`&#x2026;)
 - Pro BMS Smart Shunt
     - Foxwell BT630
     - Leagend CM100
 - Renogy BMS, Renogy Pro BMS
-- RoyPow batteries
+- RoyPow (Fish) batteries
+    - Lion Energy Safari
+- Pylontech RT series batteries (show up as `RT12`&#x2026;, `RT24`&#x2026;, `RT48`&#x2026;)
+- Saihang BMS (show up as `SH`&#x2026;)
+    - Anenji, Aninerel batteries
 - Seplos v2 (show up as `BP[0-2]?`)
-- Seplos v3 (show up as `SP[0-99]`&#x2026;)
+- Seplos v3 (show up as `SP[00-199]B`&#x2026; or `CSY`&#x2026;)
     - CEG Carmine Energia Gratis (show up as `XZHX`&#x2026;)
 - Super-B Epsilon BMS (show up as `Epsilon-`&#x2026;)
+- Super-B Epsilon v2 BMS (show up as `Epsilon`&#x2026;)
 - TDT BMS
     - Wattcycle batteries
+- Topband BMS
+    - Ective, Startcraft, KiloVault batteries
 - TianPower BMS (show up as `TP_`&#x2026;)
 - Vatrer BMS (show up as `YYMMDDVVVAAAAxx` (date, V, Ah))
+- Volta Power Systems myVolta CAN BLE adapter (show up as `VPS-`&#x2026;)
+- Wattstunde Nova Core
 
 If you would like to get your battery/BMS supported please consider raising a pull request for [aiobmsble](https://github.com/patman15/aiobmsble) following the [contribution guidelines](https://github.com/patman15/aiobmsble?tab=contributing-ov-file) or raise [a new issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) giving your BMS/battery type in the title. Please provide the information requested by the template (see *additional context*).
 
@@ -104,8 +125,8 @@ Platform | Name | Unit | Description | Optional Attributes
 `binary_sensor`* | heater | `bool` | indicates `True` if the battery being heated
 `binary_sensor` | problem | `bool` | indicates `True` if the BMS reports an issue or plausibility checks on values fail | problem code
 `sensor` | delta cell voltage | `V` | maximum difference between any two cells in a pack | cell voltages
-`sensor`* | max cell voltage | `V` | overall maximum cell voltage in the system | cell number
-`sensor`* | min cell voltage | `V` | overall minimum cell voltage in the system | cell number
+`sensor`* | max cell voltage | `V` | overall highest cell voltage in the system | cell number
+`sensor`* | min cell voltage | `V` | overall lowest cell voltage in the system | cell number
 `sensor`* | link quality  | `%` | successful BMS queries from the last hundred update periods
 `sensor`* | RSSI          | `dBm`| received signal strength indicator
 
@@ -156,11 +177,14 @@ JBD BMS detection unfortunately needs to rely on name patterns. If you renamed y
 <details><summary>Liontron batteries</summary>
 These batteries need a shorter interval between queries. Be a bit patient to get them added and set a <a href="[custint-url]">custom interval</a> of about 9s to keep a stable connection.
 </details>
+<details><summary>Litime batteries</summary>
+Versions of these batteries support a "Bluetooth encryption" feature. When enabled you cannot connect using this integration. Remove the 6-digit Bluetooth password to get them working.
+</details>
 <details><summary>Seplos v2</summary>
 The internal Bluetooth adapter issues <code>AT</code> commands in regular intervals which can interfere with BMS messages causing them to be corrupted. This impacts data availability (<code>link quality</code>).
 </details>
 
-### If your device is not recognized
+### If your device is not recognized / initialized
 
 1. Check that your BMS type is listed as [supported device](#supported-devices)
 1. If a name detection pattern is listed ("show up as"), make sure your device matches it.
@@ -168,7 +192,8 @@ The internal Bluetooth adapter issues <code>AT</code> commands in regular interv
 1. Make sure that no other device is connected to the BMS, e.g. app on your phone
 1. Check that your are running the [latest release](https://github.com//patman15/BMS_BLE-HA/releases) of the integration
 1. Go to the [advertisement monitor](https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/) and verify that your device shows up there. Also, please ensure that your `RSSI` value is `>= -75 dBm`. If your device is missing or the `RSSI` value is `-80 dBm`or worse, please check your BT setup (is the device in range?).
-1. If you use a BT proxy, make sure you have set `active: true` and that you do not exceed the [BT proxy limit][btproxy-url] of 3 devices/proxy; check the logs of the proxy if the device is recognized. Note: The [Bluetooth proxy of Shelly devices](https://www.home-assistant.io/integrations/shelly/#bluetooth-support) does not support active connections and thus cannot be used.
+1. If you use a BT proxy, make sure you have set `active: true`; check the logs of the proxy if the device is recognized. Note: The [Bluetooth proxy of Shelly devices](https://www.home-assistant.io/integrations/shelly/#bluetooth-support) does not support active connections and thus cannot be used.
+1. Check that you do not exceed the number of connections of your adapter, see **[Settings](https://my.home-assistant.io/redirect/config/) > Bluetooth**
 1. If above points did not help, please go to the [Bluetooth integration](https://my.home-assistant.io/redirect/integration/?domain=bluetooth). On your BT adapter select `configure`.
     1.  Verify that you have connection slots available.
     1.  Go to the [advertisement monitor](https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/) and click the device in question. Please provide the information via **`copy to clipboard`** to [a new issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) giving your BMS/battery type in the title.
@@ -289,6 +314,13 @@ Then you need to pair your device first. This is procedure is only required once
 
 Once pairing is done, the integration should automatically detect the BMS.
 
+### Can I have control functionality of my BMS integrated?
+BMSs are [safety critical devices](#provided-information). Incorrect parameter settings can harm the battery, shorten its lifespan, or even cause severe damage to the device or its surroundings.
+
+For that reason, I currently avoid implementing any control functions, as there is no official documentation available for them. This helps prevent unintended commands or side effects that could arise from firmware changes, Bluetooth issues, or similar factors. In addition, several manufacturers have expressed concerns about third‑party applications interfering with the intended use of their products. Consequently, I focus exclusively on monitoring functionality.
+
+I would reconsider this position if vendors were to publish official documentation on their websites.
+
 ## Outlook
 - Develop towards a [Home Assistant core integration](https://www.home-assistant.io/integrations/)
 - Improvements to fulfill the [Home Assistant quality scale](https://www.home-assistant.io/docs/quality_scale/)
@@ -304,7 +336,7 @@ all [contributors of aiobmsble](https://github.com/patman15/aiobmsble?tab=readme
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA?style=for-the-badge&color=orange&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-798_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-1016_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=HACS&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
 [custint-url]: https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval

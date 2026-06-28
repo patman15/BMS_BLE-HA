@@ -20,10 +20,12 @@ from .const import (
     ATTR_BALANCER,
     ATTR_BATTERY_MODE,
     ATTR_CELL_COUNT,
+    ATTR_CELLS,
     ATTR_CHRG_MOSFET,
     ATTR_DISCHRG_MOSFET,
     ATTR_HEATER,
     ATTR_PROBLEM,
+    ATTR_PROBLEM_CODE,
     DOMAIN,
 )
 from .coordinator import BTBmsCoordinator
@@ -40,7 +42,11 @@ class BmsBinaryEntityDescription(BinarySensorEntityDescription, frozen_or_thawed
 BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
     BmsBinaryEntityDescription(
         attr_fn=lambda data: (
-            {ATTR_BATTERY_MODE: data.get(ATTR_BATTERY_MODE, BMSMode.UNKNOWN).name.lower()}
+            {
+                ATTR_BATTERY_MODE: data.get(
+                    ATTR_BATTERY_MODE, BMSMode.UNKNOWN
+                ).name.lower()
+            }
             if ATTR_BATTERY_MODE in data
             else {}
         ),
@@ -50,7 +56,7 @@ BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
     BmsBinaryEntityDescription(
         attr_fn=lambda data: (
             {
-                "cells": f"{data.get(ATTR_BALANCER, 0):0{data.get(ATTR_CELL_COUNT, 8)}b}"[
+                ATTR_CELLS: f"{data.get(ATTR_BALANCER, 0):0{data.get(ATTR_CELL_COUNT, 8)}b}"[
                     ::-1
                 ]
             }
@@ -88,7 +94,7 @@ BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
     ),
     BmsBinaryEntityDescription(
         attr_fn=lambda data: (
-            {"problem_code": data.get("problem_code", 0)}
+            {ATTR_PROBLEM_CODE: hex(data.get("problem_code", 0))}
             if "problem_code" in data
             else {}
         ),
@@ -118,6 +124,7 @@ async def async_setup_entry(
 class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity):
     """The generic BMS binary sensor implementation."""
 
+    _unrecorded_attributes: frozenset[str] = frozenset({ATTR_CELLS})
     entity_description: BmsBinaryEntityDescription
 
     def __init__(

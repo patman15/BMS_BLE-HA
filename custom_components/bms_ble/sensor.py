@@ -15,6 +15,7 @@ from homeassistant.const import (
     ATTR_BATTERY_LEVEL,
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
+    MATCH_ALL,
     PERCENTAGE,
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
     EntityCategory,
@@ -32,7 +33,10 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import BTBmsConfigEntry
 from .const import (
+    ATTR_BALANCE_CUR,
     ATTR_BATTERY_HEALTH,
+    ATTR_CELL_NUMBER,
+    ATTR_CELL_VOLTAGES,
     ATTR_CURRENT,
     ATTR_CYCLE_CAP,
     ATTR_CYCLES,
@@ -43,6 +47,7 @@ from .const import (
     ATTR_POWER,
     ATTR_RSSI,
     ATTR_RUNTIME,
+    ATTR_TEMP_SENSORS,
     DOMAIN,
     LOGGER,
 )
@@ -98,10 +103,10 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     ),
     BmsEntityDescription(
         attr_fn=lambda data: (
-            {"temperature_sensors": data.get("temp_values", [])}
+            {ATTR_TEMP_SENSORS: data.get("temp_values", [])}
             if "temp_values" in data
             else (
-                {"temperature_sensors": [data.get("temperature", 0.0)]}
+                {ATTR_TEMP_SENSORS: [data.get("temperature", 0.0)]}
                 if "temperature" in data
                 else {}
             )
@@ -115,11 +120,13 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     ),
     BmsEntityDescription(
         attr_fn=lambda data: (
-            {"balance_current": [data.get("balance_current", 0.0)]}
-            if "balance_current" in data
-            else {}
-        )
-        | _attr_pack(data, "pack_currents", [0.0]),
+            (
+                {ATTR_BALANCE_CUR: [data.get("balance_current", 0.0)]}
+                if "balance_current" in data
+                else {}
+            )
+            | _attr_pack(data, "pack_currents", [0.0])
+        ),
         device_class=SensorDeviceClass.CURRENT,
         key=ATTR_CURRENT,
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
@@ -138,7 +145,6 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     BmsEntityDescription(
         attr_fn=lambda data: _attr_pack(data, "pack_cycles", [0]),
         key=ATTR_CYCLES,
-        name="Cycles",
         state_class=SensorStateClass.TOTAL_INCREASING,
         translation_key=ATTR_CYCLES,
         value_fn=lambda data: data.get("cycles"),
@@ -154,7 +160,6 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     BmsEntityDescription(
         device_class=SensorDeviceClass.DURATION,
         key=ATTR_RUNTIME,
-        name="Runtime",
         native_unit_of_measurement=UnitOfTime.SECONDS,
         suggested_unit_of_measurement=UnitOfTime.HOURS,
         state_class=SensorStateClass.MEASUREMENT,
@@ -163,14 +168,13 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     ),
     BmsEntityDescription(
         attr_fn=lambda data: (
-            {"cell_voltages": data.get("cell_voltages", [])}
+            {ATTR_CELL_VOLTAGES: data.get("cell_voltages", [])}
             if "cell_voltages" in data
             else {}
         ),
         device_class=SensorDeviceClass.VOLTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
         key=ATTR_DELTA_VOLTAGE,
-        name="Delta cell voltage",
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=3,
@@ -179,7 +183,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     ),
     BmsEntityDescription(
         attr_fn=lambda data: (
-            {"cell_number": [cells.index(max(cells))]}
+            {ATTR_CELL_NUMBER: [cells.index(max(cells)) + 1]}
             if (cells := data.get("cell_voltages", []))
             else {}
         ),
@@ -187,7 +191,6 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         key=ATTR_MAX_VOLTAGE,
-        name="Maximal cell voltage",
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=3,
@@ -198,7 +201,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     ),
     BmsEntityDescription(
         attr_fn=lambda data: (
-            {"cell_number": [cells.index(min(cells))]}
+            {ATTR_CELL_NUMBER: [cells.index(min(cells)) + 1]}
             if (cells := data.get("cell_voltages", []))
             else {}
         ),
@@ -206,7 +209,6 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         key=ATTR_MIN_VOLTAGE,
-        name="Minimal cell voltage",
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=3,
@@ -222,18 +224,16 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         key=ATTR_RSSI,
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         state_class=SensorStateClass.MEASUREMENT,
-        translation_key=ATTR_RSSI,
-        value_fn=lambda data: None,  # RSSI is handled in a separate class
+        value_fn=lambda data: None,
     ),
     BmsEntityDescription(
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         key=ATTR_LQ,
-        name="Link quality",
         native_unit_of_measurement=PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         translation_key=ATTR_LQ,
-        value_fn=lambda data: None,  # LQ is handled in a separate class
+        value_fn=lambda data: None,
     ),
 ]
 
@@ -245,23 +245,27 @@ async def async_setup_entry(
 ) -> None:
     """Add sensors for passed config_entry in Home Assistant."""
 
-    bms: Final[BTBmsCoordinator] = config_entry.runtime_data
-    mac: Final[str] = format_mac(config_entry.unique_id)
+    bms: Final = config_entry.runtime_data
+    mac: Final = format_mac(config_entry.unique_id)
+    entities: list[SensorEntity] = []
     for descr in SENSOR_TYPES:
         if descr.key == ATTR_RSSI:
-            async_add_entities([RSSISensor(bms, descr, mac)])
+            entities.append(RSSISensor(bms, descr, mac))
             continue
         if descr.key == ATTR_LQ:
-            async_add_entities([LQSensor(bms, descr, mac)])
+            entities.append(LQSensor(bms, descr, mac))
             continue
         if descr.optional and descr.key not in bms.data:
             continue
-        async_add_entities([BMSSensor(bms, descr, mac)])
+        entities.append(BMSSensor(bms, descr, mac))
+
+    async_add_entities(entities)
 
 
 class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
     """The generic BMS sensor implementation."""
 
+    _unrecorded_attributes: frozenset[str] = frozenset({MATCH_ALL})
     _attr_has_entity_name = True
     entity_description: BmsEntityDescription
 
@@ -277,7 +281,7 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, list[int | float]] | None:
         """Return entity specific state attributes, e.g. cell voltages."""
-        if self.entity_description.attr_fn:
+        if self.coordinator.data and self.entity_description.attr_fn:
             return self.entity_description.attr_fn(self.coordinator.data)
 
         return None
@@ -285,15 +289,18 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
     @property
     def native_value(self) -> int | float | None:
         """Return the sensor value."""
-        return self.entity_description.value_fn(self.coordinator.data)
+        return (
+            self.entity_description.value_fn(self.coordinator.data)
+            if self.coordinator.data
+            else None
+        )
 
 
 class RSSISensor(SensorEntity):
     """The Bluetooth RSSI sensor."""
 
-    LIMIT: Final[int] = 127  # limit to +/- this range
+    LIMIT: Final = 127  # limit to +/- this range
     _attr_has_entity_name = True
-    _attr_native_value = -LIMIT
 
     def __init__(
         self, bms: BTBmsCoordinator, descr: SensorEntityDescription, unique_id: str
@@ -303,7 +310,7 @@ class RSSISensor(SensorEntity):
         self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
         self._attr_device_info = bms.device_info
         self.entity_description = descr
-        self._bms: Final[BTBmsCoordinator] = bms
+        self._bms: Final = bms
 
     async def async_update(self) -> None:
         """Update RSSI sensor value."""
@@ -314,7 +321,6 @@ class RSSISensor(SensorEntity):
         self._attr_available = self._bms.rssi is not None
 
         LOGGER.debug("%s: RSSI value: %i dBm", self._bms.name, self._attr_native_value)
-        self.async_write_ha_state()
 
 
 class LQSensor(SensorEntity):
@@ -332,7 +338,7 @@ class LQSensor(SensorEntity):
         self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
         self._attr_device_info = bms.device_info
         self.entity_description = descr
-        self._bms: Final[BTBmsCoordinator] = bms
+        self._bms: Final = bms
 
     async def async_update(self) -> None:
         """Update BMS link quality sensor value."""
@@ -340,4 +346,3 @@ class LQSensor(SensorEntity):
         self._attr_native_value = self._bms.link_quality
 
         LOGGER.debug("%s: Link quality: %i %%", self._bms.name, self._attr_native_value)
-        self.async_write_ha_state()
