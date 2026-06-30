@@ -2,6 +2,6 @@ homeassistant==2025.9.0
 aiobmsble==0.24.0
 ruff~=0.15.0
 pylint~=4.0.0
-pylint-per-file-ignores~=1.4.0
+pylint-per-file-ignores~=3.2.1
 pre-commit~=4.2.0
 mypy~=1.18.0
