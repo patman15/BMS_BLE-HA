@@ -52,13 +52,15 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - DCHOUSE batteries (show up as `DCHOUSE`&#x2026;)
 - Ective, Startcraft, Topband batteries (show up as `$PFLAC`&#x2026;, `NWJ20`&#x2026;, `ZM20`&#x2026;)
 - EG4 LL BMS
+    - Sungold batteries
 - Eleksol batteries
 - Felicity ESS (show up as `F10`&#x2026;) and FLB batteries (show up as `F07`&#x2026;)
 - Gobel Power BMS (show up as `BMS-`&#x2026;)
 - HumsiENK Smart BMS (show up as `HS`&#x2026;)
+    - ECO-WORTHY (show up as `ECO....`)
 - JBD BMS, Jiabaida, Xiaoxiang (show up as `JBD-`&#x2026;)
     - accurat batteries, Aolithium batteries
-    - BasenGreen, Bulltron, CHINS, DCHOUSE, ECO-WORTHY, Epoch batteries
+    - BasenGreen, Bulltron, CHINS, Cloud Energy, DCHOUSE, ECO-WORTHY, Epoch batteries
     - Eleksol, Elfhub, Fritz Berger, JavaEnegy, LANPWR, Liontron, Lossigy, Norström, OGRPHY, Perfektium, Ultimatron batteries
     - SBL batteries (show up as `SBL-`&#x2026;), Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries
 - JK BMS, Jikong, (HW version &ge; 6 required)
@@ -164,10 +166,6 @@ This integration follows standard integration removal. No extra steps are requir
 
 ### Known Issues
 
-<details><summary>ECO-WORTHY batteries "<code>ECOxxxx</code>"</summary>
-ECO-WORTHY batteries that show up as <code>ECOxxxx</code> use classic Bluetooth and do not support Bluetooth Low Energy (BLE). Thus, they unfortunately cannot be integrated.
-The advertisement contains <code>{"name":"ECOxxxx","service_uuids":["0000ff00-0000-1000-8000-00805f9b34fb","00000001-0000-1000-8000-00805f9b34fb"]</code>
-</details>
 <details><summary>Elektronicx, Lithtech batteries</summary>
 Bluetooth is turned off, when there is no current. Thus, device will get unavailable / cannot be added.
 </details>
@@ -260,6 +258,9 @@ Then go to the [energy dashboard configuration](https://my.home-assistant.io/red
 ## FAQ
 ### My sensors show unknown/unavailable at startup!
 The polling interval is 30 seconds. So at startup it takes a few minutes to detect the battery and query the sensors. Then data will be available.
+
+### Why is the RSSI sensor not updated or is unavailable?
+The `RSSI` value is only measured by Home Assistant when a device is not connected. Thus, you will see updates only in case a connection is lost or after a restart. The integration by default tries to maintain a permanent connection to improve data availability and avoid constant reconnect not appreciated by some BMSs.
 
 ### Can I set a custom polling interval?
 Yes, but I strongly discourage that for stability reasons. If you still want to do so, please see the default way to define a [custom interval][custint-url] by Home Assistant. Note that Bluetooth discoveries can take up to a minute in worst case. Thus, please expect side effects, when changing the default of 30 seconds!

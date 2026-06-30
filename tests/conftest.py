@@ -206,7 +206,7 @@ class MockBMS(BaseBMS):
 
     def __init__(
         self, exc: Exception | None = None, ret_value: BMSSample | None = None
-    ) -> None:  # , ble_device, keep_alive: bool = True
+    ) -> None:
         """Initialize BMS."""
         super().__init__(generate_ble_device(address="", details={"path": None}), True)
         LOGGER.debug("%s init(), Test except: %s", MockBMS.bms_id(), str(exc))
@@ -246,9 +246,6 @@ class MockBMS(BaseBMS):
         self, sender: BleakGATTCharacteristic, data: bytearray
     ) -> None:
         """Retrieve BMS data update."""
-
-    # async def disconnect(self) -> None:
-    #     """Disconnect connection to BMS if active."""
 
     async def _async_update(self) -> BMSSample:
         """Update battery status information."""
@@ -337,7 +334,7 @@ class MockBleakClient(BleakClient):
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         **kwargs,
     ) -> bytearray:
-        """Mock write GATT characteristics."""
+        """Mock read GATT characteristics."""
         LOGGER.debug("MockBleakClient read_gatt_char %s", char_specifier)
         assert self._connected, "read_gatt_char called, but client not connected."
         return bytearray()

@@ -135,7 +135,7 @@ async def test_stale_recovery(
     bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
 ) -> None:
-    """Test if coordinator raises appropriate exception from BMS."""
+    """Test if coordinator triggers reconnect after 10 consecutive update fails and LQ < 10%."""
     flags: dict[str, bool] = {"disconnect_called": False}
     bms_data: Final[MockBMS] = MockBMS()
     bms_nodata: Final[MockBMS] = MockBMS(ret_value={})
@@ -169,14 +169,18 @@ async def test_stale_recovery(
 
     # update once with valid data
     # (this will set the link quality to 10%, and reset the stale flag)
-    monkeypatch.setattr(coordinator, "_device", bms_data)
+    monkeypatch.setattr(
+        coordinator, "_device", bms_data
+    )  # overwrite 'Final' annotation to control the BMS output.
     await coordinator.async_refresh()
     assert coordinator.last_update_success
     assert coordinator.link_quality == 10
     assert not flags["disconnect_called"]
 
     # run 10 times failed updates
-    monkeypatch.setattr(coordinator, "_device", bms_nodata)
+    monkeypatch.setattr(
+        coordinator, "_device", bms_nodata
+    )  # overwrite 'Final' annotation to control the BMS output.
     for _ in range(10):
         with contextlib.suppress(UpdateFailed):
             await coordinator.async_refresh()
