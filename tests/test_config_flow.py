@@ -303,7 +303,9 @@ async def test_async_setup_entry(
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
-async def test_setup_entry_missing_unique_id(bms_fixture: str, hass: HomeAssistant) -> None:
+async def test_setup_entry_missing_unique_id(
+    bms_fixture: str, hass: HomeAssistant
+) -> None:
     """Test async_setup_entry with missing unique id."""
 
     cfg: MockConfigEntry = mock_config(bms=bms_fixture, unique_id=None)
@@ -452,20 +454,15 @@ async def test_options_flow(
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
-@pytest.mark.parametrize("show_adv_opt", [True, False], ids=["adv_opt", "no_adv_opt"])
-async def test_options_flow_no_secret(hass: HomeAssistant, show_adv_opt: bool) -> None:
-    """Test if options flow for BMS without secret and disabled advanced mode."""
+async def test_options_flow_no_secret(hass: HomeAssistant) -> None:
+    """Test if options flow for BMS without secret."""
 
     cfg: MockConfigEntry = mock_config()
     cfg.add_to_hass(hass)
 
     result: ConfigFlowResult = await hass.config_entries.options.async_init(
-        cfg.entry_id, context={"show_advanced_options": show_adv_opt}
+        cfg.entry_id
     )
-    if not show_adv_opt:  # Abort without advanced mode
-        assert result.get("type") is FlowResultType.ABORT
-        assert result.get("reason") == "device_has_no_options"
-        return
 
     assert result.get("type") is FlowResultType.FORM
     assert result.get("step_id") == "init"
