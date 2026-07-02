@@ -3,7 +3,7 @@
 from datetime import timedelta
 from typing import Final
 
-from aiobmsble import BMSSample
+from aiobmsble import BMSSample, TempSensor as TS
 from habluetooth import BluetoothServiceInfoBleak
 import pytest
 from pytest_homeassistant_custom_component.common import (
@@ -64,7 +64,7 @@ async def test_update(
             }
         ) | (
             {
-                "temp_values": [73, 31.4, 27.18],
+                "temp_values": [TS(73), TS(31.4), TS(27.18)],
                 "pack_battery_levels": [1.0, 2.0],
                 "pack_count": 2,
                 "pack_currents": [-3.14, 2.71],
@@ -163,9 +163,9 @@ async def test_update(
         ),
     ):
         state: State | None = hass.states.get(f"{DEV_NAME}_{sensor}")
-        assert state is not None and state.attributes[attribute] == value, (
-            f"failed to verify attribute {attribute} for sensor {sensor}"
-        )
+        assert (
+            state is not None and state.attributes[attribute] == value
+        ), f"failed to verify attribute {attribute} for sensor {sensor}"
 
     # check battery pack attributes
     for sensor, attribute, ref_value in (
