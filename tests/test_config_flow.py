@@ -414,15 +414,14 @@ async def test_user_setup_double_configure(
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
-@pytest.mark.parametrize("show_adv_opt", [True, False], ids=["adv_opt", "no_adv_opt"])
 async def test_options_flow(
-    monkeypatch: pytest.MonkeyPatch, hass: HomeAssistant, show_adv_opt: bool
+    monkeypatch: pytest.MonkeyPatch, hass: HomeAssistant
 ) -> None:
     """Test config options flow."""
 
-    OPTIONS: Final[dict[str, Any]] = {CONF_PASSWORD: "123456"} | (
-        {CONF_ADVANCED_OPTIONS: {CONF_KEEP_ALIVE: True}} if show_adv_opt else {}
-    )
+    OPTIONS: Final[dict[str, Any]] = {CONF_PASSWORD: "123456"} | {
+        CONF_ADVANCED_OPTIONS: {CONF_KEEP_ALIVE: True}
+    }
 
     # pick one BMS type with password option
     cfg: MockConfigEntry = mock_config(bms="jbd_bms")
@@ -432,7 +431,7 @@ async def test_options_flow(
     await hass.async_block_till_done()
 
     result: ConfigFlowResult = await hass.config_entries.options.async_init(
-        cfg.entry_id, context={"show_advanced_options": show_adv_opt}
+        cfg.entry_id
     )
 
     assert result.get("type") is FlowResultType.FORM
@@ -513,7 +512,7 @@ async def test_options_effect(
     await hass.async_block_till_done()
 
     result: ConfigFlowResult = await hass.config_entries.options.async_init(
-        cfg.entry_id, context={"show_advanced_options": True}
+        cfg.entry_id
     )
     assert result.get("type") is FlowResultType.FORM
     assert result.get("step_id") == "init"
