@@ -1,22 +1,7 @@
 -r requirements.txt
 wheel
-home-assistant-bluetooth
-habluetooth~=6.8.1
 aiousbwatcher
-bluetooth-adapters~=2.3.0
-pycares >= 5.0.0,<6
 pytest~=9.0.3
-pytest-socket~=0.7.0
-sqlalchemy
-freezegun
-requests-mock~=1.12.1
-aiohttp
-aiohttp_cors
-aiohttp-fast-url-dispatcher
-aiohttp-zlib-ng
-bluetooth-data-tools
 serialx
 aioesphomeapi
-pyudev
 pytest-homeassistant-custom-component==0.13.336
-kegtron-ble

@@ -195,7 +195,7 @@ async def test_device_setup(
 async def test_device_not_supported(
     bt_discovery_notsupported: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
-    """Test discovery via bluetooth with a invalid device."""
+    """Test discovery via bluetooth with an invalid device."""
 
     result: ConfigFlowResult = await hass.config_entries.flow.async_init(
         DOMAIN,
