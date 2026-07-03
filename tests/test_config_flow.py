@@ -1,6 +1,7 @@
 """Test the BLE Battery Management System integration config flow."""
 
 from typing import Any, Final
+from unittest.mock import AsyncMock
 
 from aiobmsble.test_data import bms_advertisements
 from bleak.backends.scanner import AdvertisementData
@@ -70,9 +71,18 @@ def bms_adv(request: pytest.FixtureRequest) -> BluetoothServiceInfoBleak:
 
 @pytest.mark.usefixtures("enable_bluetooth")
 async def test_bluetooth_discovery(
-    hass: HomeAssistant, advertisement: BluetoothServiceInfoBleak
+    monkeypatch: pytest.MonkeyPatch,
+    hass: HomeAssistant,
+    advertisement: BluetoothServiceInfoBleak,
 ) -> None:
     """Test bluetooth device discovery."""
+
+    monkeypatch.setattr("habluetooth.scanner.OriginalBleakScanner.stop", AsyncMock())
+
+    # Mock coordinator functionality to avoid actual BLE communication during discovery test
+    coordinator: Final = "custom_components.bms_ble.BTBmsCoordinator"
+    monkeypatch.setattr(f"{coordinator}._async_setup", AsyncMock())
+    monkeypatch.setattr(f"{coordinator}._async_update_data", mock_update_min)
 
     inject_bluetooth_service_info_bleak(hass, advertisement)
     await hass.async_block_till_done(wait_background_tasks=True)
