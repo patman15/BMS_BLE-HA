@@ -1,7 +1,10 @@
 -r requirements.txt
-wheel
-aiousbwatcher
-pytest~=9.0.3
-serialx
 aioesphomeapi
+aiohttp-zlib-ng # to avoid performance warning
+aiousbwatcher
+kegtron_ble
+pytest~=9.0.3
 pytest-homeassistant-custom-component==0.13.336
+serialx
+wheel
+

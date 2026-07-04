@@ -37,7 +37,7 @@ def pytest_addoption(parser) -> None:
 
 
 @pytest.fixture(autouse=True)
-def auto_enable_custom_integrations(enable_custom_integrations: Any) -> None:
+def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
     """Auto add enable_custom_integrations."""
     return
 

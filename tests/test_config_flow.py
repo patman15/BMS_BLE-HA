@@ -77,8 +77,6 @@ async def test_bluetooth_discovery(
 ) -> None:
     """Test bluetooth device discovery."""
 
-    monkeypatch.setattr("habluetooth.scanner.OriginalBleakScanner.stop", AsyncMock())
-
     # Mock coordinator functionality to avoid actual BLE communication during discovery test
     coordinator: Final = "custom_components.bms_ble.BTBmsCoordinator"
     monkeypatch.setattr(f"{coordinator}._async_setup", AsyncMock())
