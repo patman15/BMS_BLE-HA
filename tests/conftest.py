@@ -83,7 +83,7 @@ def patch_entity_enabled_default(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture
 def bt_discovery() -> BluetoothServiceInfoBleak:
     """Return a valid Bluetooth object for testing."""
-    DATA: Final[dict[str, Any]] = {
+    data: Final[dict[str, Any]] = {
         "name": "SmartBat-B12345",
         "address": "cc:cc:cc:cc:cc:cc",
         "service_uuids": ["0000fff0-0000-1000-8000-00805f9b34fb"],
@@ -92,26 +92,26 @@ def bt_discovery() -> BluetoothServiceInfoBleak:
     }
 
     return BluetoothServiceInfoBleak(
-        name=DATA["name"],
-        address=DATA["address"],
+        name=data["name"],
+        address=data["address"],
         device=generate_ble_device(
-            address=DATA["address"],
-            name=DATA["name"],
+            address=data["address"],
+            name=data["name"],
         ),
-        rssi=DATA["rssi"],
-        service_uuids=DATA["service_uuids"],
+        rssi=data["rssi"],
+        service_uuids=data["service_uuids"],
         manufacturer_data={},
         service_data={},
         advertisement=generate_advertisement_data(
-            local_name=DATA["name"],
-            service_uuids=DATA["service_uuids"],
-            rssi=DATA["rssi"],
-            tx_power=DATA["tx_power"],
+            local_name=data["name"],
+            service_uuids=data["service_uuids"],
+            rssi=data["rssi"],
+            tx_power=data["tx_power"],
         ),
         source=SOURCE_LOCAL,
         connectable=True,
         time=0,
-        tx_power=DATA["tx_power"],
+        tx_power=data["tx_power"],
     )
 
 

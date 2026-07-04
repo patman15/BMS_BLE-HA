@@ -429,7 +429,7 @@ async def test_options_flow(
 ) -> None:
     """Test config options flow."""
 
-    OPTIONS: Final[dict[str, Any]] = {CONF_PASSWORD: "123456"} | {
+    options: Final[dict[str, Any]] = {CONF_PASSWORD: "123456"} | {
         CONF_ADVANCED_OPTIONS: {CONF_KEEP_ALIVE: True}
     }
 
@@ -454,12 +454,12 @@ async def test_options_flow(
 
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
-        user_input=OPTIONS,
+        user_input=options,
     )
     await hass.async_block_till_done()
 
     assert result.get("type") is FlowResultType.CREATE_ENTRY
-    assert cfg.options == OPTIONS
+    assert cfg.options == options
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
@@ -476,15 +476,15 @@ async def test_options_flow_no_secret(hass: HomeAssistant) -> None:
     assert result.get("type") is FlowResultType.FORM
     assert result.get("step_id") == "init"
 
-    OPTIONS: Final[dict[str, Any]] = {CONF_ADVANCED_OPTIONS: {CONF_KEEP_ALIVE: True}}
+    options: Final[dict[str, Any]] = {CONF_ADVANCED_OPTIONS: {CONF_KEEP_ALIVE: True}}
 
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], user_input=OPTIONS
+        result["flow_id"], user_input=options
     )
     await hass.async_block_till_done()
 
     assert result.get("type") is FlowResultType.CREATE_ENTRY
-    assert cfg.options == OPTIONS
+    assert cfg.options == options
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
@@ -533,19 +533,19 @@ async def test_options_effect(
             result["flow_id"], user_input={"invalid": "option"}
         )
 
-    OPTIONS: dict[str, Any] = {
+    adv_options: dict[str, Any] = {
         CONF_PASSWORD: "123abc",
         CONF_ADVANCED_OPTIONS: {CONF_KEEP_ALIVE: keep_alive},
     }
 
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], user_input=OPTIONS
+        result["flow_id"], user_input=adv_options
     )
     await hass.async_block_till_done()
 
     assert cfg in hass.config_entries.async_entries()
     assert cfg.state is ConfigEntryState.LOADED
-    assert cfg.options == OPTIONS
+    assert cfg.options == adv_options
     assert (
         options[CONF_KEEP_ALIVE] == keep_alive
     ), f"keep_alive value {keep_alive} not set."
