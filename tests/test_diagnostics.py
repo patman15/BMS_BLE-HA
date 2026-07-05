@@ -43,6 +43,7 @@ BMS_DEV: Final[dict[str, Any]] = {
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_diagnostics(
     monkeypatch: pytest.MonkeyPatch,
     bool_fixture: bool,

@@ -3,7 +3,6 @@
 from collections.abc import Awaitable, Buffer, Callable, Iterable
 import logging
 from typing import Any, Final
-from unittest.mock import MagicMock
 from uuid import UUID
 
 from aiobmsble import BMSInfo, BMSSample, MatcherPattern
@@ -41,16 +40,6 @@ def pytest_addoption(parser) -> None:
 def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
     """Auto add enable_custom_integrations."""
     return
-
-
-@pytest.fixture(autouse=True)
-def fix_HaScanner_patch(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Patch HaScanner to avoid BT discovery.
-
-    fixes https://github.com/MatthewFlamm/pytest-homeassistant-custom-component/pull/255
-    TODO: remove when pytest-homeassistant-custom-component is updated or fixed upstream
-    """
-    monkeypatch.setattr("homeassistant.components.bluetooth.HaScanner", MagicMock())
 
 
 @pytest.fixture(params=[False, True])
