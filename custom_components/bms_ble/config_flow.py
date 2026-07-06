@@ -91,8 +91,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         LOGGER.debug("Bluetooth device detected: %s", discovery_info)
 
         address: Final = discovery_info.address
-        await self.async_set_unique_id(address)
-        self._abort_if_unique_id_configured()
+        if await self.async_set_unique_id(address, raise_on_progress=False):
+            return self.async_abort(reason="already_configured")
 
         if not (bms_module := await self._async_device_supported(discovery_info)):
             return self.async_abort(reason="not_supported")
@@ -115,9 +115,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         LOGGER.debug("confirm step for %s", self._disc_dev.name)
 
         if user_input is not None:
-            # Re-set unique_id to avoid race with newly added entries
-            await self.async_set_unique_id(self._disc_dev.discovery_info.address)
-            self._abort_if_unique_id_configured()
+            if await self.async_set_unique_id(
+                self._disc_dev.discovery_info.address, raise_on_progress=False
+            ):
+                return self.async_abort(reason="already_configured")
 
             return self.async_create_entry(
                 title=self._disc_dev.name,
@@ -143,8 +144,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             address = str(user_input[CONF_ADDRESS])
-            await self.async_set_unique_id(address, raise_on_progress=False)
-            self._abort_if_unique_id_configured()
+            if await self.async_set_unique_id(address, raise_on_progress=False):
+                return self.async_abort(reason="already_configured")
             self._disc_dev = self._disc_devs[address]
 
             return self.async_create_entry(
