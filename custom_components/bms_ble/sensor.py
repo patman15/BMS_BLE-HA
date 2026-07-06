@@ -1,7 +1,7 @@
 """Platform for sensor integration."""
 
 from collections.abc import Callable
-from typing import Final, cast
+from typing import Final, cast, override
 
 from aiobmsble import BMSpackvalue, BMSSample
 
@@ -64,9 +64,7 @@ class BmsEntityDescription(SensorEntityDescription, frozen_or_thawed=True):
     value_fn: Callable[[BMSSample], float | int | None]
 
 
-def _attr_pack(
-    data: BMSSample, key: BMSpackvalue
-) -> dict[str, list[int | float]]:
+def _attr_pack(data: BMSSample, key: BMSpackvalue) -> dict[str, list[int | float]]:
     """Return a dictionary with the given key or an empty dict if key is not in data."""
     return {str(key): cast("list[int | float]", data.get(key))} if key in data else {}
 
@@ -99,7 +97,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     ),
     BmsEntityDescription(
         attr_fn=lambda data: (
-            {ATTR_TEMP_SENSORS: data.get("temp_values", [])}
+            {ATTR_TEMP_SENSORS: cast("list[int | float]", data.get("temp_values", []))}
             if "temp_values" in data
             else (
                 {ATTR_TEMP_SENSORS: [data.get("temperature", 0.0)]}
@@ -276,6 +274,7 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
         super().__init__(bms)
 
     @property
+    @override
     def extra_state_attributes(self) -> dict[str, list[int | float]] | None:
         """Return entity specific state attributes, e.g. cell voltages."""
         if self.coordinator.data and self.entity_description.attr_fn:
@@ -284,6 +283,7 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
         return None
 
     @property
+    @override
     def native_value(self) -> int | float | None:
         """Return the sensor value."""
         return (

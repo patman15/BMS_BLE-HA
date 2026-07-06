@@ -2,7 +2,7 @@
 
 from collections.abc import Awaitable, Buffer, Callable, Iterable
 import logging
-from typing import Any, Final
+from typing import Any, Final, override
 from uuid import UUID
 
 from aiobmsble import BMSInfo, BMSSample, MatcherPattern
@@ -284,26 +284,31 @@ class MockBleakClient(BleakClient):
         self._services: Iterable[str] | None = services
 
     @property
+    @override
     def address(self) -> str:
         """Return device address."""
         return self._ble_device.address
 
     @property
+    @override
     def is_connected(self) -> bool:
         """Mock connected."""
         return self._connected
 
     @property
+    @override
     def services(self) -> BleakGATTServiceCollection:
         """Mock GATT services."""
         return BleakGATTServiceCollection()
 
+    @override
     async def connect(self, *_args, **_kwargs) -> None:
         """Mock connect."""
         assert not self._connected, "connect called, but client already connected."
         LOGGER.debug("MockBleakClient connecting %s", self._ble_device.address)
         self._connected = True
 
+    @override
     async def start_notify(
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
@@ -317,6 +322,7 @@ class MockBleakClient(BleakClient):
         assert self._connected, "start_notify called, but client not connected."
         self._notify_callback = callback
 
+    @override
     async def write_gatt_char(
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
@@ -329,6 +335,7 @@ class MockBleakClient(BleakClient):
         )
         assert self._connected, "write_gatt_char called, but client not connected."
 
+    @override
     async def read_gatt_char(
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
@@ -339,6 +346,7 @@ class MockBleakClient(BleakClient):
         assert self._connected, "read_gatt_char called, but client not connected."
         return bytearray()
 
+    @override
     async def disconnect(self) -> None:
         """Mock disconnect."""
 
