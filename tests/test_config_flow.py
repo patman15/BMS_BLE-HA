@@ -278,6 +278,7 @@ async def test_bluetooth_confirm_entry_added_during_flow(
     # Simulate another flow/user creating the entry before confirmation
     cfg: MockConfigEntry = mock_config()
     cfg.add_to_hass(hass)
+    await hass.config_entries.async_setup(cfg.entry_id)
     await hass.async_block_till_done()
 
     # Now try to confirm - should abort instead of creating entry
