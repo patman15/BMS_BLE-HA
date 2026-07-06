@@ -3,7 +3,7 @@
 from datetime import timedelta
 from typing import Final
 
-from aiobmsble import BMSSample
+from aiobmsble import BMSSample, TempSensor as TS
 from habluetooth import BluetoothServiceInfoBleak
 import pytest
 from pytest_homeassistant_custom_component.common import (
@@ -40,6 +40,7 @@ DEV_NAME: Final[str] = "sensor.config_test_dummy_bms"
 @pytest.mark.usefixtures(
     "enable_bluetooth", "patch_default_bleak_client", "patch_entity_enabled_default"
 )  # enable bluetooth, patch bleak client and enable all sensors
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_update(
     monkeypatch: pytest.MonkeyPatch,
     bt_discovery: BluetoothServiceInfoBleak,
@@ -64,7 +65,7 @@ async def test_update(
             }
         ) | (
             {
-                "temp_values": [73, 31.4, 27.18],
+                "temp_values": [TS(73), TS(31.4), TS(27.18)],
                 "pack_battery_levels": [1.0, 2.0],
                 "pack_count": 2,
                 "pack_currents": [-3.14, 2.71],
@@ -93,7 +94,7 @@ async def test_update(
         entity.entity_id: entity.state for entity in hass.states.async_all(["sensor"])
     }
     assert data == {
-        f"{DEV_NAME}_{ATTR_VOLTAGE}": "12",
+        f"{DEV_NAME}_{ATTR_VOLTAGE}": "12.0",
         f"{DEV_NAME}_battery": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_TEMPERATURE}": "27.182",
         f"{DEV_NAME}_{ATTR_CURRENT}": "1.5",
@@ -163,9 +164,9 @@ async def test_update(
         ),
     ):
         state: State | None = hass.states.get(f"{DEV_NAME}_{sensor}")
-        assert state is not None and state.attributes[attribute] == value, (
-            f"failed to verify attribute {attribute} for sensor {sensor}"
-        )
+        assert (
+            state is not None and state.attributes[attribute] == value
+        ), f"failed to verify attribute {attribute} for sensor {sensor}"
 
     # check battery pack attributes
     for sensor, attribute, ref_value in (

@@ -1,6 +1,7 @@
 """Support for BMS_BLE binary sensors."""
 
 from collections.abc import Callable
+from typing import override
 
 from aiobmsble import BMSMode, BMSSample
 
@@ -137,15 +138,17 @@ class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity):
         self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
         self._attr_device_info = bms.device_info
         self._attr_has_entity_name = True
-        self.entity_description: BmsBinaryEntityDescription = descr
+        self.entity_description = descr
         super().__init__(bms)
 
     @property
+    @override
     def is_on(self) -> bool | None:
         """Handle updated data from the coordinator."""
         return bool(self.coordinator.data.get(self.entity_description.key))
 
     @property
+    @override
     def extra_state_attributes(self) -> dict[str, int | str] | None:
         """Return entity specific state attributes, e.g. cell voltages."""
         return (
