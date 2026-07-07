@@ -1,6 +1,6 @@
 """Test the BLE Battery Management System integration constants definition."""
 
-from datetime import timedelta
+from datetime import datetime as dt, timedelta
 from typing import Any, Final
 
 from habluetooth import BluetoothServiceInfoBleak
@@ -151,10 +151,12 @@ async def test_diagnostics(
     )
     # patch the modified_at timestamp to match the expected value, since it is generated at runtime
     # TODO: consider using snapshot testing with filters to avoid this kind of patching
-    expected_diag_data["config_entry"]["modified_at"] = (
-        expected_diag_data["config_entry"]["modified_at"][:20]
-        + diag_data["config_entry"]["modified_at"][20:]
-    )
+    created_at = dt.fromisoformat(expected_diag_data["config_entry"]["modified_at"])
+    modified_at = dt.fromisoformat(diag_data["config_entry"]["modified_at"])
+    assert 0 <= (modified_at - created_at).total_seconds() <= 1
+    expected_diag_data["config_entry"]["modified_at"] = diag_data["config_entry"][
+        "modified_at"
+    ]
 
     assert repr(diag_data.pop("advertisement_data")) == repr(
         expected_diag_data.pop("advertisement_data")
