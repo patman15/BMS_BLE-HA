@@ -33,13 +33,14 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
         ble_device: BLEDevice,
         bms_device: BaseBMS,
         config_entry: ConfigEntry,
+        update_interval: int = UPDATE_INTERVAL,
     ) -> None:
         """Initialize BMS data coordinator."""
         super().__init__(
             hass=hass,
             logger=LOGGER,
             name=config_entry.title,
-            update_interval=timedelta(seconds=UPDATE_INTERVAL),
+            update_interval=timedelta(seconds=update_interval),
             always_update=False,  # only update when sensor value has changed
             config_entry=config_entry,
         )
@@ -49,6 +50,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
         )  # track BMS update issues
         self._mac: Final = ble_device.address
         self._stale: bool = False  # indicates no BMS response for significant time
+        self._poll_interval: Final[int] = update_interval
 
         LOGGER.debug(
             "Initializing coordinator for %s (%s) as %s",
@@ -159,7 +161,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
             ) from err
         finally:
             self._link_q.extend(
-                [False] * (1 + int((monotonic() - start) / UPDATE_INTERVAL))
+                [False] * (1 + int((monotonic() - start) / self._poll_interval))
             )
 
         self._link_q[-1] = True  # set success

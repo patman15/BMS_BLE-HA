@@ -7,7 +7,9 @@ DOMAIN: Final = "bms_ble"
 LOGGER: Final[logging.Logger] = logging.getLogger(__package__)
 LOW_RSSI: Final[int] = -75  # dBm considered low signal strength
 UPDATE_INTERVAL: Final[int] = 30  # [s]
+MIN_UPDATE_INTERVAL: Final[int] = 5  # [s]
 CONF_KEEP_ALIVE: Final[str] = "keep_alive"
+CONF_UPDATE_INTERVAL: Final[str] = "update_interval"
 CONF_ADVANCED_OPTIONS: Final[str] = "advanced_options"
 
 # attributes (do not change)
@@ -40,3 +42,4 @@ ATTR_TEMP_SENSORS: Final[str] = "temperature_sensors"  # [°C]
 BINARY_SENSORS: Final[int] = 6  # total number of binary sensors
 LINK_SENSORS: Final[int] = 2  # total number of sensors for connection quality
 SENSORS: Final[int] = 12  # total number of sensors
+BUTTONS: Final[int] = 1  # total number of buttons

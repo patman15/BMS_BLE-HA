@@ -2,6 +2,7 @@
 
 from collections.abc import Awaitable, Callable
 import contextlib
+from datetime import timedelta
 from typing import Final
 
 from aiobmsble import BMSSample
@@ -16,6 +17,7 @@ from custom_components.bms_ble.const import (
     ATTR_CYCLES,
     ATTR_POWER,
     ATTR_PROBLEM,
+    UPDATE_INTERVAL,
 )
 from custom_components.bms_ble.coordinator import BTBmsCoordinator
 from homeassistant.const import ATTR_BATTERY_CHARGING, ATTR_VOLTAGE
@@ -82,6 +84,39 @@ async def test_update(
     assert coordinator.link_quality == 66
 
     await coordinator.async_shutdown()
+
+
+@pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
+async def test_custom_update_interval(
+    bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
+) -> None:
+    """Test coordinator uses a custom update_interval when provided."""
+
+    custom_interval: Final[int] = 900
+
+    coordinator = BTBmsCoordinator(
+        hass,
+        bt_discovery.device,
+        MockBMS(),
+        mock_config(bms="custom_interval"),
+        update_interval=custom_interval,
+    )
+
+    assert coordinator.update_interval == timedelta(seconds=custom_interval)
+
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
+    await coordinator.async_refresh()
+    assert coordinator.last_update_success
+
+    # default stays unchanged when update_interval is not provided
+    default_coordinator = BTBmsCoordinator(
+        hass, bt_discovery.device, MockBMS(), mock_config(bms="default_interval")
+    )
+    assert default_coordinator.update_interval == timedelta(seconds=UPDATE_INTERVAL)
+
+    await coordinator.async_shutdown()
+    await default_coordinator.async_shutdown()
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")

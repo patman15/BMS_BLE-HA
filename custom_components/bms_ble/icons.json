@@ -1,5 +1,10 @@
 {
   "entity": {
+    "button": {
+      "refresh": {
+        "default": "mdi:refresh"
+      }
+    },
     "binary_sensor": {
       "balancer": {
         "default": "mdi:transfer"

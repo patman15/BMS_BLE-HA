@@ -173,7 +173,7 @@ Bluetooth is turned off, when there is no current. Thus, device will get unavail
 JBD BMS detection unfortunately needs to rely on name patterns. If you renamed your battery it most likely will not be detected. I do appreciate issues being raised for new vendor naming schemes to ease the life of other users. To help, please follow the instructions in the last list item for <a href="#if-your-device-is-not-recognized">non-detected devices</a>.
 </details>
 <details><summary>Liontron batteries</summary>
-These batteries need a shorter interval between queries. Be a bit patient to get them added and set a <a href="[custint-url]">custom interval</a> of about 9s to keep a stable connection.
+These batteries need a shorter interval between queries. Be a bit patient to get them added and set the <i>Update interval</i> option (see <a href="#can-i-set-a-custom-polling-interval">FAQ</a>) to about 9s to keep a stable connection.
 </details>
 <details><summary>Litime batteries</summary>
 Versions of these batteries support a "Bluetooth encryption" feature. When enabled you cannot connect using this integration. Remove the 6-digit Bluetooth password to get them working.
@@ -264,7 +264,9 @@ The polling interval is 30 seconds. So at startup it takes a few minutes to dete
 The `RSSI` value is only measured by Home Assistant when a device is not connected. Thus, you will see updates only in case a connection is lost or after a restart. The integration by default tries to maintain a permanent connection to improve data availability and avoid constant reconnect not appreciated by some BMSs.
 
 ### Can I set a custom polling interval?
-Yes, but I strongly discourage that for stability reasons. If you still want to do so, please see the default way to define a [custom interval][custint-url] by Home Assistant. Note that Bluetooth discoveries can take up to a minute in worst case. Thus, please expect side effects, when changing the default of 30 seconds!
+Yes. Open the integration's device, go to *Configure*, expand *Advanced settings*, and set *Update interval* (in seconds, default 30, minimum 10). Note that Bluetooth discoveries can take up to a minute in worst case, so please expect side effects when changing the default!
+
+This is particularly useful if your battery only supports a single simultaneous Bluetooth connection (e.g. Eco-Worthy-branded batteries) and you also want to use the manufacturer's phone app: disable *Keep connection alive between updates* in the same section and set a longer *Update interval* (e.g. 300, 600, or 900 seconds / 5, 10, or 15 minutes). This way the integration connects, polls, and disconnects on each cycle, leaving the connection free the rest of the time for the phone app. Use the device's *Refresh* button whenever you want up-to-date data on demand without waiting for the next scheduled poll.
 
 ### Can I have the runtime in human readable format (using days)?
 Yes, you can use a [template sensor](https://my.home-assistant.io/redirect/config_flow_start?domain=template) or a card to show templates, e.g. [Mushroom template card](https://github.com/piitaya/lovelace-mushroom) with the following template:<br>
@@ -341,4 +343,3 @@ all [contributors of aiobmsble](https://github.com/patman15/aiobmsble?tab=readme
 [effort-shield]: https://img.shields.io/badge/Effort%20spent-1077_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=HACS&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
-[custint-url]: https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval

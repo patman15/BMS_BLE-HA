@@ -16,10 +16,17 @@ from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.importlib import async_import_module
 
 from .config_flow import ConfigFlow
-from .const import CONF_ADVANCED_OPTIONS, CONF_KEEP_ALIVE, DOMAIN, LOGGER
+from .const import (
+    CONF_ADVANCED_OPTIONS,
+    CONF_KEEP_ALIVE,
+    CONF_UPDATE_INTERVAL,
+    DOMAIN,
+    LOGGER,
+    UPDATE_INTERVAL,
+)
 from .coordinator import BTBmsCoordinator
 
-PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.BUTTON, Platform.SENSOR]
 
 type BTBmsConfigEntry = ConfigEntry[BTBmsCoordinator]
 
@@ -62,6 +69,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> boo
             secret=entry.options.get(CONF_PASSWORD, ""),
         ),
         entry,
+        update_interval=int(
+            advanced_options.get(CONF_UPDATE_INTERVAL, UPDATE_INTERVAL)
+        ),
     )
 
     # Query the device the first time, initialise coordinator.data

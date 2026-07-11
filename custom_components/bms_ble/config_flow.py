@@ -29,6 +29,9 @@ from homeassistant.data_entry_flow import section
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.selector import (
     BooleanSelector,
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
     SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
@@ -37,7 +40,15 @@ from homeassistant.helpers.selector import (
     TextSelectorType,
 )
 
-from .const import CONF_ADVANCED_OPTIONS, CONF_KEEP_ALIVE, DOMAIN, LOGGER
+from .const import (
+    CONF_ADVANCED_OPTIONS,
+    CONF_KEEP_ALIVE,
+    CONF_UPDATE_INTERVAL,
+    DOMAIN,
+    LOGGER,
+    MIN_UPDATE_INTERVAL,
+    UPDATE_INTERVAL,
+)
 
 
 @dataclass
@@ -236,7 +247,16 @@ class OptionsFlowHandler(OptionsFlowWithReload):
                                 {
                                     vol.Optional(
                                         CONF_KEEP_ALIVE, default=True
-                                    ): BooleanSelector()
+                                    ): BooleanSelector(),
+                                    vol.Optional(
+                                        CONF_UPDATE_INTERVAL, default=UPDATE_INTERVAL
+                                    ): NumberSelector(
+                                        NumberSelectorConfig(
+                                            min=MIN_UPDATE_INTERVAL,
+                                            mode=NumberSelectorMode.BOX,
+                                            unit_of_measurement="s",
+                                        )
+                                    ),
                                 }
                             ),
                             {"collapsed": True},

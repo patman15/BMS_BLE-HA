@@ -36,6 +36,11 @@
         "name": "Heater"
       }
     },
+    "button": {
+      "refresh": {
+        "name": "Refresh"
+      }
+    },
     "sensor": {
       "battery_health": {
         "name": "Battery health"
@@ -102,10 +107,12 @@
         "sections": {
           "advanced_options": {
             "data": {
-              "keep_alive": "Keep connection alive between updates"
+              "keep_alive": "Keep connection alive between updates",
+              "update_interval": "Update interval"
             },
             "data_description": {
-              "keep_alive": "Keep the Bluetooth connection between update cycles. Disabling this degrades BMS connection reliability and is only recommended as a last resort when sharing a single-connection Bluetooth adapter (e.g. Realtek RTL8761B) with other integrations. Consider using a dedicated Bluetooth adapter instead."
+              "keep_alive": "Keep the Bluetooth connection between update cycles. Disabling this degrades BMS connection reliability and is only recommended as a last resort when sharing a single-connection Bluetooth adapter (e.g. Realtek RTL8761B) with other integrations. Consider using a dedicated Bluetooth adapter instead.",
+              "update_interval": "How often (in seconds) to connect to the BMS and poll data. If your battery only supports a single Bluetooth connection (e.g. Eco-Worthy) and you also want to use its phone app, disable 'Keep connection alive between updates' above and set a longer interval here (e.g. 300, 600, or 900 seconds / 5, 10, or 15 minutes) so the connection is free between polls. Use the Refresh button on the device for on-demand updates in between."
             },
             "name": "Advanced settings"
           }
