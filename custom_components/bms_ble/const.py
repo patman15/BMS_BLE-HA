@@ -25,6 +25,7 @@ ATTR_CYCLE_CAP: Final[str] = "cycle_capacity"  # [Wh]
 ATTR_CYCLE_CHRG: Final[str] = "cycle_charge"  # [Ah]
 ATTR_CYCLES: Final[str] = "cycles"  # [#]
 ATTR_DELTA_VOLTAGE: Final[str] = "delta_cell_voltage"  # [V]
+ATTR_DESIGN_CAP: Final[str] = "design_capacity"  # [Ah]
 ATTR_DISCHRG_MOSFET: Final[str] = "dischrg_mosfet"  # [bool]
 ATTR_HEATER: Final[str] = "heater"  # [bool]
 ATTR_LQ: Final[str] = "link_quality"  # [%]
@@ -39,4 +40,4 @@ ATTR_TEMP_SENSORS: Final[str] = "temperature_sensors"  # [°C]
 
 BINARY_SENSORS: Final[int] = 6  # total number of binary sensors
 LINK_SENSORS: Final[int] = 2  # total number of sensors for connection quality
-SENSORS: Final[int] = 12  # total number of sensors
+SENSORS: Final[int] = 13  # total number of sensors

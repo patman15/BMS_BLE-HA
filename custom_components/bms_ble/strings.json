@@ -49,6 +49,9 @@
       "delta_cell_voltage": {
         "name": "Delta cell voltage"
       },
+      "design_capacity": {
+        "name": "Design capacity"
+      },
       "link_quality": {
         "name": "Link quality"
       },

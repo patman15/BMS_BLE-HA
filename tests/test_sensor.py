@@ -101,6 +101,7 @@ async def test_update(
         f"{DEV_NAME}_stored_energy": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_CYCLES}": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_DELTA_VOLTAGE}": STATE_UNKNOWN,
+        f"{DEV_NAME}_design_capacity": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_LQ}": "0",
         f"{DEV_NAME}_highest_cell_voltage": STATE_UNKNOWN,
         f"{DEV_NAME}_lowest_cell_voltage": STATE_UNKNOWN,
@@ -135,6 +136,7 @@ async def test_update(
         f"{DEV_NAME}_stored_energy": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_CYCLES}": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_DELTA_VOLTAGE}": "0.123",
+        f"{DEV_NAME}_design_capacity": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_LQ}": "66",  # initial update + one UPDATE_INTERVAL
         f"{DEV_NAME}_highest_cell_voltage": "3.123",
         f"{DEV_NAME}_lowest_cell_voltage": "3",
