@@ -324,9 +324,9 @@ For that reason, I currently avoid implementing any control functions, as there 
 I would reconsider this position if vendors were to publish official documentation on their websites.
 
 ## Outlook
-- Develop towards a [Home Assistant core integration](https://www.home-assistant.io/integrations/)
+- Develop towards a [Home Assistant core integration](https://www.home-assistant.io/integrations/), support for https://github.com/home-assistant/core/pull/159556 needed!
 - Improvements to fulfill the [Home Assistant quality scale](https://www.home-assistant.io/docs/quality_scale/)
-- Add option to only have temporary connections (lowers reliability, but helps running more devices via [ESPHome Bluetooth proxy][btproxy-url])
+- Implement sub-devices, e.g. batteries with multiple packs
 
 ## Thanks to
 all [contributors of aiobmsble](https://github.com/patman15/aiobmsble?tab=readme-ov-file#thanks-to) (the BMS library) for helping with making the integration better.
