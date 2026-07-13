@@ -18,7 +18,7 @@ jobs:
       - name: Process issues
         uses: actions/github-script@v8
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.ISSUE_TOKEN }}
           script: |
             const LABEL = "waiting-for-response";
             const ONE_DAY_MS = 24 * 60 * 60 * 1000;
