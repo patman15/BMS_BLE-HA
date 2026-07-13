@@ -5,6 +5,8 @@ permissions:
 
 on:
   push:
+    branches:
+      - main    
   pull_request:
   workflow_dispatch:
   schedule:
@@ -21,7 +23,7 @@ jobs:
         - name: "Set up Python"
           uses: actions/setup-python@main
           with:
-            python-version: "3.13"
+            python-version: "3.14"
             cache: "pip"
 
         - name: "Install requirements"
@@ -29,6 +31,10 @@ jobs:
 
         - name: "Run Ruff"
           run: python3 -m ruff check .
+
+        - name: "Run Pylint"
+          continue-on-error: true
+          run: python3 -m pylint .
         
         - name: "Run MyPy"
           run: python3 -m mypy .

@@ -1,7 +1,7 @@
 """Platform for sensor integration."""
 
 from collections.abc import Callable
-from typing import Final, cast
+from typing import Final, cast, override
 
 from aiobmsble import BMSpackvalue, BMSSample
 
@@ -41,6 +41,7 @@ from .const import (
     ATTR_CYCLE_CAP,
     ATTR_CYCLES,
     ATTR_DELTA_VOLTAGE,
+    ATTR_DESIGN_CAP,
     ATTR_LQ,
     ATTR_MAX_VOLTAGE,
     ATTR_MIN_VOLTAGE,
@@ -64,20 +65,14 @@ class BmsEntityDescription(SensorEntityDescription, frozen_or_thawed=True):
     value_fn: Callable[[BMSSample], float | int | None]
 
 
-def _attr_pack(
-    data: BMSSample, key: BMSpackvalue, default: list[int | float]
-) -> dict[str, list[int | float]]:
-    """Return a dictionary with the given key and default value."""
-    return (
-        {str(key): cast("list[int | float]", data.get(key, default))}
-        if key in data
-        else {}
-    )
+def _attr_pack(data: BMSSample, key: BMSpackvalue) -> dict[str, list[int | float]]:
+    """Return a dictionary with the given key or an empty dict if key is not in data."""
+    return {str(key): cast("list[int | float]", data.get(key))} if key in data else {}
 
 
 SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     BmsEntityDescription(
-        attr_fn=lambda data: _attr_pack(data, "pack_voltages", [0.0]),
+        attr_fn=lambda data: _attr_pack(data, "pack_voltages"),
         device_class=SensorDeviceClass.VOLTAGE,
         key=ATTR_VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
@@ -86,7 +81,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         value_fn=lambda data: data.get("voltage"),
     ),
     BmsEntityDescription(
-        attr_fn=lambda data: _attr_pack(data, "pack_battery_levels", [0.0]),
+        attr_fn=lambda data: _attr_pack(data, "pack_battery_levels"),
         device_class=SensorDeviceClass.BATTERY,
         key=ATTR_BATTERY_LEVEL,
         native_unit_of_measurement=PERCENTAGE,
@@ -103,7 +98,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     ),
     BmsEntityDescription(
         attr_fn=lambda data: (
-            {ATTR_TEMP_SENSORS: data.get("temp_values", [])}
+            {ATTR_TEMP_SENSORS: cast("list[int | float]", data.get("temp_values", []))}
             if "temp_values" in data
             else (
                 {ATTR_TEMP_SENSORS: [data.get("temperature", 0.0)]}
@@ -125,7 +120,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
                 if "balance_current" in data
                 else {}
             )
-            | _attr_pack(data, "pack_currents", [0.0])
+            | _attr_pack(data, "pack_currents")
         ),
         device_class=SensorDeviceClass.CURRENT,
         key=ATTR_CURRENT,
@@ -143,11 +138,18 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         value_fn=lambda data: data.get("cycle_capacity"),
     ),
     BmsEntityDescription(
-        attr_fn=lambda data: _attr_pack(data, "pack_cycles", [0]),
+        attr_fn=lambda data: _attr_pack(data, "pack_cycles"),
         key=ATTR_CYCLES,
         state_class=SensorStateClass.TOTAL_INCREASING,
         translation_key=ATTR_CYCLES,
         value_fn=lambda data: data.get("cycles"),
+    ),
+    BmsEntityDescription(
+        entity_category=EntityCategory.DIAGNOSTIC,
+        key=ATTR_DESIGN_CAP,
+        native_unit_of_measurement="Ah",
+        translation_key=ATTR_DESIGN_CAP,
+        value_fn=lambda data: data.get("design_capacity"),
     ),
     BmsEntityDescription(
         device_class=SensorDeviceClass.POWER,
@@ -224,6 +226,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         key=ATTR_RSSI,
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         state_class=SensorStateClass.MEASUREMENT,
+        translation_key=ATTR_RSSI,
         value_fn=lambda data: None,
     ),
     BmsEntityDescription(
@@ -279,6 +282,7 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
         super().__init__(bms)
 
     @property
+    @override
     def extra_state_attributes(self) -> dict[str, list[int | float]] | None:
         """Return entity specific state attributes, e.g. cell voltages."""
         if self.coordinator.data and self.entity_description.attr_fn:
@@ -287,6 +291,7 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
         return None
 
     @property
+    @override
     def native_value(self) -> int | float | None:
         """Return the sensor value."""
         return (
@@ -315,8 +320,10 @@ class RSSISensor(SensorEntity):
     async def async_update(self) -> None:
         """Update RSSI sensor value."""
 
-        self._attr_native_value = max(
-            min(self._bms.rssi or -self.LIMIT, self.LIMIT), -self.LIMIT
+        self._attr_native_value = (
+            max(min(self._bms.rssi, self.LIMIT), -self.LIMIT)
+            if self._bms.rssi is not None
+            else -self.LIMIT
         )
         self._attr_available = self._bms.rssi is not None
 

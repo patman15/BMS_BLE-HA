@@ -163,3 +163,4 @@ TODO.md
 
 # macOS
 .DS_Store
+scripts/create_bump_aiobmsble_branch.py

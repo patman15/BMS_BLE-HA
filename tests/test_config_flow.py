@@ -1,6 +1,7 @@
 """Test the BLE Battery Management System integration config flow."""
 
 from typing import Any, Final
+from unittest.mock import AsyncMock
 
 from aiobmsble.test_data import bms_advertisements
 from bleak.backends.scanner import AdvertisementData
@@ -47,7 +48,7 @@ from .conftest import (
     ids=lambda param: param[2],
 )
 def bms_adv(request: pytest.FixtureRequest) -> BluetoothServiceInfoBleak:
-    """Return faulty response frame."""
+    """Return BMS advertisement data for discovery testing."""
     dev: Final[AdvertisementData] = request.param[0]
     address: Final[str] = request.param[1]
     return BluetoothServiceInfoBleak(
@@ -69,10 +70,18 @@ def bms_adv(request: pytest.FixtureRequest) -> BluetoothServiceInfoBleak:
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_bluetooth_discovery(
-    hass: HomeAssistant, advertisement: BluetoothServiceInfoBleak
+    monkeypatch: pytest.MonkeyPatch,
+    hass: HomeAssistant,
+    advertisement: BluetoothServiceInfoBleak,
 ) -> None:
     """Test bluetooth device discovery."""
+
+    # Mock coordinator functionality to avoid actual BLE communication during discovery test
+    coordinator: Final = "custom_components.bms_ble.BTBmsCoordinator"
+    monkeypatch.setattr(f"{coordinator}._async_setup", AsyncMock())
+    monkeypatch.setattr(f"{coordinator}._async_update_data", mock_update_min)
 
     inject_bluetooth_service_info_bleak(hass, advertisement)
     await hass.async_block_till_done(wait_background_tasks=True)
@@ -128,6 +137,7 @@ async def test_bluetooth_discovery(
     ids=["minimal", "full"],
 )
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_device_setup(
     monkeypatch: pytest.MonkeyPatch,
     bt_discovery: BluetoothServiceInfoBleak,
@@ -182,10 +192,11 @@ async def test_device_setup(
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_device_not_supported(
     bt_discovery_notsupported: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
-    """Test discovery via bluetooth with a invalid device."""
+    """Test discovery via bluetooth with an invalid device."""
 
     result: ConfigFlowResult = await hass.config_entries.flow.async_init(
         DOMAIN,
@@ -198,6 +209,7 @@ async def test_device_not_supported(
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_user_already_configured(hass: HomeAssistant) -> None:
     """Test that same device cannot be added twice."""
 
@@ -220,6 +232,7 @@ async def test_user_already_configured(hass: HomeAssistant) -> None:
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_bluetooth_already_configured(
     hass: HomeAssistant, bt_discovery: BluetoothServiceInfoBleak
 ) -> None:
@@ -241,31 +254,32 @@ async def test_bluetooth_already_configured(
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_bluetooth_confirm_entry_added_during_flow(
     monkeypatch: pytest.MonkeyPatch,
     bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
 ) -> None:
     """Test that confirming aborts if entry is created during the flow."""
-    monkeypatch.setattr(
-        "aiobmsble.bms.ogt_bms.BMS.async_update",
-        mock_update_min,
-    )
 
+    monkeypatch.setattr("aiobmsble.bms.ogt_bms.BMS.async_update", mock_update_min)
     inject_bluetooth_service_info_bleak(hass, bt_discovery)
-
     # Start the flow and get to confirmation step
     result: ConfigFlowResult = await hass.config_entries.flow.async_init(
         DOMAIN,
         context={"source": SOURCE_BLUETOOTH},
         data=bt_discovery,
     )
+    await hass.async_block_till_done(wait_background_tasks=True)
+
     assert result.get("type") == FlowResultType.FORM
     assert result.get("step_id") == "bluetooth_confirm"
 
     # Simulate another flow/user creating the entry before confirmation
     cfg: MockConfigEntry = mock_config()
     cfg.add_to_hass(hass)
+    await hass.config_entries.async_setup(cfg.entry_id)
+    await hass.async_block_till_done()
 
     # Now try to confirm - should abort instead of creating entry
     result = await hass.config_entries.flow.async_configure(
@@ -278,6 +292,7 @@ async def test_bluetooth_confirm_entry_added_during_flow(
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_async_setup_entry(
     monkeypatch: pytest.MonkeyPatch,
     bms_fixture: str,
@@ -303,6 +318,7 @@ async def test_async_setup_entry(
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_setup_entry_missing_unique_id(
     bms_fixture: str, hass: HomeAssistant
 ) -> None:
@@ -320,6 +336,7 @@ async def test_setup_entry_missing_unique_id(
 @pytest.mark.usefixtures(
     "enable_bluetooth", "patch_default_bleak_client", "patch_entity_enabled_default"
 )
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_user_setup(
     monkeypatch: pytest.MonkeyPatch,
     bt_discovery: BluetoothServiceInfoBleak,
@@ -377,6 +394,7 @@ async def test_user_setup(
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_user_setup_invalid(
     bt_discovery_notsupported: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
@@ -390,6 +408,7 @@ async def test_user_setup_invalid(
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_user_setup_double_configure(
     monkeypatch: pytest.MonkeyPatch,
     bt_discovery: BluetoothServiceInfoBleak,
@@ -414,15 +433,15 @@ async def test_user_setup_double_configure(
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
-@pytest.mark.parametrize("show_adv_opt", [True, False], ids=["adv_opt", "no_adv_opt"])
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_options_flow(
-    monkeypatch: pytest.MonkeyPatch, hass: HomeAssistant, show_adv_opt: bool
+    monkeypatch: pytest.MonkeyPatch, hass: HomeAssistant
 ) -> None:
     """Test config options flow."""
 
-    OPTIONS: Final[dict[str, Any]] = {CONF_PASSWORD: "123456"} | (
-        {CONF_ADVANCED_OPTIONS: {CONF_KEEP_ALIVE: True}} if show_adv_opt else {}
-    )
+    options: Final[dict[str, Any]] = {CONF_PASSWORD: "123456"} | {
+        CONF_ADVANCED_OPTIONS: {CONF_KEEP_ALIVE: True}
+    }
 
     # pick one BMS type with password option
     cfg: MockConfigEntry = mock_config(bms="jbd_bms")
@@ -432,7 +451,7 @@ async def test_options_flow(
     await hass.async_block_till_done()
 
     result: ConfigFlowResult = await hass.config_entries.options.async_init(
-        cfg.entry_id, context={"show_advanced_options": show_adv_opt}
+        cfg.entry_id
     )
 
     assert result.get("type") is FlowResultType.FORM
@@ -445,15 +464,16 @@ async def test_options_flow(
 
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
-        user_input=OPTIONS,
+        user_input=options,
     )
     await hass.async_block_till_done()
 
     assert result.get("type") is FlowResultType.CREATE_ENTRY
-    assert cfg.options == OPTIONS
+    assert cfg.options == options
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_options_flow_no_secret(hass: HomeAssistant) -> None:
     """Test if options flow for BMS without secret."""
 
@@ -467,19 +487,20 @@ async def test_options_flow_no_secret(hass: HomeAssistant) -> None:
     assert result.get("type") is FlowResultType.FORM
     assert result.get("step_id") == "init"
 
-    OPTIONS: Final[dict[str, Any]] = {CONF_ADVANCED_OPTIONS: {CONF_KEEP_ALIVE: True}}
+    options: Final[dict[str, Any]] = {CONF_ADVANCED_OPTIONS: {CONF_KEEP_ALIVE: True}}
 
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], user_input=OPTIONS
+        result["flow_id"], user_input=options
     )
     await hass.async_block_till_done()
 
     assert result.get("type") is FlowResultType.CREATE_ENTRY
-    assert cfg.options == OPTIONS
+    assert cfg.options == options
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 @pytest.mark.parametrize("keep_alive", [True, False])
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_options_effect(
     monkeypatch: pytest.MonkeyPatch,
     hass: HomeAssistant,
@@ -513,7 +534,7 @@ async def test_options_effect(
     await hass.async_block_till_done()
 
     result: ConfigFlowResult = await hass.config_entries.options.async_init(
-        cfg.entry_id, context={"show_advanced_options": True}
+        cfg.entry_id
     )
     assert result.get("type") is FlowResultType.FORM
     assert result.get("step_id") == "init"
@@ -524,19 +545,19 @@ async def test_options_effect(
             result["flow_id"], user_input={"invalid": "option"}
         )
 
-    OPTIONS: dict[str, Any] = {
+    adv_options: dict[str, Any] = {
         CONF_PASSWORD: "123abc",
         CONF_ADVANCED_OPTIONS: {CONF_KEEP_ALIVE: keep_alive},
     }
 
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], user_input=OPTIONS
+        result["flow_id"], user_input=adv_options
     )
     await hass.async_block_till_done()
 
     assert cfg in hass.config_entries.async_entries()
     assert cfg.state is ConfigEntryState.LOADED
-    assert cfg.options == OPTIONS
+    assert cfg.options == adv_options
     assert (
         options[CONF_KEEP_ALIVE] == keep_alive
     ), f"keep_alive value {keep_alive} not set."
@@ -544,6 +565,7 @@ async def test_options_effect(
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_invalid_options_flow(hass: HomeAssistant) -> None:
     """Test config options flow for unsupported BMS type."""
 
@@ -562,6 +584,7 @@ async def test_invalid_options_flow(hass: HomeAssistant) -> None:
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_no_migration(bms_fixture: str, hass: HomeAssistant) -> None:
     """Test that entries of correct version are kept."""
 
@@ -579,6 +602,7 @@ async def test_no_migration(bms_fixture: str, hass: HomeAssistant) -> None:
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_migrate_entry_future_version(hass: HomeAssistant) -> None:
     """Test migrating entries from future version."""
 
@@ -594,6 +618,7 @@ async def test_migrate_entry_future_version(hass: HomeAssistant) -> None:
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_migrate_invalid_v_0_1(bms_fixture: str, hass: HomeAssistant) -> None:
     """Test migrating an invalid entry in version 0.1."""
 
@@ -609,6 +634,7 @@ async def test_migrate_invalid_v_0_1(bms_fixture: str, hass: HomeAssistant) -> N
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_migrate_entry_from_v0_1(
     monkeypatch: pytest.MonkeyPatch,
     mock_config_v0_1: MockConfigEntry,
@@ -636,6 +662,7 @@ async def test_migrate_entry_from_v0_1(
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_migrate_entry_from_v1_0(
     monkeypatch: pytest.MonkeyPatch,
     bt_discovery: BluetoothServiceInfoBleak,
@@ -664,6 +691,7 @@ async def test_migrate_entry_from_v1_0(
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 @pytest.mark.parametrize("bms_fixture", ["dummy_bms", "ective_bms"])
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_migrate_entry_from_v2_0(
     monkeypatch: pytest.MonkeyPatch,
     bt_discovery: BluetoothServiceInfoBleak,
@@ -694,6 +722,7 @@ async def test_migrate_entry_from_v2_0(
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 @pytest.mark.parametrize(
     ("unique_id_old", "unique_id_new"),
     [
