@@ -1,0 +1,158 @@
+name: Label Issues Waiting for Maintainer Response
+
+on:
+  schedule:
+    # Runs every day at 02:00 UTC
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  update-labels:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Process issues
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const LABEL = "waiting-for-response";
+            const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Determine whether owner is an organization
+            let ownerIsOrg = false;
+
+            try {
+              const ownerInfo = await github.rest.users.getByUsername({
+                username: owner
+              });
+
+              ownerIsOrg = ownerInfo.data.type === "Organization";
+            } catch (error) {
+              console.log(`Unable to determine owner type: ${error.message}`);
+            }
+
+            const issues = await github.paginate(
+              github.rest.issues.listForRepo,
+              {
+                owner,
+                repo,
+                state: "open",
+                per_page: 100
+              }
+            );
+
+            console.log(`Found ${issues.length} open issues`);
+
+            for (const issue of issues) {
+              // Skip pull requests
+              if (issue.pull_request) {
+                continue;
+              }
+
+              let lastCommenter = issue.user.login;
+              let lastActivityDate = new Date(issue.created_at);
+
+              const comments = await github.paginate(
+                github.rest.issues.listComments,
+                {
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  per_page: 100
+                }
+              );
+
+              if (comments.length > 0) {
+                const lastComment = comments[comments.length - 1];
+                lastCommenter = lastComment.user.login;
+                lastActivityDate = new Date(lastComment.created_at);
+              }
+
+              const ageMs = Date.now() - lastActivityDate.getTime();
+
+              let trustedUser = false;
+
+              //
+              // Check 1: Repository owner
+              //
+              if (lastCommenter.toLowerCase() === owner.toLowerCase()) {
+                trustedUser = true;
+              }
+
+              //
+              // Check 2: Organization member
+              //
+              if (!trustedUser && ownerIsOrg) {
+                try {
+                  await github.rest.orgs.checkMembershipForUser({
+                    org: owner,
+                    username: lastCommenter
+                  });
+
+                  trustedUser = true;
+                } catch (_) {
+                  // Not an organization member
+                }
+              }
+
+              //
+              // Check 3: Repository collaborator
+              //
+              if (!trustedUser) {
+                try {
+                  await github.rest.repos.getCollaboratorPermissionLevel({
+                    owner,
+                    repo,
+                    username: lastCommenter
+                  });
+
+                  trustedUser = true;
+                } catch (_) {
+                  // Not a collaborator
+                }
+              }
+
+              const shouldHaveLabel =
+                ageMs > ONE_DAY_MS &&
+                !trustedUser;
+
+              const hasLabel = issue.labels.some(
+                label => label.name === LABEL
+              );
+
+              console.log(
+                `Issue #${issue.number}: lastCommenter=${lastCommenter}, trusted=${trustedUser}, ageHours=${Math.round(ageMs / 3600000)}`
+              );
+
+              if (shouldHaveLabel && !hasLabel) {
+                console.log(`Adding '${LABEL}' to issue #${issue.number}`);
+
+                await github.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  labels: [LABEL]
+                });
+              } else if (!shouldHaveLabel && hasLabel) {
+                console.log(`Removing '${LABEL}' from issue #${issue.number}`);
+
+                try {
+                  await github.rest.issues.removeLabel({
+                    owner,
+                    repo,
+                    issue_number: issue.number,
+                    name: LABEL
+                  });
+                } catch (error) {
+                  console.log(`Failed removing label: ${error.message}`);
+                }
+              }
+            }
