@@ -43,6 +43,9 @@
       "delta_cell_voltage": {
         "name": "Delta Zellspannung"
       },
+      "design_capacity": {
+        "name": "Nominale Kapazität"
+      },      
       "link_quality": {
         "name": "Verbindungsqualität"
       },
