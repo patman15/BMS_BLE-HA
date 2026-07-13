@@ -1,5 +1,4 @@
 name: Label Issues Waiting for Maintainer Response
-
 on:
   schedule:
     # Runs every day at 02:00 UTC
@@ -13,7 +12,6 @@ permissions:
 jobs:
   update-labels:
     runs-on: ubuntu-latest
-
     steps:
       - name: Process issues
         uses: actions/github-script@v8
@@ -22,140 +20,104 @@ jobs:
           script: |
             const LABEL = "waiting-for-response";
             const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-          
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-          
+
             let ownerIsOrg = false;
-          
             try {
-              const ownerInfo = await github.rest.users.getByUsername({
-                username: owner
-              });
-          
+              const ownerInfo = await github.rest.users.getByUsername({ username: owner });
               ownerIsOrg = ownerInfo.data.type === "Organization";
             } catch (error) {
               console.log(`Unable to determine owner type: ${error.message}`);
             }
-          
+
             const issues = await github.paginate(
               github.rest.issues.listForRepo,
-              {
-                owner,
-                repo,
-                state: "open",
-                per_page: 100
-              }
+              { owner, repo, state: "open", per_page: 100 }
             );
-          
             console.log(`Found ${issues.length} open issues`);
-          
+
+            // Pattern to detect bot / automation accounts
+            const BOT_REGEX = /^(\[.*\]|github-actions|web-flow|dependabot|renovate|slack|codecov|coveralls|imgbot|badges)(-bot)?(\[\d+\])?$/i;
+
             for (const issue of issues) {
               if (issue.pull_request) continue;
-          
+
+              // Skip issues that already have the "stale" label
+              if (issue.labels.some(label => label.name === "stale")) {
+                console.log(`Issue #${issue.number}: skipped — has 'stale' label`);
+                continue;
+              }
+
               let lastCommenter = issue.user.login;
               let lastActivityDate = new Date(issue.created_at);
-          
+
               const comments = await github.paginate(
                 github.rest.issues.listComments,
-                {
-                  owner,
-                  repo,
-                  issue_number: issue.number,
-                  per_page: 100
-                }
+                { owner, repo, issue_number: issue.number, per_page: 100 }
               );
-          
+
               if (comments.length > 0) {
                 const lastComment = comments[comments.length - 1];
                 lastCommenter = lastComment.user.login;
                 lastActivityDate = new Date(lastComment.created_at);
               }
-          
+
+              // Skip if the last actor is a bot or GitHub automation account
+              if (BOT_REGEX.test(lastCommenter)) {
+                console.log(`Issue #${issue.number}: skipped — last activity by bot/automation account '${lastCommenter}'`);
+                continue;
+              }
+
               const ageMs = Date.now() - lastActivityDate.getTime();
-          
+
               let trustedUser = false;
               let trustedReason = "not trusted";
-          
-              //
-              // Check 1: Repository owner
-              //
+
+              // // Check 1: Repository owner
               if (lastCommenter.toLowerCase() === owner.toLowerCase()) {
                 trustedUser = true;
                 trustedReason = "repository owner";
               }
-          
-              //
-              // Check 2: Organization member
-              //
+
+              // // Check 2: Organization member
               if (!trustedUser && ownerIsOrg) {
                 try {
-                  await github.rest.orgs.checkMembershipForUser({
-                    org: owner,
-                    username: lastCommenter
-                  });
-          
+                  await github.rest.orgs.checkMembershipForUser({ org: owner, username: lastCommenter });
                   trustedUser = true;
                   trustedReason = "organization member";
                 } catch (_) {
                   // Not an organization member
                 }
               }
-          
-              //
-              // Check 3: Repository collaborator
-              //
+
+              // // Check 3: Repository collaborator
               if (!trustedUser) {
                 try {
-                  const res = await github.rest.repos.getCollaboratorPermissionLevel({
-                    owner,
-                    repo,
-                    username: lastCommenter
-                  });
-          
+                  const res = await github.rest.repos.getCollaboratorPermissionLevel({ owner, repo, username: lastCommenter });
                   const permission = res.data.permission;
-          
                   if (permission === "admin" || permission === "maintain") {
                     trustedUser = true;
                     trustedReason = `collaborator (${permission})`;
                   }
-          
                 } catch (error) {
                   console.log(`Permission check failed for ${lastCommenter}: ${error.message}`);
                 }
               }
-          
-              const shouldHaveLabel =
-                ageMs > ONE_DAY_MS &&
-                !trustedUser;
-          
-              const hasLabel = issue.labels.some(
-                label => label.name === LABEL
-              );
-          
+
+              const shouldHaveLabel = ageMs > ONE_DAY_MS && !trustedUser;
+              const hasLabel = issue.labels.some( label => label.name === LABEL );
               console.log(
                 `Issue #${issue.number}: lastCommenter=${lastCommenter}, trusted=${trustedUser}, reason=${trustedReason}, ageHours=${Math.round(ageMs / 3600000)}`
               );
-          
+
               if (shouldHaveLabel && !hasLabel) {
                 console.log(`Adding '${LABEL}' to issue #${issue.number}`);
-          
-                await github.rest.issues.addLabels({
-                  owner,
-                  repo,
-                  issue_number: issue.number,
-                  labels: [LABEL]
-                });
+                await github.rest.issues.addLabels({ owner, repo, issue_number: issue.number, labels: [LABEL] });
               } else if (!shouldHaveLabel && hasLabel) {
                 console.log(`Removing '${LABEL}' from issue #${issue.number}`);
-          
                 try {
-                  await github.rest.issues.removeLabel({
-                    owner,
-                    repo,
-                    issue_number: issue.number,
-                    name: LABEL
-                  });
+                  await github.rest.issues.removeLabel({ owner, repo, issue_number: issue.number, name: LABEL });
                 } catch (error) {
                   console.log(`Failed removing label: ${error.message}`);
                 }
