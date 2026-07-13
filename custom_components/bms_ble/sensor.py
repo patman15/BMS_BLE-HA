@@ -41,6 +41,7 @@ from .const import (
     ATTR_CYCLE_CAP,
     ATTR_CYCLES,
     ATTR_DELTA_VOLTAGE,
+    ATTR_DESIGN_CAP,
     ATTR_LQ,
     ATTR_MAX_VOLTAGE,
     ATTR_MIN_VOLTAGE,
@@ -142,6 +143,13 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         state_class=SensorStateClass.TOTAL_INCREASING,
         translation_key=ATTR_CYCLES,
         value_fn=lambda data: data.get("cycles"),
+    ),
+    BmsEntityDescription(
+        entity_category=EntityCategory.DIAGNOSTIC,
+        key=ATTR_DESIGN_CAP,
+        native_unit_of_measurement="Ah",
+        translation_key=ATTR_DESIGN_CAP,
+        value_fn=lambda data: data.get("design_capacity"),
     ),
     BmsEntityDescription(
         device_class=SensorDeviceClass.POWER,
