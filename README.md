@@ -57,7 +57,8 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Felicity ESS (show up as `F10`&#x2026;) and FLB batteries (show up as `F07`&#x2026;)
 - Gobel Power BMS (show up as `BMS-`&#x2026;)
 - HumsiENK Smart BMS (show up as `HS`&#x2026;)
-    - ECO-WORTHY (show up as `ECO....`)
+    - ECO-WORTHY batteries (show up as `ECO....`)
+    - DCHOUSE batterues (show up as `DCH....`)
 - JBD BMS, Jiabaida, Xiaoxiang (show up as `JBD-`&#x2026;)
     - accurat batteries, Aolithium batteries
     - BasenGreen, Bulltron, CHINS, Cloud Energy, DCHOUSE, ECO-WORTHY, Epoch batteries
