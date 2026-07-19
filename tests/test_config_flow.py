@@ -3,7 +3,9 @@
 from typing import Any, Final
 from unittest.mock import AsyncMock
 
+from aiobmsble import BMSConfig
 from aiobmsble.test_data import bms_advertisements
+from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 from home_assistant_bluetooth import BluetoothServiceInfoBleak
 import pytest
@@ -513,13 +515,13 @@ async def test_options_effect(
 
     def mock_bms_init(
         _self,
-        ble_device: Any,
-        keep_alive: bool = True,
-        secret: str = "",
-        logger_name: str = "",
+        _ble_device: BLEDevice,
+        config: BMSConfig | None = None,
+        _logger_name: str = "",
     ) -> None:
-        options[CONF_KEEP_ALIVE] = keep_alive
-        options[CONF_PASSWORD] = secret
+        if config is not None:
+            options[CONF_KEEP_ALIVE] = config.keep_alive
+            options[CONF_PASSWORD] = config.secret
 
     inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
