@@ -49,6 +49,9 @@
       "delta_cell_voltage": {
         "name": "Delta cell voltage"
       },
+      "design_capacity": {
+        "name": "Design capacity"
+      },
       "link_quality": {
         "name": "Link quality"
       },
@@ -58,6 +61,9 @@
       "min_cell_voltage": {
         "name": "Lowest cell voltage"
       },
+      "rssi": {
+        "name": "[%key:component::sensor::entity_component::signal_strength::name%]"
+      },      
       "runtime": {
         "name": "Runtime"
       }

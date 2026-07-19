@@ -1,6 +1,6 @@
 """Test the BLE Battery Management System integration constants definition."""
 
-from datetime import timedelta
+from datetime import datetime as dt, timedelta
 from typing import Any, Final
 
 from habluetooth import BluetoothServiceInfoBleak
@@ -15,17 +15,18 @@ from homeassistant.components.diagnostics.const import REDACTED
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.discovery_flow import DiscoveryKey
 from tests.bluetooth import inject_bluetooth_service_info_bleak
 from tests.conftest import MockBleakClient, MockBMS, mock_config
 
 BT_ADAPTER: Final[dict[str, Any]] = {
     "connections": {(BT_DOMAIN, "local")},
-    "hw_version": 14,
+    "hw_version": "14",
     "manufacturer": "adapter mnf",
     "model": "adapter model",
-    "model_id": 2,
+    "model_id": "2",
     "name": "mock adapter",
-    "sw_version": 3,
+    "sw_version": "3",
 }
 
 BMS_DEV: Final[dict[str, Any]] = {
@@ -43,6 +44,7 @@ BMS_DEV: Final[dict[str, Any]] = {
 
 
 @pytest.mark.usefixtures("enable_bluetooth")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_diagnostics(
     monkeypatch: pytest.MonkeyPatch,
     bool_fixture: bool,
@@ -80,7 +82,15 @@ async def test_diagnostics(
                 "type": "aiobmsble.bms.mock_BMS",
             },
             "disabled_by": None,
-            "discovery_keys": {},
+            "discovery_keys": {
+                "bluetooth": (
+                    DiscoveryKey(
+                        domain="bluetooth",
+                        key="cc:cc:cc:cc:cc:cc",
+                        version=1,
+                    ),
+                ),
+            },
             "domain": DOMAIN,
             "entry_id": REDACTED,
             "minor_version": 0,
@@ -134,10 +144,19 @@ async def test_diagnostics(
     inject_bluetooth_service_info_bleak(hass, bt_discovery)
     await ce.runtime_data._async_setup()
     await ce.runtime_data.async_refresh()
+    await hass.async_block_till_done(wait_background_tasks=True)
 
     diag_data: dict[str, Any] = await async_get_config_entry_diagnostics(
         hass, config_entry
     )
+    # patch the modified_at timestamp to match the expected value, since it is generated at runtime
+    # TODO: consider using snapshot testing with filters to avoid this kind of patching
+    created_at = dt.fromisoformat(expected_diag_data["config_entry"]["modified_at"])
+    modified_at = dt.fromisoformat(diag_data["config_entry"]["modified_at"])
+    assert 0 <= (modified_at - created_at).total_seconds() <= 1
+    expected_diag_data["config_entry"]["modified_at"] = diag_data["config_entry"][
+        "modified_at"
+    ]
 
     assert repr(diag_data.pop("advertisement_data")) == repr(
         expected_diag_data.pop("advertisement_data")

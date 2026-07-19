@@ -2,7 +2,7 @@
 
 from collections.abc import Awaitable, Buffer, Callable, Iterable
 import logging
-from typing import Any, Final
+from typing import Any, Final, override
 from uuid import UUID
 
 from aiobmsble import BMSInfo, BMSSample, MatcherPattern
@@ -37,7 +37,7 @@ def pytest_addoption(parser) -> None:
 
 
 @pytest.fixture(autouse=True)
-def auto_enable_custom_integrations(enable_custom_integrations: Any) -> None:
+def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
     """Auto add enable_custom_integrations."""
     return
 
@@ -83,7 +83,7 @@ def patch_entity_enabled_default(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture
 def bt_discovery() -> BluetoothServiceInfoBleak:
     """Return a valid Bluetooth object for testing."""
-    DATA: Final[dict[str, Any]] = {
+    data: Final[dict[str, Any]] = {
         "name": "SmartBat-B12345",
         "address": "cc:cc:cc:cc:cc:cc",
         "service_uuids": ["0000fff0-0000-1000-8000-00805f9b34fb"],
@@ -92,26 +92,26 @@ def bt_discovery() -> BluetoothServiceInfoBleak:
     }
 
     return BluetoothServiceInfoBleak(
-        name=DATA["name"],
-        address=DATA["address"],
+        name=data["name"],
+        address=data["address"],
         device=generate_ble_device(
-            address=DATA["address"],
-            name=DATA["name"],
+            address=data["address"],
+            name=data["name"],
         ),
-        rssi=DATA["rssi"],
-        service_uuids=DATA["service_uuids"],
+        rssi=data["rssi"],
+        service_uuids=data["service_uuids"],
         manufacturer_data={},
         service_data={},
         advertisement=generate_advertisement_data(
-            local_name=DATA["name"],
-            service_uuids=DATA["service_uuids"],
-            rssi=DATA["rssi"],
-            tx_power=DATA["tx_power"],
+            local_name=data["name"],
+            service_uuids=data["service_uuids"],
+            rssi=data["rssi"],
+            tx_power=data["tx_power"],
         ),
         source=SOURCE_LOCAL,
         connectable=True,
         time=0,
-        tx_power=DATA["tx_power"],
+        tx_power=data["tx_power"],
     )
 
 
@@ -206,7 +206,7 @@ class MockBMS(BaseBMS):
 
     def __init__(
         self, exc: Exception | None = None, ret_value: BMSSample | None = None
-    ) -> None:  # , ble_device, keep_alive: bool = True
+    ) -> None:
         """Initialize BMS."""
         super().__init__(generate_ble_device(address="", details={"path": None}), True)
         LOGGER.debug("%s init(), Test except: %s", MockBMS.bms_id(), str(exc))
@@ -247,9 +247,6 @@ class MockBMS(BaseBMS):
     ) -> None:
         """Retrieve BMS data update."""
 
-    # async def disconnect(self) -> None:
-    #     """Disconnect connection to BMS if active."""
-
     async def _async_update(self) -> BMSSample:
         """Update battery status information."""
         await self._connect()
@@ -287,26 +284,31 @@ class MockBleakClient(BleakClient):
         self._services: Iterable[str] | None = services
 
     @property
+    @override
     def address(self) -> str:
         """Return device address."""
         return self._ble_device.address
 
     @property
+    @override
     def is_connected(self) -> bool:
         """Mock connected."""
         return self._connected
 
     @property
+    @override
     def services(self) -> BleakGATTServiceCollection:
         """Mock GATT services."""
         return BleakGATTServiceCollection()
 
+    @override
     async def connect(self, *_args, **_kwargs) -> None:
         """Mock connect."""
         assert not self._connected, "connect called, but client already connected."
         LOGGER.debug("MockBleakClient connecting %s", self._ble_device.address)
         self._connected = True
 
+    @override
     async def start_notify(
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
@@ -320,6 +322,7 @@ class MockBleakClient(BleakClient):
         assert self._connected, "start_notify called, but client not connected."
         self._notify_callback = callback
 
+    @override
     async def write_gatt_char(
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
@@ -332,16 +335,18 @@ class MockBleakClient(BleakClient):
         )
         assert self._connected, "write_gatt_char called, but client not connected."
 
+    @override
     async def read_gatt_char(
         self,
         char_specifier: BleakGATTCharacteristic | int | str | UUID,
         **kwargs,
     ) -> bytearray:
-        """Mock write GATT characteristics."""
+        """Mock read GATT characteristics."""
         LOGGER.debug("MockBleakClient read_gatt_char %s", char_specifier)
         assert self._connected, "read_gatt_char called, but client not connected."
         return bytearray()
 
+    @override
     async def disconnect(self) -> None:
         """Mock disconnect."""
 

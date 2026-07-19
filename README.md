@@ -52,13 +52,15 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - DCHOUSE batteries (show up as `DCHOUSE`&#x2026;)
 - Ective, Startcraft, Topband batteries (show up as `$PFLAC`&#x2026;, `NWJ20`&#x2026;, `ZM20`&#x2026;)
 - EG4 LL BMS
+    - Sungold batteries
 - Eleksol batteries
 - Felicity ESS (show up as `F10`&#x2026;) and FLB batteries (show up as `F07`&#x2026;)
 - Gobel Power BMS (show up as `BMS-`&#x2026;)
 - HumsiENK Smart BMS (show up as `HS`&#x2026;)
+    - ECO-WORTHY (show up as `ECO....`)
 - JBD BMS, Jiabaida, Xiaoxiang (show up as `JBD-`&#x2026;)
     - accurat batteries, Aolithium batteries
-    - BasenGreen, Bulltron, CHINS, DCHOUSE, ECO-WORTHY, Epoch batteries
+    - BasenGreen, Bulltron, CHINS, Cloud Energy, DCHOUSE, ECO-WORTHY, Epoch batteries
     - Eleksol, Elfhub, Fritz Berger, JavaEnegy, LANPWR, Liontron, Lossigy, Norström, OGRPHY, Perfektium, Ultimatron batteries
     - SBL batteries (show up as `SBL-`&#x2026;), Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries
 - JK BMS, Jikong, (HW version &ge; 6 required)
@@ -130,7 +132,7 @@ Platform | Name | Unit | Description | Optional Attributes
 `sensor`* | link quality  | `%` | successful BMS queries from the last hundred update periods
 `sensor`* | RSSI          | `dBm`| received signal strength indicator
 
-*) sensors are disabled by default
+*) sensors are disabled by default, if required, [enable the entities](https://www.home-assistant.io/common-tasks/general/#enabling-or-disabling-entities).
 
 ## Installation
 BMS_BLE is a default repository in [HACS](https://hacs.xyz/). Please follow the [guidelines on how to use HACS](https://hacs.xyz/docs/use/) if you haven't installed it yet. To add the integration to your Home Assistant instance, use this My button:
@@ -164,10 +166,6 @@ This integration follows standard integration removal. No extra steps are requir
 
 ### Known Issues
 
-<details><summary>ECO-WORTHY batteries "<code>ECOxxxx</code>"</summary>
-ECO-WORTHY batteries that show up as <code>ECOxxxx</code> use classic Bluetooth and do not support Bluetooth Low Energy (BLE). Thus, they unfortunately cannot be integrated.
-The advertisement contains <code>{"name":"ECOxxxx","service_uuids":["0000ff00-0000-1000-8000-00805f9b34fb","00000001-0000-1000-8000-00805f9b34fb"]</code>
-</details>
 <details><summary>Elektronicx, Lithtech batteries</summary>
 Bluetooth is turned off, when there is no current. Thus, device will get unavailable / cannot be added.
 </details>
@@ -192,11 +190,12 @@ The internal Bluetooth adapter issues <code>AT</code> commands in regular interv
 1. Make sure that no other device is connected to the BMS, e.g. app on your phone
 1. Check that your are running the [latest release](https://github.com//patman15/BMS_BLE-HA/releases) of the integration
 1. Go to the [advertisement monitor](https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/) and verify that your device shows up there. Also, please ensure that your `RSSI` value is `>= -75 dBm`. If your device is missing or the `RSSI` value is `-80 dBm`or worse, please check your BT setup (is the device in range?).
-1. If you use a BT proxy, make sure you have set `active: true`; check the logs of the proxy if the device is recognized. Note: The [Bluetooth proxy of Shelly devices](https://www.home-assistant.io/integrations/shelly/#bluetooth-support) does not support active connections and thus cannot be used.
+1. If you use a BT proxy, make sure you have set [`active: true`](https://esphome.io/components/bluetooth_proxy/#configuration); check the logs of the proxy if the device is recognized. Note: The [Bluetooth proxy of Shelly devices](https://www.home-assistant.io/integrations/shelly/#bluetooth-support) does not support active connections and thus cannot be used.
 1. Check that you do not exceed the number of connections of your adapter, see **[Settings](https://my.home-assistant.io/redirect/config/) > Bluetooth**
+1. Try setting your adapter to [active scanning mode](https://www.home-assistant.io/integrations/bluetooth/#scanning-modes) as some BMSs do not correctly advertise information otherwise. Please note the impact on power consumption when switching away from `Auto`.
 1. If above points did not help, please go to the [Bluetooth integration](https://my.home-assistant.io/redirect/integration/?domain=bluetooth). On your BT adapter select `configure`.
     1.  Verify that you have connection slots available.
-    1.  Go to the [advertisement monitor](https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/) and click the device in question. Please provide the information via **`copy to clipboard`** to [a new issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) giving your BMS/battery type in the title.
+    1.  Go to the [advertisement monitor](https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/) and click the device in question. Please provide the information in JSON format via the button **`copy to clipboard`** in a [new issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) giving your BMS/battery type in the title.
 
 ### Some/all sensors go `unavailable` temporarily or permanently
 In case sensors are reported `unavailable` please enable the diagnostic sensors, i.e. `RSSI` and `link quality` and check your connection quality. The value of `link quality` results from (temporarily) bad `RSSI` values, which are impacted by disturbances of the Bluetooth communication. Your quality should be at least *fair* according to the following table:
@@ -261,6 +260,9 @@ Then go to the [energy dashboard configuration](https://my.home-assistant.io/red
 ### My sensors show unknown/unavailable at startup!
 The polling interval is 30 seconds. So at startup it takes a few minutes to detect the battery and query the sensors. Then data will be available.
 
+### Why is the RSSI sensor not updated or is unavailable?
+The `RSSI` value is only measured by Home Assistant when a device is not connected. Thus, you will see updates only in case a connection is lost or after a restart. The integration by default tries to maintain a permanent connection to improve data availability and avoid constant reconnect not appreciated by some BMSs.
+
 ### Can I set a custom polling interval?
 Yes, but I strongly discourage that for stability reasons. If you still want to do so, please see the default way to define a [custom interval][custint-url] by Home Assistant. Note that Bluetooth discoveries can take up to a minute in worst case. Thus, please expect side effects, when changing the default of 30 seconds!
 
@@ -322,9 +324,9 @@ For that reason, I currently avoid implementing any control functions, as there 
 I would reconsider this position if vendors were to publish official documentation on their websites.
 
 ## Outlook
-- Develop towards a [Home Assistant core integration](https://www.home-assistant.io/integrations/)
+- Develop towards a [Home Assistant core integration](https://www.home-assistant.io/integrations/), support for https://github.com/home-assistant/core/pull/159556 needed!
 - Improvements to fulfill the [Home Assistant quality scale](https://www.home-assistant.io/docs/quality_scale/)
-- Add option to only have temporary connections (lowers reliability, but helps running more devices via [ESPHome Bluetooth proxy][btproxy-url])
+- Implement sub-devices, e.g. batteries with multiple packs
 
 ## Thanks to
 all [contributors of aiobmsble](https://github.com/patman15/aiobmsble?tab=readme-ov-file#thanks-to) (the BMS library) for helping with making the integration better.
@@ -336,7 +338,7 @@ all [contributors of aiobmsble](https://github.com/patman15/aiobmsble?tab=readme
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA?style=for-the-badge&color=orange&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-1016_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-1077_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=HACS&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
 [custint-url]: https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval
