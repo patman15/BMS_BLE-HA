@@ -3,7 +3,7 @@
 from datetime import timedelta
 from typing import Final
 
-from aiobmsble import BMSSample, TempSensor as TS
+from aiobmsble import BMSSample, PackSample, TempSensor as TS
 from habluetooth import BluetoothServiceInfoBleak
 import pytest
 from pytest_homeassistant_custom_component.common import (
@@ -66,12 +66,23 @@ async def test_update(
             }
         ) | (
             {
-                "temp_values": [TS(73), TS(31.4), TS(27.18)],
-                "pack_battery_levels": [1.0, 2.0],
                 "pack_count": 2,
-                "pack_currents": [-3.14, 2.71],
-                "pack_cycles": [0, 1],
-                "pack_voltages": [12.34, 24.56],
+                "packs": [
+                    PackSample(
+                        battery_level=1.0,
+                        current=-3.14,
+                        cycles=0,
+                        voltage=12.34,
+                        temp_values=[TS(73), TS(31.4)],
+                    ),
+                    PackSample(
+                        battery_level=2.0,
+                        current=2.71,
+                        cycles=1,
+                        voltage=24.56,
+                        temp_values=[TS(27.18)],
+                    ),
+                ],
             }
             if bool_fixture
             else {}
