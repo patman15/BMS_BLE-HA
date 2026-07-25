@@ -1,5 +1,5 @@
 homeassistant==2026.6.0
-aiobmsble==0.25.0
+aiobmsble @ git+https://github.com/patman15/aiobmsble.git@fix-seplos-v2-problem-code
 ruff~=0.15.0
 pylint~=4.0.5
 pylint-per-file-ignores~=3.2.1
