@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from types import ModuleType
 from typing import Any, Final
 
+from aiobmsble import BMSConfig
 from bleak.backends.device import BLEDevice
 
 from homeassistant.components.bluetooth import async_ble_device_from_address
@@ -58,8 +59,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> boo
         ble_device,
         plugin.BMS(
             ble_device,
-            keep_alive=advanced_options.get(CONF_KEEP_ALIVE, True),
-            secret=entry.options.get(CONF_PASSWORD, ""),
+            BMSConfig(
+                keep_alive=advanced_options.get(CONF_KEEP_ALIVE, True),
+                secret=entry.options.get(CONF_PASSWORD, ""),
+            ),
         ),
         entry,
     )
