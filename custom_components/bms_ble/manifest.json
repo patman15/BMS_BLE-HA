@@ -147,5 +147,5 @@
   "requirements": [
     "aiobmsble@git+https://github.com/patman15/aiobmsble.git@feat-MOBILEKTRO-battery-detection"
   ],
-  "version": "2.15.0-beta.11"
+  "version": "2.16.0-beta.3"
 }

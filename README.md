@@ -47,7 +47,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Chins batteries (show up as `G-..V...Ah`&#x2026;)
     - Elektronicx batteries (show up as `LT-`&#x2026;)
     - Lithtech batteries (show up as `LT-12V-`&#x2026; or `L-12V`&#x2026;)
-    - Meritsun, Supervolt v1 (show up as `SV12V`&#x2026;), and Volthium (show up as `V-12V`&#x2026;) batteries
+    - Meritsun, PowerBoozt, Supervolt v1 (show up as `SV12V`&#x2026;), and Volthium (show up as `V-12V`&#x2026;) batteries
 - ECO-WORTHY + BW02 adapter (show up as `ECO-WORTHY`&#x2026;)
     - DCHOUSE batteries (show up as `DCHOUSE`&#x2026;)
 - Ective, Startcraft, Topband batteries (show up as `$PFLAC`&#x2026;, `NWJ20`&#x2026;, `ZM20`&#x2026;)
@@ -92,7 +92,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - TDT BMS
     - Wattcycle batteries
 - Topband BMS
-    - Ective, Startcraft, KiloVault batteries
+    - Ective, KiloVault, Startcraft, Wattstunde batteries
 - TianPower BMS (show up as `TP_`&#x2026;)
 - Vatrer BMS (show up as `YYMMDDVVVAAAAxx` (date, V, Ah))
 - Volta Power Systems myVolta CAN BLE adapter (show up as `VPS-`&#x2026;)
@@ -170,7 +170,11 @@ This integration follows standard integration removal. No extra steps are requir
 Bluetooth is turned off, when there is no current. Thus, device will get unavailable / cannot be added.
 </details>
 <details><summary>Batteries with JBD BMS</summary>
-JBD BMS detection unfortunately needs to rely on name patterns. If you renamed your battery it most likely will not be detected. I do appreciate issues being raised for new vendor naming schemes to ease the life of other users. To help, please follow the instructions in the last list item for <a href="#if-your-device-is-not-recognized">non-detected devices</a>.
+JBD BMS detection unfortunately needs to rely mainly on name patterns. If you renamed your battery it most likely will not be detected. I do appreciate issues being raised for new vendor naming schemes to ease the life of other users. To help, please follow the instructions in the last list item for <a href="#if-your-device-is-not-recognized">non-detected devices</a>.
+
+Some JBD boards are matched by MAC OUI. If config flow reports no devices while the pack is idle at 0&thinsp;A, BLE may not be
+advertising (similar to Elektronicx/Lithtech). Close the phone app, wake the pack briefly, and retry while it appears connectable in the
+<a href="https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/">advertisement monitor</a>.
 </details>
 <details><summary>JK BMS firmware 19.30+</summary>
 Newer firmware of JK BMS requires Bluetooth pairing before communication can be established. Unfortunately, there is currently no way to initate that sequence in Home Assistant using the built-in <a href="https://github.com/hbldh/bleak">Bleak library</a>. References:  <a href="https://github.com/patman15/BMS_BLE-HA/issues/724">BMS-BLE issue</a>, <a href="https://github.com/hbldh/bleak/pull/1100">Bleak PR #1100</a>
@@ -341,7 +345,7 @@ all [contributors of aiobmsble](https://github.com/patman15/aiobmsble?tab=readme
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA?style=for-the-badge&color=orange&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-1077_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-1128_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=HACS&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
 [custint-url]: https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval
