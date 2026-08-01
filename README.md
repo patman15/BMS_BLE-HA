@@ -170,7 +170,11 @@ This integration follows standard integration removal. No extra steps are requir
 Bluetooth is turned off, when there is no current. Thus, device will get unavailable / cannot be added.
 </details>
 <details><summary>Batteries with JBD BMS</summary>
-JBD BMS detection unfortunately needs to rely on name patterns. If you renamed your battery it most likely will not be detected. I do appreciate issues being raised for new vendor naming schemes to ease the life of other users. To help, please follow the instructions in the last list item for <a href="#if-your-device-is-not-recognized">non-detected devices</a>.
+JBD BMS detection unfortunately needs to rely mainly on name patterns. If you renamed your battery it most likely will not be detected. I do appreciate issues being raised for new vendor naming schemes to ease the life of other users. To help, please follow the instructions in the last list item for <a href="#if-your-device-is-not-recognized">non-detected devices</a>.
+
+Some JBD boards are matched by MAC OUI. If config flow reports no devices while the pack is idle at 0&thinsp;A, BLE may not be
+advertising (similar to Elektronicx/Lithtech). Close the phone app, wake the pack briefly, and retry while it appears connectable in the
+<a href="https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/">advertisement monitor</a>.
 </details>
 <details><summary>JK BMS firmware 19.30+</summary>
 Newer firmware of JK BMS requires Bluetooth pairing before communication can be established. Unfortunately, there is currently no way to initate that sequence in Home Assistant using the built-in <a href="https://github.com/hbldh/bleak">Bleak library</a>. References:  <a href="https://github.com/patman15/BMS_BLE-HA/issues/724">BMS-BLE issue</a>, <a href="https://github.com/hbldh/bleak/pull/1100">Bleak PR #1100</a>
