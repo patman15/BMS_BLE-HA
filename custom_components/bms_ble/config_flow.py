@@ -11,6 +11,7 @@ from homeassistant import config_entries
 from homeassistant.components.bluetooth import (
     BluetoothServiceInfoBleak,
     async_discovered_service_info,
+    async_request_active_scan,
 )
 from homeassistant.config_entries import (
     ConfigEntry,
@@ -153,6 +154,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data={"type": self._disc_dev.type},
             )
 
+        await async_request_active_scan(self.hass)
         current_addresses: Final = self._async_current_ids(include_ignore=False)
         for discovery_info in list(
             async_discovered_service_info(self.hass, connectable=True)
