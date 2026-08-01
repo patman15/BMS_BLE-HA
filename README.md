@@ -170,21 +170,10 @@ This integration follows standard integration removal. No extra steps are requir
 Bluetooth is turned off, when there is no current. Thus, device will get unavailable / cannot be added.
 </details>
 <details><summary>Batteries with JBD BMS</summary>
+JBD BMS detection unfortunately needs to rely mainly on name patterns. If you renamed your battery it most likely will not be detected. I do appreciate issues being raised for new vendor naming schemes to ease the life of other users. To help, please follow the instructions in the last list item for <a href="#if-your-device-is-not-recognized">non-detected devices</a>.
 
-JBD BMS detection unfortunately needs to rely on name patterns. If you renamed your battery it most likely will not be detected. I do appreciate issues being raised for new vendor naming schemes to ease the life of other users. To help, please follow the instructions in the last list item for <a href="#if-your-device-is-not-recognized">non-detected devices</a>.
-
-Some JBD boards are also matched by MAC OUI (not only by name); see the
-<code>MatcherPattern</code> list in
-<a href="https://github.com/patman15/aiobmsble/blob/main/aiobmsble/bms/jbd_bms.py"><code>aiobmsble/bms/jbd_bms.py</code></a>.
-Example: Iton BLE modules (<code>70:3E:97</code>) were reported without a
-<code>JBD-*</code> local name in
-<a href="https://github.com/patman15/BMS_BLE-HA/issues/141">#141</a>; a user-configured
-name with the same OUI is covered by test data in
-<a href="https://github.com/patman15/aiobmsble/pull/247">aiobmsble #247</a>.
-
-If config flow reports no devices while the pack is idle at 0&nbsp;A, BLE may not be
-advertising (similar to Elektronicx/Lithtech above). Close phone apps, wake the pack
-briefly, and retry while it appears connectable in the
+Some JBD boards are matched by MAC OUI. If config flow reports no devices while the pack is idle at 0&thinsp;A, BLE may not be
+advertising (similar to Elektronicx/Lithtech). Close the phone app, wake the pack briefly, and retry while it appears connectable in the
 <a href="https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/">advertisement monitor</a>.
 </details>
 <details><summary>JK BMS firmware 19.30+</summary>
