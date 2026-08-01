@@ -4,7 +4,7 @@ aiohttp-zlib-ng # to avoid performance warning
 aiousbwatcher
 kegtron_ble
 pytest~=9.0.3
-pytest-homeassistant-custom-component==0.13.336
+pytest-homeassistant-custom-component==0.13.348
 serialx
 wheel
 
