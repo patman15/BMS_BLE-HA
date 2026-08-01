@@ -5,7 +5,7 @@ import logging
 from typing import Any, Final, override
 from uuid import UUID
 
-from aiobmsble import BMSInfo, BMSSample, MatcherPattern
+from aiobmsble import BMSConfig, BMSInfo, BMSSample, MatcherPattern
 from aiobmsble.basebms import BaseBMS
 from aiobmsble.utils import load_bms_plugins
 from bleak import BleakClient
@@ -208,7 +208,10 @@ class MockBMS(BaseBMS):
         self, exc: Exception | None = None, ret_value: BMSSample | None = None
     ) -> None:
         """Initialize BMS."""
-        super().__init__(generate_ble_device(address="", details={"path": None}), True)
+        super().__init__(
+            generate_ble_device(address="", details={"path": None}),
+            BMSConfig(keep_alive=True),
+        )
         LOGGER.debug("%s init(), Test except: %s", MockBMS.bms_id(), str(exc))
         self._exception: Exception | None = exc
         self._ret_value: BMSSample = (

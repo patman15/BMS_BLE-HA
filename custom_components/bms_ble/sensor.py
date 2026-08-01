@@ -3,7 +3,7 @@
 from collections.abc import Callable
 from typing import Final, cast, override
 
-from aiobmsble import BMSpackvalue, BMSSample
+from aiobmsble import BMSpackvalue, BMSSample, PackSample
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -67,12 +67,23 @@ class BmsEntityDescription(SensorEntityDescription, frozen_or_thawed=True):
 
 def _attr_pack(data: BMSSample, key: BMSpackvalue) -> dict[str, list[int | float]]:
     """Return a dictionary with the given key or an empty dict if key is not in data."""
-    return {str(key): cast("list[int | float]", data.get(key))} if key in data else {}
+    if not (packs := data.get("packs", [])):
+        return {}
+    return {f"pack_{key}": [pack.get(key, 0) for pack in packs]}
+
+
+def _attr_pack_temp(data: BMSSample) -> dict[str, list[int | float]]:
+    packs: list[PackSample] = data.get("packs", [])
+    return {
+        ATTR_TEMP_SENSORS: [
+            float(t) for pack in packs for t in pack.get("temp_values", [])
+        ]
+    }
 
 
 SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     BmsEntityDescription(
-        attr_fn=lambda data: _attr_pack(data, "pack_voltages"),
+        attr_fn=lambda data: _attr_pack(data, ATTR_VOLTAGE),
         device_class=SensorDeviceClass.VOLTAGE,
         key=ATTR_VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
@@ -81,7 +92,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         value_fn=lambda data: data.get("voltage"),
     ),
     BmsEntityDescription(
-        attr_fn=lambda data: _attr_pack(data, "pack_battery_levels"),
+        attr_fn=lambda data: _attr_pack(data, ATTR_BATTERY_LEVEL),
         device_class=SensorDeviceClass.BATTERY,
         key=ATTR_BATTERY_LEVEL,
         native_unit_of_measurement=PERCENTAGE,
@@ -101,9 +112,13 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
             {ATTR_TEMP_SENSORS: cast("list[int | float]", data.get("temp_values", []))}
             if "temp_values" in data
             else (
-                {ATTR_TEMP_SENSORS: [data.get("temperature", 0.0)]}
-                if "temperature" in data
-                else {}
+                _attr_pack_temp(data)
+                if "packs" in data
+                else (
+                    {ATTR_TEMP_SENSORS: [data.get("temperature", 0.0)]}
+                    if "temperature" in data
+                    else {}
+                )
             )
         ),
         device_class=SensorDeviceClass.TEMPERATURE,
@@ -120,7 +135,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
                 if "balance_current" in data
                 else {}
             )
-            | _attr_pack(data, "pack_currents")
+            | _attr_pack(data, ATTR_CURRENT)
         ),
         device_class=SensorDeviceClass.CURRENT,
         key=ATTR_CURRENT,
@@ -138,7 +153,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         value_fn=lambda data: data.get("cycle_capacity"),
     ),
     BmsEntityDescription(
-        attr_fn=lambda data: _attr_pack(data, "pack_cycles"),
+        attr_fn=lambda data: _attr_pack(data, ATTR_CYCLES),
         key=ATTR_CYCLES,
         state_class=SensorStateClass.TOTAL_INCREASING,
         translation_key=ATTR_CYCLES,
@@ -171,7 +186,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     BmsEntityDescription(
         attr_fn=lambda data: (
             {ATTR_CELL_VOLTAGES: data.get("cell_voltages", [])}
-            if "cell_voltages" in data
+            if ATTR_CELL_VOLTAGES in data
             else {}
         ),
         device_class=SensorDeviceClass.VOLTAGE,
