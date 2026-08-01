@@ -47,7 +47,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Chins batteries (show up as `G-..V...Ah`&#x2026;)
     - Elektronicx batteries (show up as `LT-`&#x2026;)
     - Lithtech batteries (show up as `LT-12V-`&#x2026; or `L-12V`&#x2026;)
-    - Meritsun, Supervolt v1 (show up as `SV12V`&#x2026;), and Volthium (show up as `V-12V`&#x2026;) batteries
+    - Meritsun, PowerBoozt, Supervolt v1 (show up as `SV12V`&#x2026;), and Volthium (show up as `V-12V`&#x2026;) batteries
 - ECO-WORTHY + BW02 adapter (show up as `ECO-WORTHY`&#x2026;)
     - DCHOUSE batteries (show up as `DCHOUSE`&#x2026;)
 - Ective, Startcraft, Topband batteries (show up as `$PFLAC`&#x2026;, `NWJ20`&#x2026;, `ZM20`&#x2026;)
