@@ -1,4 +1,4 @@
-homeassistant==2026.6.0
+homeassistant==2026.7.4
 aiobmsble==0.26.0
 ruff~=0.15.0
 pylint~=4.0.5
