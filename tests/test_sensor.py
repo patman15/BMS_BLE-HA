@@ -3,7 +3,7 @@
 from datetime import timedelta
 from typing import Final
 
-from aiobmsble import BMSSample
+from aiobmsble import BMSSample, PackSample, TempSensor as TS
 from habluetooth import BluetoothServiceInfoBleak
 import pytest
 from pytest_homeassistant_custom_component.common import (
@@ -17,6 +17,7 @@ from custom_components.bms_ble.const import (
     ATTR_CURRENT,
     ATTR_CYCLES,
     ATTR_DELTA_VOLTAGE,
+    ATTR_DESIGN_CAP,
     ATTR_LQ,
     ATTR_POWER,
     ATTR_RUNTIME,
@@ -40,6 +41,7 @@ DEV_NAME: Final[str] = "sensor.config_test_dummy_bms"
 @pytest.mark.usefixtures(
     "enable_bluetooth", "patch_default_bleak_client", "patch_entity_enabled_default"
 )  # enable bluetooth, patch bleak client and enable all sensors
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_update(
     monkeypatch: pytest.MonkeyPatch,
     bt_discovery: BluetoothServiceInfoBleak,
@@ -50,29 +52,51 @@ async def test_update(
 
     async def patch_async_update(_self) -> BMSSample:
         """Patch async_update to return a specific value."""
-        return BMSSample(
-            {
-                "balance_current": -1.234,
-                "battery_level": 42,
-                "voltage": 17.0,
-                "current": 0,
-                "cell_voltages": [3.1, 3, 3.123],
-                "delta_voltage": 0.123,
-                "temperature": 43.86,
-                "problem": True,
-                "problem_code": 0x73,
-            }
-        ) | (
-            {
-                "temp_values": [73, 31.4, 27.18],
-                "pack_battery_levels": [1.0, 2.0],
-                "pack_count": 2,
-                "pack_currents": [-3.14, 2.71],
-                "pack_cycles": [0, 1],
-                "pack_voltages": [12.34, 24.56],
-            }
-            if bool_fixture
-            else {}
+        return (
+            BMSSample(
+                {
+                    "balance_current": -1.234,
+                    "battery_level": 42,
+                    "voltage": 17.0,
+                    "current": 0,
+                    "delta_voltage": 0.123,
+                    "temperature": 43.86,
+                    "problem": True,
+                    "problem_code": 0x73,
+                }
+            )
+            | (
+                {
+                    "cell_voltages": (
+                        [4.1, 4, 4.123] if bool_fixture else [3.1, 3, 3.123]
+                    )
+                }
+            )
+            | (
+                {
+                    "pack_count": 2,
+                    "packs": [
+                        PackSample(
+                            battery_level=1.0,
+                            current=-3.14,
+                            cycles=0,
+                            voltage=12.34,
+                            temp_values=[TS(73), TS(31.4)],
+                            cell_voltages=[4.1, 4],
+                        ),
+                        PackSample(
+                            battery_level=2.0,
+                            current=2.71,
+                            cycles=1,
+                            voltage=24.56,
+                            temp_values=[TS(27.18)],
+                            cell_voltages=[4.123],
+                        ),
+                    ],
+                }
+                if bool_fixture
+                else {}
+            )
         )
 
     bms_class: Final[str] = "aiobmsble.bms.dummy_bms.BMS"
@@ -93,13 +117,14 @@ async def test_update(
         entity.entity_id: entity.state for entity in hass.states.async_all(["sensor"])
     }
     assert data == {
-        f"{DEV_NAME}_{ATTR_VOLTAGE}": "12",
+        f"{DEV_NAME}_{ATTR_VOLTAGE}": "12.0",
         f"{DEV_NAME}_battery": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_TEMPERATURE}": "27.182",
         f"{DEV_NAME}_{ATTR_CURRENT}": "1.5",
         f"{DEV_NAME}_stored_energy": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_CYCLES}": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_DELTA_VOLTAGE}": STATE_UNKNOWN,
+        f"{DEV_NAME}_{ATTR_DESIGN_CAP}": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_LQ}": "0",
         f"{DEV_NAME}_highest_cell_voltage": STATE_UNKNOWN,
         f"{DEV_NAME}_lowest_cell_voltage": STATE_UNKNOWN,
@@ -134,9 +159,10 @@ async def test_update(
         f"{DEV_NAME}_stored_energy": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_CYCLES}": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_DELTA_VOLTAGE}": "0.123",
+        f"{DEV_NAME}_{ATTR_DESIGN_CAP}": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_LQ}": "66",  # initial update + one UPDATE_INTERVAL
-        f"{DEV_NAME}_highest_cell_voltage": "3.123",
-        f"{DEV_NAME}_lowest_cell_voltage": "3",
+        f"{DEV_NAME}_highest_cell_voltage": "4.123" if bool_fixture else "3.123",
+        f"{DEV_NAME}_lowest_cell_voltage": "4" if bool_fixture else "3",
         f"{DEV_NAME}_{ATTR_POWER}": STATE_UNKNOWN,
         f"{DEV_NAME}_signal_strength": "-61",
         f"{DEV_NAME}_{ATTR_RUNTIME}": STATE_UNKNOWN,
@@ -147,7 +173,7 @@ async def test_update(
         (
             ATTR_DELTA_VOLTAGE,
             ATTR_CELL_VOLTAGES,
-            [3.1, 3, 3.123],
+            [4.1, 4, 4.123] if bool_fixture else [3.1, 3, 3.123],
         ),
         ("highest_cell_voltage", "cell_number", [3]),
         ("lowest_cell_voltage", "cell_number", [2]),
@@ -163,16 +189,16 @@ async def test_update(
         ),
     ):
         state: State | None = hass.states.get(f"{DEV_NAME}_{sensor}")
-        assert state is not None and state.attributes[attribute] == value, (
-            f"failed to verify attribute {attribute} for sensor {sensor}"
-        )
+        assert (
+            state is not None and state.attributes[attribute] == value
+        ), f"failed to verify attribute {attribute} for sensor {sensor}"
 
     # check battery pack attributes
     for sensor, attribute, ref_value in (
-        (ATTR_CURRENT, "pack_currents", [-3.14, 2.71]),
+        (ATTR_CURRENT, "pack_current", [-3.14, 2.71]),
         (ATTR_CYCLES, "pack_cycles", [0, 1]),
-        ("battery", "pack_battery_levels", [1.0, 2.0]),
-        (ATTR_VOLTAGE, "pack_voltages", [12.34, 24.56]),
+        ("battery", "pack_battery_level", [1.0, 2.0]),
+        (ATTR_VOLTAGE, "pack_voltage", [12.34, 24.56]),
     ):
         pack_state: State | None = hass.states.get(f"{DEV_NAME}_{sensor}")
         assert pack_state is not None, f"failed to get state of sensor '{sensor}'"
