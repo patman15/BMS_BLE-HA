@@ -1,6 +1,5 @@
 homeassistant==2026.6.0
-aiobmsble==0.26.0
-ruff~=0.15.0
+aiobmsble @ git+https://github.com/patman15/aiobmsble.git@feat-daren-BMS-scaling
 pylint~=4.0.5
 pylint-per-file-ignores~=3.2.1
 pre-commit~=4.6.0
