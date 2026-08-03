@@ -144,5 +144,5 @@
   "requirements": [
     "aiobmsble@git+https://github.com/patman15/aiobmsble.git@feat-sbl-connect"
   ],
-  "version": "2.15.0-beta.10"
+  "version": "2.16.0-beta.4"
 }
