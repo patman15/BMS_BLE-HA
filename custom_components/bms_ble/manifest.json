@@ -145,7 +145,7 @@
   "loggers": ["bleak_retry_connector", "aiobmsble"],
   "quality_scale": "silver",
   "requirements": [
-    "aiobmsble@git+https://github.com/patman15/aiobmsble.git@feat-MOBILEKTRO-battery-detection"
+    "aiobmsble@git+https://github.com/patman15/aiobmsble.git@main"
   ],
   "version": "2.16.0-beta.3"
 }
