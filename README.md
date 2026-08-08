@@ -179,8 +179,8 @@ advertising (similar to Elektronicx/Lithtech). Close the phone app, wake the pac
 <details><summary>JK BMS firmware 19.30+</summary>
 Newer firmware of JK BMS requires Bluetooth pairing before communication can be established. Unfortunately, there is currently no way to initate that sequence in Home Assistant using the built-in <a href="https://github.com/hbldh/bleak">Bleak library</a>. References:  <a href="https://github.com/patman15/BMS_BLE-HA/issues/724">BMS-BLE issue</a>, <a href="https://github.com/hbldh/bleak/pull/1100">Bleak PR #1100</a>
 </details>
-<details><summary>Liontron batteries</summary>
-These batteries need a shorter interval between queries. Be a bit patient to get them added and set a <a href="https://github.com/patman15/BMS_BLE-HA#can-i-set-a-custom-polling-interval">custom interval</a> of about 9s to keep a stable connection.
+<details><summary>Liontron, MOBILEKTRO batteries</summary>
+These batteries need a shorter interval between queries. Be a bit patient to get them added and set a <a href="https://github.com/patman15/BMS_BLE-HA#can-i-set-a-custom-polling-interval">custom interval</a> of about 9s to keep a stable connection, for MOBILEKTRO about 7s are required.
 </details>
 <details><summary>Litime batteries</summary>
 Versions of these batteries support a "Bluetooth encryption" feature. When enabled you cannot connect using this integration. Remove the 6-digit Bluetooth password to get them working.
