@@ -1,5 +1,5 @@
 homeassistant==2026.6.0
-aiobmsble @ git+https://github.com/patman15/aiobmsble.git@adding-humsienk-100ah-512v-golf-cart-battery
+aiobmsble @ git+https://github.com/patman15/aiobmsble.git@main
 ruff~=0.15.0
 pylint~=4.0.5
 pylint-per-file-ignores~=3.2.1
