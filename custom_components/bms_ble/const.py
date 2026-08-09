@@ -40,4 +40,5 @@ ATTR_TEMP_SENSORS: Final = "temperature_sensors"  # [°C]
 
 BINARY_SENSORS: Final[int] = 6  # total number of binary sensors
 LINK_SENSORS: Final[int] = 2  # total number of sensors for connection quality
+OPT_SENSORS: Final[int] = 2  # total number of optional sensors (BmsEntityDescription)
 SENSORS: Final[int] = 13  # total number of sensors

@@ -19,6 +19,7 @@ from custom_components.bms_ble.const import (
     CONF_KEEP_ALIVE,
     DOMAIN,
     LINK_SENSORS,
+    OPT_SENSORS,
     SENSORS,
 )
 from homeassistant.config_entries import (
@@ -123,8 +124,8 @@ async def test_bluetooth_discovery(
             "min",
             (
                 min(BINARY_SENSORS, 1),
-                SENSORS - 3,
-                min(BINARY_SENSORS, 1) + (SENSORS - 1) + LINK_SENSORS,
+                SENSORS - LINK_SENSORS - OPT_SENSORS,
+                min(BINARY_SENSORS, 1) + (SENSORS - OPT_SENSORS) + LINK_SENSORS,
             ),
         ),
         (
