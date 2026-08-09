@@ -1,5 +1,5 @@
 homeassistant==2026.6.0
-aiobmsble @ git+https://github.com/patman15/aiobmsble.git@main
+aiobmsble==0.27.0
 ruff~=0.15.0
 pylint~=4.0.6
 pylint-per-file-ignores~=3.2.1
