@@ -64,9 +64,9 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Eleksol, Elfhub, Fritz Berger, JavaEnegy, LANPWR, Liontron, Lossigy, Norström, OGRPHY, Perfektium, Ultimatron batteries
     - SBL batteries (show up as `SBL-`&#x2026;), Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries
 - JK BMS, Jikong, (HW version &ge; 6 required)
-- KS48x00 series BMS (show up as `BL-`&#x2026; or `HSKS-`&#x2026;)
-    - BEMORY batteries, Braun Power batteries
-    - Docan Energy/power batteries, VoltPolska batteries
+- KS48x00 series BMS (show up as `BL-`&#x2026;, `HSKS-`&#x2026; or `KS-`&#x2026;)
+    - BEMORY, Braun Power batteries
+    - Docan Energy/power, Vanvolt Arctic Pro, VoltPolska batteries
 - Redodo BMS
     - LiTime, Power Queen, Starry Sea batteries `S-*`&#x2026; or `SS-*`&#x2026;
 - Lithionics NeverDie smart BMS (show up as `Li.-`&#x2026;)
@@ -192,7 +192,7 @@ The internal Bluetooth adapter issues <code>AT</code> commands in regular interv
 ### If your device is not recognized / initialized
 
 1. Check that your BMS type is listed as [supported device](#supported-devices)
-1. If a name detection pattern is listed ("show up as"), make sure your device matches it.
+1. If a name detection pattern is listed ("show up as"), make sure your device matches it, by renaming the device in the vendor app.
 1. Check the [known issues](#known-issues) for an entry for your BMS.
 1. Make sure that no other device is connected to the BMS, e.g. app on your phone
 1. Check that your are running the [latest release](https://github.com//patman15/BMS_BLE-HA/releases) of the integration
