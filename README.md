@@ -179,8 +179,8 @@ advertising (similar to Elektronicx/Lithtech). Close the phone app, wake the pac
 <details><summary>JK BMS firmware 19.30+</summary>
 Newer firmware of JK BMS requires Bluetooth pairing before communication can be established. Unfortunately, there is currently no way to initate that sequence in Home Assistant using the built-in <a href="https://github.com/hbldh/bleak">Bleak library</a>. References:  <a href="https://github.com/patman15/BMS_BLE-HA/issues/724">BMS-BLE issue</a>, <a href="https://github.com/hbldh/bleak/pull/1100">Bleak PR #1100</a>
 </details>
-<details><summary>Liontron batteries</summary>
-These batteries need a shorter interval between queries. Be a bit patient to get them added and set a <a href="https://github.com/patman15/BMS_BLE-HA#can-i-set-a-custom-polling-interval">custom interval</a> of about 9s to keep a stable connection.
+<details><summary>Liontron, MOBILEKTRO batteries</summary>
+These batteries need a shorter interval between queries. Be a bit patient to get them added and set a <a href="https://github.com/patman15/BMS_BLE-HA#can-i-set-a-custom-polling-interval">custom interval</a> of about 9s to keep a stable connection, for MOBILEKTRO about 7s are required.
 </details>
 <details><summary>Litime batteries</summary>
 Versions of these batteries support a "Bluetooth encryption" feature. When enabled you cannot connect using this integration. Remove the 6-digit Bluetooth password to get them working.
@@ -345,7 +345,7 @@ all [contributors of aiobmsble](https://github.com/patman15/aiobmsble?tab=readme
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA?style=for-the-badge&color=orange&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-1128_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-1143_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=HACS&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
 [custint-url]: https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval

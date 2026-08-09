@@ -24,6 +24,9 @@
       "local_name": "F10*"
     },
     {
+      "local_name": "G-12V*"
+    },
+    {
       "local_name": "L-12V???AH-*"
     },
     {
@@ -141,6 +144,6 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bleak_retry_connector", "aiobmsble"],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble==0.26.0"],
-  "version": "2.15.0"
+  "requirements": ["aiobmsble==0.27.0"],
+  "version": "2.16.0"
 }
