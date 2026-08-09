@@ -17,12 +17,12 @@ from custom_components.bms_ble.const import (
     ATTR_CURRENT,
     ATTR_CYCLES,
     ATTR_DELTA_VOLTAGE,
-    ATTR_DESIGN_CAP,
     ATTR_LQ,
     ATTR_POWER,
     ATTR_RUNTIME,
     ATTR_TEMP_SENSORS,
     LINK_SENSORS,
+    OPT_SENSORS,
     SENSORS,
     UPDATE_INTERVAL,
 )
@@ -112,7 +112,7 @@ async def test_update(
 
     assert config in hass.config_entries.async_entries()
     assert config.state is ConfigEntryState.LOADED
-    assert len(hass.states.async_all(["sensor"])) == (SENSORS - 1) + LINK_SENSORS
+    assert len(hass.states.async_all(["sensor"])) == (SENSORS - OPT_SENSORS) + LINK_SENSORS
     data: dict[str, str] = {
         entity.entity_id: entity.state for entity in hass.states.async_all(["sensor"])
     }
@@ -124,7 +124,6 @@ async def test_update(
         f"{DEV_NAME}_stored_energy": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_CYCLES}": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_DELTA_VOLTAGE}": STATE_UNKNOWN,
-        f"{DEV_NAME}_{ATTR_DESIGN_CAP}": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_LQ}": "0",
         f"{DEV_NAME}_highest_cell_voltage": STATE_UNKNOWN,
         f"{DEV_NAME}_lowest_cell_voltage": STATE_UNKNOWN,
@@ -159,7 +158,6 @@ async def test_update(
         f"{DEV_NAME}_stored_energy": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_CYCLES}": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_DELTA_VOLTAGE}": "0.123",
-        f"{DEV_NAME}_{ATTR_DESIGN_CAP}": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_LQ}": "66",  # initial update + one UPDATE_INTERVAL
         f"{DEV_NAME}_highest_cell_voltage": "4.123" if bool_fixture else "3.123",
         f"{DEV_NAME}_lowest_cell_voltage": "4" if bool_fixture else "3",
