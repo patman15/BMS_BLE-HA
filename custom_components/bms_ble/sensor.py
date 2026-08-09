@@ -102,9 +102,9 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     BmsEntityDescription(
         key=ATTR_BATTERY_HEALTH,
         native_unit_of_measurement=PERCENTAGE,
+        optional=True,
         state_class=SensorStateClass.MEASUREMENT,
         translation_key=ATTR_BATTERY_HEALTH,
-        optional=True,
         value_fn=lambda data: data.get("battery_health"),
     ),
     BmsEntityDescription(
@@ -163,6 +163,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         entity_category=EntityCategory.DIAGNOSTIC,
         key=ATTR_DESIGN_CAP,
         native_unit_of_measurement="Ah",
+        optional=True,
         translation_key=ATTR_DESIGN_CAP,
         value_fn=lambda data: data.get("design_capacity"),
     ),
