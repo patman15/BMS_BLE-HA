@@ -372,6 +372,7 @@ async def mock_update_full(self) -> BMSSample:
         "battery_charging": True,
         "battery_health": 73,
         "chrg_mosfet": False,
+        "design_capacity": 173,
         "dischrg_mosfet": False,
         "heater": False,
     }
