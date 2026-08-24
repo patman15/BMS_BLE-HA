@@ -62,7 +62,13 @@ def check_token_scopes(token: str) -> None:
                 "createLinkedBranch will return a null payload"
             )
         else:
-            LOG.debug("GitHub token scopes: %s", scopes)
+            scope_set = {scope.strip() for scope in scopes.split(",") if scope.strip()}
+            LOG.debug(
+                "GitHub token scope summary: count=%d, has_repo=%s, has_public_repo=%s",
+                len(scope_set),
+                "repo" in scope_set,
+                "public_repo" in scope_set,
+            )
     except Exception:
         LOG.exception("Could not inspect GitHub token scopes")
 
