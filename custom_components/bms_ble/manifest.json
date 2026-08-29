@@ -74,6 +74,10 @@
       "manufacturer_id": 54976
     },
     {
+      "manufacturer_id": 2117,
+      "manufacturer_data_start": [20, 133]
+    },
+    {
       "manufacturer_id": 21330,
       "service_uuid": "000003c1-0000-1000-8000-00805f9b34fb"
     },
