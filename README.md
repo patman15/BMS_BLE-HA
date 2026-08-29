@@ -130,9 +130,10 @@ Platform | Name | Unit | Description | Optional Attributes
 `binary_sensor`* | heater | `bool` | indicates `True` if the battery being heated
 `binary_sensor` | problem | `bool` | indicates `True` if the BMS reports an issue or plausibility checks on values fail | problem code
 `sensor` | delta cell voltage | `V` | maximum difference between any two cells in a pack | cell voltages
+`sensor` | design capacity | `Ah` | manufacturer design capacity
+`sensor`* | link quality  | `%` | successful BMS queries from the last hundred update periods
 `sensor`* | max cell voltage | `V` | overall highest cell voltage in the system | cell number
 `sensor`* | min cell voltage | `V` | overall lowest cell voltage in the system | cell number
-`sensor`* | link quality  | `%` | successful BMS queries from the last hundred update periods
 `sensor`* | RSSI          | `dBm`| received signal strength indicator
 
 *) sensors are disabled by default, if required, [enable the entities](https://www.home-assistant.io/common-tasks/general/#enabling-or-disabling-entities).
