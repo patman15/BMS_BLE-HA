@@ -42,6 +42,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - 100Balance BMS
     - Bulltron batteries
 - Daren BMS (show up as `DWF`&#x2026;), JBD with modified FW
+- Dometic Büttner Tempra batteries
 - E&J Technology BMS (show up as `libatt`&#x2026;)
     - AG Automotive batteries (show up as `AG...L`&#x2026;)
     - Chins batteries (show up as `G-..V...Ah`&#x2026;)
@@ -59,10 +60,10 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - HumsiENK Smart BMS (show up as `HS`&#x2026;)
     - ECO-WORTHY (show up as `ECO....`)
 - JBD BMS, Jiabaida, Xiaoxiang (show up as `JBD-`&#x2026;)
-    - accurat batteries, Aolithium batteries
-    - BasenGreen, Bulltron, CHINS, Cloud Energy, DCHOUSE, ECO-WORTHY, Epoch batteries
+    - accurat batteries, Aolithium batteries, BasenGreen, Bulltron, CHINS, Cloud Energy, DCHOUSE, ECO-WORTHY, Epoch batteries
     - Eleksol, Elfhub, Fritz Berger, JavaEnegy, LANPWR, Liontron, Lossigy, Norström, OGRPHY, Perfektium, Ultimatron batteries
-    - SBL batteries (show up as `SBL-`&#x2026;), Supervolt v3 batteries (show up as `SX1`&#x2026;), Vatrer batteries
+    - SBL batteries (show up as `SBL-`&#x2026;), Supervolt v3 batteries (show up as `SX1`&#x2026;), Supervolt Jumbo (show up as `SJ-`&#x2026;)
+    - Vanvolt batteries (show up as `Vanvolt+`&#x2026;), Vatrer batteries
 - JK BMS, Jikong, (HW version &ge; 6 required)
 - KS48x00 series BMS (show up as `BL-`&#x2026;, `HSKS-`&#x2026; or `KS-`&#x2026;)
     - BEMORY, Braun Power batteries
@@ -90,11 +91,13 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Super-B Epsilon BMS (show up as `Epsilon-`&#x2026;)
 - Super-B Epsilon v2 BMS (show up as `Epsilon`&#x2026;)
 - TDT BMS
-    - Wattcycle batteries
+    - Wattcycle batteries, Wattcycle Super Mini batteries
 - Topband BMS
-    - Ective, KiloVault, Startcraft, Wattstunde batteries
+    - Ective, KiloVault, LiFeBlue, Startcraft, Wattstunde batteries
+    - PowerXtreme batteries
 - TianPower BMS (show up as `TP_`&#x2026;)
 - Vatrer BMS (show up as `YYMMDDVVVAAAAxx` (date, V, Ah))
+    - C4S100 batteries (show up as `C4S100IE`&#x2026;)
 - Volta Power Systems myVolta CAN BLE adapter (show up as `VPS-`&#x2026;)
 - Wattstunde Nova Core
 
