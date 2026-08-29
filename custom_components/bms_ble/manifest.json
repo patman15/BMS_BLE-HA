@@ -68,7 +68,14 @@
       "manufacturer_id": 1026
     },
     {
+      "manufacturer_id": 2117
+    },    
+    {
       "manufacturer_id": 54976
+    },
+    {
+      "manufacturer_id": 2117,
+      "manufacturer_data_start": [20, 133]
     },
     {
       "manufacturer_id": 21330,
@@ -144,6 +151,6 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bleak_retry_connector", "aiobmsble"],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble==0.27.0"],
-  "version": "2.16.0"
+  "requirements": ["aiobmsble@git+https://github.com/patman15/aiobmsble.git@103-add-dometic-büttner-bms"],
+  "version": "2.16.0-beta.2"
 }
