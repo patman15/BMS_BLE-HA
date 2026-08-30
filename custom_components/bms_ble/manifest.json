@@ -144,5 +144,5 @@
   "requirements": [
     "aiobmsble@git+https://github.com/patman15/aiobmsble.git@feat-daren-BMS-scaling"
   ],
-  "version": "2.16.0-beta.3"
+  "version": "2.17.0-beta.1"
 }
