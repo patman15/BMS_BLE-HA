@@ -142,7 +142,7 @@
   "loggers": ["bleak_retry_connector", "aiobmsble"],
   "quality_scale": "silver",
   "requirements": [
-    "aiobmsble@git+https://github.com/patman15/aiobmsble.git@feat-daren-BMS-scaling"
+    "aiobmsble@git+https://github.com/patman15/aiobmsble.git@feat-add-daren-bms"
   ],
-  "version": "2.17.0-beta.1"
+  "version": "2.17.0-beta.2"
 }
