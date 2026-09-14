@@ -33,8 +33,9 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - 100% test coverage
 
 ### Supported Devices
+- 123\\SmartBMS (show up as `123\\SmartBMS`)
 - ABC/SOK BMS (show up as `ABC-`&#x2026;, `SOK-`&#x2026;)
-- Buknuwo batteries (show up as `CDZG`&#x2026;)
+- Buknuwo batteries (show up as `CDZG`&#x2026;), MEYULMOL batteries (show up as `MEY-`&#x2026;)
 - ANT BMS (show up as `ANT-BLE`&#x2026;)
 - CBT Power BMS, Creabest batteries
 - D-powercore BMS (show up as `DXB-`&#x2026;), Fliteboard batteries (show up as `TBA-`&#x2026;)
@@ -93,7 +94,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - TDT BMS
     - Wattcycle batteries, Wattcycle Super Mini batteries
 - Topband BMS
-    - Ective, KiloVault, LiFeBlue, Startcraft, Wattstunde batteries
+    - Ective, Enerdrive B-TEC, KiloVault, LiFeBlue, Startcraft, Wattstunde batteries
     - PowerXtreme batteries
 - TianPower BMS (show up as `TP_`&#x2026;)
 - Vatrer BMS (show up as `YYMMDDVVVAAAAxx` (date, V, Ah))
@@ -349,7 +350,7 @@ all [contributors of aiobmsble](https://github.com/patman15/aiobmsble?tab=readme
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA?style=for-the-badge&color=orange&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
 [releases]: https://github.com//patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-1179_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-1209_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=HACS&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
 [custint-url]: https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval
