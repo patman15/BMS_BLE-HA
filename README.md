@@ -15,7 +15,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 * [Removing the Integration](#removing-the-integration)
 * [Troubleshooting](#troubleshooting)
     * [Known Issues](#known-issues)
-    * [Device is not Recognized](#if-your-device-is-not-recognized)
+    * [Device is not Recognized](#if-your-device-is-not-recognized--initialized)
     * [Support Issues](#in-case-you-have-troubles-youd-like-to-have-help-with)
 * [Energy Dashboard Integration](#energy-dashboard-integration)
 * [FAQ](#faq)
