@@ -2,8 +2,8 @@
 aioesphomeapi
 aiohttp-zlib-ng # to avoid performance warning
 aiousbwatcher
-ibeacon_ble
-kegtron_ble
+ibeacon_ble # due to BLE identification conflict
+kegtron_ble # due to BLE identification conflict
 pytest~=9.0.3
 pytest-homeassistant-custom-component==0.13.336
 serialx~=1.8.0

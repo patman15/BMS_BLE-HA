@@ -199,10 +199,7 @@ def mock_config_v2_0(bms: str, unique_id: str = "cc:cc:cc:cc:cc:cc") -> MockConf
 class MockBMS(BaseBMS):
     """Mock Battery Management System."""
 
-    INFO: BMSInfo = {
-        "default_manufacturer": "Mock Manufacturer",
-        "default_model": "MockBMS",
-    }
+    INFO: BMSInfo = {"manufacturer": "Mock Manufacturer", "model": "MockBMS"}
 
     def __init__(
         self, exc: Exception | None = None, ret_value: BMSSample | None = None
