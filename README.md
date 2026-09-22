@@ -200,7 +200,7 @@ The internal Bluetooth adapter issues <code>AT</code> commands in regular interv
 1. If a name detection pattern is listed ("show up as"), make sure your device matches it, by renaming the device in the vendor app.
 1. Check the [known issues](#known-issues) for an entry for your BMS.
 1. Make sure that no other device is connected to the BMS, e.g. app on your phone
-1. Check that your are running the [latest release](https://github.com/patman15/BMS_BLE-HA/releases) of the integration
+1. Check that your are running the [latest release][releases] of the integration
 1. Go to the [advertisement monitor](https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/) and verify that your device shows up there. Also, please ensure that your `RSSI` value is `>= -75 dBm`. If your device is missing or the `RSSI` value is `-80 dBm`or worse, please check your BT setup (is the device in range?).
 1. If you use a BT proxy, make sure you have set [`active: true`](https://esphome.io/components/bluetooth_proxy/#configuration); check the logs of the proxy if the device is recognized. Note: The [Bluetooth proxy of Shelly devices](https://www.home-assistant.io/integrations/shelly/#bluetooth-support) does not support active connections and thus cannot be used.
 1. Check that you do not exceed the number of connections of your adapter, see **[Settings](https://my.home-assistant.io/redirect/config/) > Bluetooth**
