@@ -27,6 +27,7 @@ from .conftest import MockBMS, mock_config
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_update(
     monkeypatch: pytest.MonkeyPatch,
     bool_fixture: bool,
@@ -84,6 +85,7 @@ async def test_update(
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_nodata(
     bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
@@ -110,6 +112,7 @@ async def test_nodata(
 @pytest.mark.parametrize(
     "mock_coordinator_exception", [TimeoutError, BleakError, EOFError]
 )
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_update_exception(
     bt_discovery: BluetoothServiceInfoBleak,
     mock_coordinator_exception: Exception,
@@ -130,12 +133,13 @@ async def test_update_exception(
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_stale_recovery(
     monkeypatch: pytest.MonkeyPatch,
     bt_discovery: BluetoothServiceInfoBleak,
     hass: HomeAssistant,
 ) -> None:
-    """Test if coordinator raises appropriate exception from BMS."""
+    """Test if coordinator triggers reconnect after 10 consecutive update fails and LQ < 10%."""
     flags: dict[str, bool] = {"disconnect_called": False}
     bms_data: Final[MockBMS] = MockBMS()
     bms_nodata: Final[MockBMS] = MockBMS(ret_value={})
@@ -169,14 +173,18 @@ async def test_stale_recovery(
 
     # update once with valid data
     # (this will set the link quality to 10%, and reset the stale flag)
-    monkeypatch.setattr(coordinator, "_device", bms_data)
+    monkeypatch.setattr(
+        coordinator, "_device", bms_data
+    )  # overwrite 'Final' annotation to control the BMS output.
     await coordinator.async_refresh()
     assert coordinator.last_update_success
     assert coordinator.link_quality == 10
     assert not flags["disconnect_called"]
 
     # run 10 times failed updates
-    monkeypatch.setattr(coordinator, "_device", bms_nodata)
+    monkeypatch.setattr(
+        coordinator, "_device", bms_nodata
+    )  # overwrite 'Final' annotation to control the BMS output.
     for _ in range(10):
         with contextlib.suppress(UpdateFailed):
             await coordinator.async_refresh()

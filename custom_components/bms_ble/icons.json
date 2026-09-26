@@ -33,6 +33,9 @@
       "delta_cell_voltage": {
         "default": "mdi:battery-sync"
       },
+      "design_capacity": {
+        "default": "mdi:battery"
+      },
       "link_quality": {
         "default": "mdi:link"
       },

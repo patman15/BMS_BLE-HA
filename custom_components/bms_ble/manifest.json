@@ -21,6 +21,9 @@
       "local_name": "F10*"
     },
     {
+      "local_name": "G-12V*"
+    },
+    {
       "local_name": "L-12V???AH-*"
     },
     {
@@ -65,14 +68,28 @@
       "manufacturer_id": 1026
     },
     {
+      "manufacturer_id": 2117
+    },    
+    {
       "manufacturer_id": 54976
     },
+    {
+      "manufacturer_id": 2117,
+      "manufacturer_data_start": [20, 133]
+    },
+    {
+      "manufacturer_id": 65535,
+      "manufacturer_data_start": [78]
+    },    
     {
       "manufacturer_id": 21330,
       "service_uuid": "000003c1-0000-1000-8000-00805f9b34fb"
     },
     {
       "service_uuid": "00001000-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "service_uuid": "0000180f-0000-1000-8000-00805f9b34fb"
     },
     {
       "service_uuid": "0000af30-0000-1000-8000-00805f9b34fb"
@@ -85,7 +102,7 @@
     },
     {
       "service_uuid": "0000ff06-0000-1000-8000-00805f9b34fb"
-    },    
+    },
     {
       "service_uuid": "0000ffd0-0000-1000-8000-00805f9b34fb"
     },
@@ -97,6 +114,12 @@
     },
     {
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "service_uuid": "0000fffa-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "service_uuid": "00035b03-58e6-07dd-021a-08123a000300"
     },
     {
       "service_uuid": "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
@@ -117,6 +140,9 @@
       "manufacturer_id": 1026
     },
     {
+      "manufacturer_id": 17868
+    },
+    {
       "manufacturer_id": 21320
     }
   ],
@@ -132,5 +158,5 @@
   "requirements": [
     "aiobmsble@git+https://github.com/patman15/aiobmsble.git@feat-Dyness-Junior-Box-BMS"
   ],
-  "version": "2.11.0-beta.1"
+  "version": "2.18.0-beta.2"
 }
