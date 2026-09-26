@@ -33,6 +33,9 @@
       "local_name": "PC-????"
     },
     {
+      "local_name": "R07*"
+    },
+    {
       "local_name": "TBA-*"
     },
     {
@@ -152,6 +155,8 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bleak_retry_connector", "aiobmsble"],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble==0.29.0"],
-  "version": "2.18.0-beta.1"
+  "requirements": [
+    "aiobmsble@git+https://github.com/patman15/aiobmsble.git@feat-Dyness-Junior-Box-BMS"
+  ],
+  "version": "2.18.0-beta.2"
 }
