@@ -116,7 +116,7 @@ Platform | Name | Unit | Description | Optional Attributes
 -- | -- | -- | -- | --
 `binary_sensor` | battery charging | `bool` | indicates `True` if battery is charging | battery mode
 `sensor` | charge cycles | `#` | lifetime number of charge cycles | package charge cycles
-`sensor` | current | `A` | positive for charging, negative for discharging | balance current, package current
+`sensor` | current | `A` | positive for charging, negative for discharging | balance current, heater current, package current
 `sensor` | power | `W` | positive for charging, negative for discharging
 `sensor` | runtime | `s` | remaining discharge time till SoC 0%, `unavailable` during idle/charging
 `sensor` | SoC | `%` | state of charge, range 100% (full) to 0% (battery empty) | package SoC
