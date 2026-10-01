@@ -66,7 +66,7 @@
     },
     {
       "manufacturer_id": 2117
-    },    
+    },
     {
       "manufacturer_id": 54976
     },
@@ -77,7 +77,7 @@
     {
       "manufacturer_id": 65535,
       "manufacturer_data_start": [78]
-    },    
+    },
     {
       "manufacturer_id": 21330,
       "service_uuid": "000003c1-0000-1000-8000-00805f9b34fb"
@@ -152,6 +152,8 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bleak_retry_connector", "aiobmsble"],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble==0.29.0"],
-  "version": "2.18.0-beta.1"
+  "requirements": [
+    "aiobmsble@git+https://github.com/patman15/aiobmsble.git@feat-jk-heater"
+  ],
+  "version": "2.18.0-beta.3"
 }
