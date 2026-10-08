@@ -17,6 +17,8 @@ body:
         required: true
       - label: This issue is not a duplicate issue of any [previous issue](https://github.com/patman15/BMS_BLE-HA/issues?q=is%3Aissue+label%3Abug).
         required: true
+      - label: For devices not recognized, I checked the [troubleshooting](https://github.com/patman15/BMS_BLE-HA#troubleshooting) section, especially the [known issues](https://github.com/patman15/BMS_BLE-HA#known-issues) and [resolution steps](https://github.com/patman15/BMS_BLE-HA#if-your-device-is-not-recognized--initialized).
+        required: true
       - label: I have filled out the issue template to the best of my ability.
         required: true
 - type: input
