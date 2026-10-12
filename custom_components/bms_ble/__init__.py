@@ -16,7 +16,6 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.importlib import async_import_module
 
-from .config_flow import ConfigFlow
 from .const import CONF_ADVANCED_OPTIONS, CONF_KEEP_ALIVE, DOMAIN, LOGGER
 from .coordinator import BTBmsCoordinator
 
@@ -104,11 +103,6 @@ async def async_migrate_entry(
     class EntryVersion:
         major: int
         minor: int
-
-    if config_entry.version > ConfigFlow.VERSION:
-        # This means the user has downgraded from a future major version (incompatible)
-        LOGGER.debug("Cannot downgrade from version %s", config_entry.version)
-        return False
 
     LOGGER.debug(
         "Migrating from version %s.%s", config_entry.version, config_entry.minor_version
