@@ -135,6 +135,11 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
                 if "balance_current" in data
                 else {}
             )
+            | (
+                {"heater_current": [data.get("heater_current", 0.0)]}
+                if "heater_current" in data
+                else {}
+            )
             | _attr_pack(data, ATTR_CURRENT)
         ),
         device_class=SensorDeviceClass.CURRENT,

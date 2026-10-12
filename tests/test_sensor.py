@@ -56,6 +56,7 @@ async def test_update(
             BMSSample(
                 {
                     "balance_current": -1.234,
+                    "heater_current": 2.5,
                     "battery_level": 42,
                     "voltage": 17.0,
                     "current": 0,
@@ -184,6 +185,11 @@ async def test_update(
             ATTR_CURRENT,
             ATTR_BALANCE_CUR,
             [-1.234],
+        ),
+        (
+            ATTR_CURRENT,
+            "heater_current",
+            [2.5],
         ),
     ):
         state: State | None = hass.states.get(f"{DEV_NAME}_{sensor}")
