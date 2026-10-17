@@ -1,6 +1,8 @@
 """Platform for sensor integration."""
 
 from collections.abc import Callable
+from dataclasses import replace
+from functools import cached_property
 from typing import Final, cast, override
 
 from aiobmsble import BMSpackvalue, BMSSample, PackSample
@@ -27,7 +29,8 @@ from homeassistant.const import (
     UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import format_mac
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.device_registry import ChildDeviceInfo, format_mac
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -62,7 +65,7 @@ class BmsEntityDescription(SensorEntityDescription, frozen_or_thawed=True):
 
     attr_fn: Callable[[BMSSample], dict[str, list[int | float]]] | None = None
     optional: bool = False
-    value_fn: Callable[[BMSSample], float | int | None]
+    value_fn: Callable[[BMSSample | PackSample], float | int | None]
 
 
 def _attr_pack(data: BMSSample, key: BMSpackvalue) -> dict[str, list[int | float]]:
@@ -202,7 +205,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=3,
         translation_key=ATTR_DELTA_VOLTAGE,
-        value_fn=lambda data: data.get("delta_voltage"),
+        value_fn=lambda data: data.get("delta_cell_voltage"),
     ),
     BmsEntityDescription(
         attr_fn=lambda data: (
@@ -261,6 +264,10 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     ),
 ]
 
+PACK_SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
+    descr for descr in SENSOR_TYPES if descr.key not in (ATTR_LQ, ATTR_RSSI)
+]
+
 
 async def async_setup_entry(
     _hass: HomeAssistant,
@@ -284,6 +291,17 @@ async def async_setup_entry(
         entities.append(BMSSensor(bms, descr, mac))
 
     async_add_entities(entities)
+
+    pack_sensors: list[SensorEntity] = []
+    for pack_index, pack in enumerate(bms.data.get("packs", []), start=1):
+        pack_sensors.extend(
+            PackSensor(bms, descr, mac, pack_index, config_entry.entry_id)
+            for descr in PACK_SENSOR_TYPES
+            if descr.key in pack
+        )
+
+    if pack_sensors:
+        async_add_entities(pack_sensors)
 
 
 class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
@@ -319,6 +337,60 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
             self.entity_description.value_fn(self.coordinator.data)
             if self.coordinator.data
             else None
+        )
+
+
+class PackSensor(BMSSensor):
+    """A sensor belonging to one battery pack child device."""
+
+    def __init__(
+        self,
+        bms: BTBmsCoordinator,
+        descr: BmsEntityDescription,
+        unique_id: str,
+        pack_index: int,
+        config_entry_id: str,
+    ) -> None:
+        """Initialize a pack sensor."""
+
+        def pack_data(data: BMSSample) -> PackSample | None:
+            packs = data.get("packs", [])
+            return packs[pack_index - 1] if len(packs) >= pack_index else None
+
+        def pack_value(data: BMSSample) -> float | int | None:
+            pack = pack_data(data)
+            return descr.value_fn(pack) if pack is not None else None
+
+        pack_descr = replace(
+            descr,
+            attr_fn=None,
+            value_fn=pack_value,
+        )
+        super().__init__(bms, pack_descr, unique_id)
+        self._attr_unique_id = f"{DOMAIN}-{unique_id}-pack-{pack_index}-{descr.key}"
+        self._pack_index = pack_index
+        self._config_entry_id = config_entry_id
+        self._parent_identifier = next(
+            identifier
+            for domain, identifier in bms.device_info.get("identifiers", set())
+            if domain == DOMAIN
+        )
+
+    @cached_property
+    @override
+    def device_info(self) -> ChildDeviceInfo:
+        """Return child-device information for this battery pack."""
+        identifiers = {(DOMAIN, f"{self._parent_identifier}_pack_{self._pack_index}")}
+        name = f"{self.coordinator.name} Pack {self._pack_index}"
+        parent_device_id = dr.async_get_device_id_by_identifier(
+            self.hass,
+            (DOMAIN, self._parent_identifier),
+            config_entry_id=self._config_entry_id,
+        )
+        return ChildDeviceInfo(
+            identifiers=identifiers,
+            name=name,
+            parent_device_id=parent_device_id,
         )
 
 

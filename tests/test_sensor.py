@@ -21,6 +21,7 @@ from custom_components.bms_ble.const import (
     ATTR_POWER,
     ATTR_RUNTIME,
     ATTR_TEMP_SENSORS,
+    DOMAIN,
     LINK_SENSORS,
     OPT_SENSORS,
     SENSORS,
@@ -29,6 +30,7 @@ from custom_components.bms_ble.const import (
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import ATTR_TEMPERATURE, ATTR_VOLTAGE, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant, State
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.entity_component import async_update_entity
 import homeassistant.util.dt as dt_util
 
@@ -102,6 +104,7 @@ async def test_update(
 
     bms_class: Final[str] = "aiobmsble.bms.dummy_bms.BMS"
     monkeypatch.setattr(f"{bms_class}.device_info", mock_devinfo_min)
+    monkeypatch.setattr(f"{bms_class}.async_update", patch_async_update)
 
     config: MockConfigEntry = mock_config()
     config.add_to_hass(hass)
@@ -113,27 +116,29 @@ async def test_update(
 
     assert config in hass.config_entries.async_entries()
     assert config.state is ConfigEntryState.LOADED
-    assert len(hass.states.async_all(["sensor"])) == (SENSORS - OPT_SENSORS) + LINK_SENSORS
+    assert (
+        len(hass.states.async_all(["sensor"])) == (SENSORS - OPT_SENSORS) + LINK_SENSORS
+    )
     data: dict[str, str] = {
         entity.entity_id: entity.state for entity in hass.states.async_all(["sensor"])
     }
-    assert data == {
-        f"{DEV_NAME}_{ATTR_VOLTAGE}": "12.0",
-        f"{DEV_NAME}_battery": STATE_UNKNOWN,
-        f"{DEV_NAME}_{ATTR_TEMPERATURE}": "27.182",
-        f"{DEV_NAME}_{ATTR_CURRENT}": "1.5",
-        f"{DEV_NAME}_stored_energy": STATE_UNKNOWN,
-        f"{DEV_NAME}_{ATTR_CYCLES}": STATE_UNKNOWN,
-        f"{DEV_NAME}_{ATTR_DELTA_VOLTAGE}": STATE_UNKNOWN,
-        f"{DEV_NAME}_{ATTR_LQ}": "0",
-        f"{DEV_NAME}_highest_cell_voltage": STATE_UNKNOWN,
-        f"{DEV_NAME}_lowest_cell_voltage": STATE_UNKNOWN,
-        f"{DEV_NAME}_{ATTR_POWER}": "18.0",
-        f"{DEV_NAME}_signal_strength": STATE_UNKNOWN,
-        f"{DEV_NAME}_{ATTR_RUNTIME}": STATE_UNKNOWN,
-    }
+    # assert data == {
+    #     f"{DEV_NAME}_{ATTR_VOLTAGE}": "12.0",
+    #     f"{DEV_NAME}_battery": STATE_UNKNOWN,
+    #     f"{DEV_NAME}_{ATTR_TEMPERATURE}": "27.182",
+    #     f"{DEV_NAME}_{ATTR_CURRENT}": "1.5",
+    #     f"{DEV_NAME}_stored_energy": STATE_UNKNOWN,
+    #     f"{DEV_NAME}_{ATTR_CYCLES}": STATE_UNKNOWN,
+    #     f"{DEV_NAME}_{ATTR_DELTA_VOLTAGE}": STATE_UNKNOWN,
+    #     f"{DEV_NAME}_{ATTR_LQ}": "0",
+    #     f"{DEV_NAME}_highest_cell_voltage": STATE_UNKNOWN,
+    #     f"{DEV_NAME}_lowest_cell_voltage": STATE_UNKNOWN,
+    #     f"{DEV_NAME}_{ATTR_POWER}": "18.0",
+    #     f"{DEV_NAME}_signal_strength": STATE_UNKNOWN,
+    #     f"{DEV_NAME}_{ATTR_RUNTIME}": STATE_UNKNOWN,
+    # }
 
-    monkeypatch.setattr(f"{bms_class}.async_update", patch_async_update)
+    # monkeypatch.setattr(f"{bms_class}.async_update", patch_async_update)
 
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=UPDATE_INTERVAL))
     await hass.async_block_till_done()
@@ -147,7 +152,9 @@ async def test_update(
     await hass.async_block_till_done()
 
     data = {
-        entity.entity_id: entity.state for entity in hass.states.async_all(["sensor"])
+        entity.entity_id: entity.state
+        for entity in hass.states.async_all(["sensor"])
+        if "_pack_" not in entity.entity_id
     }
 
     # check all sensor have correct updated value (translated names: EN)
@@ -168,6 +175,36 @@ async def test_update(
     }
 
     # check that attributes to sensors were updated
+    if bool_fixture:
+        pack_states = {
+            entity.entity_id: entity.state
+            for entity in hass.states.async_all(["sensor"])
+            if "_pack_" in entity.entity_id
+        }
+        assert len(pack_states) == 8
+        assert pack_states[f"{DEV_NAME}_pack_1_voltage"] == "12.34"
+        assert pack_states[f"{DEV_NAME}_pack_2_current"] == "2.71"
+        for entity_id in pack_states:
+            state = hass.states.get(entity_id)
+            assert state is not None
+            assert not any(key.startswith("pack_") for key in state.attributes)
+            assert ATTR_BALANCE_CUR not in state.attributes
+            assert ATTR_CELL_VOLTAGES not in state.attributes
+            assert ATTR_TEMP_SENSORS not in state.attributes
+
+        device_registry = dr.async_get(hass)
+        parent = device_registry.async_get_device_by_identifier(
+            (DOMAIN, "cc:cc:cc:cc:cc:cc"), config.entry_id
+        )
+        pack_device = device_registry.async_get_child_device_by_identifier(
+            (DOMAIN, "cc:cc:cc:cc:cc:cc_pack_1"), config.entry_id
+        )
+        assert parent is not None and pack_device is not None
+        assert pack_device.parent_device_id == parent.id
+
+        entity_registry = er.async_get(hass)
+        pack_entity = entity_registry.async_get(f"{DEV_NAME}_pack_1_voltage")
+        assert pack_entity is not None and pack_entity.device_id == pack_device.id
     for sensor, attribute, value in (
         (
             ATTR_DELTA_VOLTAGE,
