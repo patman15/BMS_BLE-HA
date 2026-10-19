@@ -22,10 +22,10 @@ from .conftest import mock_config, mock_devinfo_min, mock_update_full
 
 SEN_PREFIX: Final[str] = "binary_sensor.config_test_dummy_bms"
 
-
 @pytest.mark.usefixtures(
     "enable_bluetooth", "patch_default_bleak_client", "patch_entity_enabled_default"
 )  # enable bluetooth, patch bleak client and enable all sensors
+@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_update(
     monkeypatch: pytest.MonkeyPatch,
     bt_discovery: BluetoothServiceInfoBleak,
@@ -78,7 +78,7 @@ async def test_update(
 
     for sensor, attribute, ref_state, ref_value in (
         ("charging", "battery_mode", STATE_OFF, "absorption"),
-        ("problem", "problem_code", STATE_ON, 0x73),
+        ("problem", "problem_code", STATE_ON, "0x73"),
         ("charge_mosfet", "", STATE_OFF, None),
         ("discharge_mosfet", "", STATE_ON, None),
         ("heater", "", STATE_ON, None),

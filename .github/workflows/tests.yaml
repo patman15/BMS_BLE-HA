@@ -2,6 +2,8 @@ name: Run tests for integrations
 
 on:
   push:
+    branches:
+      - main    
   pull_request:
   workflow_dispatch:
   schedule:
@@ -20,7 +22,7 @@ jobs:
         - name: "Set up Python"
           uses: actions/setup-python@main
           with:
-            python-version: "3.13"
+            python-version: "3.14"
             cache: "pip"
                     
         - name: Install dependencies

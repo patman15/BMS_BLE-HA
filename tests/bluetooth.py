@@ -1,4 +1,4 @@
-"""Test helpers for bluetooth copied from HA 2025.9.0.
+"""Test helpers for bluetooth copied from HA 2026.6.0.
 
 Source: /tests/components/bluetooth/__init__.py
 """
@@ -43,7 +43,6 @@ def generate_ble_device(
     address: str | None = None,
     name: str | None = None,
     details: Any | None = None,
-    rssi: int | None = None,
     **kwargs: Any,
 ) -> BLEDevice:
     """Generate a BLEDevice with defaults."""
@@ -54,8 +53,6 @@ def generate_ble_device(
         new["name"] = name
     if details is not None:
         new["details"] = details
-    if rssi is not None:
-        new["rssi"] = rssi
     for key, value in BLE_DEVICE_DEFAULTS.items():
         new.setdefault(key, value)
     return BLEDevice(**new)
@@ -68,8 +65,9 @@ def inject_advertisement_with_time_and_source_connectable(
     time: float,
     source: str,
     connectable: bool,
+    raw: bytes | None = None,
 ) -> None:
-    """Inject an advertisement into the manager from a specific source at a time and connectable status."""
+    """Inject an advertisement at a time from a source with connectable status."""
     async_get_advertisement_callback(hass)(
         BluetoothServiceInfoBleak(
             name=adv.local_name or device.name or device.address,
@@ -84,6 +82,7 @@ def inject_advertisement_with_time_and_source_connectable(
             connectable=connectable,
             time=time,
             tx_power=adv.tx_power,
+            raw=raw,
         )
     )
 
@@ -103,7 +102,7 @@ def inject_bluetooth_service_info_bleak(
     device: BLEDevice = generate_ble_device(
         address=info.address,
         name=info.name,
-        details={},
+        details={"path": ""},
     )
     inject_advertisement_with_time_and_source_connectable(
         hass,

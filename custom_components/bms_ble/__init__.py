@@ -2,8 +2,9 @@
 
 from dataclasses import dataclass
 from types import ModuleType
-from typing import Final
+from typing import Any, Final
 
+from aiobmsble import BMSConfig
 from bleak.backends.device import BLEDevice
 
 from homeassistant.components.bluetooth import async_ble_device_from_address
@@ -15,8 +16,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import format_mac
 from homeassistant.helpers.importlib import async_import_module
 
-from .config_flow import ConfigFlow
-from .const import DOMAIN, LOGGER
+from .const import CONF_ADVANCED_OPTIONS, CONF_KEEP_ALIVE, DOMAIN, LOGGER
 from .coordinator import BTBmsCoordinator
 
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
@@ -26,7 +26,7 @@ type BTBmsConfigEntry = ConfigEntry[BTBmsCoordinator]
 
 async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> bool:
     """Set up BT Battery Management System from a config entry."""
-    LOGGER.debug("Setup of %s", repr(entry))
+    LOGGER.debug("Setup of %r", entry)
 
     if entry.unique_id is None:
         raise ConfigEntryError(
@@ -52,10 +52,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> boo
         )
 
     plugin: ModuleType = await async_import_module(hass, entry.data["type"])
+    advanced_options: dict[str, Any] = entry.options.get(CONF_ADVANCED_OPTIONS, {})
     coordinator = BTBmsCoordinator(
         hass,
         ble_device,
-        plugin.BMS(ble_device, secret=entry.options.get(CONF_PASSWORD, "")),
+        plugin.BMS(
+            ble_device,
+            BMSConfig(
+                keep_alive=advanced_options.get(CONF_KEEP_ALIVE, True),
+                secret=entry.options.get(CONF_PASSWORD, ""),
+            ),
+        ),
         entry,
     )
 
@@ -79,7 +86,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: BTBmsConfigEntry) -> bo
     unload_ok: Final = await hass.config_entries.async_unload_platforms(
         entry, PLATFORMS
     )
-    LOGGER.debug("Unloaded config entry: %s, ok? %s!", entry.unique_id, str(unload_ok))
+    LOGGER.debug("Unloaded config entry: %s, ok? %s!", entry.unique_id, unload_ok)
 
     if unload_ok and getattr(entry, "runtime_data", None) is not None:
         await entry.runtime_data.async_shutdown()
@@ -96,11 +103,6 @@ async def async_migrate_entry(
     class EntryVersion:
         major: int
         minor: int
-
-    if config_entry.version > ConfigFlow.VERSION:
-        # This means the user has downgraded from a future major version (incompatible)
-        LOGGER.debug("Cannot downgrade from version %s", config_entry.version)
-        return False
 
     LOGGER.debug(
         "Migrating from version %s.%s", config_entry.version, config_entry.minor_version
@@ -166,7 +168,7 @@ def migrate_sensor_entities(
         unique_id: str = entry.unique_id
         # update entries from wrong old format using no domain prefix
         if not entry.unique_id.startswith(f"{DOMAIN}-"):
-            unique_id = f"{DOMAIN}-{format_mac(config_entry.unique_id)}-{unique_id.split('-')[-1]}"
+            unique_id = f"{DOMAIN}-{format_mac(config_entry.unique_id)}-{unique_id.rsplit('-', maxsplit=1)[-1]}"
         # rename delta_voltage sensor to be consistent with min/max cell voltage sensor
         if unique_id.endswith("-delta_voltage"):
             unique_id = unique_id.removesuffix("-delta_voltage") + "-delta_cell_voltage"

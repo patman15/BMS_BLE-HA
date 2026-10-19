@@ -43,6 +43,9 @@
       "delta_cell_voltage": {
         "name": "Delta cell voltage"
       },
+      "design_capacity": {
+        "name": "Design capacity"
+      },
       "link_quality": {
         "name": "Link quality"
       },
@@ -62,7 +65,10 @@
       "message": "BMS communication failed: {err_msg}, signal strength is {rssi} dBm."
     },
     "bms_com_fail_rssi": {
-      "message": "BMS communication failed: {err_msg}, try to improve signal strength ({rssi} dBm)!"
+      "message": "BMS communication failed: {err_msg}. Try to increase signal strength from {rssi} dBm."
+    },
+    "bms_no_valid_data": {
+      "message": "BMS did not provide valid data."
     },
     "bms_timeout": {
       "message": "BMS communication timed out."
@@ -87,7 +93,19 @@
         "data_description": {
           "password": "Optional password to unlock device."
         },
-        "title": "Connection options"
+        "sections": {
+          "advanced_options": {
+            "data": {
+              "keep_alive": "Keep connection alive between updates"
+            },
+            "data_description": {
+              "keep_alive": "Keep the Bluetooth connection between update cycles. Disabling this degrades BMS connection reliability and is only recommended as a last resort when sharing a single-connection Bluetooth adapter (e.g. Realtek RTL8761B) with other integrations. Consider using a dedicated Bluetooth adapter instead."
+            },
+            "name": "Advanced options"
+          }
+        },
+        "title": "Connection options",
+        "description": "The password option is only available if supported by the device."
       }
     }
   }

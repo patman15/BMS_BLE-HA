@@ -2,8 +2,9 @@
 
 from collections import deque
 from datetime import timedelta
+from itertools import islice
 from time import monotonic
-from typing import Final
+from typing import Final, override
 
 from aiobmsble import BMSSample
 from aiobmsble.basebms import BaseBMS
@@ -81,6 +82,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
 
         return self._link_q.count(True) * 100 // len(self._link_q)
 
+    @override
     async def async_shutdown(self) -> None:
         """Shutdown coordinator and any connection."""
         LOGGER.debug("Shutting down BMS (%s)", self.name)
@@ -93,7 +95,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
         elif (
             not self._stale
             and self.link_quality <= 10
-            and list(self._link_q)[-10:] == [False] * 10
+            and list(islice(reversed(self._link_q), 10)) == [False] * 10
         ):
             rssi: Final = self.rssi
             LOGGER.error(
@@ -107,6 +109,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
 
         return self._stale
 
+    @override
     async def _async_setup(self) -> None:
         bms_info: Final = await self._device.device_info()
         self.device_info.update(
@@ -122,6 +125,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
             )
         )
 
+    @override
     async def _async_update_data(self) -> BMSSample:
         """Return the latest data from the device."""
 
@@ -133,7 +137,10 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
         start: Final = monotonic()
         try:
             if not (bms_data := await self._device.async_update()):
-                raise UpdateFailed("no valid data received.")
+                raise UpdateFailed(
+                    translation_domain=DOMAIN,
+                    translation_key="bms_no_valid_data",
+                )
         except TimeoutError as err:
             raise UpdateFailed(
                 translation_domain=DOMAIN, translation_key="bms_timeout"

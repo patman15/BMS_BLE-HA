@@ -12,13 +12,16 @@
       "local_name": "ECO-WORTHY 02_*"
     },
     {
-      "local_name": "Epsilon-*"
+      "local_name": "Epsilon*"
     },
     {
       "local_name": "F07*"
     },
     {
       "local_name": "F10*"
+    },
+    {
+      "local_name": "G-12V*"
     },
     {
       "local_name": "L-12V???AH-*"
@@ -37,9 +40,6 @@
     },
     {
       "local_name": "V-12V???Ah-*"
-    },
-    {
-      "manufacturer_id": 21320
     },
     {
       "local_name": "RNG*",
@@ -65,7 +65,18 @@
       "manufacturer_id": 1026
     },
     {
+      "manufacturer_id": 2117
+    },
+    {
       "manufacturer_id": 54976
+    },
+    {
+      "manufacturer_id": 2117,
+      "manufacturer_data_start": [20, 133]
+    },
+    {
+      "manufacturer_id": 65535,
+      "manufacturer_data_start": [78]
     },
     {
       "manufacturer_id": 21330,
@@ -75,6 +86,9 @@
       "service_uuid": "00001000-0000-1000-8000-00805f9b34fb"
     },
     {
+      "service_uuid": "0000180f-0000-1000-8000-00805f9b34fb"
+    },
+    {
       "service_uuid": "0000af30-0000-1000-8000-00805f9b34fb"
     },
     {
@@ -82,6 +96,9 @@
     },
     {
       "service_uuid": "0000ff00-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "service_uuid": "0000ff06-0000-1000-8000-00805f9b34fb"
     },
     {
       "service_uuid": "0000ffd0-0000-1000-8000-00805f9b34fb"
@@ -94,6 +111,12 @@
     },
     {
       "service_uuid": "0000fff0-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "service_uuid": "0000fffa-0000-1000-8000-00805f9b34fb"
+    },
+    {
+      "service_uuid": "00035b03-58e6-07dd-021a-08123a000300"
     },
     {
       "service_uuid": "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
@@ -117,56 +140,10 @@
       "manufacturer_id": 4660
     },
     {
-      "local_name": "ECO-WORTHY 02_*"
+      "manufacturer_id": 17868
     },
     {
-      "local_name": "TBA-*"
-    },
-    {
-      "local_name": "DXB-*"
-    },
-    {
-      "local_name": "libatt*",
       "manufacturer_id": 21320
-    },
-    {
-      "local_name": "LT-*"
-    },
-    {
-      "local_name": "SV12V*",
-      "manufacturer_id": 33384
-    },
-    {
-      "local_name": "L-12V???AH-*"
-    },
-    {
-      "local_name": "V-12V???Ah-*"
-    },
-    {
-      "manufacturer_id": 54976
-    },
-    {
-      "local_name": "F10*"
-    },
-    {
-      "local_name": "F07*"
-    },
-    {
-      "manufacturer_id": 21330,
-      "service_uuid": "000003c1-0000-1000-8000-00805f9b34fb"
-    },
-    {
-      "local_name": "RNG*",
-      "manufacturer_id": 57676
-    },
-    {
-      "local_name": "TP_*"
-    },
-    {
-      "local_name": "Epsilon*"
-    },
-    {
-      "local_name": "PC-????"
     }
   ],
   "codeowners": ["@patman15"],
@@ -181,5 +158,5 @@
   "requirements": [
     "aiobmsble@git+https://github.com/patman15/aiobmsble.git@109-add-saftkiste-support"
   ],
-  "version": "2.10.0-beta.4"
+  "version": "2.19.0-beta.1"
 }

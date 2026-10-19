@@ -1,6 +1,7 @@
 """Support for BMS_BLE binary sensors."""
 
 from collections.abc import Callable
+from typing import override
 
 from aiobmsble import BMSMode, BMSSample
 
@@ -20,10 +21,12 @@ from .const import (
     ATTR_BALANCER,
     ATTR_BATTERY_MODE,
     ATTR_CELL_COUNT,
+    ATTR_CELLS,
     ATTR_CHRG_MOSFET,
     ATTR_DISCHRG_MOSFET,
     ATTR_HEATER,
     ATTR_PROBLEM,
+    ATTR_PROBLEM_CODE,
     DOMAIN,
 )
 from .coordinator import BTBmsCoordinator
@@ -40,7 +43,11 @@ class BmsBinaryEntityDescription(BinarySensorEntityDescription, frozen_or_thawed
 BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
     BmsBinaryEntityDescription(
         attr_fn=lambda data: (
-            {ATTR_BATTERY_MODE: data.get(ATTR_BATTERY_MODE, BMSMode.UNKNOWN).name.lower()}
+            {
+                ATTR_BATTERY_MODE: data.get(
+                    ATTR_BATTERY_MODE, BMSMode.UNKNOWN
+                ).name.lower()
+            }
             if ATTR_BATTERY_MODE in data
             else {}
         ),
@@ -50,7 +57,7 @@ BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
     BmsBinaryEntityDescription(
         attr_fn=lambda data: (
             {
-                "cells": f"{data.get(ATTR_BALANCER, 0):0{data.get(ATTR_CELL_COUNT, 8)}b}"[
+                ATTR_CELLS: f"{data.get(ATTR_BALANCER, 0):0{data.get(ATTR_CELL_COUNT, 8)}b}"[
                     ::-1
                 ]
             }
@@ -88,7 +95,7 @@ BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
     ),
     BmsBinaryEntityDescription(
         attr_fn=lambda data: (
-            {"problem_code": data.get("problem_code", 0)}
+            {ATTR_PROBLEM_CODE: hex(data.get("problem_code", 0))}
             if "problem_code" in data
             else {}
         ),
@@ -118,6 +125,7 @@ async def async_setup_entry(
 class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity):
     """The generic BMS binary sensor implementation."""
 
+    _unrecorded_attributes: frozenset[str] = frozenset({ATTR_CELLS})
     entity_description: BmsBinaryEntityDescription
 
     def __init__(
@@ -130,15 +138,17 @@ class BMSBinarySensor(CoordinatorEntity[BTBmsCoordinator], BinarySensorEntity):
         self._attr_unique_id = f"{DOMAIN}-{unique_id}-{descr.key}"
         self._attr_device_info = bms.device_info
         self._attr_has_entity_name = True
-        self.entity_description: BmsBinaryEntityDescription = descr
+        self.entity_description = descr
         super().__init__(bms)
 
     @property
+    @override
     def is_on(self) -> bool | None:
         """Handle updated data from the coordinator."""
         return bool(self.coordinator.data.get(self.entity_description.key))
 
     @property
+    @override
     def extra_state_attributes(self) -> dict[str, int | str] | None:
         """Return entity specific state attributes, e.g. cell voltages."""
         return (
