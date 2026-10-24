@@ -183,6 +183,9 @@ Some JBD boards are matched by MAC OUI. If config flow reports no devices while 
 advertising (similar to Elektronicx/Lithtech). Close the phone app, wake the pack briefly, and retry while it appears connectable in the
 <a href="https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/">advertisement monitor</a>.
 </details>
+<details><summary>Dyness Junior Box</summary>
+Although the box advertises via Bluetooth an [investigation](https://github.com/patman15/BMS_BLE-HA/issues/633#issuecomment-6382939524) found no way to extract BMS data from that connection. Thus the box cannot be supported.
+</details>
 <details><summary>JK BMS firmware 19.30+</summary>
 Newer firmware of JK BMS seems to have a bug that causes [incompatibility with the Linux Bluetooth stack BlueZ](https://github.com/patman15/BMS_BLE-HA/issues/766#issuecomment-5337915104). 
 </details>
