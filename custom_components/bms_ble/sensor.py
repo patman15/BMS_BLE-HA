@@ -63,8 +63,8 @@ PARALLEL_UPDATES = 0
 class BmsEntityDescription(SensorEntityDescription, frozen_or_thawed=True):
     """Describes BMS sensor entity."""
 
-    attr_fn: Callable[[BMSSample | PackSample], dict[str, list[int | float]]] | None = (
-        None
+    attr_fn: Callable[[BMSSample | PackSample], dict[str, list[int | float]] | None] = (
+        lambda data: None
     )
     optional: bool = False
     value_fn: Callable[[BMSSample | PackSample], float | int | None]
@@ -346,7 +346,7 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
     @override
     def extra_state_attributes(self) -> dict[str, list[int | float]] | None:
         """Return entity specific state attributes, e.g. cell voltages."""
-        if self.coordinator.data and self.entity_description.attr_fn:
+        if self.coordinator.data:
             return self.entity_description.attr_fn(self.coordinator.data)
 
         return None
@@ -384,7 +384,7 @@ class PackSensor(BMSSensor):
             return descr.value_fn(pack) if pack is not None else None
 
         def pack_attr(data: BMSSample) -> dict[str, list[int | float]] | None:
-            if (pack := pack_data(data)) is None or descr.attr_fn is None:
+            if (pack := pack_data(data)) is None:
                 return None
             return descr.attr_fn(pack)
 

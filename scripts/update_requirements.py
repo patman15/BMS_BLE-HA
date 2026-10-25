@@ -4,11 +4,11 @@
 This module reads package versions from source requirements files and updates
 target requirements files accordingly, preserving formatting and comments.
 """
+
 import argparse
 import logging
 from pathlib import Path
 import re
-from typing import Any
 
 logging.basicConfig(
     format="%(levelname)s: %(message)s",
@@ -34,7 +34,7 @@ def parse_requirements(content: str) -> dict[str, str | None]:
         {'package1': '>=1.0.0', 'package2': '==2.0.0'}
 
     """
-    versions: dict = {}
+    versions: dict[str, str | None] = {}
     for line in content.splitlines():
         line_nsp: str = line.strip()
         if not line_nsp or line_nsp.startswith(("#", "-r")):
@@ -42,10 +42,8 @@ def parse_requirements(content: str) -> dict[str, str | None]:
 
         # Handle lines with version specifiers
         if match := re.match(r"^([^=<>~!]+)((?:[=<>~!]=|>=|<=|~=|==).+)?$", line_nsp):
-            package: str | Any = match.group(1).strip()
-            version: str | Any | None = (
-                match.group(2).strip() if match.group(2) else None
-            )
+            package: str = match.group(1).strip()
+            version: str | None = match.group(2).strip() if match.group(2) else None
             versions[package.lower()] = version
     return versions
 
@@ -93,7 +91,7 @@ def update_requirements_file(
     with Path(file_path).open(encoding="UTF-8") as f:
         content: str = f.read()
 
-    new_lines: list = []
+    new_lines: list[str] = []
     for line in content.splitlines():
         new_line: str = line
         if line.strip() and not line.startswith("#") and not line.startswith("-r"):

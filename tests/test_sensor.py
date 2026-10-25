@@ -160,7 +160,7 @@ async def test_update(
     await async_update_entity(hass, f"{DEV_NAME}_{ATTR_LQ}")
     await hass.async_block_till_done()
 
-    data: dict[str, str] = {  # check sensors only (ignore other platforms)
+    data = {  # check sensors only (ignore other platforms)
         entity.entity_id: entity.state for entity in hass.states.async_all(["sensor"])
     }
     # check all sensor have correct updated value (translated names: EN)
