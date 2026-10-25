@@ -8,9 +8,9 @@ from aiobmsble.test_data import bms_advertisements
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 from home_assistant_bluetooth import BluetoothServiceInfoBleak
+import probatio as vol
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
-from voluptuous import Schema
 
 from custom_components.bms_ble.config_flow import ConfigFlow
 from custom_components.bms_ble.const import (
@@ -352,7 +352,7 @@ async def test_user_setup(
     assert result.get("step_id") == "user"
     assert result.get("errors") is None
 
-    data_schema: Final[Schema | None] = result.get("data_schema")
+    data_schema: Final[vol.Schema | None] = result.get("data_schema")
     assert data_schema is not None
     assert data_schema.schema.get(CONF_ADDRESS).serialize() == {
         "selector": {
