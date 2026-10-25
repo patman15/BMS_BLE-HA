@@ -4,6 +4,7 @@ aiohttp-zlib-ng # to avoid performance warning
 aiousbwatcher
 ibeacon_ble # due to BLE identification conflict
 kegtron_ble # due to BLE identification conflict
+keyring
 pytest
 pytest-homeassistant-custom-component==0.13.363
 serialx
