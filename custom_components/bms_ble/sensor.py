@@ -3,6 +3,7 @@
 from collections.abc import Callable
 from dataclasses import replace
 from functools import cached_property
+from random import choice
 from statistics import fmean
 from typing import Final, override
 
@@ -39,7 +40,6 @@ from . import BTBmsConfigEntry
 from .const import (
     ATTR_BALANCE_CUR,
     ATTR_BATTERY_HEALTH,
-    ATTR_CELL_NUMBER,
     ATTR_CELL_VOLTAGES,
     ATTR_CURRENT,
     ATTR_CYCLE_CAP,
@@ -181,11 +181,6 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         value_fn=lambda data: data.get("delta_cell_voltage"),
     ),
     BmsEntityDescription(
-        attr_fn=lambda data: (
-            {ATTR_CELL_NUMBER: [cells.index(max(cells)) + 1]}
-            if (cells := data.get("cell_voltages", []))
-            else {}
-        ),
         device_class=SensorDeviceClass.VOLTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -199,11 +194,6 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         ),
     ),
     BmsEntityDescription(
-        attr_fn=lambda data: (
-            {ATTR_CELL_NUMBER: [cells.index(min(cells)) + 1]}
-            if (cells := data.get("cell_voltages", []))
-            else {}
-        ),
         device_class=SensorDeviceClass.VOLTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -215,6 +205,22 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         value_fn=lambda data: (
             min(cells) if (cells := data.get("cell_voltages", [])) else None
         ),
+    ),
+    BmsEntityDescription(
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        key="max_cell_voltage_index",
+        state_class=SensorStateClass.MEASUREMENT,
+        translation_key="max_cell_voltage_index",
+        value_fn=lambda data: _cell_voltage_index(data, maximum=True),
+    ),
+    BmsEntityDescription(
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        key="min_cell_voltage_index",
+        state_class=SensorStateClass.MEASUREMENT,
+        translation_key="min_cell_voltage_index",
+        value_fn=lambda data: _cell_voltage_index(data, maximum=False),
     ),
     BmsEntityDescription(
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
@@ -236,6 +242,15 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         value_fn=lambda data: None,
     ),
 ]
+
+
+def _cell_voltage_index(data: BMSSample | PackSample, *, maximum: bool) -> int | None:
+    """Return a 1-based index for a randomly selected cell at the voltage extreme."""
+    if not (cells := data.get("cell_voltages")):
+        return None
+    extreme = max(cells) if maximum else min(cells)
+    return choice([idx for idx, voltage in enumerate(cells) if voltage == extreme]) + 1
+
 
 PACK_SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     descr

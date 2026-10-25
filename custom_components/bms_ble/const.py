@@ -40,5 +40,7 @@ ATTR_RUNTIME: Final = "runtime"  # [s]
 BINARY_SENSORS: Final[int] = 6  # total number of binary sensors
 LINK_SENSORS: Final[int] = 2  # total number of sensors for connection quality
 OPT_SENSORS: Final[int] = 2  # total number of optional sensors (BmsEntityDescription)
-PACK_SENSORS: Final[int] = 11  # total number of sensors for a pack (BmsEntityDescription)
-SENSORS: Final[int] = 13  # total number of sensors
+PACK_SENSORS: Final[int] = (
+    13  # total number of sensors for a pack (BmsEntityDescription)
+)
+SENSORS: Final[int] = 15  # total number of sensors

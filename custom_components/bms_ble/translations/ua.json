@@ -49,8 +49,14 @@
       "max_cell_voltage": {
         "name": "Найвища напруга комірки"
       },
+      "max_cell_voltage_index": {
+        "name": "Комірка з найвищою напругою"
+      },
       "min_cell_voltage": {
         "name": "Найнижча напруга комірки"
+      },
+      "min_cell_voltage_index": {
+        "name": "Комірка з найнижчою напругою"
       },
       "runtime": {
         "name": "Час роботи"

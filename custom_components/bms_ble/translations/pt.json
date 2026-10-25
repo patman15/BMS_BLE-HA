@@ -49,8 +49,14 @@
       "max_cell_voltage": {
         "name": "Maior tensão da célula"
       },
+      "max_cell_voltage_index": {
+        "name": "Célula com maior tensão"
+      },
       "min_cell_voltage": {
         "name": "Menor tensão da célula"
+      },
+      "min_cell_voltage_index": {
+        "name": "Célula com menor tensão"
       },
       "runtime": {
         "name": "Tempo de funcionamento"
