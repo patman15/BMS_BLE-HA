@@ -104,7 +104,7 @@ async def test_update(
         f"{DEV_NAME}_{PACK_NAME}_1_highest_cell_voltage": "4.1",
         f"{DEV_NAME}_{PACK_NAME}_1_lowest_cell_voltage": "4",
         f"{DEV_NAME}_{PACK_NAME}_1_power": STATE_UNKNOWN,
-        f"{DEV_NAME}_{PACK_NAME}_1_sensor_1_generic_temperature": "73",
+        f"{DEV_NAME}_{PACK_NAME}_1_sensor_1_generic_temperature": "73.0",
         f"{DEV_NAME}_{PACK_NAME}_1_sensor_2_generic_temperature": "31.4",
         f"{DEV_NAME}_{PACK_NAME}_1_stored_energy": STATE_UNKNOWN,
         f"{DEV_NAME}_{PACK_NAME}_1_temperature": "52.2",

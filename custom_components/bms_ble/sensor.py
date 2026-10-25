@@ -266,6 +266,10 @@ def _gen_temperature_sensors(
     sensors: list[BMSSensor] = []
     for idx in range(1, len(temp_sensors) + 1):
         sensor = temp_sensors[idx - 1]
+
+        def value_fn(data: BMSSample | PackSample, temp_idx: int = idx - 1) -> float:
+            return float(data.get("temperature", [])[temp_idx].value)
+
         sensor_descr = replace(
             descr,
             entity_category=EntityCategory.DIAGNOSTIC,
@@ -273,7 +277,7 @@ def _gen_temperature_sensors(
             key=descr.key + f"-probe-{idx}-{sensor.type.name}",
             translation_key=descr.key + f"_{sensor.type.name}".lower(),
             translation_placeholders={"id": str(idx)},
-            value_fn=lambda data, idx=idx - 1: data.get("temperature")[idx].value,
+            value_fn=value_fn,
         )
         sensors.append(
             PackSensor(bms, sensor_descr, mac, pack_idx, entry_id)
@@ -306,7 +310,6 @@ async def async_setup_entry(
         if descr.key == ATTR_TEMPERATURE:
             entities.extend(_gen_temperature_sensors(bms, descr, mac))
         entities.append(BMSSensor(bms, descr, mac))
-    async_add_entities(entities)
 
     pack_sensors: list[SensorEntity] = []
     for pack_idx, pack in enumerate(bms.data.get("packs", []), start=1):
@@ -322,8 +325,8 @@ async def async_setup_entry(
             pack_sensors.append(
                 PackSensor(bms, descr, mac, pack_idx, config_entry.entry_id)
             )
-    if pack_sensors:
-        async_add_entities(pack_sensors)
+
+    async_add_entities(entities + pack_sensors)
 
 
 class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
@@ -346,10 +349,7 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
     @override
     def extra_state_attributes(self) -> dict[str, list[int | float]] | None:
         """Return entity specific state attributes, e.g. cell voltages."""
-        if self.coordinator.data:
-            return self.entity_description.attr_fn(self.coordinator.data)
-
-        return None
+        return self.entity_description.attr_fn(self.coordinator.data)
 
     @property
     @override
