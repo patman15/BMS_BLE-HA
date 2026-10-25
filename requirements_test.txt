@@ -5,8 +5,8 @@ aiousbwatcher
 ibeacon_ble # due to BLE identification conflict
 kegtron_ble # due to BLE identification conflict
 keyring
+Pyswitchbot # due to BLE identification conflict
 pytest
-pytest-homeassistant-custom-component==0.13.363
+pytest-homeassistant-custom-component==0.13.371
 serialx
 wheel
-
