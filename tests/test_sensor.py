@@ -44,7 +44,6 @@ PACK_NAME: Final[str] = "pack"
 @pytest.mark.usefixtures(
     "enable_bluetooth", "patch_default_bleak_client", "patch_entity_enabled_default"
 )  # enable bluetooth, patch bleak client and enable all sensors
-@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_update(
     monkeypatch: pytest.MonkeyPatch,
     bt_discovery: BluetoothServiceInfoBleak,

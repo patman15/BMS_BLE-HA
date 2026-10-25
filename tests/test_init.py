@@ -15,7 +15,6 @@ from .conftest import mock_config, mock_devinfo_min, mock_exception, mock_update
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
 @pytest.mark.parametrize("swap", [False, True], ids=["devinfo", "update"])
-@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_init_fail(
     monkeypatch: pytest.MonkeyPatch,
     swap: bool,
@@ -66,7 +65,6 @@ async def test_init_fail(
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
-@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_unload_entry(
     monkeypatch: pytest.MonkeyPatch,
     bool_fixture: bool,
