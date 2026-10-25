@@ -224,3 +224,111 @@ async def test_update(
         assert (
             state is not None and state.attributes[attribute] == value
         ), f"failed to verify attribute {attribute} for sensor {sensor}"
+
+
+@pytest.mark.usefixtures(
+    "enable_bluetooth", "patch_default_bleak_client", "patch_entity_enabled_default"
+)  # enable bluetooth, patch bleak client and enable all sensors
+async def test_pack_data_incomplete(
+    monkeypatch: pytest.MonkeyPatch,
+    bt_discovery: BluetoothServiceInfoBleak,
+    hass: HomeAssistant,
+) -> None:
+    """Test that pack sensors become unknown if an update does not return pack data."""
+
+    update_with_packs: bool = True
+
+    async def patch_async_update(_self) -> BMSSample:
+        """Patch async_update to return pack data only on the first call."""
+        sample: BMSSample = BMSSample(
+            battery_level=42,
+            voltage=17.0,
+            current=1.5,
+            temperature=[TS(43.86)],
+            cell_voltages=[3.1, 3, 3.123],
+        )
+        if update_with_packs:
+            sample |= BMSSample(
+                pack_count=1,
+                packs=[
+                    PackSample(
+                        battery_level=1.0,
+                        current=-3.14,
+                        cycles=0,
+                        voltage=12.34,
+                        temperature=[TS(73), TS(31.4)],
+                        cell_voltages=[4.1, 4],
+                    )
+                ],
+            )
+        return sample
+
+    pack_result: Final[dict[str, str]] = {
+        f"{DEV_NAME}_{PACK_NAME}_1_battery": "1.0",
+        f"{DEV_NAME}_{PACK_NAME}_1_current": "-3.14",
+        f"{DEV_NAME}_{PACK_NAME}_1_cycles": "0",
+        f"{DEV_NAME}_{PACK_NAME}_1_delta_cell_voltage": STATE_UNKNOWN,
+        f"{DEV_NAME}_{PACK_NAME}_1_highest_cell_voltage": "4.1",
+        f"{DEV_NAME}_{PACK_NAME}_1_lowest_cell_voltage": "4",
+        f"{DEV_NAME}_{PACK_NAME}_1_power": STATE_UNKNOWN,
+        f"{DEV_NAME}_{PACK_NAME}_1_sensor_1_generic_temperature": "73.0",
+        f"{DEV_NAME}_{PACK_NAME}_1_sensor_2_generic_temperature": "31.4",
+        f"{DEV_NAME}_{PACK_NAME}_1_stored_energy": STATE_UNKNOWN,
+        f"{DEV_NAME}_{PACK_NAME}_1_temperature": "52.2",
+        f"{DEV_NAME}_{PACK_NAME}_1_voltage": "12.34",
+    }
+
+    bms_class: Final[str] = "aiobmsble.bms.dummy_bms.BMS"
+    monkeypatch.setattr(f"{bms_class}.device_info", mock_devinfo_min)
+    monkeypatch.setattr(f"{bms_class}.async_update", patch_async_update)
+
+    config: MockConfigEntry = mock_config()
+    config.add_to_hass(hass)
+
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
+
+    assert await hass.config_entries.async_setup(config.entry_id)
+    await hass.async_block_till_done()
+    assert config.state is ConfigEntryState.LOADED
+
+    def sensor_states(pack: bool) -> dict[str, str]:
+        return {
+            entity.entity_id: entity.state
+            for entity in hass.states.async_all(["sensor"])
+            if (f"_{PACK_NAME}_" in entity.entity_id) is pack
+        }
+
+    main_states: Final[dict[str, str]] = {
+        f"{DEV_NAME}_{ATTR_VOLTAGE}": "17.0",
+        f"{DEV_NAME}_battery": "42",
+        f"{DEV_NAME}_{ATTR_TEMPERATURE}": "43.86",
+        f"{DEV_NAME}_{ATTR_CURRENT}": "1.5",
+    }
+
+    for entity_id, state in main_states.items():
+        entity_state = hass.states.get(entity_id)
+        assert entity_state is not None
+        assert entity_state.state == state
+    assert sensor_states(pack=True) == pack_result
+
+    # next update does not contain any pack data
+    update_with_packs = False
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=UPDATE_INTERVAL))
+    await hass.async_block_till_done(wait_background_tasks=True)
+
+    assert config.state is ConfigEntryState.LOADED
+    for entity_id, state in main_states.items():
+        entity_state = hass.states.get(entity_id)
+        assert entity_state is not None
+        assert entity_state.state == state
+    assert sensor_states(pack=True) == dict.fromkeys(pack_result, STATE_UNKNOWN)
+
+    for entity in hass.states.async_all(["sensor"]):
+        if f"_{PACK_NAME}_" in entity.entity_id:
+            assert not set(entity.attributes) & {ATTR_CELL_VOLTAGES, "cell_number"}
+
+    # pack data returns with the following update
+    update_with_packs = True
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=UPDATE_INTERVAL))
+    await hass.async_block_till_done(wait_background_tasks=True)
+    assert sensor_states(pack=True) == pack_result
