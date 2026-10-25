@@ -322,13 +322,6 @@ template:
 ```
 There are plenty more functions you can use, please see [templating](https://www.home-assistant.io/docs/configuration/templating/).
 
-### I want to know the cell with the lowest voltage!
-Please follow the explanations in the previous question but use the following:
-
-Field | Content
--- | --
-State template | `{%- if has_value("sensor.smartbat_..._minimal_cell_voltage") %} {{ state_attr("sensor.smartbat_..._minimal_cell_voltage", "cell_number") }} {% else %} None {% endif -%}`
-
 ### I need a discharge sensor not the charging indicator, can I have that?
 Sure, use, e.g. a [threshold sensor](https://my.home-assistant.io/redirect/config_flow_start/?domain=threshold) based on the current to/from the battery. Negative means discharging, positive is charging.
 

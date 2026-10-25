@@ -209,17 +209,17 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     BmsEntityDescription(
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
-        key="max_cell_voltage_index",
+        key="ATTR_MAX_VOLTAGE_IDX",
         state_class=SensorStateClass.MEASUREMENT,
-        translation_key="max_cell_voltage_index",
+        translation_key="ATTR_MAX_VOLTAGE_IDX",
         value_fn=lambda data: _cell_voltage_index(data, maximum=True),
     ),
     BmsEntityDescription(
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
-        key="min_cell_voltage_index",
+        key="ATTR_MIN_VOLTAGE_IDX",
         state_class=SensorStateClass.MEASUREMENT,
-        translation_key="min_cell_voltage_index",
+        translation_key="ATTR_MIN_VOLTAGE_IDX",
         value_fn=lambda data: _cell_voltage_index(data, maximum=False),
     ),
     BmsEntityDescription(
