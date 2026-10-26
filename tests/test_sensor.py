@@ -231,7 +231,7 @@ async def test_update(
         )
 
     for sensor in ("highest_cell_voltage", "lowest_cell_voltage"):
-        state: State | None = hass.states.get(f"{DEV_NAME}_{sensor}")
+        state = hass.states.get(f"{DEV_NAME}_{sensor}")
         assert state is not None and "cell_number" not in state.attributes
 
 
