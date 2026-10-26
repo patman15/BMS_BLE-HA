@@ -5,7 +5,7 @@ from typing import Any, Final, override
 
 from aiobmsble.basebms import BaseBMS
 from aiobmsble.utils import bms_cls, bms_identify
-import voluptuous as vol
+import probatio as vol
 
 from homeassistant import config_entries
 from homeassistant.components.bluetooth import (

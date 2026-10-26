@@ -114,32 +114,40 @@ If you would like to get your battery/BMS supported please consider raising a pu
 > 
 > **Do not rely** on the values to control actions that prevent battery damage, overheating (fire), or similar.
 
-Platform | Name | Unit | Description | Optional Attributes
+Platform | Entity | Unit | Description | Attributes
 -- | -- | -- | -- | --
-`binary_sensor` | battery charging | `bool` | indicates `True` if battery is charging | battery mode
-`sensor` | charge cycles | `#` | lifetime number of charge cycles | package charge cycles
-`sensor` | current | `A` | positive for charging, negative for discharging | balance current, heater current, package current
-`sensor` | power | `W` | positive for charging, negative for discharging
-`sensor` | runtime | `s` | remaining discharge time till SoC 0%, `unavailable` during idle/charging
-`sensor` | SoC | `%` | state of charge, range 100% (full) to 0% (battery empty) | package SoC
-`sensor` | stored energy | `Wh` | currently stored energy
-`sensor` | temperature | `°C` | (average) battery temperature | individual temperature values
-`sensor` | voltage | `V` | overall battery voltage | package voltage
-||||
-|||| **Diagnosis Sensors**
-`binary_sensor`* | balancer | `bool` | indicates `True` if the battery balancer is active | cell bit mask
-`binary_sensor`* | chrg mosfet | `bool` | indicates `True` if the BMS charge MOSFET is activated
-`binary_sensor`* | dischrg mosfet | `bool` | indicates `True` if the BMS discharge MOSFET is activated
-`binary_sensor`* | heater | `bool` | indicates `True` if the battery being heated
-`binary_sensor` | problem | `bool` | indicates `True` if the BMS reports an issue or plausibility checks on values fail | problem code
-`sensor` | delta cell voltage | `V` | maximum difference between any two cells in a pack | cell voltages
-`sensor` | design capacity | `Ah` | manufacturer design capacity
-`sensor`* | link quality  | `%` | successful BMS queries from the last hundred update periods
-`sensor`* | max cell voltage | `V` | overall highest cell voltage in the system | cell number
-`sensor`* | min cell voltage | `V` | overall lowest cell voltage in the system | cell number
-`sensor`* | RSSI          | `dBm`| received signal strength indicator
+`binary_sensor` | battery charging | `bool` | Indicates whether the battery is charging | battery mode
+`sensor` | battery level | `%` | State of charge: 100% is full and 0% is empty |
+`sensor` | battery health | `%` | Battery health, when provided by the BMS |
+`sensor` | current | `A` | Positive while charging and negative while discharging | Balance current and heater current, when provided
+`sensor` | cycles | `#` | Lifetime number of charge cycles |
+`sensor` | power | `W` | Positive while charging and negative while discharging |
+`sensor` | runtime | `h` (native: `s`) | Remaining discharge time to 0% SoC; unavailable while idle or charging |
+`sensor` | stored energy | `Wh` | Currently stored energy |
+`sensor` | temperature | `°C` | Average cell temperature, or average of all temperatures if no cell temperatures are reported |
+`sensor` | voltage | `V` | Overall battery voltage |
+**Diagnostic Entities**
 
-*) sensors are disabled by default, if required, [enable the entities](https://www.home-assistant.io/common-tasks/general/#enabling-or-disabling-entities).
+Platform | Entity | Unit | Description | Attributes
+-- | -- | -- | -- | --
+`binary_sensor`* | balancer | `bool` | Indicates whether the battery balancer is active | Cell states
+`binary_sensor`* | charge MOSFET | `bool` | Indicates whether the BMS charge MOSFET is activated |
+`binary_sensor`* | discharge MOSFET | `bool` | Indicates whether the BMS discharge MOSFET is activated |
+`binary_sensor`* | heater | `bool` | Indicates whether the battery is being heated |
+`binary_sensor` | problem | `bool` | Indicates whether the BMS reports an issue or a plausibility check fails | Problem code
+`sensor` | delta cell voltage | `V` | Maximum difference between any two cell voltages | Cell voltages
+`sensor` | design capacity | `Ah` | Manufacturer design capacity, when provided by the BMS |
+`sensor`* | highest cell voltage | `V` | Highest cell voltage |
+`sensor`* | highest cell voltage index | `#` | 1-based index of a cell at the highest voltage |
+`sensor`* | lowest cell voltage | `V` | Lowest cell voltage |
+`sensor`* | lowest cell voltage index | `#` | 1-based index of a cell at the lowest voltage |
+`sensor`* | link quality | `%` | Successful BMS queries over the last 100 update periods |
+`sensor`* | RSSI | `dBm` | Bluetooth received signal strength indicator |
+`sensor`* | individual temperatures | `°C` | One diagnostic sensor per temperature probe; created when at least two probes are reported |
+
+When the BMS reports multiple battery packs, pack-level sensors are added to a child device for each pack. These include battery level, health (when provided), current, cycles, power, stored energy, temperature, voltage, design capacity (when provided), and cell voltage diagnostics where available.
+
+*) Entities marked with an asterisk are disabled by default. If required, [enable the entities](https://www.home-assistant.io/common-tasks/general/#enabling-or-disabling-entities).
 
 ## Installation
 BMS_BLE is a default repository in [HACS](https://hacs.xyz/). Please follow the [guidelines on how to use HACS](https://hacs.xyz/docs/use/) if you haven't installed it yet. To add the integration to your Home Assistant instance, use this My button:
@@ -313,13 +321,6 @@ template:
         {{ has_value('sensor.smartbat_..._delta_cell_voltage') }}
 ```
 There are plenty more functions you can use, please see [templating](https://www.home-assistant.io/docs/configuration/templating/).
-
-### I want to know the cell with the lowest voltage!
-Please follow the explanations in the previous question but use the following:
-
-Field | Content
--- | --
-State template | `{%- if has_value("sensor.smartbat_..._minimal_cell_voltage") %} {{ state_attr("sensor.smartbat_..._minimal_cell_voltage", "cell_number") }} {% else %} None {% endif -%}`
 
 ### I need a discharge sensor not the charging indicator, can I have that?
 Sure, use, e.g. a [threshold sensor](https://my.home-assistant.io/redirect/config_flow_start/?domain=threshold) based on the current to/from the battery. Negative means discharging, positive is charging.

@@ -21,6 +21,11 @@
       }
     }
   },
+  "device": {
+    "pack": {
+      "name": "{device_name} pack {id}"
+    }
+  },
   "entity": {
     "binary_sensor": {
       "balancer": {
@@ -58,14 +63,47 @@
       "max_cell_voltage": {
         "name": "Highest cell voltage"
       },
+      "max_cell_voltage_index": {
+        "name": "Highest cell voltage index"
+      },
       "min_cell_voltage": {
         "name": "Lowest cell voltage"
       },
+      "min_cell_voltage_index": {
+        "name": "Lowest cell voltage index"
+      },
       "rssi": {
         "name": "[%key:component::sensor::entity_component::signal_strength::name%]"
-      },      
+      },
       "runtime": {
         "name": "Runtime"
+      },
+      "temperature_generic": {
+        "name": "Sensor #{id} generic temperature"
+      },
+      "temperature_cell": {
+        "name": "Sensor #{id} cell temperature"
+      },
+      "temperature_cell_max": {
+        "name": "Sensor #{id} highest cell temperature"
+      },
+      "temperature_cell_min": {
+        "name": "Sensor #{id} lowest cell temperature"
+      },
+      "temperature_mosfet": {
+        "name": "Sensor #{id} MOSFET temperature"
+      },
+      "temperature_pcb": {
+        "name": "Sensor #{id} board temperature"
+      },
+      "temperature_heater": {
+        "name": "Sensor #{id} heater temperature"
+      },
+      "temperature_balancer": {
+        "name": "Sensor #{id} balancer temperature"
+      },
+      "temperature_ambient": {
+        "name": "Sensor #{id} ambient temperature"
       }
     }
   },

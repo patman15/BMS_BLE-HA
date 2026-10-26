@@ -6,10 +6,10 @@ from typing import override
 from aiobmsble import BMSMode, BMSSample
 
 from homeassistant.components.binary_sensor import (
-    BinarySensorDeviceClass,
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
+from homeassistant.components.binary_sensor.const import BinarySensorDeviceClass
 from homeassistant.const import ATTR_BATTERY_CHARGING, EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import format_mac
@@ -67,7 +67,6 @@ BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         key=ATTR_BALANCER,
-        name="Balancer",
         translation_key=ATTR_BALANCER,
     ),
     BmsBinaryEntityDescription(
@@ -75,7 +74,6 @@ BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         key=ATTR_CHRG_MOSFET,
-        name="Charge MOSFET",
         translation_key=ATTR_CHRG_MOSFET,
     ),
     BmsBinaryEntityDescription(
@@ -83,7 +81,6 @@ BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         key=ATTR_DISCHRG_MOSFET,
-        name="Discharge MOSFET",
         translation_key=ATTR_DISCHRG_MOSFET,
     ),
     BmsBinaryEntityDescription(

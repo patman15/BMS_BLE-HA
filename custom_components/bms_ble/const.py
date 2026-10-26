@@ -28,17 +28,22 @@ ATTR_DELTA_VOLTAGE: Final = "delta_cell_voltage"  # [V]
 ATTR_DESIGN_CAP: Final = "design_capacity"  # [Ah]
 ATTR_DISCHRG_MOSFET: Final = "dischrg_mosfet"  # [bool]
 ATTR_HEATER: Final = "heater"  # [bool]
+ATTR_HEATER_CURRENT: Final = "heater_current"  # [A]
 ATTR_LQ: Final = "link_quality"  # [%]
 ATTR_MAX_VOLTAGE: Final = "max_cell_voltage"  # [V]
+ATTR_MAX_VOLTAGE_IDX: Final = "max_cell_voltage_index"  # [#]
 ATTR_MIN_VOLTAGE: Final = "min_cell_voltage"  # [V]
+ATTR_MIN_VOLTAGE_IDX: Final = "min_cell_voltage_index"  # [#]
 ATTR_POWER: Final = "power"  # [W]
 ATTR_PROBLEM: Final = "problem"  # [bool]
 ATTR_PROBLEM_CODE: Final = "problem_code"  # [str]
 ATTR_RSSI: Final = "rssi"  # [dBm]
 ATTR_RUNTIME: Final = "runtime"  # [s]
-ATTR_TEMP_SENSORS: Final = "temperature_sensors"  # [°C]
 
 BINARY_SENSORS: Final[int] = 6  # total number of binary sensors
 LINK_SENSORS: Final[int] = 2  # total number of sensors for connection quality
 OPT_SENSORS: Final[int] = 2  # total number of optional sensors (BmsEntityDescription)
-SENSORS: Final[int] = 13  # total number of sensors
+PACK_SENSORS: Final[int] = (
+    13  # total number of sensors for a pack (BmsEntityDescription)
+)
+SENSORS: Final[int] = 15  # total number of sensors
