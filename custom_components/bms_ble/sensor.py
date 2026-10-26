@@ -67,7 +67,7 @@ class BmsEntityDescription(SensorEntityDescription, frozen_or_thawed=True):
         lambda data: None
     )
     optional: bool = False
-    value_fn: Callable[[BMSSample | PackSample], float | int | None]
+    value_fn: Callable[[BMSSample | PackSample], float | int | str | None]
 
 
 SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
@@ -244,19 +244,19 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
 ]
 
 
-def _cell_voltage_index(data: BMSSample | PackSample, *, maximum: bool) -> int | None:
-    """Return a 1-based index for a randomly selected cell at the voltage extreme."""
-    if not (cells := data.get("cell_voltages")):
-        return None
-    extreme = max(cells) if maximum else min(cells)
-    return choice([idx for idx, voltage in enumerate(cells) if voltage == extreme]) + 1
-
-
 PACK_SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     descr
     for descr in SENSOR_TYPES
     if descr.key not in (ATTR_LQ, ATTR_RSSI, ATTR_RUNTIME)
 ]
+
+
+def _cell_voltage_index(data: BMSSample | PackSample, *, maximum: bool) -> str | None:
+    """Return a 1-based index for a randomly selected cell at the voltage extreme."""
+    if not (cells := data.get("cell_voltages")):
+        return None
+    extreme = max(cells) if maximum else min(cells)
+    return str(choice([i for i, v in enumerate(cells) if v == extreme]) + 1)
 
 
 def _gen_temperature_sensors(
@@ -368,7 +368,7 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
 
     @property
     @override
-    def native_value(self) -> int | float | None:
+    def native_value(self) -> int | float | str | None:
         """Return the sensor value."""
         return (
             self.entity_description.value_fn(self.coordinator.data)
