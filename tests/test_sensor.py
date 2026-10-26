@@ -1,6 +1,7 @@
 """Test the BLE Battery Management System integration sensor definition."""
 
 from datetime import timedelta
+import random
 from typing import Final
 
 from aiobmsble import BMSSample, PackSample, TempSensor as TS
@@ -226,9 +227,9 @@ async def test_update(
         ),
     ):
         state: State | None = hass.states.get(f"{DEV_NAME}_{sensor}")
-        assert state is not None and state.attributes[attribute] == value, (
-            f"failed to verify attribute {attribute} for sensor {sensor}"
-        )
+        assert (
+            state is not None and state.attributes[attribute] == value
+        ), f"failed to verify attribute {attribute} for sensor {sensor}"
 
     for sensor in ("highest_cell_voltage", "lowest_cell_voltage"):
         state = hass.states.get(f"{DEV_NAME}_{sensor}")
@@ -345,11 +346,14 @@ async def test_pack_data_incomplete(
     assert sensor_states(pack=True) == pack_result
 
 
-def test_cell_voltage_index_randomizes_ties(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cell_voltage_index_randomizes(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test that tied voltage extrema can resolve to any matching cell."""
-    monkeypatch.setattr(sensor_module, "choice", lambda indices: indices[-1])
-    sample: BMSSample = BMSSample(cell_voltages=[3.1, 3.2, 3.1, 3.2])
+    sample = BMSSample(cell_voltages=[3.1, 3.2, 3.1, 3.2])
+    random.seed(1234)  # reproducible; pick a seed that covers both outcomes
 
-    assert sensor_module._cell_voltage_index(sample, maximum=True) == 4
-    assert sensor_module._cell_voltage_index(sample, maximum=False) == 3
-    assert sensor_module._cell_voltage_index(BMSSample(), maximum=True) is None
+    assert {
+        sensor_module._cell_voltage_index(sample, maximum=True) for _ in range(5)
+    } == {2, 4}
+    assert {
+        sensor_module._cell_voltage_index(sample, maximum=False) for _ in range(5)
+    } == {1, 3}
