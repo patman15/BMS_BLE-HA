@@ -18,6 +18,11 @@
       }
     }
   },
+  "device": {
+    "pack": {
+      "name": "Modul {id}"
+    }
+  },
   "entity": {
     "binary_sensor": {
       "balancer": {
@@ -45,7 +50,7 @@
       },
       "design_capacity": {
         "name": "Nominale Kapazität"
-      },      
+      },
       "link_quality": {
         "name": "Verbindungsqualität"
       },
@@ -57,7 +62,34 @@
       },
       "runtime": {
         "name": "Laufzeit"
-      }
+      },
+      "temperature_generic": {
+        "name": "Sensor #{id} Temperatur allgemein"
+      },
+      "temperature_cell": {
+        "name": "Sensor #{id} Zelltemperatur"
+      },
+      "temperature_cell_max": {
+        "name": "Sensor #{id} maximale Zelltemperatur"
+      },
+      "temperature_cell_min": {
+        "name": "Sensor #{id} minimale Zelltemperatur"
+      },
+      "temperature_mosfet": {
+        "name": "Sensor #{id} MOSFET Temperatur"
+      },
+      "temperature_pcb": {
+        "name": "Sensor #{id} Platinentemperatur"
+      },
+      "temperature_heater": {
+        "name": "Sensor #{id} Heizungstemperatur"
+      },
+      "temperature_balancer": {
+        "name": "Sensor #{id} Balancertemperatur"
+      },
+      "temperature_ambient": {
+        "name": "Sensor #{id} Umgebungstemperatur"
+      }     
     }
   },
   "exceptions": {
@@ -99,7 +131,7 @@
               "keep_alive": "Verbindung zwischen Updates aufrechterhalten"
             },
             "data_description": {
-               "keep_alive": "Hält die Bluetooth-Verbindung zwischen den Update-Zyklen. Das Deaktivieren verschlechtert die Verbindungszuverlässigkeit des BMS und wird nur als letztes Mittel empfohlen, wenn ein Bluetooth-Adapter mit nur einer Verbindung (z. B. Realtek RTL8761B) mit anderen Integrationen geteilt wird. Verwende nach Möglichkeit einen dedizierten Bluetooth-Adapter."
+              "keep_alive": "Hält die Bluetooth-Verbindung zwischen den Update-Zyklen. Das Deaktivieren verschlechtert die Verbindungszuverlässigkeit des BMS und wird nur als letztes Mittel empfohlen, wenn ein Bluetooth-Adapter mit nur einer Verbindung (z. B. Realtek RTL8761B) mit anderen Integrationen geteilt wird. Verwende nach Möglichkeit einen dedizierten Bluetooth-Adapter."
             },
             "name": "Erweiterte Optionen"
           }

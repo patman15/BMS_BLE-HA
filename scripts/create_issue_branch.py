@@ -362,7 +362,7 @@ def git_has_uncommitted_changes() -> bool:
     return bool(cp.stdout.strip())
 
 
-def run_git_args(args: list[str], *, check: bool = True) -> subprocess.CompletedProcess:
+def run_git_args(args: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
     """Run a git command and return the CompletedProcess."""
     # replace 'git' with resolved GIT_BIN for safety
     if args and args[0] == "git":

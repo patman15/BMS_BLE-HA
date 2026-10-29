@@ -47,7 +47,34 @@
       },
       "rssi": {
         "default": "mdi:bluetooth-connect"
-      }
+      },
+      "temperature_generic": {
+        "default": "mdi:thermometer-probe"
+      },
+      "temperature_cell": {
+        "default": "mdi:thermometer-probe"
+      },
+      "temperature_cell_max": {
+        "default": "mdi:thermometer-probe"
+      },
+      "temperature_cell_min": {
+        "default": "mdi:thermometer-probe"
+      },
+      "temperature_mosfet": {
+        "default": "mdi:thermometer-probe"
+      },
+      "temperature_pcb": {
+        "default": "mdi:thermometer-probe"
+      },
+      "temperature_heater": {
+        "default": "mdi:thermometer-probe"
+      },
+      "temperature_balancer": {
+        "default": "mdi:thermometer-probe"
+      },
+      "temperature_ambient": {
+        "default": "mdi:thermometer-probe"
+      }         
     }
   }
 }
