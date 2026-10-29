@@ -56,7 +56,9 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Ective, Startcraft, Topband batteries (show up as `$PFLAC`&#x2026;, `NWJ20`&#x2026;, `ZM20`&#x2026;)
 - EG4 LL BMS
     - Sungold batteries
+- E&J Pro BMS (show up as `EJ`&#x2026;)
 - Eleksol batteries
+- Epoch Pro BMS
 - Felicity ESS (show up as `F10`&#x2026;) and FLB batteries (show up as `F07`&#x2026;)
 - Gobel Power BMS (show up as `BMS-`&#x2026;)
     - Dyness AR1.2
@@ -65,7 +67,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - JBD BMS, Jiabaida, Xiaoxiang (show up as `JBD-`&#x2026;)
     - accurat batteries, Aolithium batteries, BasenGreen, Bulltron, CHINS, Cloud Energy, DCHOUSE, ECO-WORTHY, Epoch batteries
     - Eleksol, Elfhub, Fritz Berger, JavaEnegy, LANPWR, Liontron, Lossigy, Norström, OGRPHY, Perfektium, RVPOWER, Ultimatron batteries
-    - SBL batteries (show up as `SBL-`&#x2026;), Supervolt v3 batteries (show up as `SX1`&#x2026;), Supervolt Jumbo (show up as `SJ-`&#x2026;)
+    - SBL batteries (show up as `SBL-`&#x2026;), Supervolt v3 batteries (show up as `SX1`&#x2026;), Supervolt Jumbo (show up as `SJ-`&#x2026;), Titan batteries (show up as `TITAN-`&#x2026;)
     - Vanvolt batteries (show up as `Vanvolt+`&#x2026;), Vatrer batteries
 - JK BMS, Jikong, (HW version &ge; 6 required)
 - KS48x00 series BMS (show up as `BL-`&#x2026;, `HSKS-`&#x2026; or `KS-`&#x2026;)
@@ -83,9 +85,11 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - Foxwell BT630
     - Leagend CM100
 - Renogy BMS, Renogy Pro BMS
+- Rolls VB series BMS
 - RoyPow (Fish) batteries
     - Lion Energy Safari
 - Pylontech RT series batteries (show up as `RT12`&#x2026;, `RT24`&#x2026;, `RT48`&#x2026;)
+- Saftkiste BMS
 - Saihang BMS (show up as `SH`&#x2026;)
     - Anenji, Aninerel batteries
 - Seplos v2 (show up as `BP[0-2]?`)
@@ -355,7 +359,7 @@ all [contributors of aiobmsble](https://github.com/patman15/aiobmsble?tab=readme
 [license-shield]: https://img.shields.io/github/license/patman15/BMS_BLE-HA?style=for-the-badge&color=orange&cacheSeconds=86400
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
 [releases]: https://github.com/patman15/BMS_BLE-HA/releases
-[effort-shield]: https://img.shields.io/badge/Effort%20spent-1235_hours-gold?style=for-the-badge&cacheSeconds=86400
+[effort-shield]: https://img.shields.io/badge/Effort%20spent-1254_hours-gold?style=for-the-badge&cacheSeconds=86400
 [install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=HACS&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
 [custint-url]: https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval
