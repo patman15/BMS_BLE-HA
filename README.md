@@ -33,7 +33,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - 100% test coverage
 
 ### Supported Devices
-- 123\\SmartBMS (show up as `123\\SmartBMS`)
+- 123\\SmartBMS gen3 (show up as `123\\SmartBMS`)
 - ABC/SOK BMS (show up as `ABC-`&#x2026;, `SOK-`&#x2026;)
 - Allpowers power station
 - Buknuwo batteries (show up as `CDZG`&#x2026;), MEYULMOL batteries (show up as `MEY-`&#x2026;)
