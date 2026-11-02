@@ -91,7 +91,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Pylontech RT series batteries (show up as `RT12`&#x2026;, `RT24`&#x2026;, `RT48`&#x2026;)
 - Saftkiste BMS
 - Saihang BMS (show up as `SH`&#x2026;)
-    - Anenji, Aninerel batteries
+    - Anenji, Aninerel, SANDISOLAR (show up as `HL`&#x2026;) batteries
 - Seplos v2 (show up as `BP[0-2]?`)
 - Seplos v3 (show up as `SP[00-199]B`&#x2026; or `CSY`&#x2026;)
     - CEG Carmine Energia Gratis (show up as `XZHX`&#x2026;)
