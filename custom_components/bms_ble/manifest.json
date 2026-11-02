@@ -173,5 +173,5 @@
   "requirements": [
     "aiobmsble @ git+https://github.com/patman15/aiobmsble.git@issue-861-dyness-lifepo4-ar2-5-24v"
   ],
-  "version": "2.19.0"
+  "version": "2.19.0-beta.5"
 }
