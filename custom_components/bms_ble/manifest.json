@@ -173,5 +173,5 @@
   "requirements": [
     "aiobmsble @ git+https://github.com/patman15/aiobmsble.git@issue-856-problem-with-super-b-eps"
   ],
-  "version": "2.19.0"
+  "version": "2.19.0-beta.4"
 }
