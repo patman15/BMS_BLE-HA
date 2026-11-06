@@ -5,7 +5,7 @@ from typing import Any, Final
 
 from habluetooth import BluetoothServiceInfoBleak
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.bms_ble.const import DOMAIN
 from custom_components.bms_ble.coordinator import BTBmsCoordinator
