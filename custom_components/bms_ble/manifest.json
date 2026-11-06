@@ -33,6 +33,12 @@
       "local_name": "PC-????"
     },
     {
+      "local_name": "SK12V*"
+    },
+    {
+      "local_name": "SK24V*"
+    },
+    {
       "local_name": "TBA-*"
     },
     {
@@ -158,6 +164,6 @@
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
   "loggers": ["bleak_retry_connector", "aiobmsble"],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble==0.32.0"],
-  "version": "2.19.0"
+  "requirements": ["aiobmsble==0.33.0"],
+  "version": "2.20.0"
 }
