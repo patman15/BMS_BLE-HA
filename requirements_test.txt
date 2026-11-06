@@ -9,4 +9,3 @@ pytest~=9.0.3
 pytest-homeassistant-custom-component==0.13.354
 serialx~=1.8.0
 wheel
-

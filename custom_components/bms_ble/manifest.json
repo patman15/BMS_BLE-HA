@@ -33,6 +33,12 @@
       "local_name": "PC-????"
     },
     {
+      "local_name": "SK12V*"
+    },
+    {
+      "local_name": "SK24V*"
+    },
+    {
       "local_name": "TBA-*"
     },
     {
@@ -72,16 +78,11 @@
     },
     {
       "manufacturer_id": 2117,
-      "manufacturer_data_start": [
-        20,
-        133
-      ]
+      "manufacturer_data_start": [20, 133]
     },
     {
       "manufacturer_id": 65535,
-      "manufacturer_data_start": [
-        78
-      ]
+      "manufacturer_data_start": [78]
     },
     {
       "manufacturer_id": 21330,
@@ -154,24 +155,15 @@
       "manufacturer_id": 21320
     }
   ],
-  "codeowners": [
-    "@patman15"
-  ],
+  "codeowners": ["@patman15"],
   "config_flow": true,
-  "dependencies": [
-    "bluetooth_adapters"
-  ],
+  "dependencies": ["bluetooth_adapters"],
   "documentation": "https://github.com/patman15/BMS_BLE-HA",
   "integration_type": "device",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
-  "loggers": [
-    "bleak_retry_connector",
-    "aiobmsble"
-  ],
+  "loggers": ["bleak_retry_connector", "aiobmsble"],
   "quality_scale": "silver",
-  "requirements": [
-    "aiobmsble @ git+https://github.com/patman15/aiobmsble.git@issue-859-saihang-bms-add-matcher"
-  ],
-  "version": "2.20.0-beta.1"
+  "requirements": ["aiobmsble==0.33.0"],
+  "version": "2.20.0"
 }
