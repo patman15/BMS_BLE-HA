@@ -101,9 +101,11 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
             LOGGER.error(
                 "%s: BMS is stale, triggering reconnect%s!",
                 self.name,
-                f", check signal strength ({rssi} dBm)"
-                if rssi is not None and rssi < LOW_RSSI
-                else "",
+                (
+                    f", check signal strength ({rssi} dBm)"
+                    if rssi is not None and rssi < LOW_RSSI
+                    else ""
+                ),
             )
             self._stale = True
 
@@ -116,8 +118,8 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
             DeviceInfo(
                 name=bms_info.get("name") or self.name,
                 manufacturer=bms_info.get("manufacturer")
-                or self._device.INFO.get("default_manufacturer"),
-                model=bms_info.get("model") or self._device.INFO.get("default_model"),
+                or self._device.INFO.get("manufacturer"),
+                model=bms_info.get("model") or self._device.INFO.get("model"),
                 sw_version=bms_info.get("sw_version") or bms_info.get("fw_version"),
                 hw_version=bms_info.get("hw_version"),
                 model_id=bms_info.get("model_id"),
@@ -149,9 +151,11 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
             rssi: Final = self.rssi
             raise UpdateFailed(
                 translation_domain=DOMAIN,
-                translation_key="bms_com_fail_rssi"
-                if rssi is not None and rssi < LOW_RSSI
-                else "bms_com_fail",
+                translation_key=(
+                    "bms_com_fail_rssi"
+                    if rssi is not None and rssi < LOW_RSSI
+                    else "bms_com_fail"
+                ),
                 translation_placeholders={
                     "rssi": f"{rssi}" if rssi is not None else "--",
                     "err_msg": f"{err!s} ({type(err).__name__})",
