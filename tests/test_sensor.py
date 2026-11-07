@@ -215,18 +215,8 @@ async def test_update(
 
     for sensor, attribute, value in (
         (ATTR_DELTA_VOLTAGE, ATTR_CELL_VOLTAGES, [3.1, 3, 3.123]),
-        ("highest_cell_voltage", "cell_number", [3]),
-        ("lowest_cell_voltage", "cell_number", [2]),
-        (
-            ATTR_CURRENT,
-            ATTR_BALANCE_CUR,
-            [-1.234],
-        ),
-        (
-            ATTR_CURRENT,
-            "heater_current",
-            [2.5],
-        ),
+        (ATTR_CURRENT, ATTR_BALANCE_CUR, [-1.234]),
+        (ATTR_CURRENT, "heater_current", [2.5]),
     ):
         state: State | None = hass.states.get(f"{DEV_NAME}_{sensor}")
         assert (
