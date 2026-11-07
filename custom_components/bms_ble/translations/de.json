@@ -57,8 +57,14 @@
       "max_cell_voltage": {
         "name": "Höchste Zellspannung"
       },
+      "max_cell_voltage_index": {
+        "name": "Zelle mit der höchsten Spannung"
+      },
       "min_cell_voltage": {
         "name": "Niedrigste Zellspannung"
+      },
+      "min_cell_voltage_index": {
+        "name": "Zelle mit der niedrigsten Spannung"
       },
       "runtime": {
         "name": "Laufzeit"

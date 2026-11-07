@@ -63,8 +63,14 @@
       "max_cell_voltage": {
         "name": "Highest cell voltage"
       },
+      "max_cell_voltage_index": {
+        "name": "Highest cell voltage index"
+      },
       "min_cell_voltage": {
         "name": "Lowest cell voltage"
+      },
+      "min_cell_voltage_index": {
+        "name": "Lowest cell voltage index"
       },
       "rssi": {
         "name": "[%key:component::sensor::entity_component::signal_strength::name%]"

@@ -49,8 +49,14 @@
       "max_cell_voltage": {
         "name": "Suurin kennojännite"
       },
+      "max_cell_voltage_index": {
+        "name": "Kenno, jossa on suurin jännite"
+      },
       "min_cell_voltage": {
         "name": "Pienin kennojännite"
+      },
+      "min_cell_voltage_index": {
+        "name": "Kenno, jossa on pienin jännite"
       },
       "runtime": {
         "name": "Käyttöaika"

@@ -3,6 +3,7 @@
 from collections.abc import Callable
 from dataclasses import replace
 from functools import cached_property
+from random import choice
 from statistics import fmean
 from typing import Final, override
 
@@ -39,16 +40,18 @@ from . import BTBmsConfigEntry
 from .const import (
     ATTR_BALANCE_CUR,
     ATTR_BATTERY_HEALTH,
-    ATTR_CELL_NUMBER,
     ATTR_CELL_VOLTAGES,
     ATTR_CURRENT,
     ATTR_CYCLE_CAP,
     ATTR_CYCLES,
     ATTR_DELTA_VOLTAGE,
     ATTR_DESIGN_CAP,
+    ATTR_HEATER_CURRENT,
     ATTR_LQ,
     ATTR_MAX_VOLTAGE,
+    ATTR_MAX_VOLTAGE_IDX,
     ATTR_MIN_VOLTAGE,
+    ATTR_MIN_VOLTAGE_IDX,
     ATTR_POWER,
     ATTR_RSSI,
     ATTR_RUNTIME,
@@ -114,7 +117,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
                 else {}
             )
             | (
-                {"heater_current": [data.get("heater_current", 0.0)]}
+                {ATTR_HEATER_CURRENT: [data.get("heater_current", 0.0)]}
                 if "heater_current" in data
                 else {}
             )
@@ -145,6 +148,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         key=ATTR_DESIGN_CAP,
         native_unit_of_measurement="Ah",
         optional=True,
+        state_class=SensorStateClass.MEASUREMENT,
         translation_key=ATTR_DESIGN_CAP,
         value_fn=lambda data: data.get("design_capacity"),
     ),
@@ -181,11 +185,6 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         value_fn=lambda data: data.get("delta_cell_voltage"),
     ),
     BmsEntityDescription(
-        attr_fn=lambda data: (
-            {ATTR_CELL_NUMBER: [cells.index(max(cells)) + 1]}
-            if (cells := data.get("cell_voltages", []))
-            else {}
-        ),
         device_class=SensorDeviceClass.VOLTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -199,11 +198,6 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         ),
     ),
     BmsEntityDescription(
-        attr_fn=lambda data: (
-            {ATTR_CELL_NUMBER: [cells.index(min(cells)) + 1]}
-            if (cells := data.get("cell_voltages", []))
-            else {}
-        ),
         device_class=SensorDeviceClass.VOLTAGE,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -215,6 +209,22 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         value_fn=lambda data: (
             min(cells) if (cells := data.get("cell_voltages", [])) else None
         ),
+    ),
+    BmsEntityDescription(
+        device_class=SensorDeviceClass.ENUM,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        key=ATTR_MAX_VOLTAGE_IDX,
+        translation_key=ATTR_MAX_VOLTAGE_IDX,
+        value_fn=lambda data: _cell_voltage_index(data, maximum=True),
+    ),
+    BmsEntityDescription(
+        device_class=SensorDeviceClass.ENUM,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        key=ATTR_MIN_VOLTAGE_IDX,
+        translation_key=ATTR_MIN_VOLTAGE_IDX,
+        value_fn=lambda data: _cell_voltage_index(data, maximum=False),
     ),
     BmsEntityDescription(
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
@@ -242,6 +252,14 @@ PACK_SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     for descr in SENSOR_TYPES
     if descr.key not in (ATTR_LQ, ATTR_RSSI, ATTR_RUNTIME)
 ]
+
+
+def _cell_voltage_index(data: BMSSample | PackSample, *, maximum: bool) -> int | None:
+    """Return a 1-based index for a randomly selected cell at the voltage extreme."""
+    if not (cells := data.get("cell_voltages")):
+        return None
+    extreme = max(cells) if maximum else min(cells)
+    return choice([i for i, v in enumerate(cells) if v == extreme]) + 1
 
 
 def _gen_temperature_sensors(

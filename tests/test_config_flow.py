@@ -123,7 +123,10 @@ async def test_bluetooth_discovery(
             "min",
             (
                 min(BINARY_SENSORS, 1),
-                SENSORS - LINK_SENSORS - OPT_SENSORS,
+                SENSORS
+                - LINK_SENSORS
+                - OPT_SENSORS
+                - 2,  # index sensors disabled by default
                 min(BINARY_SENSORS, 1) + (SENSORS - OPT_SENSORS) + LINK_SENSORS,
             ),
         ),
@@ -131,7 +134,7 @@ async def test_bluetooth_discovery(
             "full",
             (
                 max(BINARY_SENSORS - 4, 0),
-                SENSORS - 2,  # link sensors are disabled by default
+                SENSORS - 4,  # link and index sensors disabled by default
                 BINARY_SENSORS + SENSORS + LINK_SENSORS,
             ),
         ),

@@ -67,7 +67,6 @@ BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         key=ATTR_BALANCER,
-        name="Balancer",
         translation_key=ATTR_BALANCER,
     ),
     BmsBinaryEntityDescription(
@@ -75,7 +74,6 @@ BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         key=ATTR_CHRG_MOSFET,
-        name="Charge MOSFET",
         translation_key=ATTR_CHRG_MOSFET,
     ),
     BmsBinaryEntityDescription(
@@ -83,7 +81,6 @@ BINARY_SENSOR_TYPES: list[BmsBinaryEntityDescription] = [
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
         key=ATTR_DISCHRG_MOSFET,
-        name="Discharge MOSFET",
         translation_key=ATTR_DISCHRG_MOSFET,
     ),
     BmsBinaryEntityDescription(

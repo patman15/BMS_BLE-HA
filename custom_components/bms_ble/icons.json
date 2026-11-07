@@ -42,9 +42,15 @@
       "max_cell_voltage": {
         "default": "mdi:battery-arrow-up"
       },
+      "max_cell_voltage_index": {
+        "default": "mdi:battery-arrow-up"
+      },
       "min_cell_voltage": {
         "default": "mdi:battery-arrow-down"
       },
+      "min_cell_voltage_index": {
+        "default": "mdi:battery-arrow-down"
+      },      
       "rssi": {
         "default": "mdi:bluetooth-connect"
       },

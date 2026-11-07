@@ -1,6 +1,7 @@
 """Test the BLE Battery Management System integration sensor definition."""
 
 from datetime import timedelta
+import random
 from typing import Final
 
 from aiobmsble import BMSSample, PackSample, TempSensor as TS
@@ -11,6 +12,7 @@ from pytest_homeassistant_custom_component.common import (
     async_fire_time_changed,
 )
 
+from custom_components.bms_ble import sensor as sensor_module
 from custom_components.bms_ble.const import (
     ATTR_BALANCE_CUR,
     ATTR_CELL_VOLTAGES,
@@ -95,6 +97,8 @@ async def test_update(
         f"{DEV_NAME}_{ATTR_DELTA_VOLTAGE}": "0.123",
         f"{DEV_NAME}_highest_cell_voltage": "3.123",
         f"{DEV_NAME}_lowest_cell_voltage": "3",
+        f"{DEV_NAME}_cell_with_highest_voltage": "3",
+        f"{DEV_NAME}_cell_with_lowest_voltage": "2",
         f"{DEV_NAME}_{ATTR_POWER}": STATE_UNKNOWN,
         f"{DEV_NAME}_{ATTR_RUNTIME}": STATE_UNKNOWN,
         f"{DEV_NAME}_{PACK_NAME}_1_battery": "1.0",
@@ -103,6 +107,8 @@ async def test_update(
         f"{DEV_NAME}_{PACK_NAME}_1_delta_cell_voltage": STATE_UNKNOWN,
         f"{DEV_NAME}_{PACK_NAME}_1_highest_cell_voltage": "4.1",
         f"{DEV_NAME}_{PACK_NAME}_1_lowest_cell_voltage": "4",
+        f"{DEV_NAME}_{PACK_NAME}_1_cell_with_highest_voltage": "1",
+        f"{DEV_NAME}_{PACK_NAME}_1_cell_with_lowest_voltage": "2",
         f"{DEV_NAME}_{PACK_NAME}_1_power": STATE_UNKNOWN,
         f"{DEV_NAME}_{PACK_NAME}_1_sensor_1_generic_temperature": "73.0",
         f"{DEV_NAME}_{PACK_NAME}_1_sensor_2_generic_temperature": "31.4",
@@ -115,6 +121,8 @@ async def test_update(
         f"{DEV_NAME}_{PACK_NAME}_2_delta_cell_voltage": STATE_UNKNOWN,
         f"{DEV_NAME}_{PACK_NAME}_2_highest_cell_voltage": "4.123",
         f"{DEV_NAME}_{PACK_NAME}_2_lowest_cell_voltage": "4.123",
+        f"{DEV_NAME}_{PACK_NAME}_2_cell_with_highest_voltage": "1",
+        f"{DEV_NAME}_{PACK_NAME}_2_cell_with_lowest_voltage": "1",
         f"{DEV_NAME}_{PACK_NAME}_2_power": STATE_UNKNOWN,
         f"{DEV_NAME}_{PACK_NAME}_2_stored_energy": STATE_UNKNOWN,
         f"{DEV_NAME}_{PACK_NAME}_2_temperature": "27.18",
@@ -207,23 +215,17 @@ async def test_update(
 
     for sensor, attribute, value in (
         (ATTR_DELTA_VOLTAGE, ATTR_CELL_VOLTAGES, [3.1, 3, 3.123]),
-        ("highest_cell_voltage", "cell_number", [3]),
-        ("lowest_cell_voltage", "cell_number", [2]),
-        (
-            ATTR_CURRENT,
-            ATTR_BALANCE_CUR,
-            [-1.234],
-        ),
-        (
-            ATTR_CURRENT,
-            "heater_current",
-            [2.5],
-        ),
+        (ATTR_CURRENT, ATTR_BALANCE_CUR, [-1.234]),
+        (ATTR_CURRENT, "heater_current", [2.5]),
     ):
         state: State | None = hass.states.get(f"{DEV_NAME}_{sensor}")
         assert (
             state is not None and state.attributes[attribute] == value
         ), f"failed to verify attribute {attribute} for sensor {sensor}"
+
+    for sensor in ("highest_cell_voltage", "lowest_cell_voltage"):
+        state = hass.states.get(f"{DEV_NAME}_{sensor}")
+        assert state is not None and "cell_number" not in state.attributes
 
 
 @pytest.mark.usefixtures(
@@ -270,6 +272,8 @@ async def test_pack_data_incomplete(
         f"{DEV_NAME}_{PACK_NAME}_1_delta_cell_voltage": STATE_UNKNOWN,
         f"{DEV_NAME}_{PACK_NAME}_1_highest_cell_voltage": "4.1",
         f"{DEV_NAME}_{PACK_NAME}_1_lowest_cell_voltage": "4",
+        f"{DEV_NAME}_{PACK_NAME}_1_cell_with_highest_voltage": "1",
+        f"{DEV_NAME}_{PACK_NAME}_1_cell_with_lowest_voltage": "2",
         f"{DEV_NAME}_{PACK_NAME}_1_power": STATE_UNKNOWN,
         f"{DEV_NAME}_{PACK_NAME}_1_sensor_1_generic_temperature": "73.0",
         f"{DEV_NAME}_{PACK_NAME}_1_sensor_2_generic_temperature": "31.4",
@@ -332,3 +336,16 @@ async def test_pack_data_incomplete(
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=UPDATE_INTERVAL))
     await hass.async_block_till_done(wait_background_tasks=True)
     assert sensor_states(pack=True) == pack_result
+
+
+def test_cell_voltage_index_randomizes(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that tied voltage extrema can resolve to any matching cell."""
+    sample = BMSSample(cell_voltages=[3.1, 3.2, 3.1, 3.2])
+    random.seed(1234)  # reproducible; pick a seed that covers both outcomes
+
+    assert {
+        sensor_module._cell_voltage_index(sample, maximum=True) for _ in range(5)
+    } == {2, 4}
+    assert {
+        sensor_module._cell_voltage_index(sample, maximum=False) for _ in range(5)
+    } == {1, 3}

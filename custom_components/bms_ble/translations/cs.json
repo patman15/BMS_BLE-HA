@@ -49,8 +49,14 @@
       "max_cell_voltage": {
         "name": "Nejvyšší napětí článku"
       },
+      "max_cell_voltage_index": {
+        "name": "Článek s nejvyšším napětím"
+      },
       "min_cell_voltage": {
         "name": "Nejnižší napětí článku"
+      },
+      "min_cell_voltage_index": {
+        "name": "Článek s nejnižším napětím"
       },
       "runtime": {
         "name": "Doba provozu"
