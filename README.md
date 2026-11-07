@@ -7,8 +7,7 @@
 
 This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). After installation, no configuration is required. You can use the [ESPHome Bluetooth proxy][btproxy-url] to extend the Bluetooth coverage range. By using standard dashboard cards, it is easy to visualize the current state of remote batteries.
 
-![dashboard](https://github.com/user-attachments/assets/56136072-db44-4ffa-94e5-dc165d0fc1b4)
-
+<img width="702" height="350" alt="bms_ble" src="https://github.com/user-attachments/assets/69e4dccb-8cc4-43e3-ad86-83c70ed4ffb7" />
 
 * [Features](#features)
 * [Installation](#installation)
@@ -33,7 +32,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - 100% test coverage
 
 ### Supported Devices
-- 123\\SmartBMS (show up as `123\\SmartBMS`)
+- 123\\SmartBMS gen3 (show up as `123\\SmartBMS`)
 - ABC/SOK BMS (show up as `ABC-`&#x2026;, `SOK-`&#x2026;)
 - Allpowers power station
 - Buknuwo batteries (show up as `CDZG`&#x2026;), MEYULMOL batteries (show up as `MEY-`&#x2026;)
@@ -61,7 +60,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Epoch Pro BMS
 - Felicity ESS (show up as `F10`&#x2026;) and FLB batteries (show up as `F07`&#x2026;)
 - Gobel Power BMS (show up as `BMS-`&#x2026;)
-    - Dyness AR1.2
+    - Dyness AR1.2, Dyness AR2.5
 - HumsiENK Smart BMS (show up as `HS`&#x2026;)
     - ECO-WORTHY (show up as `ECO....`)
 - JBD BMS, Jiabaida, Xiaoxiang (show up as `JBD-`&#x2026;)
@@ -73,8 +72,6 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - KS48x00 series BMS (show up as `BL-`&#x2026;, `HSKS-`&#x2026; or `KS-`&#x2026;)
     - BEMORY, Braun Power batteries
     - Docan Energy/power, Vanvolt Arctic Pro, VoltPolska batteries
-- Redodo BMS
-    - ECO-WORTHY (show up as `T-12`&#x2026; or `T-24`&#x2026;), LiTime, Power Queen, Starry Sea batteries `S-*`&#x2026; or `SS-*`&#x2026;
 - Lithionics NeverDie smart BMS (show up as `Li.-`&#x2026;)
 - LiPower BMS
     - Ective batteries, Ective BM X monitor
@@ -84,6 +81,8 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Pro BMS Smart Shunt
     - Foxwell BT630
     - Leagend CM100
+- Redodo BMS
+    - ECO-WORTHY (show up as `T-12`&#x2026; or `T-24`&#x2026;), LiTime, Power Queen, Starry Sea batteries `S-*`&#x2026; or `SS-*`&#x2026;
 - Renogy BMS, Renogy Pro BMS
 - Rolls VB series BMS
 - RoyPow (Fish) batteries
@@ -91,10 +90,11 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - Pylontech RT series batteries (show up as `RT12`&#x2026;, `RT24`&#x2026;, `RT48`&#x2026;)
 - Saftkiste BMS
 - Saihang BMS (show up as `SH`&#x2026;)
-    - Anenji, Aninerel batteries
+    - Anenji, Aninerel, SANDISOLAR (show up as `HL`&#x2026;) batteries
 - Seplos v2 (show up as `BP[0-2]?`)
 - Seplos v3 (show up as `SP[00-199]B`&#x2026; or `CSY`&#x2026;)
     - CEG Carmine Energia Gratis (show up as `XZHX`&#x2026;)
+- SOK BMS (show up as `SK12V`&#x2026; or `SK24V`&#x2026;)
 - Super-B Epsilon BMS (show up as `Epsilon-`&#x2026;)
 - Super-B Epsilon v2 BMS (show up as `Epsilon`&#x2026;)
 - TDT BMS
