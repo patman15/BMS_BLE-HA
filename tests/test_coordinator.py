@@ -27,7 +27,6 @@ from .conftest import MockBMS, mock_config
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
-@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_update(
     monkeypatch: pytest.MonkeyPatch,
     bool_fixture: bool,
@@ -85,7 +84,6 @@ async def test_update(
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
-@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_nodata(
     bt_discovery: BluetoothServiceInfoBleak, hass: HomeAssistant
 ) -> None:
@@ -112,7 +110,6 @@ async def test_nodata(
 @pytest.mark.parametrize(
     "mock_coordinator_exception", [TimeoutError, BleakError, EOFError]
 )
-@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_update_exception(
     bt_discovery: BluetoothServiceInfoBleak,
     mock_coordinator_exception: Exception,
@@ -133,7 +130,6 @@ async def test_update_exception(
 
 
 @pytest.mark.usefixtures("enable_bluetooth", "patch_default_bleak_client")
-@pytest.mark.parametrize("expected_lingering_timers", [True])
 async def test_stale_recovery(
     monkeypatch: pytest.MonkeyPatch,
     bt_discovery: BluetoothServiceInfoBleak,

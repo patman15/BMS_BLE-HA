@@ -18,6 +18,11 @@
       }
     }
   },
+  "device": {
+    "pack": {
+      "name": "Pack {id}"
+    }
+  },
   "entity": {
     "binary_sensor": {
       "balancer": {
@@ -57,6 +62,33 @@
       },
       "runtime": {
         "name": "Runtime"
+      },
+      "temperature_generic": {
+        "name": "Sensor #{id} generic temperature"
+      },
+      "temperature_cell": {
+        "name": "Sensor #{id} cell temperature"
+      },
+      "temperature_cell_max": {
+        "name": "Sensor #{id} highest cell temperature"
+      },
+      "temperature_cell_min": {
+        "name": "Sensor #{id} lowest cell temperature"
+      },
+      "temperature_mosfet": {
+        "name": "Sensor #{id} MOSFET temperature"
+      },
+      "temperature_pcb": {
+        "name": "Sensor #{id} board temperature"
+      },
+      "temperature_heater": {
+        "name": "Sensor #{id} heater temperature"
+      },
+      "temperature_balancer": {
+        "name": "Sensor #{id} balancer temperature"
+      },
+      "temperature_ambient": {
+        "name": "Sensor #{id} ambient temperature"
       }
     }
   },

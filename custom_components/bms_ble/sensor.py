@@ -1,9 +1,12 @@
 """Platform for sensor integration."""
 
 from collections.abc import Callable
-from typing import Final, cast, override
+from dataclasses import replace
+from functools import cached_property
+from statistics import fmean
+from typing import Final, override
 
-from aiobmsble import BMSpackvalue, BMSSample, PackSample
+from aiobmsble import BMSSample, PackSample, TempSensor as TS
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -27,7 +30,8 @@ from homeassistant.const import (
     UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import format_mac
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.device_registry import ChildDeviceInfo, format_mac
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -48,7 +52,6 @@ from .const import (
     ATTR_POWER,
     ATTR_RSSI,
     ATTR_RUNTIME,
-    ATTR_TEMP_SENSORS,
     DOMAIN,
     LOGGER,
 )
@@ -60,30 +63,15 @@ PARALLEL_UPDATES = 0
 class BmsEntityDescription(SensorEntityDescription, frozen_or_thawed=True):
     """Describes BMS sensor entity."""
 
-    attr_fn: Callable[[BMSSample], dict[str, list[int | float]]] | None = None
+    attr_fn: Callable[[BMSSample | PackSample], dict[str, list[int | float]] | None] = (
+        lambda data: None
+    )
     optional: bool = False
-    value_fn: Callable[[BMSSample], float | int | None]
-
-
-def _attr_pack(data: BMSSample, key: BMSpackvalue) -> dict[str, list[int | float]]:
-    """Return a dictionary with the given key or an empty dict if key is not in data."""
-    if not (packs := data.get("packs", [])):
-        return {}
-    return {f"pack_{key}": [pack.get(key, 0) for pack in packs]}
-
-
-def _attr_pack_temp(data: BMSSample) -> dict[str, list[int | float]]:
-    packs: list[PackSample] = data.get("packs", [])
-    return {
-        ATTR_TEMP_SENSORS: [
-            float(t) for pack in packs for t in pack.get("temp_values", [])
-        ]
-    }
+    value_fn: Callable[[BMSSample | PackSample], float | int | None]
 
 
 SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     BmsEntityDescription(
-        attr_fn=lambda data: _attr_pack(data, ATTR_VOLTAGE),
         device_class=SensorDeviceClass.VOLTAGE,
         key=ATTR_VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
@@ -92,7 +80,6 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         value_fn=lambda data: data.get("voltage"),
     ),
     BmsEntityDescription(
-        attr_fn=lambda data: _attr_pack(data, ATTR_BATTERY_LEVEL),
         device_class=SensorDeviceClass.BATTERY,
         key=ATTR_BATTERY_LEVEL,
         native_unit_of_measurement=PERCENTAGE,
@@ -108,25 +95,16 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         value_fn=lambda data: data.get("battery_health"),
     ),
     BmsEntityDescription(
-        attr_fn=lambda data: (
-            {ATTR_TEMP_SENSORS: cast("list[int | float]", data.get("temp_values", []))}
-            if "temp_values" in data
-            else (
-                _attr_pack_temp(data)
-                if "packs" in data
-                else (
-                    {ATTR_TEMP_SENSORS: [data.get("temperature", 0.0)]}
-                    if "temperature" in data
-                    else {}
-                )
-            )
-        ),
         device_class=SensorDeviceClass.TEMPERATURE,
         key=ATTR_TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=1,
-        value_fn=lambda data: data.get("temperature"),
+        value_fn=lambda data: (
+            fmean(s.value for s in ([t for t in temps if t.type == TS.T.CELL] or temps))
+            if (temps := data.get("temperature"))
+            else None
+        ),
     ),
     BmsEntityDescription(
         attr_fn=lambda data: (
@@ -140,7 +118,6 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
                 if "heater_current" in data
                 else {}
             )
-            | _attr_pack(data, ATTR_CURRENT)
         ),
         device_class=SensorDeviceClass.CURRENT,
         key=ATTR_CURRENT,
@@ -158,7 +135,6 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         value_fn=lambda data: data.get("cycle_capacity"),
     ),
     BmsEntityDescription(
-        attr_fn=lambda data: _attr_pack(data, ATTR_CYCLES),
         key=ATTR_CYCLES,
         state_class=SensorStateClass.TOTAL_INCREASING,
         translation_key=ATTR_CYCLES,
@@ -202,7 +178,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         state_class=SensorStateClass.MEASUREMENT,
         suggested_display_precision=3,
         translation_key=ATTR_DELTA_VOLTAGE,
-        value_fn=lambda data: data.get("delta_voltage"),
+        value_fn=lambda data: data.get("delta_cell_voltage"),
     ),
     BmsEntityDescription(
         attr_fn=lambda data: (
@@ -261,6 +237,56 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     ),
 ]
 
+PACK_SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
+    descr
+    for descr in SENSOR_TYPES
+    if descr.key not in (ATTR_LQ, ATTR_RSSI, ATTR_RUNTIME)
+]
+
+
+def _gen_temperature_sensors(
+    bms: BTBmsCoordinator,
+    descr: BmsEntityDescription,
+    mac: str,
+    pack_idx: int = -1,
+    entry_id: str = "",
+) -> list[BMSSensor]:
+    if (
+        not (
+            temp_sensors := (
+                bms.data.get("temperature")
+                if pack_idx == -1
+                else bms.data.get("packs", [])[pack_idx - 1].get("temperature")
+            )
+        )
+        or len(temp_sensors) < 2
+    ):
+        return []
+
+    sensors: list[BMSSensor] = []
+    for idx in range(1, len(temp_sensors) + 1):
+        sensor = temp_sensors[idx - 1]
+
+        def value_fn(data: BMSSample | PackSample, temp_idx: int = idx - 1) -> float:
+            return float(data.get("temperature", [])[temp_idx].value)
+
+        sensor_descr = replace(
+            descr,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            entity_registry_enabled_default=False,
+            key=descr.key + f"-probe-{idx}-{sensor.type.name}",
+            translation_key=descr.key + f"_{sensor.type.name}".lower(),
+            translation_placeholders={"id": str(idx)},
+            value_fn=value_fn,
+        )
+        sensors.append(
+            PackSensor(bms, sensor_descr, mac, pack_idx, entry_id)
+            if pack_idx != -1
+            else BMSSensor(bms, sensor_descr, mac)
+        )
+
+    return sensors
+
 
 async def async_setup_entry(
     _hass: HomeAssistant,
@@ -281,9 +307,26 @@ async def async_setup_entry(
             continue
         if descr.optional and descr.key not in bms.data:
             continue
+        if descr.key == ATTR_TEMPERATURE:
+            entities.extend(_gen_temperature_sensors(bms, descr, mac))
         entities.append(BMSSensor(bms, descr, mac))
 
-    async_add_entities(entities)
+    pack_sensors: list[SensorEntity] = []
+    for pack_idx, pack in enumerate(bms.data.get("packs", []), start=1):
+        for descr in PACK_SENSOR_TYPES:
+            if descr.optional and descr.key not in pack:
+                continue
+            if descr.key == ATTR_TEMPERATURE:
+                pack_sensors.extend(
+                    _gen_temperature_sensors(
+                        bms, descr, mac, pack_idx, config_entry.entry_id
+                    )
+                )
+            pack_sensors.append(
+                PackSensor(bms, descr, mac, pack_idx, config_entry.entry_id)
+            )
+
+    async_add_entities(entities + pack_sensors)
 
 
 class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
@@ -306,10 +349,7 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
     @override
     def extra_state_attributes(self) -> dict[str, list[int | float]] | None:
         """Return entity specific state attributes, e.g. cell voltages."""
-        if self.coordinator.data and self.entity_description.attr_fn:
-            return self.entity_description.attr_fn(self.coordinator.data)
-
-        return None
+        return self.entity_description.attr_fn(self.coordinator.data)
 
     @property
     @override
@@ -319,6 +359,61 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
             self.entity_description.value_fn(self.coordinator.data)
             if self.coordinator.data
             else None
+        )
+
+
+class PackSensor(BMSSensor):
+    """A sensor belonging to one battery pack child device."""
+
+    def __init__(
+        self,
+        bms: BTBmsCoordinator,
+        descr: BmsEntityDescription,
+        unique_id: str,
+        pack_index: int,
+        config_entry_id: str,
+    ) -> None:
+        """Initialize a pack sensor."""
+
+        def pack_data(data: BMSSample) -> PackSample | None:
+            packs = data.get("packs", [])
+            return packs[pack_index - 1] if len(packs) >= pack_index else None
+
+        def pack_value(data: BMSSample) -> float | int | None:
+            pack = pack_data(data)
+            return descr.value_fn(pack) if pack is not None else None
+
+        def pack_attr(data: BMSSample) -> dict[str, list[int | float]] | None:
+            if (pack := pack_data(data)) is None:
+                return None
+            return descr.attr_fn(pack)
+
+        pack_descr = replace(descr, attr_fn=pack_attr, value_fn=pack_value)
+        super().__init__(bms, pack_descr, unique_id)
+        self._attr_unique_id = f"{DOMAIN}-{unique_id}-pack-{pack_index}-{descr.key}"
+        self._pack_index = pack_index
+        self._config_entry_id = config_entry_id
+        self._parent_identifier = next(
+            identifier
+            for domain, identifier in bms.device_info.get("identifiers", set())
+            if domain == DOMAIN
+        )
+
+    @cached_property
+    @override
+    def device_info(self) -> ChildDeviceInfo:
+        """Return child-device information for this battery pack."""
+        identifiers = {(DOMAIN, f"{self._parent_identifier}_pack_{self._pack_index}")}
+        parent_device_id = dr.async_get_device_id_by_identifier(
+            self.hass,
+            (DOMAIN, self._parent_identifier),
+            config_entry_id=self._config_entry_id,
+        )
+        return ChildDeviceInfo(
+            identifiers=identifiers,
+            translation_key="pack",
+            translation_placeholders={"id": str(self._pack_index)},
+            parent_device_id=parent_device_id,
         )
 
 
