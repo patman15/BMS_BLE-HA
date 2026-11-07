@@ -254,57 +254,6 @@ PACK_SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
 ]
 
 
-def _gen_temperature_sensors(
-    bms: BTBmsCoordinator,
-    descr: BmsEntityDescription,
-    mac: str,
-    pack_idx: int = -1,
-    entry_id: str = "",
-) -> list[BMSSensor]:
-    if (
-        not (
-            temp_sensors := (
-                bms.data.get("temperature")
-                if pack_idx == -1
-                else bms.data.get("packs", [])[pack_idx - 1].get("temperature")
-            )
-        )
-        or len(temp_sensors) < 2
-    ):
-        return []
-
-    sensors: list[BMSSensor] = []
-    for idx in range(1, len(temp_sensors) + 1):
-        sensor = temp_sensors[idx - 1]
-
-        def value_fn(data: BMSSample | PackSample, temp_idx: int = idx - 1) -> float:
-            return float(data.get("temperature", [])[temp_idx].value)
-
-        sensor_descr = replace(
-            descr,
-            entity_category=EntityCategory.DIAGNOSTIC,
-            entity_registry_enabled_default=False,
-            key=descr.key + f"-probe-{idx}-{sensor.type.name}",
-            translation_key=descr.key + f"_{sensor.type.name}".lower(),
-            translation_placeholders={"id": str(idx)},
-            value_fn=value_fn,
-        )
-        sensors.append(
-            PackSensor(bms, sensor_descr, mac, pack_idx, entry_id)
-            if pack_idx != -1
-            else BMSSensor(bms, sensor_descr, mac)
-        )
-
-    return sensors
-
-
-PACK_SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
-    descr
-    for descr in SENSOR_TYPES
-    if descr.key not in (ATTR_LQ, ATTR_RSSI, ATTR_RUNTIME)
-]
-
-
 def _cell_voltage_index(data: BMSSample | PackSample, *, maximum: bool) -> int | None:
     """Return a 1-based index for a randomly selected cell at the voltage extreme."""
     if not (cells := data.get("cell_voltages")):
