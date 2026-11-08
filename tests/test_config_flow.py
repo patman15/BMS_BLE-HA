@@ -10,7 +10,7 @@ from bleak.backends.scanner import AdvertisementData
 from home_assistant_bluetooth import BluetoothServiceInfoBleak
 import probatio as vol
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.bms_ble.config_flow import ConfigFlow
 from custom_components.bms_ble.const import (
