@@ -3,7 +3,7 @@
 [![GitHub Release][releases-shield]][releases]
 [![License][license-shield]](LICENSE)
 [![Effort][effort-shield]](https://buymeacoffee.com/patman15)
-[![HACS][install-shield]](https://hacs.xyz/docs/use/)
+[![Marketplace][install-shield]](https://hacs.xyz/docs/use/)
 
 This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). After installation, no configuration is required. You can use the [ESPHome Bluetooth proxy][btproxy-url] to extend the Bluetooth coverage range. By using standard dashboard cards, it is easy to visualize the current state of remote batteries.
 
@@ -32,6 +32,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - 100% test coverage
 
 ### Supported Devices
+<details><summary>Currently 50+ BMS protocols are supported. See the list below on which BMS and battery brands.</summary>
 - 123\\SmartBMS gen3 (show up as `123\\SmartBMS`)
 - ABC/SOK BMS (show up as `ABC-`&#x2026;, `SOK-`&#x2026;)
 - Allpowers power station
@@ -107,6 +108,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - C4S100 batteries (show up as `C4S100IE`&#x2026;)
 - Volta Power Systems myVolta CAN BLE adapter (show up as `VPS-`&#x2026;)
 - Wattstunde Nova Core
+</details>
 
 If you would like to get your battery/BMS supported please consider raising a pull request for [aiobmsble](https://github.com/patman15/aiobmsble) following the [contribution guidelines](https://github.com/patman15/aiobmsble?tab=contributing-ov-file) or raise [a new issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) giving your BMS/battery type in the title. Please provide the information requested by the template (see *additional context*).
 
