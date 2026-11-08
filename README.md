@@ -3,7 +3,7 @@
 [![GitHub Release][releases-shield]][releases]
 [![License][license-shield]](LICENSE)
 [![Effort][effort-shield]](https://buymeacoffee.com/patman15)
-[![Marketplace][install-shield]](https://hacs.xyz/docs/use/)
+[![Marketplace][install-shield]](https://my.home-assistant.io/redirect/config_flow_start/?domain=bms_ble)
 
 This integration allows to monitor Bluetooth Low Energy (BLE) battery management systems (BMS) from within [Home Assistant](https://www.home-assistant.io/). After installation, no configuration is required. You can use the [ESPHome Bluetooth proxy][btproxy-url] to extend the Bluetooth coverage range. By using standard dashboard cards, it is easy to visualize the current state of remote batteries.
 
@@ -32,7 +32,7 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
 - 100% test coverage
 
 ### Supported Devices
-<details><summary>Currently 50+ BMS protocols are supported. See the list below on which BMS and battery brands.</summary>
+
 - 123\\SmartBMS gen3 (show up as `123\\SmartBMS`)
 - ABC/SOK BMS (show up as `ABC-`&#x2026;, `SOK-`&#x2026;)
 - Allpowers power station
@@ -108,7 +108,6 @@ This integration allows to monitor Bluetooth Low Energy (BLE) battery management
     - C4S100 batteries (show up as `C4S100IE`&#x2026;)
 - Volta Power Systems myVolta CAN BLE adapter (show up as `VPS-`&#x2026;)
 - Wattstunde Nova Core
-</details>
 
 If you would like to get your battery/BMS supported please consider raising a pull request for [aiobmsble](https://github.com/patman15/aiobmsble) following the [contribution guidelines](https://github.com/patman15/aiobmsble?tab=contributing-ov-file) or raise [a new issue](https://github.com/patman15/BMS_BLE-HA/issues/new?assignees=&labels=question&projects=&template=feature_request.yml) giving your BMS/battery type in the title. Please provide the information requested by the template (see *additional context*).
 
@@ -350,7 +349,6 @@ I would reconsider this position if vendors were to publish official documentati
 ## Outlook
 - Develop towards a [Home Assistant core integration](https://www.home-assistant.io/integrations/), support for https://github.com/home-assistant/core/pull/159556 needed!
 - Improvements to fulfill the [Home Assistant quality scale](https://www.home-assistant.io/docs/quality_scale/)
-- Implement sub-devices, e.g. batteries with multiple packs
 
 ## Thanks to
 all [contributors of aiobmsble](https://github.com/patman15/aiobmsble?tab=readme-ov-file#thanks-to) (the BMS library) for helping with making the integration better.
@@ -363,6 +361,6 @@ all [contributors of aiobmsble](https://github.com/patman15/aiobmsble?tab=readme
 [releases-shield]: https://img.shields.io/github/release/patman15/BMS_BLE-HA.svg?style=for-the-badge&cacheSeconds=14400
 [releases]: https://github.com/patman15/BMS_BLE-HA/releases
 [effort-shield]: https://img.shields.io/badge/Effort%20spent-1275_hours-gold?style=for-the-badge&cacheSeconds=86400
-[install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&label=HACS&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
+[install-shield]: https://img.shields.io/badge/dynamic/json?style=for-the-badge&color=green&logo=home-assistant&logoColor=ccc&label=Marketplace&suffix=%20Installs&cacheSeconds=15600&url=https://analytics.home-assistant.io/custom_integrations.json&query=$.bms_ble.total&cacheSeconds=14400
 [btproxy-url]: https://esphome.io/components/bluetooth_proxy
 [custint-url]: https://www.home-assistant.io/common-tasks/general/#defining-a-custom-polling-interval
