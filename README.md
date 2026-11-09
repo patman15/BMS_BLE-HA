@@ -329,6 +329,12 @@ There are plenty more functions you can use, please see [templating](https://www
 ### I need a discharge sensor not the charging indicator, can I have that?
 Sure, use, e.g. a [threshold sensor](https://my.home-assistant.io/redirect/config_flow_start/?domain=threshold) based on the current to/from the battery. Negative means discharging, positive is charging.
 
+### How can I determine a faulty cell?
+
+Setup a graph that shows the highest/lowest cell voltage together with the highest/lowest cell voltage index. That way you can determine over time, which cell deviates the most and when. See the example below.
+<img width="474" height="468" alt="cell history graph" src="https://github.com/user-attachments/assets/5b8cbcb1-2234-465f-b173-9f4cf20d2623" />
+
+
 ### My BMS needs a pin, how can I enter it?
 
 Then you need to pair your device first. This is procedure is only required once for each device.

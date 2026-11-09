@@ -16,7 +16,7 @@ from bleak.exc import BleakError
 from bleak.uuids import normalize_uuid_str
 from home_assistant_bluetooth import SOURCE_LOCAL, BluetoothServiceInfoBleak
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.bms_ble.config_flow import ConfigFlow
 from custom_components.bms_ble.const import DOMAIN
