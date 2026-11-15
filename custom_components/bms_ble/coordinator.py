@@ -32,7 +32,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
         hass: HomeAssistant,
         ble_device: BLEDevice,
         bms_device: BaseBMS,
-        config_entry: ConfigEntry,
+        config_entry: ConfigEntry[BTBmsCoordinator],
     ) -> None:
         """Initialize BMS data coordinator."""
         super().__init__(
