@@ -158,6 +158,7 @@
       "manufacturer_id": 21320
     }
   ],
+  "categories": ["energy.solar_batteries", "energy.meters_monitoring"],
   "codeowners": ["@patman15"],
   "config_flow": true,
   "dependencies": ["bluetooth_adapters"],
