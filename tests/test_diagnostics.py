@@ -5,7 +5,7 @@ from typing import Any, Final
 
 from habluetooth import BluetoothServiceInfoBleak
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.bms_ble.const import DOMAIN
 from custom_components.bms_ble.coordinator import BTBmsCoordinator
@@ -114,8 +114,8 @@ async def test_diagnostics(
             "connections": {(BT_DOMAIN, ce.unique_id)},
             "identifiers": {(BT_DOMAIN, ce.unique_id), (DOMAIN, ce.unique_id)},
             "name": ce.title,
-            "manufacturer": MockBMS.INFO.get("default_manufacturer"),
-            "model": MockBMS.INFO.get("default_model"),
+            "manufacturer": MockBMS.INFO.get("manufacturer"),
+            "model": MockBMS.INFO.get("model"),
             "sw_version": None,
             "hw_version": None,
             "model_id": None,

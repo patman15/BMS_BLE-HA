@@ -1,12 +1,11 @@
 -r requirements.txt
 aioesphomeapi
 aiohttp-zlib-ng # to avoid performance warning
-aiousbwatcher
 ibeacon_ble # due to BLE identification conflict
 kegtron_ble # due to BLE identification conflict
 keyring
 Pyswitchbot # due to BLE identification conflict
 pytest
-pytest-homeassistant-custom-component==0.13.371
-serialx
+pytest-homeassistant[bluetooth]==2026.11.0
 wheel
+pytest-cov

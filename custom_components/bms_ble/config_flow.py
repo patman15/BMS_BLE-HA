@@ -5,7 +5,7 @@ from typing import Any, Final, override
 
 from aiobmsble.basebms import BaseBMS
 from aiobmsble.utils import bms_cls, bms_identify
-import probatio as vol
+import probatio
 
 from homeassistant import config_entries
 from homeassistant.components.bluetooth import (
@@ -18,13 +18,7 @@ from homeassistant.config_entries import (
     ConfigFlowResult,
     OptionsFlowWithReload,
 )
-from homeassistant.const import (
-    CONF_ADDRESS,
-    CONF_ID,
-    CONF_MODEL,
-    CONF_NAME,
-    CONF_PASSWORD,
-)
+from homeassistant.const import CONF_ADDRESS, CONF_PASSWORD
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import section
 from homeassistant.helpers.device_registry import format_mac
@@ -102,9 +96,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             discovery_info.name, discovery_info, bms_module
         )
         self.context["title_placeholders"] = {
-            CONF_NAME: self._disc_dev.name,
-            CONF_ID: address[-9:],  # remove OUI
-            CONF_MODEL: self._disc_dev.model(),
+            "name": self._disc_dev.name,
+            "id": address[-9:],  # remove OUI
+            "model": self._disc_dev.model(),
         }
         return await self.async_step_bluetooth_confirm()
 
@@ -125,8 +119,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 title=self._disc_dev.name,
                 data={"type": self._disc_dev.type},
             )
-
-        self._set_confirm_only()
 
         return self.async_show_form(
             step_id="bluetooth_confirm",
@@ -183,9 +175,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(
+            data_schema=probatio.Schema(
                 {
-                    vol.Required(CONF_ADDRESS): SelectSelector(
+                    probatio.Required(CONF_ADDRESS): SelectSelector(
                         SelectSelectorConfig(options=devices),
                     )
                 }
@@ -225,18 +217,18 @@ class OptionsFlowHandler(OptionsFlowWithReload):
         return self.async_show_form(
             step_id="init",
             data_schema=self.add_suggested_values_to_schema(
-                vol.Schema(
+                probatio.Schema(
                     {
-                        vol.Optional(CONF_PASSWORD): TextSelector(
+                        probatio.Optional(CONF_PASSWORD): TextSelector(
                             TextSelectorConfig(
                                 type=TextSelectorType.PASSWORD,
                                 read_only=not bms_class.accept_secret,
                             )
                         ),
-                        vol.Optional(CONF_ADVANCED_OPTIONS): section(
-                            vol.Schema(
+                        probatio.Optional(CONF_ADVANCED_OPTIONS): section(
+                            probatio.Schema(
                                 {
-                                    vol.Optional(
+                                    probatio.Optional(
                                         CONF_KEEP_ALIVE, default=True
                                     ): BooleanSelector()
                                 }

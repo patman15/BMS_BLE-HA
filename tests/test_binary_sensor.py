@@ -6,10 +6,7 @@ from typing import Final
 from aiobmsble import BMSMode, BMSSample
 from habluetooth import BluetoothServiceInfoBleak
 import pytest
-from pytest_homeassistant_custom_component.common import (
-    MockConfigEntry,
-    async_fire_time_changed,
-)
+from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
 
 from custom_components.bms_ble.const import BINARY_SENSORS, UPDATE_INTERVAL
 from homeassistant.config_entries import ConfigEntryState
