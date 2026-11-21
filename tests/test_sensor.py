@@ -50,8 +50,8 @@ async def test_update(
 ) -> None:
     """Test sensor value updates through coordinator."""
 
-    async def patch_async_update(_self) -> BMSSample:
-        """Patch async_update to return a specific value."""
+    async def patch_update(_self) -> BMSSample:
+        """Patch BaseBMS.update to return a specific value."""
         return BMSSample(
             balance_current=-1.234,
             heater_current=2.5,
@@ -128,7 +128,7 @@ async def test_update(
 
     bms_class: Final[str] = "aiobmsble.bms.dummy_bms.BMS"
     monkeypatch.setattr(f"{bms_class}.device_info", mock_devinfo_min)
-    monkeypatch.setattr(f"{bms_class}.async_update", patch_async_update)
+    monkeypatch.setattr(f"{bms_class}.update", patch_update)
 
     config: MockConfigEntry = mock_config()
     config.add_to_hass(hass)
@@ -237,8 +237,8 @@ async def test_pack_data_incomplete(
 
     update_with_packs: bool = True
 
-    async def patch_async_update(_self) -> BMSSample:
-        """Patch async_update to return pack data only on the first call."""
+    async def patch_update(_self) -> BMSSample:
+        """Patch BaseBMS.update to return pack data only on the first call."""
         sample: BMSSample = BMSSample(
             battery_level=42,
             voltage=17.0,
@@ -281,7 +281,7 @@ async def test_pack_data_incomplete(
 
     bms_class: Final[str] = "aiobmsble.bms.dummy_bms.BMS"
     monkeypatch.setattr(f"{bms_class}.device_info", mock_devinfo_min)
-    monkeypatch.setattr(f"{bms_class}.async_update", patch_async_update)
+    monkeypatch.setattr(f"{bms_class}.update", patch_update)
 
     config: MockConfigEntry = mock_config()
     config.add_to_hass(hass)

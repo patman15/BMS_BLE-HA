@@ -168,7 +168,7 @@ async def test_device_setup(
     inject_bluetooth_service_info_bleak(hass, bt_discovery)
 
     monkeypatch.setattr(
-        "aiobmsble.bms.ogt_bms.BMS.async_update",
+        "aiobmsble.bms.ogt_bms.BMS.update",
         mock_update_full if sensor_set == "full" else mock_update_min,
     )
 
@@ -262,7 +262,7 @@ async def test_bluetooth_confirm_entry_added_during_flow(
 ) -> None:
     """Test that confirming aborts if entry is created during the flow."""
 
-    monkeypatch.setattr("aiobmsble.bms.ogt_bms.BMS.async_update", mock_update_min)
+    monkeypatch.setattr("aiobmsble.bms.ogt_bms.BMS.update", mock_update_min)
     inject_bluetooth_service_info_bleak(hass, bt_discovery)
     # Start the flow and get to confirmation step
     result: ConfigFlowResult = await hass.config_entries.flow.async_init(
@@ -307,7 +307,7 @@ async def test_async_setup_entry(
 
     bms_module: Final[str] = f"aiobmsble.bms.{bms_fixture}"
     monkeypatch.setattr(f"{bms_module}.BMS.device_info", mock_devinfo_min)
-    monkeypatch.setattr(f"{bms_module}.BMS.async_update", mock_update_min)
+    monkeypatch.setattr(f"{bms_module}.BMS.update", mock_update_min)
 
     assert await hass.config_entries.async_setup(cfg.entry_id)
     await hass.async_block_till_done()
@@ -342,7 +342,7 @@ async def test_user_setup(
     """Check config flow for user adding previously discovered device."""
 
     monkeypatch.setattr(
-        "aiobmsble.bms.ogt_bms.BMS.async_update",
+        "aiobmsble.bms.ogt_bms.BMS.update",
         mock_update_full,
     )
 
@@ -521,7 +521,7 @@ async def test_options_effect(
     bms_module: Final[str] = "aiobmsble.bms.dummy_bms"
     monkeypatch.setattr(f"{bms_module}.BMS.__init__", mock_bms_init)
     monkeypatch.setattr(f"{bms_module}.BMS.device_info", mock_devinfo_min)
-    monkeypatch.setattr(f"{bms_module}.BMS.async_update", mock_update_min)
+    monkeypatch.setattr(f"{bms_module}.BMS.update", mock_update_min)
 
     await hass.async_block_till_done()
 
@@ -637,7 +637,7 @@ async def test_migrate_entry_from_v0_1(
 
     bms_module: Final[str] = f"aiobmsble.bms.{(cfg.data['type'][:-3]).lower()}_bms"
     monkeypatch.setattr(f"{bms_module}.BMS.device_info", mock_devinfo_min)
-    monkeypatch.setattr(f"{bms_module}.BMS.async_update", mock_update_min)
+    monkeypatch.setattr(f"{bms_module}.BMS.update", mock_update_min)
 
     assert await hass.config_entries.async_setup(cfg.entry_id)
     await hass.async_block_till_done()
@@ -664,7 +664,7 @@ async def test_migrate_entry_from_v1_0(
 
     bms_module: Final[str] = f"aiobmsble.bms.{str(cfg.data['type']).rsplit('.', 1)[-1]}"
     monkeypatch.setattr(f"{bms_module}.BMS.device_info", mock_devinfo_min)
-    monkeypatch.setattr(f"{bms_module}.BMS.async_update", mock_update_min)
+    monkeypatch.setattr(f"{bms_module}.BMS.update", mock_update_min)
 
     assert await hass.config_entries.async_setup(cfg.entry_id)
     await hass.async_block_till_done()
@@ -694,7 +694,7 @@ async def test_migrate_entry_from_v2_0(
         f"aiobmsble.bms.{bms_fixture if bms_fixture != 'ective_bms' else 'topband_bms'}"
     )
     monkeypatch.setattr(f"{bms_module}.BMS.device_info", mock_devinfo_min)
-    monkeypatch.setattr(f"{bms_module}.BMS.async_update", mock_update_min)
+    monkeypatch.setattr(f"{bms_module}.BMS.update", mock_update_min)
 
     assert await hass.config_entries.async_setup(cfg.entry_id)
     await hass.async_block_till_done()

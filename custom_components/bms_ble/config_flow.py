@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Final, override
 
 from aiobmsble.basebms import BaseBMS
-from aiobmsble.utils import bms_cls, bms_identify
+from aiobmsble.utils import get_bms, identify
 import probatio
 
 from homeassistant import config_entries
@@ -65,18 +65,19 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     ) -> str | None:
         """Check if device is supported by an available BMS class."""
         if not (
-            bms_class := await bms_identify(
+            bms_classes := await identify(
                 discovery_info.advertisement, discovery_info.address
             )
         ):
             return None
+        bms_class = bms_classes[0]
         LOGGER.debug(
             "Device %s (%s) detected as '%s'",
             discovery_info.name,
             format_mac(discovery_info.address),
-            bms_class.bms_id(),
+            bms_class.bms_name(),
         )
-        return str(bms_class.get_bms_module())
+        return str(bms_class.module())
 
     @override
     async def async_step_bluetooth(
@@ -208,7 +209,7 @@ class OptionsFlowHandler(OptionsFlowWithReload):
         if user_input is not None:
             return self.async_create_entry(data=user_input)
 
-        bms_class: type[BaseBMS] | None = await bms_cls(
+        bms_class: type[BaseBMS] | None = await get_bms(
             self._bms_type.rsplit(".", 1)[-1]
         )
         if not bms_class:
