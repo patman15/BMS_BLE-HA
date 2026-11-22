@@ -51,6 +51,12 @@
       "min_cell_voltage_index": {
         "default": "mdi:battery-arrow-down"
       },      
+      "problem_severity": {
+        "default": "mdi:battery-alert",
+        "state": {
+          "ok": "mdi:battery-check"
+        }
+      },
       "rssi": {
         "default": "mdi:bluetooth-connect"
       },

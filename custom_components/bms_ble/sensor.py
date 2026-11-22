@@ -7,7 +7,7 @@ from random import choice
 from statistics import fmean
 from typing import Final, override
 
-from aiobmsble import BMSSample, PackSample, TempSensor as TS
+from aiobmsble import BMSSample, PackSample, Severity, TempSensor as TS
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -53,6 +53,7 @@ from .const import (
     ATTR_MIN_VOLTAGE,
     ATTR_MIN_VOLTAGE_IDX,
     ATTR_POWER,
+    ATTR_PROBLEM_SEVERITY,
     ATTR_RSSI,
     ATTR_RUNTIME,
     DOMAIN,
@@ -70,7 +71,7 @@ class BmsEntityDescription(SensorEntityDescription, frozen_or_thawed=True):
         lambda data: None
     )
     optional: bool = False
-    value_fn: Callable[[BMSSample | PackSample], float | int | None]
+    value_fn: Callable[[BMSSample | PackSample], float | int | str | None]
 
 
 SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
@@ -227,6 +228,16 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         value_fn=lambda data: _cell_voltage_index(data, maximum=False),
     ),
     BmsEntityDescription(
+        device_class=SensorDeviceClass.ENUM,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        key=ATTR_PROBLEM_SEVERITY,
+        options=[level.name.lower() for level in Severity],
+        translation_key=ATTR_PROBLEM_SEVERITY,
+        value_fn=lambda data: max(
+            (p.level for p in data.get("problems", [])), default=Severity.OK
+        ).name.lower(),
+    ),
+    BmsEntityDescription(
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -250,7 +261,7 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
 PACK_SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     descr
     for descr in SENSOR_TYPES
-    if descr.key not in (ATTR_LQ, ATTR_RSSI, ATTR_RUNTIME)
+    if descr.key not in (ATTR_LQ, ATTR_PROBLEM_SEVERITY, ATTR_RSSI, ATTR_RUNTIME)
 ]
 
 
@@ -371,7 +382,7 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
 
     @property
     @override
-    def native_value(self) -> int | float | None:
+    def native_value(self) -> int | float | str | None:
         """Return the sensor value."""
         return (
             self.entity_description.value_fn(self.coordinator.data)
@@ -397,7 +408,7 @@ class PackSensor(BMSSensor):
             packs = data.get("packs", [])
             return packs[pack_index - 1] if len(packs) >= pack_index else None
 
-        def pack_value(data: BMSSample) -> float | int | None:
+        def pack_value(data: BMSSample) -> float | int | str | None:
             pack = pack_data(data)
             return descr.value_fn(pack) if pack is not None else None
 

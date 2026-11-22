@@ -66,6 +66,16 @@
       "min_cell_voltage_index": {
         "name": "Zelle mit der niedrigsten Spannung"
       },
+          "problem_severity": {
+        "name": "Problem severity",
+        "state": {
+          "ok": "OK",
+          "info": "Info",
+          "warn": "Warnung",
+          "protect": "Schutz",
+          "fault": "Defekt"
+        }
+      },
       "runtime": {
         "name": "Laufzeit"
       },
