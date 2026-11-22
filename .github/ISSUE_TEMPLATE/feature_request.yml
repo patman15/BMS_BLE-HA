@@ -17,7 +17,6 @@ body:
       - label: This only contains 1 feature request (if you have multiple feature requests, open one feature request for each feature request).
         required: true
       - label: I followed the instructions for <a href="https://github.com/patman15/BMS_BLE-HA#if-your-device-is-not-recognized--initialized">devices that are not recognized</a>.
-        description: Provide the advertisement data of the device. (Go to the [advertisement monitor](https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/), click the device in question, and provide the information via **`copy to clipboard`**, i.e. JSON format).
         required: true
       - label: I have checked out the latest <a href="https://github.com/patman15/BMS_BLE-HA/releases">release</a>.
         required: true
