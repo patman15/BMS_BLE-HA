@@ -127,6 +127,7 @@ Platform | Entity | Unit | Description | Attributes
 `sensor` | cycles | `#` | Lifetime number of charge cycles |
 `sensor` | power | `W` | Positive while charging and negative while discharging |
 `sensor` | problem severity | `enum` | Worst reported problem level: `ok`, `info`, `warn`, `protect` or `fault` | Problem code
+`sensor` | problem description | `text` | Worst reported problem with severity, followed by a count of further problems (e.g. `Cell overvoltage (protect) +2`), or `OK` | `count`, `problems` (sorted worst first), `kinds`
 `sensor` | runtime | `h` (native: `s`) | Remaining discharge time to 0% SoC; unavailable while idle or charging |
 `sensor` | stored energy | `Wh` | Currently stored energy |
 `sensor` | temperature | `°C` | Average cell temperature, or average of all temperatures if no cell temperatures are reported |

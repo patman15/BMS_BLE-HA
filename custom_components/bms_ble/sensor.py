@@ -5,9 +5,9 @@ from dataclasses import replace
 from functools import cached_property
 from random import choice
 from statistics import fmean
-from typing import Final, override
+from typing import Any, Final, override
 
-from aiobmsble import BMSSample, PackSample, Severity, TempSensor as TS
+from aiobmsble import BMSProblem, BMSSample, PackSample, Severity, TempSensor as TS
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -20,6 +20,7 @@ from homeassistant.const import (
     ATTR_TEMPERATURE,
     ATTR_VOLTAGE,
     MATCH_ALL,
+    MAX_LENGTH_STATE_STATE,
     PERCENTAGE,
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
     EntityCategory,
@@ -53,7 +54,10 @@ from .const import (
     ATTR_MIN_VOLTAGE,
     ATTR_MIN_VOLTAGE_IDX,
     ATTR_POWER,
+    ATTR_PROBLEM_DESCRIPTION,
+    ATTR_PROBLEM_KINDS,
     ATTR_PROBLEM_SEVERITY,
+    ATTR_PROBLEMS,
     ATTR_RSSI,
     ATTR_RUNTIME,
     DOMAIN,
@@ -238,6 +242,12 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
         ).name.lower(),
     ),
     BmsEntityDescription(
+        entity_category=EntityCategory.DIAGNOSTIC,
+        key=ATTR_PROBLEM_DESCRIPTION,
+        translation_key=ATTR_PROBLEM_DESCRIPTION,
+        value_fn=lambda data: _problem_description(data.get("problems", [])),
+    ),
+    BmsEntityDescription(
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
@@ -261,8 +271,28 @@ SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
 PACK_SENSOR_TYPES: Final[list[BmsEntityDescription]] = [
     descr
     for descr in SENSOR_TYPES
-    if descr.key not in (ATTR_LQ, ATTR_PROBLEM_SEVERITY, ATTR_RSSI, ATTR_RUNTIME)
+    if descr.key
+    not in (
+        ATTR_LQ,
+        ATTR_PROBLEM_SEVERITY,
+        ATTR_PROBLEM_DESCRIPTION,
+        ATTR_RSSI,
+        ATTR_RUNTIME,
+    )
 ]
+
+
+def _problem_description(problems: list[BMSProblem]) -> str:
+    """Return the worst problem with its level and a count of others, within the state limit."""
+    if not problems:
+        return "OK"
+    ordered: Final = sorted(problems, key=lambda p: p.level, reverse=True)
+    worst: Final = ordered[0]
+    suffix: Final = f" ({worst.level.name.lower()})" + (
+        f" +{len(ordered) - 1}" if len(ordered) > 1 else ""
+    )
+    text: Final[str] = worst.text
+    return text[: MAX_LENGTH_STATE_STATE - len(suffix)] + suffix
 
 
 def _cell_voltage_index(data: BMSSample | PackSample, *, maximum: bool) -> int | None:
@@ -334,6 +364,9 @@ async def async_setup_entry(
         if descr.key == ATTR_LQ:
             entities.append(LQSensor(bms, descr, mac))
             continue
+        if descr.key == ATTR_PROBLEM_DESCRIPTION:
+            entities.append(ProblemDescrSensor(bms, descr, mac))
+            continue
         if descr.optional and descr.key not in bms.data:
             continue
         if descr.key == ATTR_TEMPERATURE:
@@ -389,6 +422,36 @@ class BMSSensor(CoordinatorEntity[BTBmsCoordinator], SensorEntity):
             if self.coordinator.data
             else None
         )
+
+
+class ProblemDescrSensor(BMSSensor):
+    """Description of all reported problems, worst first."""
+
+    _unrecorded_attributes: frozenset[str] = frozenset(
+        {ATTR_PROBLEMS, ATTR_PROBLEM_KINDS}
+    )
+
+    @property
+    @override
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the count, the ordered problem list and the distinct problem kinds."""
+        ordered: Final = sorted(
+            self.coordinator.data.get("problems", []),
+            key=lambda p: p.level,
+            reverse=True,
+        )
+        return {
+            "count": len(ordered),
+            ATTR_PROBLEMS: [
+                {
+                    "kind": p.kind.value,
+                    "level": p.level.name.lower(),
+                    "text": p.text,
+                }
+                for p in ordered
+            ],
+            ATTR_PROBLEM_KINDS: list(dict.fromkeys(p.kind.value for p in ordered)),
+        }
 
 
 class PackSensor(BMSSensor):

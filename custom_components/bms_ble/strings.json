@@ -82,6 +82,9 @@
           "fault": "Fault"
         }
       },
+      "problem_description": {
+        "name": "Problem description"
+      },
       "rssi": {
         "name": "[%key:component::sensor::entity_component::signal_strength::name%]"
       },

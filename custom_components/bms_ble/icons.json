@@ -57,6 +57,12 @@
           "ok": "mdi:battery-check"
         }
       },
+      "problem_description": {
+        "default": "mdi:message-alert",
+        "state": {
+          "ok": "mdi:message-check"
+        }
+      },
       "rssi": {
         "default": "mdi:bluetooth-connect"
       },

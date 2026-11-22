@@ -76,6 +76,9 @@
           "fault": "Defekt"
         }
       },
+      "problem_description": {
+        "name": "Problembeschreibung"
+      },
       "runtime": {
         "name": "Laufzeit"
       },

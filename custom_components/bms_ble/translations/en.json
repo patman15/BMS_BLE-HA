@@ -76,6 +76,9 @@
           "fault": "Fault"
         }
       },
+      "problem_description": {
+        "name": "Problem description"
+      },
       "runtime": {
         "name": "Runtime"
       },
