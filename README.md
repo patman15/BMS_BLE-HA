@@ -126,6 +126,8 @@ Platform | Entity | Unit | Description | Attributes
 `sensor` | current | `A` | Positive while charging and negative while discharging | Balance current and heater current, when provided
 `sensor` | cycles | `#` | Lifetime number of charge cycles |
 `sensor` | power | `W` | Positive while charging and negative while discharging |
+`sensor` | problem severity | `enum` | Worst reported problem level: `ok`, `info`, `warn`, `protect` or `fault` | Problem code
+`sensor` | problem description | `text` | Worst reported problem with severity, followed by a count of further problems (e.g. `Cell overvoltage (protect) +2`), or `OK` | `count`, `problems` (sorted worst first), `kinds`
 `sensor` | runtime | `h` (native: `s`) | Remaining discharge time to 0% SoC; unavailable while idle or charging |
 `sensor` | stored energy | `Wh` | Currently stored energy |
 `sensor` | temperature | `°C` | Average cell temperature, or average of all temperatures if no cell temperatures are reported |
@@ -194,6 +196,9 @@ JBD BMS detection unfortunately needs to rely mainly on name patterns. If you re
 Some JBD boards are matched by MAC OUI. If config flow reports no devices while the pack is idle at 0&thinsp;A, BLE may not be
 advertising (similar to Elektronicx/Lithtech). Close the phone app, wake the pack briefly, and retry while it appears connectable in the
 <a href="https://my.home-assistant.io/redirect/bluetooth_advertisement_monitor/">advertisement monitor</a>.
+</details>
+<details><summary>Dometic Büttner</summary>
+The device requires a password / token that you can retrieve with these <a href="https://github.com/MartinusTech/ESP32-BLE-Reader-for-Buettner-Dometic-Tempra-TLB150-BMS/blob/main/docs/find-aen-token.md">instructions</a>.
 </details>
 <details><summary>Dyness Junior Box</summary>
 Although the box advertises via Bluetooth an <a href="https://github.com/patman15/BMS_BLE-HA/issues/633#issuecomment-6382939524">investigation</a> found no way to extract BMS data from that connection. Thus the box cannot be supported.

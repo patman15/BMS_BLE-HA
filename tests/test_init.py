@@ -28,7 +28,7 @@ async def test_init_fail(
         f"{bms_class}.device_info", mock_devinfo_min if swap else mock_exception
     )
     monkeypatch.setattr(
-        f"{bms_class}.async_update", mock_exception if swap else mock_update_min
+        f"{bms_class}.update", mock_exception if swap else mock_update_min
     )
 
     trace_fct: dict[str, bool] = {"stop_called": False}
@@ -82,7 +82,7 @@ async def test_unload_entry(
 
     bms_class: Final[str] = "aiobmsble.bms.dummy_bms.BMS"
     monkeypatch.setattr(f"{bms_class}.device_info", mock_devinfo_min)
-    monkeypatch.setattr(f"{bms_class}.async_update", mock_update_min)
+    monkeypatch.setattr(f"{bms_class}.update", mock_update_min)
 
     async def mock_coord_shutdown(_self) -> None:
         trace_fct["shutdown_called"] = True

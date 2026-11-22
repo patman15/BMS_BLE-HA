@@ -4,7 +4,14 @@ from datetime import timedelta
 import random
 from typing import Final
 
-from aiobmsble import BMSSample, PackSample, TempSensor as TS
+from aiobmsble import (
+    BMSProblem,
+    BMSSample,
+    PackSample,
+    PrbType,
+    Severity,
+    TempSensor as TS,
+)
 from habluetooth import BluetoothServiceInfoBleak
 import pytest
 from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
@@ -27,7 +34,12 @@ from custom_components.bms_ble.const import (
     UPDATE_INTERVAL,
 )
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import ATTR_TEMPERATURE, ATTR_VOLTAGE, STATE_UNKNOWN
+from homeassistant.const import (
+    ATTR_TEMPERATURE,
+    ATTR_VOLTAGE,
+    MAX_LENGTH_STATE_STATE,
+    STATE_UNKNOWN,
+)
 from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.entity_component import async_update_entity
@@ -50,8 +62,8 @@ async def test_update(
 ) -> None:
     """Test sensor value updates through coordinator."""
 
-    async def patch_async_update(_self) -> BMSSample:
-        """Patch async_update to return a specific value."""
+    async def patch_update(_self) -> BMSSample:
+        """Patch BaseBMS.update to return a specific value."""
         return BMSSample(
             balance_current=-1.234,
             heater_current=2.5,
@@ -128,7 +140,7 @@ async def test_update(
 
     bms_class: Final[str] = "aiobmsble.bms.dummy_bms.BMS"
     monkeypatch.setattr(f"{bms_class}.device_info", mock_devinfo_min)
-    monkeypatch.setattr(f"{bms_class}.async_update", patch_async_update)
+    monkeypatch.setattr(f"{bms_class}.update", patch_update)
 
     config: MockConfigEntry = mock_config()
     config.add_to_hass(hass)
@@ -150,6 +162,8 @@ async def test_update(
         == {
             f"{DEV_NAME}_{ATTR_LQ}": "0",
             f"{DEV_NAME}_signal_strength": STATE_UNKNOWN,
+            f"{DEV_NAME}_problem_severity": "ok",
+            f"{DEV_NAME}_problem_description": "OK",
         }
         | _result_dict
     )
@@ -174,6 +188,8 @@ async def test_update(
         == {
             f"{DEV_NAME}_{ATTR_LQ}": "66",  # initial update + one UPDATE_INTERVAL
             f"{DEV_NAME}_signal_strength": "-61",
+            f"{DEV_NAME}_problem_severity": "ok",
+            f"{DEV_NAME}_problem_description": "OK",
         }
         | _result_dict
     )
@@ -228,6 +244,124 @@ async def test_update(
 @pytest.mark.usefixtures(
     "enable_bluetooth", "patch_default_bleak_client", "patch_entity_enabled_default"
 )  # enable bluetooth, patch bleak client and enable all sensors
+async def test_problem_severity(
+    monkeypatch: pytest.MonkeyPatch,
+    bt_discovery: BluetoothServiceInfoBleak,
+    hass: HomeAssistant,
+) -> None:
+    """Test that the problem severity sensor reports the worst problem level."""
+
+    async def patch_update(_self) -> BMSSample:
+        """Patch BaseBMS.update to return problems of mixed severity."""
+        return BMSSample(
+            battery_level=42,
+            voltage=17.0,
+            problems=[
+                BMSProblem(PrbType.LOW_SOC, Severity.INFO, "info"),
+                BMSProblem(PrbType.CELL_IMBALANCE, Severity.WARN, "warn"),
+                BMSProblem(PrbType.CELL_OVERVOLTAGE, Severity.PROTECT, "protect"),
+            ],
+        )
+
+    bms_class: Final[str] = "aiobmsble.bms.dummy_bms.BMS"
+    monkeypatch.setattr(f"{bms_class}.device_info", mock_devinfo_min)
+    monkeypatch.setattr(f"{bms_class}.update", patch_update)
+
+    config: MockConfigEntry = mock_config()
+    config.add_to_hass(hass)
+
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
+
+    assert await hass.config_entries.async_setup(config.entry_id)
+    await hass.async_block_till_done()
+
+    state: State | None = hass.states.get(f"{DEV_NAME}_problem_severity")
+    assert state is not None
+    assert state.state == "protect"
+    assert state.attributes["options"] == [level.name.lower() for level in Severity]
+
+
+@pytest.mark.usefixtures(
+    "enable_bluetooth", "patch_default_bleak_client", "patch_entity_enabled_default"
+)  # enable bluetooth, patch bleak client and enable all sensors
+async def test_problem_description(
+    monkeypatch: pytest.MonkeyPatch,
+    bt_discovery: BluetoothServiceInfoBleak,
+    hass: HomeAssistant,
+) -> None:
+    """Test that the problem description shows the worst problem, count and sorted attributes."""
+
+    async def patch_update(_self) -> BMSSample:
+        """Patch BaseBMS.update to return problems of mixed severity."""
+        return BMSSample(
+            battery_level=42,
+            voltage=17.0,
+            problems=[
+                BMSProblem(PrbType.LOW_SOC, Severity.INFO, "Low SoC"),
+                BMSProblem(PrbType.CELL_IMBALANCE, Severity.WARN, "Cell imbalance"),
+                BMSProblem(
+                    PrbType.CELL_OVERVOLTAGE, Severity.PROTECT, "Cell overvoltage"
+                ),
+            ],
+        )
+
+    bms_class: Final[str] = "aiobmsble.bms.dummy_bms.BMS"
+    monkeypatch.setattr(f"{bms_class}.device_info", mock_devinfo_min)
+    monkeypatch.setattr(f"{bms_class}.update", patch_update)
+
+    config: MockConfigEntry = mock_config()
+    config.add_to_hass(hass)
+
+    inject_bluetooth_service_info_bleak(hass, bt_discovery)
+
+    assert await hass.config_entries.async_setup(config.entry_id)
+    await hass.async_block_till_done()
+
+    state: State | None = hass.states.get(f"{DEV_NAME}_problem_description")
+    assert state is not None
+    assert state.state == "Cell overvoltage (protect) +2"
+    assert state.attributes["count"] == 3
+    assert [p["kind"] for p in state.attributes["problems"]] == [
+        PrbType.CELL_OVERVOLTAGE.value,
+        PrbType.CELL_IMBALANCE.value,
+        PrbType.LOW_SOC.value,
+    ]
+    assert state.attributes["kinds"] == [
+        PrbType.CELL_OVERVOLTAGE.value,
+        PrbType.CELL_IMBALANCE.value,
+        PrbType.LOW_SOC.value,
+    ]
+
+
+@pytest.mark.parametrize(
+    ("problems", "expected"),
+    [
+        ([], "OK"),
+        (
+            [BMSProblem(PrbType.OTHER, Severity.FAULT, "x" * 300)],
+            "x" * (MAX_LENGTH_STATE_STATE - len(" (fault)")) + " (fault)",
+        ),
+        (
+            [
+                BMSProblem(PrbType.OTHER, Severity.WARN, "a" * 300),
+                BMSProblem(PrbType.OTHER, Severity.INFO, "b"),
+            ],
+            "a" * (MAX_LENGTH_STATE_STATE - len(" (warn) +1")) + " (warn) +1",
+        ),
+    ],
+)
+def test_problem_description_state_length(
+    problems: list[BMSProblem], expected: str
+) -> None:
+    """Test that the problem description is never longer than the state limit."""
+    state: str = sensor_module._problem_description(problems)
+    assert state == expected
+    assert len(state) <= MAX_LENGTH_STATE_STATE
+
+
+@pytest.mark.usefixtures(
+    "enable_bluetooth", "patch_default_bleak_client", "patch_entity_enabled_default"
+)  # enable bluetooth, patch bleak client and enable all sensors
 async def test_pack_data_incomplete(
     monkeypatch: pytest.MonkeyPatch,
     bt_discovery: BluetoothServiceInfoBleak,
@@ -237,8 +371,8 @@ async def test_pack_data_incomplete(
 
     update_with_packs: bool = True
 
-    async def patch_async_update(_self) -> BMSSample:
-        """Patch async_update to return pack data only on the first call."""
+    async def patch_update(_self) -> BMSSample:
+        """Patch BaseBMS.update to return pack data only on the first call."""
         sample: BMSSample = BMSSample(
             battery_level=42,
             voltage=17.0,
@@ -281,7 +415,7 @@ async def test_pack_data_incomplete(
 
     bms_class: Final[str] = "aiobmsble.bms.dummy_bms.BMS"
     monkeypatch.setattr(f"{bms_class}.device_info", mock_devinfo_min)
-    monkeypatch.setattr(f"{bms_class}.async_update", patch_async_update)
+    monkeypatch.setattr(f"{bms_class}.update", patch_update)
 
     config: MockConfigEntry = mock_config()
     config.add_to_hass(hass)

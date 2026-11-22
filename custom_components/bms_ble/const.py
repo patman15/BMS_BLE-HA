@@ -37,6 +37,10 @@ ATTR_MIN_VOLTAGE_IDX: Final = "min_cell_voltage_index"  # [#]
 ATTR_POWER: Final = "power"  # [W]
 ATTR_PROBLEM: Final = "problem"  # [bool]
 ATTR_PROBLEM_CODE: Final = "problem_code"  # [str]
+ATTR_PROBLEM_KINDS: Final = "kinds"  # [list[str]]
+ATTR_PROBLEM_DESCRIPTION: Final = "problem_description"  # [str]
+ATTR_PROBLEMS: Final = "problems"  # [list[dict]]
+ATTR_PROBLEM_SEVERITY: Final = "problem_severity"  # [enum]
 ATTR_RSSI: Final = "rssi"  # [dBm]
 ATTR_RUNTIME: Final = "runtime"  # [s]
 
@@ -44,4 +48,4 @@ BINARY_SENSORS: Final[int] = 6  # total number of binary sensors
 LINK_SENSORS: Final[int] = 2  # total number of sensors for connection quality
 OPT_SENSORS: Final[int] = 2  # total number of optional sensors (BmsEntityDescription)
 PACK_SENSORS: Final[int] = 13  # total number of sensors for a pack
-SENSORS: Final[int] = 15  # total number of sensors
+SENSORS: Final[int] = 17  # total number of sensors

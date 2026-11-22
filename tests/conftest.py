@@ -5,8 +5,9 @@ import logging
 from typing import Any, Final, override
 from uuid import UUID
 
-from aiobmsble import BMSConfig, BMSInfo, BMSSample, MatcherPattern
+from aiobmsble import BMSConfig, BMSInfo, BMSSample
 from aiobmsble.basebms import BaseBMS
+from aiobmsble.plugin import MatcherPattern
 from aiobmsble.utils import load_bms_plugins
 from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -209,7 +210,7 @@ class MockBMS(BaseBMS):
             generate_ble_device(address="", details={"path": None}),
             BMSConfig(keep_alive=True),
         )
-        LOGGER.debug("%s init(), Test except: %s", MockBMS.bms_id(), str(exc))
+        LOGGER.debug("%s init(), Test except: %s", MockBMS.bms_name(), str(exc))
         self._exception: Exception | None = exc
         self._ret_value: BMSSample = (
             ret_value
@@ -247,7 +248,7 @@ class MockBMS(BaseBMS):
     ) -> None:
         """Retrieve BMS data update."""
 
-    async def _async_update(self) -> BMSSample:
+    async def _update(self) -> BMSSample:
         """Update battery status information."""
         await self._connect()
 

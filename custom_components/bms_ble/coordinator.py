@@ -6,10 +6,9 @@ from itertools import islice
 from time import monotonic
 from typing import Final, override
 
-from aiobmsble import BMSSample
+from aiobmsble import BMSConnectionError, BMSError, BMSSample
 from aiobmsble.basebms import BaseBMS
 from bleak.backends.device import BLEDevice
-from bleak.exc import BleakError
 
 from homeassistant.components.bluetooth import (
     BluetoothServiceInfoBleak,
@@ -54,7 +53,7 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
             "Initializing coordinator for %s (%s) as %s",
             self.name,
             self._mac,
-            bms_device.bms_id(),
+            bms_device.bms_name(),
         )
 
         if service_info := async_last_service_info(
@@ -138,16 +137,12 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
 
         start: Final = monotonic()
         try:
-            if not (bms_data := await self._device.async_update()):
+            if not (bms_data := await self._device.update()):
                 raise UpdateFailed(
                     translation_domain=DOMAIN,
                     translation_key="bms_no_valid_data",
                 )
-        except TimeoutError as err:
-            raise UpdateFailed(
-                translation_domain=DOMAIN, translation_key="bms_timeout"
-            ) from err
-        except (BleakError, EOFError) as err:
+        except BMSConnectionError as err:
             rssi: Final = self.rssi
             raise UpdateFailed(
                 translation_domain=DOMAIN,
@@ -160,6 +155,10 @@ class BTBmsCoordinator(DataUpdateCoordinator[BMSSample]):
                     "rssi": f"{rssi}" if rssi is not None else "--",
                     "err_msg": f"{err!s} ({type(err).__name__})",
                 },
+            ) from err
+        except BMSError as err:
+            raise UpdateFailed(
+                translation_domain=DOMAIN, translation_key="bms_timeout"
             ) from err
         finally:
             self._link_q.extend(

@@ -72,6 +72,19 @@
       "min_cell_voltage_index": {
         "name": "Lowest cell voltage index"
       },
+      "problem_severity": {
+        "name": "Problem severity",
+        "state": {
+          "ok": "OK",
+          "info": "Info",
+          "warn": "Warning",
+          "protect": "Protection",
+          "fault": "Fault"
+        }
+      },
+      "problem_description": {
+        "name": "Problem description"
+      },
       "rssi": {
         "name": "[%key:component::sensor::entity_component::signal_strength::name%]"
       },

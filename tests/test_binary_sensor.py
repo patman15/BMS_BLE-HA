@@ -29,7 +29,7 @@ async def test_update(
 ) -> None:
     """Test binary sensor value updates through coordinator."""
 
-    async def patch_async_update(_self) -> BMSSample:
+    async def patch_update(_self) -> BMSSample:
         """Patch async ble device from address to return a given value."""
         return {
             "voltage": 17.0,
@@ -45,7 +45,7 @@ async def test_update(
 
     bms_class: Final[str] = "aiobmsble.bms.dummy_bms.BMS"
     monkeypatch.setattr(f"{bms_class}.device_info", mock_devinfo_min)
-    monkeypatch.setattr(f"{bms_class}.async_update", mock_update_full)
+    monkeypatch.setattr(f"{bms_class}.update", mock_update_full)
 
     config: MockConfigEntry = mock_config()
     config.add_to_hass(hass)
@@ -67,7 +67,7 @@ async def test_update(
         assert state.state == ref_state
         assert not state.attributes.get(attribute)
 
-    monkeypatch.setattr(f"{bms_class}.async_update", patch_async_update)
+    monkeypatch.setattr(f"{bms_class}.update", patch_update)
 
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=UPDATE_INTERVAL))
     await hass.async_block_till_done()

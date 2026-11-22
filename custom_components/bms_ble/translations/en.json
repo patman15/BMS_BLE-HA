@@ -66,6 +66,19 @@
       "min_cell_voltage_index": {
         "name": "Cell with lowest voltage"
       },
+      "problem_severity": {
+        "name": "Problem severity",
+        "state": {
+          "ok": "OK",
+          "info": "Info",
+          "warn": "Warning",
+          "protect": "Protection",
+          "fault": "Fault"
+        }
+      },
+      "problem_description": {
+        "name": "Problem description"
+      },
       "runtime": {
         "name": "Runtime"
       },
