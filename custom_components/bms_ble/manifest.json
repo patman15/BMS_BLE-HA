@@ -78,11 +78,16 @@
     },
     {
       "manufacturer_id": 2117,
-      "manufacturer_data_start": [20, 133]
+      "manufacturer_data_start": [
+        20,
+        133
+      ]
     },
     {
       "manufacturer_id": 65535,
-      "manufacturer_data_start": [78]
+      "manufacturer_data_start": [
+        78
+      ]
     },
     {
       "manufacturer_id": 21330,
@@ -144,7 +149,7 @@
     },
     {
       "manufacturer_id": 263
-    },    
+    },
     {
       "manufacturer_id": 1026
     },
@@ -158,16 +163,28 @@
       "manufacturer_id": 21320
     }
   ],
-  "categories": ["energy.solar_batteries", "energy.meters_monitoring"],
-  "codeowners": ["@patman15"],
+  "categories": [
+    "energy.solar_batteries",
+    "energy.meters_monitoring"
+  ],
+  "codeowners": [
+    "@patman15"
+  ],
   "config_flow": true,
-  "dependencies": ["bluetooth_adapters"],
+  "dependencies": [
+    "bluetooth_adapters"
+  ],
   "documentation": "https://github.com/patman15/BMS_BLE-HA",
   "integration_type": "device",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/patman15/BMS_BLE-HA/issues",
-  "loggers": ["bleak_retry_connector", "aiobmsble"],
+  "loggers": [
+    "bleak_retry_connector",
+    "aiobmsble"
+  ],
   "quality_scale": "silver",
-  "requirements": ["aiobmsble==1.0.0-beta.1"],
+  "requirements": [
+    "aiobmsble @ git+https://github.com/patman15/aiobmsble.git@issue-890-add-support-for-litime-3"
+  ],
   "version": "3.0.0-beta.3"
 }

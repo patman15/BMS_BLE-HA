@@ -1,5 +1,5 @@
 homeassistant==2026.11.0
-aiobmsble==1.0.0-beta.1
+aiobmsble @ git+https://github.com/patman15/aiobmsble.git@issue-890-add-support-for-litime-3
 ruff~=0.15.0
 pylint~=4.0.6
 pylint-per-file-ignores~=3.2.1
